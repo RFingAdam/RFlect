@@ -8,6 +8,7 @@ import pandas as pd
 import requests
 import json
 import webbrowser
+import sys
 
 # Set a modern blue color (#2596be)
 DARK_BG_COLOR = "#2E2E2E"
@@ -326,9 +327,21 @@ def spherical_to_cartesian(r, theta, phi):
     return x, y, z
 
 
+
 # GUI Class Implementation______________________________________________________________________
 class AntennaPlotGUI:
-    with open("settings.json", "r") as file:
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path) 
+    
+    settings_path = resource_path("settings.json")
+    with open(settings_path, "r") as file:
         settings = json.load(file)
         CURRENT_VERSION = settings["CURRENT_VERSION"]
 
@@ -460,6 +473,8 @@ class AntennaPlotGUI:
         else:
             return None, None
         
+    
+      
     #Downloads latest release   
     def download_latest_release(self, url):
         """
