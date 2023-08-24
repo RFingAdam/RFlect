@@ -1,5 +1,8 @@
 # RFlect - Release Notes
 
+## Version 1.0.1 (08/24/2023)
+- Automatic GitHub Update Checks & Download
+
 ## Version 1.0.0 (08/24/2023)
 
 ### Features:
@@ -24,3 +27,4 @@
 - Active Scans Not Implemented.
 - 3D plotting features Not Implemented.
 - Save Results to Files Button Not Functional.
+
