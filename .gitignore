@@ -1,0 +1,19 @@
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Compiled C extensions
+*.so
+*.dll
+
+# Build and distribution folders
+build/
+dist/
+
+# PyInstaller spec files
+*.spec
+
+# Icon files
+*.ico
