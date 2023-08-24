@@ -378,7 +378,7 @@ class AntennaPlotGUI:
         current_path = os.path.dirname(os.path.abspath(__file__))
 
         # Construct the full path to the logo
-        logo_path = os.path.join(current_path, 'smith_logo.png')
+        logo_path = os.path.join(current_path, 'assets/smith_logo.png')
 
         # Load the logo
         self.logo_image = tk.PhotoImage(file=logo_path)
