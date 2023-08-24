@@ -5,6 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import pandas as pd
+import requests
+import json
+import webbrowser
 
 # Set a modern blue color (#2596be)
 DARK_BG_COLOR = "#2E2E2E"
@@ -325,6 +328,10 @@ def spherical_to_cartesian(r, theta, phi):
 
 # GUI Class Implementation______________________________________________________________________
 class AntennaPlotGUI:
+    with open("settings.json", "r") as file:
+        settings = json.load(file)
+        CURRENT_VERSION = settings["CURRENT_VERSION"]
+
     def __init__(self, root):
         self.root = root
         self.root.title("RFlect")
@@ -434,7 +441,47 @@ class AntennaPlotGUI:
         self.title_label.grid(row=0, column=0, pady=(10, 0), columnspan=6, sticky="n")
         self.update_visibility()
 
-     # Hover effect functions
+        # Check for updates
+        self.check_for_updates()
+
+        #Check Release Version on Github
+    def get_latest_release(self):
+        owner = "RFingAdam"
+        repo = "RFlect"
+        url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+        
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            latest_version = data["tag_name"]
+            release_url = data["html_url"]
+            return latest_version, release_url
+        else:
+            return None, None
+        
+    #Downloads latest release   
+    def download_latest_release(self, url):
+        """
+        This function opens the given URL in the default web browser, 
+        effectively letting the user download the release.
+        """
+        webbrowser.open(url)
+
+
+    def check_for_updates(self):
+        latest_version, release_url = self.get_latest_release()
+        if latest_version and latest_version != AntennaPlotGUI.CURRENT_VERSION:
+            # Create a simple tkinter window for the dialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+
+            answer = messagebox.askyesno("Update Available",
+                                        f"A new version {latest_version} is available! Would you like to download it?")
+
+            if answer:
+              self.download_latest_release(release_url)
+    # Hover effect functions
     def on_enter(self, e):
         e.widget.original_color = e.widget['background']
         e.widget['background'] = HOVER_COLOR
