@@ -1,8 +1,12 @@
 # RFlect - Release Notes
 
+## Version 1.0.3 (08/24/2023)
+- Fixed Bug with Passive Scan Selection
+
 ## Version 1.0.2 (08/24/2023)
-- Added Assets Folder
+- Added Assets Folder for images
 - Testing Automatic Version Updates
+
 ## Version 1.0.1 (08/24/2023)
 - Automatic GitHub Update Checks & Download
 

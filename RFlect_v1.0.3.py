@@ -330,6 +330,7 @@ def spherical_to_cartesian(r, theta, phi):
 
 # GUI Class Implementation______________________________________________________________________
 class AntennaPlotGUI:
+    #Get Current Version from settings.json file
     def resource_path(relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
         try:
@@ -388,8 +389,11 @@ class AntennaPlotGUI:
         self.label_scan_type = tk.Label(self.root, text="Select Measurement Type:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
         self.label_scan_type.grid(row=1, column=0, pady=10, columnspan=2)
 
+        #Initialize Default Scan Settings
         self.scan_type = tk.StringVar()
         self.scan_type.set("passive")
+        self.passive_scan_type = tk.StringVar()
+        self.passive_scan_type.set("VPOL/HPOL")
 
         active_rb = tk.Radiobutton(self.root, text="Active", variable=self.scan_type, value="active",
                                    background=BUTTON_COLOR, foreground=LIGHT_TEXT_COLOR, selectcolor=DARK_BG_COLOR,
@@ -833,6 +837,10 @@ class AntennaPlotGUI:
             
             first_file = filedialog.askopenfilename(title="Select the First Data File",
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+            #Check if user canceled the first selection
+            if not first_file:
+                return
+            
             second_file = filedialog.askopenfilename(title="Select the Second Data File",
                                                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
             if first_file and second_file:
