@@ -1,0 +1,26 @@
+RFlect - Release Notes
+======================
+
+Version 1.0.0 (08/24/2023)
+--------------------------
+- Initial release.
+- Features:
+  - Support for importing and processing passive scans:
+    - G&D files for 2D plotting results.
+    - HPOL/VPOL files for 2D results.
+  - Support for importing VSWR/S11 LogMag .csv files.
+    - VSWR/S11 settings with adjustable limit lines.
+    - Graphical representation of VSWR/S11 data.
+  - Graph plotting for various metrics including:
+    - Gain
+    - Efficiency
+    - Directivity
+    - Return Loss
+  - User-friendly GUI for:
+    - Easy data import.
+    - Visualization of results.
+    - Configuration of settings.
+- Known Issues:
+   - Active Scans Not Implemented
+   - 3D plotting features Not Implemented
+   - Save Results to Files Button Not Functional
