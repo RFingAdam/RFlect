@@ -1,4 +1,4 @@
-# RFlect - Antenna Plot Tool <img src="./assets/smith_logo.png" alt="RFlect Logo" width="160">
+# RFlect - Antenna Plot Tool <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
 
 **Version:** 1.0.4
