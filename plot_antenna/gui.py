@@ -1,335 +1,27 @@
+from file_utils import save_to_results_folder, read_active_file, read_passive_file
+from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables
+from plotting import plot_2d_passive_data
+from config import *
+
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
 import pandas as pd
 import requests
 import json
-import webbrowser
 import sys
-
-# Set a modern blue color (#2596be)
-DARK_BG_COLOR = "#2E2E2E"
-LIGHT_TEXT_COLOR = "#FFFFFF"
-ACCENT_BLUE_COLOR = "#4A90E2"
-BUTTON_COLOR = "#3A3A3A"
-HOVER_COLOR = "#4A4A4A"
-
-# Fonts
-HEADER_FONT = ("Arial", 14, "bold")
-LABEL_FONT = ("Arial", 12)
-
-#___________________________Helper Functions_____________________________________________________
-
-#Read in TRP/Active Scan File
-def read_active_file(file_path):
-    with open(file_path, 'r') as file:
-        data = file.readlines()
-    return data
-
-# Read in Passive HPOL/VPOL Files
-def read_passive_file(file_path):
-    with open(file_path, 'r') as file:
-        content = file.readlines()
-    return parse_passive_file(content)
-
-# Function to parse the data from HPOL/VPOL files
-def parse_passive_file(content):
-    # Initialize variables to store PHI and THETA details
-    all_data = []
-    start_phi, stop_phi, inc_phi = None, None, None
-    start_theta, stop_theta, inc_theta = None, None, None
-    
-    # Extract Theta & PHI details
-    for line in content:
-        if "Axis1 Start Angle" in line:
-            start_phi = float(line.split(":")[1].split("Deg")[0].strip())
-        elif "Axis1 Stop Angle" in line:
-            stop_phi = float(line.split(":")[1].split("Deg")[0].strip())
-        elif "Axis1 Increment" in line:
-            inc_phi = float(line.split(":")[1].split("Deg")[0].strip())
-        elif "Axis2 Start Angle" in line:
-            start_theta = float(line.split(":")[1].split("Deg")[0].strip())
-        elif "Axis2 Stop Angle" in line:
-            stop_theta = float(line.split(":")[1].split("Deg")[0].strip())
-        elif "Axis2 Increment" in line:
-            inc_theta = float(line.split(":")[1].split("Deg")[0].strip())
-    
-    # Calculate the expected number of data points
-    theta_points = (stop_theta - start_theta) / inc_theta + 1
-    phi_points = (stop_phi - start_phi) / inc_phi + 1
-    data_points = int(theta_points * phi_points)
-
-    # Extract data for each frequency
-    while content:
-        cal_factor_line = next((line for line in content if "Cal Std Antenna Peak Gain Factor" in line), None)
-        if not cal_factor_line:
-            break
-        cal_factor_value = float(cal_factor_line.split('=')[1].strip().split(' ')[0])
-
-        freq_line = next((line for line in content if "Test Frequency = " in line), None)
-        freq_value = float(freq_line.split('=')[1].strip().split(' ')[0])
-
-        start_index = next((i for i, line in enumerate(content) if "THETA\t  PHI\t  Mag\t Phase" in line), None)
-        if start_index is None:
-            break
-        start_index += 2
-
-        data_lines = content[start_index:start_index+data_points]
-        theta, phi, mag, phase = [], [], [], []
-        for line in data_lines:
-            line_data = line.strip().split('\t')
-            if len(line_data) != 4:
-                break
-            t, p, m, ph = map(float, line_data)
-            theta.append(t)
-            phi.append(p)
-            mag.append(m)
-            phase.append(ph)
-
-        freq_data = {
-            "frequency": freq_value,
-            "cal_factor": cal_factor_value,
-            "theta": theta,
-            "phi": phi,
-            "mag": mag,
-            "phase": phase
-        }
-        all_data.append(freq_data)
-        content = content[start_index + data_points:]
-
-    return all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta
-
-#Auto Determine Polarization for HPOL & VPOL Files
-def determine_polarization(file_path):
-    with open(file_path, 'r') as f:
-        content = f.read()
-        if "Horizontal Polarization" in content:
-            return "HPol"
-        else:
-            return "VPol"
-        
-#Verify angle data and frequencies are not mismatched      
-def angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-                            start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v):
-
-    return (start_phi_h == start_phi_v and stop_phi_h == stop_phi_v and inc_phi_h == inc_phi_v and
-            start_theta_h == start_theta_v and stop_theta_h == stop_theta_v and inc_theta_h == inc_theta_v)
-
-#Extract Frequency points for selection in the drop-down menu      
-def extract_passive_frequencies(file_path):
-    with open(file_path, 'r') as file:
-        content = file.readlines()
-
-    # Extracting frequencies
-    frequencies = [float(line.split("=")[1].split()[0]) for line in content if "Test Frequency" in line]
-
-    return frequencies
-
-#Calculate Total Gain Vector and add cable loss etc - Use Phase for future implementation?
-def calculate_passive_variables(hpol_data, vpol_data, cable_loss, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta, freq_list, selected_frequency):
-    theta_points = int((stop_theta - start_theta) / inc_theta + 1)
-    phi_points = int((stop_phi - start_phi) / inc_phi + 1)
-    data_points = theta_points * phi_points
-
-    theta_angles_deg = np.zeros((data_points, len(freq_list)))
-    phi_angles_deg = np.zeros((data_points, len(freq_list)))
-    v_gain_dB = np.zeros((data_points, len(freq_list)))
-    h_gain_dB = np.zeros((data_points, len(freq_list)))
-    v_phase = np.zeros((data_points, len(freq_list)))
-    h_phase = np.zeros((data_points, len(freq_list)))
-
-    for m, (hpol_entry, vpol_entry) in enumerate(zip(hpol_data, vpol_data)):
-        for n, (theta_h, phi_h, mag_h, phase_h, theta_v, phi_v, mag_v, phase_v) in enumerate(zip(hpol_entry['theta'], hpol_entry['phi'], hpol_entry['mag'], hpol_entry['phase'], vpol_entry['theta'], vpol_entry['phi'], vpol_entry['mag'], vpol_entry['phase'])):
-            v_gain = mag_v
-            h_gain = mag_h
-            v_ph = phase_v
-            h_ph = phase_h
-
-            theta_angles_deg[n, m] = theta_h
-            phi_angles_deg[n, m] = phi_h
-            v_gain_dB[n, m] = v_gain
-            h_gain_dB[n, m] = h_gain
-            v_phase[n, m] = v_ph
-            h_phase[n, m] = h_ph
-
-    cable_loss_matrix = np.ones((phi_points * theta_points, len(freq_list))) * cable_loss
-    v_gain_dB += cable_loss_matrix
-    h_gain_dB += cable_loss_matrix
-
-    Total_Gain_dB = 10 * np.log10(10**(v_gain_dB/10) + 10**(h_gain_dB/10))
-    
-   
-    return theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB
-    
-#plot passive data
-def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency):
-    # Convert angles from degrees to radians
-    plot_theta_rad = np.radians(theta_angles_deg)
-    plot_phi_rad = np.radians(phi_angles_deg)
-
-    # Calculate Average Gain per Frequency in dB
-    Average_Gain_dB = 10 * np.log10(np.sum(np.pi/2 * np.sin(plot_theta_rad) * 10**(Total_Gain_dB/10), axis=0) / (theta_angles_deg.shape[0]))
-    
-     # Plot Efficiency in dB
-    plt.figure(figsize=(10,6))
-    plt.plot(freq_list, Average_Gain_dB, color='b', linewidth=2)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.title("Average Radiated Efficiency Versus Frequency (dB)")
-    plt.xlabel("Frequency (MHz)")
-    plt.ylabel("Efficiency (dB)")
-    plt.tight_layout()
-    plt.show()
-    
-    # Convert Average_Gain_dB to Efficiency Percentage and Plot
-    Average_Gain_percentage = 100 * 10**(Average_Gain_dB / 10)
-    plt.figure(figsize=(10,6))
-    plt.plot(freq_list, Average_Gain_percentage, color='b', linewidth=2)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.title("Average Radiated Efficiency Versus Frequency (%)")
-    plt.xlabel("Frequency (MHz)")
-    plt.ylabel("Efficiency (%)")
-    plt.ylim([10*round(0.08*min(Average_Gain_percentage)), 100])
-    plt.tight_layout()
-    plt.show()
-    
-    # Calculate Peak Gain as the maximum gain across all angles for each frequency
-    Peak_Gain_dB = np.max(Total_Gain_dB, axis=0)
-    
-    # Plot Peak Gain
-    plt.figure(figsize=(10,6))
-    plt.plot(freq_list, Peak_Gain_dB, color='r', linewidth=2)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.title("Peak Gain Versus Frequency")
-    plt.xlabel("Frequency (MHz)")
-    plt.ylabel("Peak Gain (dBi)")
-    plt.ylim([min(Peak_Gain_dB)-2, max(Peak_Gain_dB)+2])
-    plt.tight_layout()
-    plt.show()
-    
-   # Plot Azimuth cuts for different theta values
-    # Check if the selected frequency is present in the frequency list
-    if selected_frequency in freq_list:
-        freq_idx = np.where(np.array(freq_list) == selected_frequency)[0][0]
-    else:
-        print(f"Error: Selected frequency {selected_frequency} not found in the frequency list.")
-        return
-
-    # Extract the total gain data for the selected frequency
-    selected_azimuth_freq = Total_Gain_dB[:, freq_idx]
-        
-    # Add these theta values based on which ones you want to plot
-    theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] 
-    lines = []
-    labels = []
-    
-    plt.figure(figsize=(10,6))
-    ax = plt.subplot(111, projection='polar')
-    for theta in theta_values_to_plot:
-        mask = np.abs(theta_angles_deg[:, freq_idx] - theta) < 0.01
-        if np.any(mask):
-            lines = ax.plot(plot_phi_rad[mask], selected_azimuth_freq[mask], label=f'Theta {theta}°')
-            lines.append(lines)
-            labels.append(f'Theta {theta}°')
-
-    ax.set_title(f"Gain Pattern Azimuth Cuts - Total Gain at {selected_frequency} MHz")
-    ax.legend(lines, labels, loc="upper right", bbox_to_anchor=(1.3, 1))
-
-    # Display the plot
-    plt.show()
-    
-def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency):
-    # Find the index for the selected frequency
-    selected_index = freq_list.index(selected_frequency)
-     # Convert frequency list to numpy array
-    freq_list = np.array(freq_list)
-
-    # Select values for the selected frequency
-    v_gain_selected = v_gain_dB[:, selected_index]
-    h_gain_selected = h_gain_dB[:, selected_index]
-    total_gain_selected = Total_Gain_dB[:, selected_index]
-    selected_theta_angles_deg = theta_angles_deg[:, selected_index]
-    selected_phi_angles_deg = phi_angles_deg[:, selected_index]
-    
-    PHI, THETA = np.meshgrid(selected_phi_angles_deg, selected_theta_angles_deg)
-
-    # Convert angles to radians
-    selected_theta_angles_rad = np.deg2rad(THETA)
-    selected_phi_angles_rad = np.deg2rad(PHI)
-
-    R = db_to_linear(v_gain_selected)  # Convert gain from dB to linear scale
-
-    # Create a meshgrid
-    interp_factor = 1  
-
-    X = R * np.sin(selected_theta_angles_rad) * np.cos(selected_phi_angles_rad)
-    Y = R * np.sin(selected_theta_angles_rad) * np.sin(selected_phi_angles_rad)
-    Z = R * np.cos(selected_theta_angles_rad)
-
-    for counter in range(interp_factor):  # Interpolate between points to increase number of faces
-        X = interp_array(X)
-        Y = interp_array(Y)
-        Z = interp_array(Z)
-
-    # Plotting
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection='3d')
-
-    N = np.sqrt(X**2 + Y**2 + Z**2)
-    Rmax = np.max(N)
-    N = N / Rmax
-    N = interp_array(N)[1::2, 1::2]  # Interpolate for color mapping
-
-    axes_length = 0.65
-    ax.plot([0, axes_length*Rmax], [0, 0], [0, 0], linewidth=2, color='red')
-    ax.plot([0, 0], [0, axes_length*Rmax], [0, 0], linewidth=2, color='green')
-    ax.plot([0, 0], [0, 0], [0, axes_length*Rmax], linewidth=2, color='blue')
-    
-    mycol = cm.jet(N)
-    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=mycol, linewidth=0.5, antialiased=True)
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.view_init(azim=300, elev=30)  # Set view angle
-
-    m = cm.ScalarMappable(cmap=cm.jet)
-    m.set_array(R)
-    fig.colorbar(m, shrink=0.8)
-
-    plt.show()
-
-def interp_array(N1):  # add interpolated rows and columns to array
-        N2 = np.empty([int(N1.shape[0]), int(2*N1.shape[1] - 1)])  # insert interpolated columns
-        N2[:, 0] = N1[:, 0]  # original column
-        for k in range(N1.shape[1] - 1):  # loop through columns
-            N2[:, 2*k+1] = np.mean(N1[:, [k, k + 1]], axis=1)  # interpolated column
-            N2[:, 2*k+2] = N1[:, k+1]  # original column
-        N3 = np.empty([int(2*N2.shape[0]-1), int(N2.shape[1])])  # insert interpolated columns
-        N3[0] = N2[0]  # original row
-        for k in range(N2.shape[0] - 1):  # loop through rows
-            N3[2*k+1] = np.mean(N2[[k, k + 1]], axis=0)  # interpolated row
-            N3[2*k+2] = N2[k+1]  # original row
-        return N3
-
-def db_to_linear(db_value):
-    return 10 ** (db_value / 10)
-
-def spherical_to_cartesian(r, theta, phi):
-    """
-    Convert spherical coordinates to cartesian coordinates.
-    """
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    z = r * np.cos(theta)
-    return x, y, z
+import webbrowser
 
 
-
-# GUI Class Implementation______________________________________________________________________
 class AntennaPlotGUI:
+    """
+    Main GUI class for the RFlect application.
+
+    This class manages the creation and interactions of the main application window and its components.
+    """
+    
     #Get Current Version from settings.json file
     def resource_path(relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -375,14 +67,15 @@ class AntennaPlotGUI:
         self.passive_scan_type.set("HPOL/VPOL")  # Default value
 
         
-        # Determine the path of the current script or packaged executable
+       # Determine the path of the current script or packaged executable
         current_path = os.path.dirname(os.path.abspath(__file__))
 
-        # Construct the full path to the logo
-        logo_path = os.path.join(current_path, 'assets/smith_logo.png')
+        # Go up one directory and then into the assets folder
+        logo_path = os.path.join(current_path, '..', 'assets', 'smith_logo.png')
 
         # Load the logo
         self.logo_image = tk.PhotoImage(file=logo_path)
+
         self.root.iconphoto(False, self.logo_image)  # Set the logo as the window icon
 
         # GUI Elements with updated styling
@@ -439,7 +132,7 @@ class AntennaPlotGUI:
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=self.save_to_results_folder, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=save_to_results_folder, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_settings.grid(row=5, column=2, pady=10, padx=10)
@@ -461,7 +154,6 @@ class AntennaPlotGUI:
         # Check for updates
         self.check_for_updates()
 
-        #Check Release Version on Github
     def get_latest_release(self):
         owner = "RFingAdam"
         repo = "RFlect"
@@ -477,8 +169,6 @@ class AntennaPlotGUI:
         else:
             return None, None
         
-    
-      
     #Downloads latest release   
     def download_latest_release(self, url):
         """
@@ -486,7 +176,6 @@ class AntennaPlotGUI:
         effectively letting the user download the release.
         """
         webbrowser.open(url)
-
 
     def check_for_updates(self):
         latest_version, release_url = self.get_latest_release()
@@ -499,7 +188,8 @@ class AntennaPlotGUI:
                                         f"A new version {latest_version} is available! Would you like to download it?")
 
             if answer:
-              self.download_latest_release(release_url)
+              self.download_latest_release(release_url)         
+              
     # Hover effect functions
     def on_enter(self, e):
         e.widget.original_color = e.widget['background']
@@ -949,16 +639,4 @@ class AntennaPlotGUI:
 
             return
         
-    #Save results to folder called when Button pressed
-    def save_to_results_folder(self):
-        #future implementation
-        #save_passive_data(passive_variables, self.freq_list)
-        return
     
-def main():
-    root = tk.Tk()
-    app = AntennaPlotGUI(root)
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()

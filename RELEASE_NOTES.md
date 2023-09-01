@@ -1,5 +1,10 @@
 # RFlect - Release Notes
 
+## Version 1.0.4 (09/01/2023)
+- Codebase has been refactored into separate modules
+- Added Docstrings
+- Updated Images in README.md
+
 ## Version 1.0.3 (08/24/2023)
 - Fixed Bug with Passive Scan Selection
 
