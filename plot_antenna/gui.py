@@ -1,6 +1,6 @@
 from file_utils import save_to_results_folder, read_active_file, read_passive_file
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables
-from plotting import plot_2d_passive_data
+from plotting import plot_2d_passive_data, plot_passive_3d_component
 from config import *
 
 import os
@@ -633,9 +633,11 @@ class AntennaPlotGUI:
             theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
             
             #Call Method to Plot Passive Data
-            plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
+            #plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
             
-            #plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
+            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="total")
+            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="hpol")
+            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="vpol")
 
             return
         

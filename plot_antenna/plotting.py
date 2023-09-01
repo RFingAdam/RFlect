@@ -1,6 +1,10 @@
+from config import THETA_RESOLUTION, PHI_RESOLUTION
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import scipy.interpolate as spi
+
 
 def plot_data(data, title, x_label, y_label, legend_labels=None):
     """
@@ -76,7 +80,7 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
               "Frequency (MHz)", 
               "Peak Gain (dBi)")
     
-   # Plot Azimuth cuts for different theta values
+    # Plot Azimuth cuts for different theta values
     # Check if the selected frequency is present in the frequency list
     if selected_frequency in freq_list:
         freq_idx = np.where(np.array(freq_list) == selected_frequency)[0][0]
@@ -106,8 +110,49 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
 
     # Display the plot
     plt.show()
+
+def db_to_linear(db_value):
+    return 10 ** (db_value / 10)
+
+# Helper function to process gain data for plotting.
+def process_gain_data(selected_gain, selected_phi_angles_deg, selected_theta_angles_deg):
+    """
+    Helper function to process gain data for plotting.
+    """
+    # Reshape and mesh the data
+    unique_phi = np.unique(selected_phi_angles_deg)
+    unique_theta = np.unique(selected_theta_angles_deg)
+    reshaped_gain = selected_gain.reshape((len(unique_theta), len(unique_phi)))
+    reshaped_gain = np.column_stack((reshaped_gain, reshaped_gain[:, 0]))
+    unique_phi = np.append(unique_phi, 360)
     
-def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency):
+    # Interpolate the data for smoother gradient shading
+    theta_interp = np.linspace(0, 180, THETA_RESOLUTION)
+    phi_interp = np.linspace(0, 360, PHI_RESOLUTION)
+    f_interp = spi.interp2d(unique_phi, unique_theta, reshaped_gain, kind='linear')
+    gain_interp = f_interp(phi_interp, theta_interp)
+    
+    PHI, THETA = np.meshgrid(phi_interp, theta_interp)
+    
+    # Convert to spherical coordinates
+    theta_rad = np.deg2rad(THETA)
+    phi_rad = np.deg2rad(PHI)
+    R = db_to_linear(gain_interp)
+    X = R * np.sin(theta_rad) * np.cos(phi_rad)
+    Y = R * np.sin(theta_rad) * np.sin(phi_rad)
+    Z = R * np.cos(theta_rad)
+    
+    return X, Y, Z, gain_interp, R, theta_interp, phi_interp
+
+def normalize_gain(gain_dB):
+    """
+    Normalize the gain values to be between 0 and 1.
+    """
+    gain_min = np.min(gain_dB)
+    gain_max = np.max(gain_dB)
+    return (gain_dB - gain_min) / (gain_max - gain_min)
+ 
+def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency, gain_type):
     """
     Plot a 3D representation of the passive component data.
 
@@ -127,81 +172,110 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     Returns:
     None. The function directly displays the 3D plot.
     """
+
+    # Check if the selected frequency is present in the frequency list
+    if selected_frequency in freq_list:
+        freq_idx = np.where(np.array(freq_list) == selected_frequency)[0][0]
+    else:
+        print(f"Error: Selected frequency {selected_frequency} not found in the frequency list.")
+        return
     
-    # Find the index for the selected frequency
-    selected_index = freq_list.index(selected_frequency)
-     # Convert frequency list to numpy array
-    freq_list = np.array(freq_list)
+    if gain_type == "total":
+        selected_gain = Total_Gain_dB[:, freq_idx]
+        plot_title = f"3D Radiation Pattern - Total Gain at {selected_frequency} MHz"
+    elif gain_type == "hpol":
+        selected_gain = h_gain_dB[:, freq_idx]
+        plot_title = f"3D Radiation Pattern - Phi Polarization Gain at {selected_frequency} MHz"
+    elif gain_type == "vpol":
+        selected_gain = v_gain_dB[:, freq_idx]
+        plot_title = f"3D Radiation Pattern - Theta Polarization Gain at {selected_frequency} MHz"
+    else:
+        print(f"Error: Invalid gain type {gain_type}.")
+        return
 
-    # Select values for the selected frequency
-    v_gain_selected = v_gain_dB[:, selected_index]
-    h_gain_selected = h_gain_dB[:, selected_index]
-    total_gain_selected = Total_Gain_dB[:, selected_index]
-    selected_theta_angles_deg = theta_angles_deg[:, selected_index]
-    selected_phi_angles_deg = phi_angles_deg[:, selected_index]
+    selected_theta_angles_deg = theta_angles_deg[:, freq_idx]
+    selected_phi_angles_deg = phi_angles_deg[:, freq_idx]
     
-    PHI, THETA = np.meshgrid(selected_phi_angles_deg, selected_theta_angles_deg)
+    # Process gain data
+    X, Y, Z, gain_interp, R, theta_interp, phi_interp = process_gain_data(selected_gain, selected_phi_angles_deg, selected_theta_angles_deg)
+    
+    # Normalize the gain values
+    max_gain_value = np.max(gain_interp)
+    min_gain_value = np.min(gain_interp)
+    gain_normalized = (gain_interp - min_gain_value) / (max_gain_value - min_gain_value)
 
-    # Convert angles to radians
-    selected_theta_angles_rad = np.deg2rad(THETA)
-    selected_phi_angles_rad = np.deg2rad(PHI)
-
-    R = db_to_linear(v_gain_selected)  # Convert gain from dB to linear scale
-
-    # Create a meshgrid
-    interp_factor = 1  
-
-    X = R * np.sin(selected_theta_angles_rad) * np.cos(selected_phi_angles_rad)
-    Y = R * np.sin(selected_theta_angles_rad) * np.sin(selected_phi_angles_rad)
-    Z = R * np.cos(selected_theta_angles_rad)
-
-    for counter in range(interp_factor):  # Interpolate between points to increase number of faces
-        X = interp_array(X)
-        Y = interp_array(Y)
-        Z = interp_array(Z)
+    # Convert to spherical coordinates using normalized values
+    PHI, THETA = np.meshgrid(phi_interp, theta_interp)
+    theta_rad = np.deg2rad(THETA)
+    phi_rad = np.deg2rad(PHI)
+    R = 0.75 * gain_normalized  # Adjusted to scale the gain to 75% of the usable area
+    X = R * np.sin(theta_rad) * np.cos(phi_rad)
+    Y = R * np.sin(theta_rad) * np.sin(phi_rad)
+    Z = R * np.cos(theta_rad)
 
     # Plotting
-    fig = plt.figure()
+    plt.style.use('default')
+    fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(1, 1, 1, projection='3d')
-
-    N = np.sqrt(X**2 + Y**2 + Z**2)
-    Rmax = np.max(N)
-    N = N / Rmax
-    N = interp_array(N)[1::2, 1::2]  # Interpolate for color mapping
-
-    axes_length = 0.65
-    ax.plot([0, axes_length*Rmax], [0, 0], [0, 0], linewidth=2, color='red')
-    ax.plot([0, 0], [0, axes_length*Rmax], [0, 0], linewidth=2, color='green')
-    ax.plot([0, 0], [0, 0], [0, axes_length*Rmax], linewidth=2, color='blue')
     
-    mycol = cm.jet(N)
-    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=mycol, linewidth=0.5, antialiased=True)
+    # Remove axis tick labels but retain grid
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    ax.grid(True)
+    
+    # Apply coloring based on actual gain values (not normalized)
+    norm = plt.Normalize(selected_gain.min(), selected_gain.max())
+    surf = ax.plot_surface(X, Y, Z, facecolors=cm.jet(norm(gain_interp)), linewidth=0.5, antialiased=True, shade=False, zorder=10)
+    
+     # Axis markers
+    Rmax = np.max(R)
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.view_init(azim=300, elev=30)  # Set view angle
+    # Extract gains for the respective directions
+    gain_x_idx = np.argmin(np.abs(theta_interp - 90))
+    gain_y_idx = np.argmin(np.abs(theta_interp - 90))
+    gain_z_idx = np.argmin(np.abs(theta_interp - 0))
 
-    m = cm.ScalarMappable(cmap=cm.jet)
-    m.set_array(R)
-    fig.colorbar(m, shrink=0.8)
+    gain_x_idx_phi = np.argmin(np.abs(phi_interp - 0))
+    gain_y_idx_phi = np.argmin(np.abs(phi_interp - 90))
 
+    gain_x = gain_interp[gain_x_idx, gain_x_idx_phi]
+    gain_y = gain_interp[gain_y_idx, gain_y_idx_phi]
+    gain_z = gain_interp[gain_z_idx, :].max()
+    
+    # Convert gains to Cartesian coordinates
+    start_x = R[gain_x_idx, gain_x_idx_phi] * np.sin(np.deg2rad(90)) * np.cos(np.deg2rad(0))
+    start_y = R[gain_y_idx, gain_y_idx_phi] * np.sin(np.deg2rad(90)) * np.sin(np.deg2rad(90))
+    start_z = R[gain_z_idx, :].max() * np.cos(np.deg2rad(0))
+
+    # Compute quiver lengths such that they don't exceed plot area
+    quiver_length_x = 1 - start_x  # Since we've normalized to 75%, the max radius is 1
+    quiver_length_y = 1 - start_y
+    quiver_length_z = 1 - start_z
+
+    # Plot adjusted quiver arrows
+    ax.quiver(start_x, 0, 0, quiver_length_x, 0, 0, color='green', arrow_length_ratio=0.1, zorder=0)  # X-axis
+    ax.quiver(0, start_y, 0, 0, quiver_length_y, 0, color='red', arrow_length_ratio=0.1, zorder=0)  # Y-axis
+    ax.quiver(0, 0, start_z, 0, 0, quiver_length_z, color='blue', arrow_length_ratio=0.1, zorder=0)  # Z-axis
+
+    ax.set_xlabel('X', labelpad=10, fontsize=12)
+    ax.set_ylabel('Y', labelpad=10, fontsize=12)
+    ax.set_zlabel('Z', labelpad=10, fontsize=12)
+    ax.set_title(plot_title, fontsize=14)
+    
+    #Adjust the view angle for a top-down view
+    ax.view_init(elev=10, azim=-25)
+
+    # Add a colorbar
+    mappable = cm.ScalarMappable(norm=norm, cmap=cm.jet)
+    mappable.set_array(gain_interp)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
+    cbar.set_label('Gain (dBi)', rotation=270, labelpad=15, fontsize=12)
+   
+    # Add Max Gain to top of Legend
+    max_gain = selected_gain.max()
+    ax.text2D(1.12, 0.90, f"{max_gain:.2f} dBi", transform=ax.transAxes, fontsize=10)
+
+    plt.tight_layout()
     plt.show()
-
-def interp_array(N1):  # add interpolated rows and columns to array
-        N2 = np.empty([int(N1.shape[0]), int(2*N1.shape[1] - 1)])  # insert interpolated columns
-        N2[:, 0] = N1[:, 0]  # original column
-        for k in range(N1.shape[1] - 1):  # loop through columns
-            N2[:, 2*k+1] = np.mean(N1[:, [k, k + 1]], axis=1)  # interpolated column
-            N2[:, 2*k+2] = N1[:, k+1]  # original column
-        N3 = np.empty([int(2*N2.shape[0]-1), int(N2.shape[1])])  # insert interpolated columns
-        N3[0] = N2[0]  # original row
-        for k in range(N2.shape[0] - 1):  # loop through rows
-            N3[2*k+1] = np.mean(N2[[k, k + 1]], axis=0)  # interpolated row
-            N3[2*k+2] = N2[k+1]  # original row
-        return N3
-
-def db_to_linear(db_value):
-    return 10 ** (db_value / 10)
-
 
