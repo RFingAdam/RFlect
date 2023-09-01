@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import scipy.interpolate as spi
-
+from scipy.ndimage import gaussian_filter
 
 def plot_data(data, title, x_label, y_label, legend_labels=None):
     """
@@ -222,15 +222,12 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_zticks([])
-    ax.grid(True)
+    ax.grid(False)
     
     # Apply coloring based on actual gain values (not normalized)
     norm = plt.Normalize(selected_gain.min(), selected_gain.max())
     surf = ax.plot_surface(X, Y, Z, facecolors=cm.jet(norm(gain_interp)), linewidth=0.5, antialiased=True, shade=False, zorder=10)
     
-     # Axis markers
-    Rmax = np.max(R)
-
     # Extract gains for the respective directions
     gain_x_idx = np.argmin(np.abs(theta_interp - 90))
     gain_y_idx = np.argmin(np.abs(theta_interp - 90))
@@ -238,33 +235,30 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
 
     gain_x_idx_phi = np.argmin(np.abs(phi_interp - 0))
     gain_y_idx_phi = np.argmin(np.abs(phi_interp - 90))
-
-    gain_x = gain_interp[gain_x_idx, gain_x_idx_phi]
-    gain_y = gain_interp[gain_y_idx, gain_y_idx_phi]
-    gain_z = gain_interp[gain_z_idx, :].max()
     
-    # Convert gains to Cartesian coordinates
-    start_x = R[gain_x_idx, gain_x_idx_phi] * np.sin(np.deg2rad(90)) * np.cos(np.deg2rad(0))
-    start_y = R[gain_y_idx, gain_y_idx_phi] * np.sin(np.deg2rad(90)) * np.sin(np.deg2rad(90))
-    start_z = R[gain_z_idx, :].max() * np.cos(np.deg2rad(0))
+    # Calculate the starting points of the quivers to be where the gain plot intersects with the axes
+    start_x = X[gain_x_idx, gain_x_idx_phi]
+    start_y = Y[gain_y_idx, gain_y_idx_phi]
+    start_z = Z[gain_z_idx, 0]
+
+    # Calculate the distances from each intersection point to the origin
+    dist_x = np.sqrt(start_x**2 + start_y**2 + start_z**2)
+    dist_y = np.sqrt(start_x**2 + start_y**2 + start_z**2)
+    dist_z = np.sqrt(start_x**2 + start_y**2 + start_z**2)
 
     # Compute quiver lengths such that they don't exceed plot area
-    quiver_length_x = 1 - start_x  # Since we've normalized to 75%, the max radius is 1
-    quiver_length_y = 1 - start_y
-    quiver_length_z = 1 - start_z
+    quiver_length = 0.25 * max(dist_x, dist_y, dist_z) # making them extend 25% further than the plots
 
     # Plot adjusted quiver arrows
-    ax.quiver(start_x, 0, 0, quiver_length_x, 0, 0, color='green', arrow_length_ratio=0.1, zorder=0)  # X-axis
-    ax.quiver(0, start_y, 0, 0, quiver_length_y, 0, color='red', arrow_length_ratio=0.1, zorder=0)  # Y-axis
-    ax.quiver(0, 0, start_z, 0, 0, quiver_length_z, color='blue', arrow_length_ratio=0.1, zorder=0)  # Z-axis
+    ax.quiver(start_x, 0, 0, quiver_length, 0, 0, color='green', arrow_length_ratio=0.1, zorder=0)  # X-axis
+    ax.quiver(0, start_y, 0, 0, quiver_length, 0, color='red', arrow_length_ratio=0.1, zorder=0)  # Y-axis
+    ax.quiver(0, 0, start_z, 0, 0, quiver_length, color='blue', arrow_length_ratio=0.1, zorder=0)  # Z-axis
 
-    ax.set_xlabel('X', labelpad=10, fontsize=12)
-    ax.set_ylabel('Y', labelpad=10, fontsize=12)
-    ax.set_zlabel('Z', labelpad=10, fontsize=12)
-    ax.set_title(plot_title, fontsize=14)
-    
     #Adjust the view angle for a top-down view
     ax.view_init(elev=10, azim=-25)
+
+    # Set Title
+    ax.set_title(plot_title, fontsize=14)
 
     # Add a colorbar
     mappable = cm.ScalarMappable(norm=norm, cmap=cm.jet)
