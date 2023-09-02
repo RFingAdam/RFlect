@@ -67,17 +67,22 @@ class AntennaPlotGUI:
         self.passive_scan_type.set("HPOL/VPOL")  # Default value
 
         
-       # Determine the path of the current script or packaged executable
-        current_path = os.path.dirname(os.path.abspath(__file__))
+       # Determine if the script is being run as a standalone script or packaged executable
+        if getattr(sys, 'frozen', False):
+            # If packaged with PyInstaller, use the temporary folder where PyInstaller extracted the assets
+            current_path = sys._MEIPASS
+        else:
+            # If running as a standalone script, use the script's directory
+            current_path = os.path.dirname(os.path.abspath(__file__))
 
-        # Go up one directory and then into the assets folder
-        logo_path = os.path.join(current_path, '..', 'assets', 'smith_logo.png')
+        # Construct the path to the logo
+        logo_path = os.path.join(current_path, 'assets', 'smith_logo.png')
 
         # Load the logo
         self.logo_image = tk.PhotoImage(file=logo_path)
 
         self.root.iconphoto(False, self.logo_image)  # Set the logo as the window icon
-
+        
         # GUI Elements with updated styling
         self.label_scan_type = tk.Label(self.root, text="Select Measurement Type:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
         self.label_scan_type.grid(row=1, column=0, pady=10, columnspan=2)
@@ -633,7 +638,7 @@ class AntennaPlotGUI:
             theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
             
             #Call Method to Plot Passive Data
-            #plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
+            plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
             
             plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="total")
             plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="hpol")
