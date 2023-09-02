@@ -1,6 +1,7 @@
-# RFlect - Antenna Plot Tool
+# RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
-**Version:** 1.0.3
+
+**Version:** 1.1.0
 
 RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files of S11/VSWR, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
 
@@ -8,15 +9,21 @@ RFlect is a comprehensive antenna plotting tool, currently designed specifically
 1. Run the provided installer from the latest release (`RFlect_vX.X.X.exe`)
 2. Follow the on-screen instructions to complete the installation.
 
+![Installation Steps](./assets/installation_steps.png)
+
 ## How to Use
 ### Select Scan Type:
 - Choose from **Active(Future Implementation)**, **Passive**, or **.csv (VNA/S11 LogMAG)** scan.
+
+  ![Scan Type Selection](./assets/scan_type_selection.png)
 
 ### Adjust Settings (if needed):
 - Click the **Settings** button to open the settings window.
 - Depending on your scan type selection, adjust the relevant settings.
   - For VNA/S11 LogMAG scans, you can set limit lines.
+    ![VSWR Settings Window](./assets/vswr_settings_window.png)
   - For Passive scans, select between G&D or HPOL/VPOL.
+    ![Passive Settings Window](./assets/passive_settings_window.png)
   - For Active scans, *future implementation*
 
 ### Import Data:
@@ -28,7 +35,7 @@ RFlect is a comprehensive antenna plotting tool, currently designed specifically
 - For other scan types, results will be displayed after data import.
 
 ## Additional Features
-- Save your results using the **Save Results to File** button.(Not Implemented)
+- Save your results using the **Save Results to File** button. (Not Implemented)
 - Adjust the frequency and other parameters using the provided dropdown menus and input fields.
 
 ## Note to Users
