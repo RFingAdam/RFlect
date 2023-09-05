@@ -1,14 +1,12 @@
-from file_utils import save_to_results_folder, read_active_file, read_passive_file
+from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file
+from save import save_to_results_folder
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables
-from plotting import plot_2d_passive_data, plot_passive_3d_component
+from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files
 from config import *
 
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 import requests
 import json
 import sys
@@ -138,7 +136,7 @@ class AntennaPlotGUI:
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=save_to_results_folder, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.active_file_path, float(self.cable_loss.get())), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_settings.grid(row=5, column=2, pady=10, padx=10)
@@ -195,7 +193,6 @@ class AntennaPlotGUI:
 
             if answer:
                 self.download_latest_release(release_url)
-      
               
     # Hover effect functions
     def on_enter(self, e):
@@ -223,10 +220,13 @@ class AntennaPlotGUI:
             if self.passive_scan_type.get() == "G&D":
                 self.label_frequency.grid_forget()
                 self.frequency_dropdown.grid_forget()
+                # Hide the save results button for G&D passive scans
+                self.btn_save_to_file.grid_forget()
             else:
                 self.label_frequency.grid(row=3, column=0, pady=5)
                 self.frequency_dropdown.grid(row=3, column=1, pady=5)
-            
+                # Show the save results button for non-G&D passive scans
+                self.btn_save_to_file.grid(row=5, column=1, pady=10)  # Adjusting the row index
             # Show the cable loss input
             self.label_cable_loss.grid(row=4, column=0, pady=5)
             self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
@@ -242,14 +242,18 @@ class AntennaPlotGUI:
             self.frequency_dropdown.grid_forget()
             self.btn_view_results.grid_forget()
 
-
+            # Hide the view results button
+            self.btn_view_results.grid_forget()
+            # Hide the save results button for .csv/VSWR files
+            self.btn_save_to_file.grid_forget()
+            
     def show_settings(self):
         scan_type_value = self.scan_type.get()
         settings_window = tk.Toplevel(self.root)
         settings_window.geometry("600x200")  # Increase the size
         settings_window.title(f"{scan_type_value.capitalize()} Settings")
         if scan_type_value == "active":
-            # Show settings specific to active scan
+            # TODO Show settings specific to active scan
             label = tk.Label(settings_window, text="Placeholder for Active settings")
             label.grid(row=0, column=0, columnspan=2, pady=20)
             # Add more active-specific settings here
@@ -383,81 +387,6 @@ class AntennaPlotGUI:
             save_button.grid(row=5, column=0, columnspan=2, pady=20)
             default_button = tk.Button(settings_window, text="Default Settings", command=default_vswr_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
             default_button.grid(row=5, column=2, columnspan=2, pady=20)
-    
-    def process_gd_file(self, filepath):
-        """
-        Reads the G&D file and extracts frequency, gain, directivity, and efficiency data.
-        """
-        frequency = []
-        gain = []
-        directivity = []
-        efficiency = []
-
-        with open(filepath, 'r') as file:
-            lines = file.readlines()
-
-        # Find the start of the data
-        for i, line in enumerate(lines):
-            if "Freq" in line:
-                data_start_line = i + 10
-                break
-        else:
-            raise Exception("Could not find the start of the data in the provided file.")
-
-        # Extract data
-        for line in lines[data_start_line:]:
-            if line.strip() == "":
-                break
-            parts = line.split()
-            frequency.append(float(parts[0]))
-            gain.append(float(parts[1]))
-            directivity.append(float(parts[2]))
-            efficiency.append(float(parts[3]))
-
-        return {
-            'Frequency': frequency,
-            'Gain': gain,
-            'Directivity': directivity,
-            'Efficiency': efficiency
-        }    
-    
-    def plot_gd_data(self, datasets, labels):
-         # Prompt user for x-axis range
-        x_range_input = tk.simpledialog.askstring("Input", "Enter x-axis range as 'min,max' (or leave blank for auto-scale):", parent=self.root)
-
-        # Initialize x_min and x_max to None (auto-scale)
-        x_min, x_max = None, None
-
-        # Parse the input if it's not empty
-        if x_range_input:
-            try:
-                x_values = x_range_input.split(',')
-                x_min = float(x_values[0])
-                x_max = float(x_values[1])
-            except:
-                messagebox.showwarning("Warning", "Invalid input for x-axis range. Using auto-scale.")
-        # For each type of data, plot datasets together
-        data_types = ['Gain', 'Directivity', 'Efficiency', 'Efficiency_dB']
-        y_labels = ['Gain (dBi)', 'Directivity (dB)', 'Efficiency (%)', 'Efficiency (dB)']
-        titles = ['Gain vs Frequency', 'Directivity vs Frequency', 'Efficiency (%) vs Frequency', 'Efficiency (dB) vs Frequency']
-
-        for data_type, y_label, title in zip(data_types, y_labels, titles):
-            plt.figure()
-            for data, label in zip(datasets, labels):
-                if data_type == 'Efficiency_dB':
-                    y_data = 10 * np.log10(np.array(data['Efficiency'])/100)
-                else:
-                    y_data = data[data_type]
-                plt.plot(data['Frequency'], y_data, label=label)
-            plt.title(title)
-            plt.ylabel(y_label)
-            plt.xlabel("Frequency (MHz)")
-            plt.legend()
-            plt.grid(True)
-            if x_min is not None and x_max is not None:
-                plt.xlim(x_min, x_max)
-
-        plt.show()
 
     def update_passive_frequency_list(self):
         # Extracting frequencies from the HPOL file
@@ -478,34 +407,6 @@ class AntennaPlotGUI:
             self.frequency_dropdown['values'] = []
             self.selected_frequency.set('')
             self.frequency_dropdown['state'] = 'disabled'
-    
-    #Method checks for matching data between two passive scan files HPOL and VPOL to ensure they are from the same dataset
-    def check_matching_files(self, file1, file2):
-        # Extract filename without extension for comparison
-        filename1 = os.path.splitext(os.path.basename(file1))[0]
-        filename2 = os.path.splitext(os.path.basename(file2))[0]
-        
-        # Check if filenames match excluding the last 4 characters (polarization part)
-        if filename1[:-4] != filename2[:-4]:
-            return False, "File names do not match."
-
-        # Extract frequency and angular data from files
-        with open(file1, 'r') as f1, open(file2, 'r') as f2:
-            content1 = f1.readlines()
-            content2 = f2.readlines()
-
-        # Extracting required data for comparison
-        freq1 = content1[33]
-        freq2 = content2[33]
-        phi1 = content1[42:44]
-        phi2 = content2[42:44]
-        theta1 = content1[49:51]
-        theta2 = content2[49:51]
-
-        if freq1 != freq2 or phi1 != phi2 or theta1 != theta2:
-            return False, "The selected files have mismatched frequency or angle data."
-
-        return True, ""     
 
     #Method to import TRP or HPOL/VPOL data files for analysis       
     def import_files(self):
@@ -525,10 +426,12 @@ class AntennaPlotGUI:
                     return
                 file_name = os.path.basename(filepath).replace('.txt', '')  # Extract filename without extension
                 file_names.append(file_name)
-                data = self.process_gd_file(filepath)
+                data = process_gd_file(filepath)
                 datasets.append(data)
-                
-            self.plot_gd_data(datasets, file_names)
+
+            # Prompt user for x-axis range
+            x_range_input = tk.simpledialog.askstring("Input", "Enter x-axis range as 'min,max' (or leave blank for auto-scale):", parent=self.root)
+            plot_gd_data(datasets, file_names, x_range_input)
 
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "VPOL/HPOL":
             
@@ -558,7 +461,7 @@ class AntennaPlotGUI:
                     self.vpol_file_path = first_file
 
                 #Check if File names match and data is consistent between files
-                match, message = self.check_matching_files(self.hpol_file_path, self.vpol_file_path)
+                match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
                 if not match:
                     messagebox.showerror("Error", message)
                     return
@@ -577,46 +480,11 @@ class AntennaPlotGUI:
                     return
                 file_paths.append(file_path)
 
-            self.process_vswr_files(file_paths)
-
-    def process_vswr_files(self, file_paths):
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        for file_path in file_paths:
-            data = pd.read_csv(file_path)
-            freqs_ghz = data.iloc[:, 0] / 1e9
-            values = data.iloc[:, 1]
-            ax.plot(freqs_ghz, values, label=os.path.basename(file_path))
-
-            if values.mean() < 0:
-                ax.set_ylabel("Return Loss (dB)")
-                ax.set_title("S11, LogMag vs. Frequency")
-            else:
-                ax.set_ylabel("VSWR")
-                ax.set_title("VSWR vs. Frequency")
-
-            # Setting the x-axis limits based on the data frequency range
-            ax.set_xlim(freqs_ghz.min(), freqs_ghz.max()) 
-
-            # Check if the saved limit values are available and not zero
-            if self.saved_limit1_freq1 and self.saved_limit1_freq2 and self.saved_limit1_start and self.saved_limit1_stop:
-                print(f"Limit 1: {self.saved_limit1_freq1}, {self.saved_limit1_freq2}, {self.saved_limit1_start}, {self.saved_limit1_stop}")
-                ax.plot([self.saved_limit1_freq1, self.saved_limit1_freq2], [self.saved_limit1_start, self.saved_limit1_stop], linewidth=2, zorder=100, color='red', alpha=0.8)
-            
-            if self.saved_limit2_freq1 and self.saved_limit2_freq2 and self.saved_limit2_start and self.saved_limit2_stop:
-                print(f"Limit 2: {self.saved_limit2_freq1}, {self.saved_limit2_freq2}, {self.saved_limit2_start}, {self.saved_limit2_stop}")
-                ax.plot([self.saved_limit2_freq1, self.saved_limit2_freq2], [self.saved_limit2_start, self.saved_limit2_stop], linewidth=2, zorder=100, color ='red', alpha=0.8)
-
-            ax.set_xlabel("Frequency (GHz)")
-            ax.legend()
-            ax.grid(True)
-            plt.tight_layout()
-        plt.show()
-    
+            process_vswr_files(file_paths)    
 
     def process_data(self):
         if self.scan_type.get() == "active":
-            #perform active calculations and plotting method calls
+            # TODO Perform active calculations and plotting method calls
             #future implementaiton
             return
         elif self.scan_type.get() == "passive":

@@ -1,7 +1,7 @@
 # RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
 
-**Version:** 1.1.1
+**Version:** 1.2.0
 
 RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files of S11/VSWR, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
 
@@ -35,7 +35,7 @@ RFlect is a comprehensive antenna plotting tool, currently designed specifically
 - For other scan types, results will be displayed after data import.
 
 ## Additional Features
-- Save your results using the **Save Results to File** button. (Not Implemented)
+- Save your results using the **Save Results to File** button.
 - Adjust the frequency and other parameters using the provided dropdown menus and input fields.
 
 ## Note to Users
