@@ -5,8 +5,8 @@ This module contains constants and configuration values used throughout the appl
 """
 
 #3D Plotting Interpolation Resolution
-PHI_RESOLUTION = 1440 #default 360 = 1deg spacing
-THETA_RESOLUTION = 720 #default 180 - 1deg spacing
+PHI_RESOLUTION = 120 #default 360 = 1deg spacing
+THETA_RESOLUTION = 60 #default 180 - 1deg spacing
 
 # GUI Settings
     # Colors
