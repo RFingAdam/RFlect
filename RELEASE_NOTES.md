@@ -1,5 +1,10 @@
 # RFlect - Release Notes
 
+## Version 1.1.1 (09/05/2023)
+- Passive Azimuth Cuts Wrap 360deg
+- Updated 2D Passive Plots
+- Fixed Interpolation on 3D Passive Plots
+
 ## Version 1.1.0 (09/01/2023)
 - Codebase has been refactored into separate modules
 - Added Docstrings

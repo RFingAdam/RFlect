@@ -76,7 +76,8 @@ class AntennaPlotGUI:
             current_path = os.path.dirname(os.path.abspath(__file__))
 
         # Construct the path to the logo
-        logo_path = os.path.join(current_path, 'assets', 'smith_logo.png')
+        base_dir = os.path.dirname(current_path)  # This gets the parent directory of current_path
+        logo_path = os.path.join(base_dir, 'assets', 'smith_logo.png')
 
         # Load the logo
         self.logo_image = tk.PhotoImage(file=logo_path)
@@ -184,7 +185,7 @@ class AntennaPlotGUI:
 
     def check_for_updates(self):
         latest_version, release_url = self.get_latest_release()
-        if latest_version and latest_version != AntennaPlotGUI.CURRENT_VERSION:
+        if latest_version and latest_version > AntennaPlotGUI.CURRENT_VERSION:
             # Create a simple tkinter window for the dialog
             root = tk.Tk()
             root.withdraw()  # Hide the main window
@@ -193,7 +194,8 @@ class AntennaPlotGUI:
                                         f"A new version {latest_version} is available! Would you like to download it?")
 
             if answer:
-              self.download_latest_release(release_url)         
+                self.download_latest_release(release_url)
+      
               
     # Hover effect functions
     def on_enter(self, e):
