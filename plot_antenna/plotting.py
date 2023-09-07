@@ -152,7 +152,7 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
     # Check if save_path is provided
     if save_path:
         #Save Individual Gain Plots at Theta=90, Phi=0, Phi=90
-        plot_additional_polar_patterns(plot_phi_rad, theta_angles_deg, selected_azimuth_freq, selected_frequency, save_path)
+        # TODO plot_additional_polar_patterns(plot_phi_rad, theta_angles_deg, selected_azimuth_freq, selected_frequency, save_path)
         
         azimuth_plot_path = os.path.join(save_path, f"Azimuth_Cuts_{selected_frequency}MHz.png")
         plt.savefig(azimuth_plot_path, format='png')
@@ -183,7 +183,7 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         settings = {
             'azimuth': {
                 'theta_zero_location': 'E',
-                'theta_direction': -1,
+                'theta_direction': 1,
                 'ylim': [polar_dB_min, polar_dB_max],
                 'yticks': np.arange(polar_dB_min, polar_dB_max + 1, 5),
                 'xticks': np.deg2rad(np.arange(0, 360, 30)),
@@ -480,7 +480,7 @@ def plot_gd_data(datasets, labels, x_range):
         plt.show()
 
 # _____________CSV (VSWR/S11) Plotting Functions___________
-def process_vswr_files(self, file_paths):
+def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved_limit1_start, saved_limit1_stop, saved_limit2_freq1, saved_limit2_freq2, saved_limit2_start, saved_limit2_stop ):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     for file_path in file_paths:
@@ -500,13 +500,13 @@ def process_vswr_files(self, file_paths):
         ax.set_xlim(freqs_ghz.min(), freqs_ghz.max()) 
 
         # Check if the saved limit values are available and not zero
-        if self.saved_limit1_freq1 and self.saved_limit1_freq2 and self.saved_limit1_start and self.saved_limit1_stop:
-            print(f"Limit 1: {self.saved_limit1_freq1}, {self.saved_limit1_freq2}, {self.saved_limit1_start}, {self.saved_limit1_stop}")
-            ax.plot([self.saved_limit1_freq1, self.saved_limit1_freq2], [self.saved_limit1_start, self.saved_limit1_stop], linewidth=2, zorder=100, color='red', alpha=0.8)
+        if saved_limit1_freq1 and saved_limit1_freq2 and saved_limit1_start and saved_limit1_stop:
+            print(f"Limit 1: {saved_limit1_freq1}, {saved_limit1_freq2}, {saved_limit1_start}, {saved_limit1_stop}")
+            ax.plot([saved_limit1_freq1, saved_limit1_freq2], [saved_limit1_start, saved_limit1_stop], linewidth=2, zorder=100, color='red', alpha=0.8)
         
-        if self.saved_limit2_freq1 and self.saved_limit2_freq2 and self.saved_limit2_start and self.saved_limit2_stop:
-            print(f"Limit 2: {self.saved_limit2_freq1}, {self.saved_limit2_freq2}, {self.saved_limit2_start}, {self.saved_limit2_stop}")
-            ax.plot([self.saved_limit2_freq1, self.saved_limit2_freq2], [self.saved_limit2_start, self.saved_limit2_stop], linewidth=2, zorder=100, color ='red', alpha=0.8)
+        if saved_limit2_freq1 and saved_limit2_freq2 and saved_limit2_start and saved_limit2_stop:
+            print(f"Limit 2: {saved_limit2_freq1}, {saved_limit2_freq2}, {saved_limit2_start}, {saved_limit2_stop}")
+            ax.plot([saved_limit2_freq1, saved_limit2_freq2], [saved_limit2_start, saved_limit2_stop], linewidth=2, zorder=100, color ='red', alpha=0.8)
 
         ax.set_xlabel("Frequency (GHz)")
         ax.legend()

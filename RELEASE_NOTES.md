@@ -5,7 +5,7 @@
 - Updated 2D Passive Plots Formatting
 - Fixed Interpolation on 3D Passive Plots, now set in config.py - higher resolution leads to long load times
 - Save Results to Folder at Selected Frequency for Passive Scans
-  - Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane when under Save Results Routine
+  - TODO Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane when under Save Results Routine
 
 ## Version 1.1.0 (09/01/2023)
 - Codebase has been refactored into separate modules
