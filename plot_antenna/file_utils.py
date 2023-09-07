@@ -1,8 +1,6 @@
-from config import ACCENT_GREEN_COLOR, ACCENT_BLUE_COLOR
-
 import os
 
-#Read in TRP/Active Scan File
+# TODO Read in TRP/Active Scan File 
 def read_active_file(file_path):
     with open(file_path, 'r') as file:
         content = file.readlines()
@@ -14,7 +12,7 @@ def read_passive_file(file_path):
         content = file.readlines()
     return parse_passive_file(content)
 
-# Function to parse the data from active TRP files
+# TODO Function to parse the data from active TRP files
 def parse_active_file(content):
     #tbd
     return
@@ -99,26 +97,67 @@ def parse_passive_file(content):
 
     return all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta
     
-def save_to_results_folder(filename, content, widget):
-    """
-    Save the given data to the specified file within the results folder.
+ # Checks for matching data between two passive scan files HPOL and VPOL to ensure they are from the same dataset
+def check_matching_files(file1, file2):
+    # Extract filename without extension for comparison
+    filename1 = os.path.splitext(os.path.basename(file1))[0]
+    filename2 = os.path.splitext(os.path.basename(file2))[0]
+    
+    # Check if filenames match excluding the last 4 characters (polarization part)
+    if filename1[:-4] != filename2[:-4]:
+        return False, "File names do not match."
 
-    Parameters:
-    - filename (str): The name of the file to save to.
-    - data (Any): The data to be saved.
+    # Extract frequency and angular data from files
+    with open(file1, 'r') as f1, open(file2, 'r') as f2:
+        content1 = f1.readlines()
+        content2 = f2.readlines()
 
-    Returns:
-    - str: The path to the saved file.
-    """
+    # Extracting required data for comparison
+    freq1 = content1[33]
+    freq2 = content2[33]
+    phi1 = content1[42:44]
+    phi2 = content2[42:44]
+    theta1 = content1[49:51]
+    theta2 = content2[49:51]
 
-    # Check if a results folder exists or not
-    if not os.path.exists("results"):
-        os.makedirs("results")
+    if freq1 != freq2 or phi1 != phi2 or theta1 != theta2:
+        return False, "The selected files have mismatched frequency or angle data."
 
-    # Save the content to the file in the results folder
-    with open(os.path.join("results", filename), "w") as f:
-        f.write(content)
+    return True, "" 
 
-    # Provide feedback through the widget (in this case, a button)
-    widget.config(text="Save Results to File (Saved!)", bg=ACCENT_GREEN_COLOR)
-    widget.after(2000, lambda: widget.config(text="Save Results to File", bg=ACCENT_BLUE_COLOR))
+def process_gd_file(filepath):
+        """
+        Reads the G&D file and extracts frequency, gain, directivity, and efficiency data.
+        """
+        frequency = []
+        gain = []
+        directivity = []
+        efficiency = []
+
+        with open(filepath, 'r') as file:
+            lines = file.readlines()
+
+        # Find the start of the data
+        for i, line in enumerate(lines):
+            if "Freq" in line:
+                data_start_line = i + 10
+                break
+        else:
+            raise Exception("Could not find the start of the data in the provided file.")
+
+        # Extract data
+        for line in lines[data_start_line:]:
+            if line.strip() == "":
+                break
+            parts = line.split()
+            frequency.append(float(parts[0]))
+            gain.append(float(parts[1]))
+            directivity.append(float(parts[2]))
+            efficiency.append(float(parts[3]))
+
+        return {
+            'Frequency': frequency,
+            'Gain': gain,
+            'Directivity': directivity,
+            'Efficiency': efficiency
+        }    
