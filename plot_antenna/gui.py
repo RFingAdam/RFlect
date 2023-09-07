@@ -65,23 +65,23 @@ class AntennaPlotGUI:
         self.passive_scan_type.set("HPOL/VPOL")  # Default value
 
         
-       # Determine if the script is being run as a standalone script or packaged executable
+       
+        # Determine if the script is being run as a standalone script or packaged executable
         if getattr(sys, 'frozen', False):
             # If packaged with PyInstaller, use the temporary folder where PyInstaller extracted the assets
             current_path = sys._MEIPASS
         else:
-            # If running as a standalone script, use the script's directory
-            current_path = os.path.dirname(os.path.abspath(__file__))
+            # If running as a standalone script, use the script's directory and go up one level to the parent directory
+            current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         # Construct the path to the logo
-        base_dir = os.path.dirname(current_path)  # This gets the parent directory of current_path
-        logo_path = os.path.join(base_dir, 'assets', 'smith_logo.png')
+        logo_path = os.path.join(current_path, 'assets', 'smith_logo.png')
 
         # Load the logo
         self.logo_image = tk.PhotoImage(file=logo_path)
 
         self.root.iconphoto(False, self.logo_image)  # Set the logo as the window icon
-        
+
         # GUI Elements with updated styling
         self.label_scan_type = tk.Label(self.root, text="Select Measurement Type:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
         self.label_scan_type.grid(row=1, column=0, pady=10, columnspan=2)
