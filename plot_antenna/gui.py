@@ -480,7 +480,7 @@ class AntennaPlotGUI:
                     return
                 file_paths.append(file_path)
 
-            process_vswr_files(file_paths)    
+            process_vswr_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)    
 
     def process_data(self):
         if self.scan_type.get() == "active":
