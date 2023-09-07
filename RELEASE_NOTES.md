@@ -1,5 +1,12 @@
 # RFlect - Release Notes
 
+## Version 1.2.0 (09/06/2023)
+- Passive Azimuth Cuts Wrap 360deg
+- Updated 2D Passive Plots Formatting
+- Fixed Interpolation on 3D Passive Plots, now set in config.py - higher resolution leads to long load times
+- Save Results to Folder at Selected Frequency for Passive Scans
+  - TODO Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane when under Save Results Routine
+
 ## Version 1.1.0 (09/01/2023)
 - Codebase has been refactored into separate modules
 - Added Docstrings
@@ -21,7 +28,7 @@
 ### Features:
 - **Passive Scans Support**:
   - G&D files for 2D plotting results.
-  - HPOL/VPOL files for 2D results.
+  - HPOL/VPOL files for 2D & 3D results.
   
 - **VSWR/S11 LogMag .csv Files**:
   - Import and processing support.
@@ -37,7 +44,7 @@
   - Configuration of settings.
 
 ### Known Issues:
-- Active Scans Not Implemented.
-- 3D plotting features Not Implemented.
-- Save Results to Files Button Not Functional.
+- Check Project Issues Page: 
+  https://github.com/RFingAdam/RFlect/issues
+
 
