@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import scipy.interpolate as spi
 from tkinter import messagebox
+from tkinter import simpledialog
 
 # _____________Active Plotting Functions___________
 # TODO
@@ -39,8 +40,8 @@ def plot_data(data, title, x_label, y_label, legend_labels=None, x_data=None):
         ax.legend(legend_labels)
     return fig
 
-#plot passive data
-def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency, save_path=None):
+# Plot passive data
+def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency, datasheet_plots, save_path=None):
     """
     Plot 2D passive data for the given parameters.
 
@@ -104,21 +105,104 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
     
     # Plot Peak Gain
     fig = plot_data([Peak_Gain_dB], 
-              "Peak Gain Versus Frequency", 
+              "Total Gain Versus Frequency", 
               "Frequency (MHz)", 
               "Peak Gain (dBi)",
             x_data=freq_list)
     fig.gca().grid(True, which='both', linestyle='--', linewidth=0.5)
-      
-    #If save path specified, save otherwise show
+    
+    '''# Gain summary for Peak Gain
+    peak_total_gain = np.max(Peak_Gain_dB)
+    peak_total_freq = freq_list[np.argmax(Peak_Gain_dB)]
+    fig.gca().annotate(f"Max Total Gain: {peak_total_gain:.2f} dBi at {peak_total_freq} MHz",
+                       xy=(0.5, 0), xycoords='axes fraction', fontsize=10,
+                       xytext=(0, 10), textcoords='offset points',
+                       ha='center', va='bottom', bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.7))
+    '''
+    
+    # If save path specified, save otherwise show
     if save_path:
-        eff_db_path = os.path.join(save_path, "gain_dBi.png")
+        eff_db_path = os.path.join(save_path, "efficiency_%.png")
         fig.savefig(eff_db_path, format='png')
         plt.close(fig)
     else:
         plt.show()
 
-   # Plot Azimuth cuts for different theta values
+    # If datasheet plots setting is selected in the settings menu
+    if datasheet_plots:
+        # Calculate the maximum gain across all angles for each frequency
+        max_phi_gain_dB = np.max(h_gain_dB, axis=0)
+        max_theta_gain_dB = np.max(v_gain_dB, axis=0)
+        
+        # Plot Phi Gain
+        fig_phi = plot_data([max_phi_gain_dB], 
+                "Phi Gain Versus Frequency", 
+                "Frequency (MHz)", 
+                "Phi Gain (dBi)",
+                x_data=freq_list)
+        fig_phi.gca().grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Plot Theta Gain
+        fig_theta = plot_data([max_theta_gain_dB], 
+                "Theta Gain Versus Frequency", 
+                "Frequency (MHz)", 
+                "Theta Gain (dBi)",
+                x_data=freq_list)
+        fig_theta.gca().grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        num_bands = simpledialog.askinteger("Input", "Enter the number of bands:")
+        bands = []
+        for i in range(num_bands):
+            band_range = simpledialog.askstring("Input", f"Enter the frequency range for band {i+1} (e.g., 2400,2480):")
+            bands.append(list(map(float, band_range.split(','))))
+        
+         # Convert freq_list to a NumPy array
+        freq_array = np.array(freq_list)
+        
+        annotation_height = 10 # Initial offset for annotations
+        for i, band in enumerate(bands):
+            start_freq, end_freq = band
+            indices = np.where((freq_array >= start_freq) & (freq_array <= end_freq))
+
+            if len(indices[0]) == 0:
+                print(f"No data points found between {start_freq} MHz and {end_freq} MHz.")
+                continue  # Skip to the next band if no data points are found in this band
+
+            max_index_phi = np.argmax(h_gain_dB[:, indices], axis=None)
+            max_index_theta = np.argmax(v_gain_dB[:, indices], axis=None)
+
+            # TODO Didn't look like this held the correct freq., so removed from annotation 
+            peak_band_phi_freq = freq_array[indices[0]][max_index_phi % len(indices[0])]
+            peak_band_theta_freq = freq_array[indices[0]][max_index_theta % len(indices[0])]
+
+            peak_band_phi_gain = h_gain_dB[:, indices].flatten()[max_index_phi]
+            peak_band_theta_gain = v_gain_dB[:, indices].flatten()[max_index_theta]
+
+        # Annotate the max gain in the band for each polarization in the summary
+            fig_phi.gca().annotate(
+                f"Band {start_freq}-{end_freq} MHz: Max Phi Gain: {peak_band_phi_gain:.2f} dBi",
+                xy=(0.5, 0), xycoords='axes fraction', fontsize=10,
+                xytext=(0, annotation_height), textcoords='offset points',
+                ha='center', va='bottom', bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.7)
+            )
+            fig_theta.gca().annotate(
+                f"Band {start_freq}-{end_freq} MHz: Max Theta Gain: {peak_band_theta_gain:.2f} dBi",
+                xy=(0.5, 0), xycoords='axes fraction', fontsize=10,
+                xytext=(0, annotation_height), textcoords='offset points',
+                ha='center', va='bottom', bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.7)
+            )
+            annotation_height += 20  # Increase offset for each annotation
+            
+        # If save path specified, save otherwise show
+        if save_path:
+            fig_phi.savefig(os.path.join(save_path, "phi_gain.png"), format='png')
+            fig_theta.savefig(os.path.join(save_path, "theta_gain.png"), format='png')
+            plt.close(fig_phi)
+            plt.close(fig_theta)
+        else:
+            plt.show()
+                
+    # Plot Azimuth cuts for different theta values
     if selected_frequency in freq_list:
         freq_idx = np.where(np.array(freq_list) == selected_frequency)[0][0]
     else:
@@ -149,16 +233,18 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
     
-    # Check if save_path is provided
-    if save_path:
-        #Save Individual Gain Plots at Theta=90, Phi=0, Phi=90
-        # TODO plot_additional_polar_patterns(plot_phi_rad, theta_angles_deg, selected_azimuth_freq, selected_frequency, save_path)
-        
+    if save_path:  
         azimuth_plot_path = os.path.join(save_path, f"Azimuth_Cuts_{selected_frequency}MHz.png")
         plt.savefig(azimuth_plot_path, format='png')
         plt.close()  # Close the plot after saving
     else:
         plt.show()  # Display the plot
+
+    # Check if save_path is provided
+    if datasheet_plots:
+        # TODO Save Individual Gain Plots at Theta=90, Phi=0, Phi=90
+        plot_additional_polar_patterns(plot_phi_rad, theta_angles_deg, selected_azimuth_freq, selected_frequency, save_path)
+  
 
 def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain_dB, selected_frequency, save_path=None):
 
@@ -226,39 +312,41 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
     else:
         print("No data found for Azimuth Gain Pattern Theta = 90")
 
-    # 2. Elevation Gain Pattern Phi = 0/180
-    index_phi_0 = np.where(np.abs(plot_phi_rad - 0) < 0.01)[0]
-    index_phi_180 = np.where(np.abs(plot_phi_rad - np.pi) < 0.01)[0]
-    if index_phi_0.size != 0 and index_phi_180.size != 0:  # Check if both indexes are not empty
+   # 2. Elevation Gain Pattern Phi = 0/180 (XZ-Plane: Phi=0° Plane)
+    index_phi_0 = np.where(np.isclose(plot_phi_rad, 0, atol=1e-6))[0]
+    index_phi_180 = np.where(np.isclose(plot_phi_rad, np.pi, atol=1e-6))[0]
 
-        # Adjust theta values for phi = 0 slice
-        theta_values_phi_0 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_0])
+    if index_phi_0.size != 0 and index_phi_180.size != 0:
+        # Adjusting theta_values_phi_0 and theta_values_phi_180 to match the reference.
+        theta_values_phi_0 = np.radians(plot_theta_deg[index_phi_0])
         gain_values_phi_0 = plot_Total_Gain_dB[index_phi_0]
-
-        # For phi = 180 slice, no adjustment to theta values
-        theta_values_phi_180 = np.radians(plot_theta_deg[index_phi_180])
+        
+        theta_values_phi_180 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_180])
         gain_values_phi_180 = plot_Total_Gain_dB[index_phi_180]
-
-        # Concatenate data for plotting
+        
+        # Concatenating without closing the plot.
         theta_values = np.concatenate([theta_values_phi_0, theta_values_phi_180])
         gain_values = np.concatenate([gain_values_phi_0, gain_values_phi_180])
-
-        # Adjust gain values by subtracting the minimum value from the entire dataset
-        gain_values = gain_values - np.min(plot_Total_Gain_dB)
-
+        
         create_polar_plot("Elevation Gain, Phi = 0 & 180 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
-    else:
-        print("No data found for Elevation Gain Pattern Phi = 0/180")
 
-    # 3. Elevation Gain Pattern Phi = 90/270
-    index = np.where(np.abs(plot_phi_rad - (np.pi / 2)) < 0.01)[0]  # Use np.pi/2 for 90 degrees in radians
-    if index.size != 0:  # Check if both indexes are not empty
-        theta_values = plot_theta_deg[index]
-        gain_values = plot_Total_Gain_dB[index]
+    # 3. Elevation Gain Pattern Phi = 90/270 (YZ-Plane: Phi=90° Plane)
+    index_phi_90 = np.where(np.isclose(plot_phi_rad, np.pi / 2, atol=1e-6))[0]
+    index_phi_270 = np.where(np.isclose(plot_phi_rad, 3 * np.pi / 2, atol=1e-6))[0]
+
+    if index_phi_90.size != 0 and index_phi_270.size != 0:
+        # Keeping the same as it aligns with the reference.
+        theta_values_phi_90 = np.radians(plot_theta_deg[index_phi_90])
+        gain_values_phi_90 = plot_Total_Gain_dB[index_phi_90]
+        
+        theta_values_phi_270 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_270])
+        gain_values_phi_270 = plot_Total_Gain_dB[index_phi_270]
+        
+        # Concatenating without closing the plot.
+        theta_values = np.concatenate([theta_values_phi_90, theta_values_phi_270])
+        gain_values = np.concatenate([gain_values_phi_90, gain_values_phi_270])
+        
         create_polar_plot("Elevation Gain, Phi = 90 & 270 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
-    else:
-        print("No data found for Elevation Gain Pattern Phi = 90/270")
-
 
 def db_to_linear(db_value):
     return 10 ** (db_value / 10)
@@ -377,7 +465,6 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     ax.set_yticklabels(['' if -1.2 < val < 1.2 else f'{val:.1f}' for val in yticks])
     ax.set_zticklabels(['' if -1.2 < val < 1.2 else f'{val:.1f}' for val in zticks])
 
-    
     # Apply coloring based on actual gain values (not normalized)
     norm = plt.Normalize(selected_gain.min(), selected_gain.max())
     surf = ax.plot_surface(X, Y, Z, facecolors=cm.jet(norm(gain_interp)), linewidth=0.5, antialiased=True, shade=False, rstride=1, cstride=1, zorder=10)
