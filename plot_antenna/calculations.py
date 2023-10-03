@@ -1,6 +1,5 @@
 import numpy as np
 
-
 #Auto Determine Polarization for HPOL & VPOL Files
 def determine_polarization(file_path):
     with open(file_path, 'r') as f:
