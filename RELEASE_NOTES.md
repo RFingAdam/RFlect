@@ -1,11 +1,18 @@
 # RFlect - Release Notes
 
+## Version 1.3.0 (10/03/2023)
+- Updated 2D Passive Plots Formatting
+- Added "Datasheet Plot" Setting for Passive Antenna Plots
+  - Phi & Theta Gain Plots vs Frequency for Passive/Antenna Scans
+    - Gain Summary for max peak Theta and Phi gain
+  - Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane
+- Formatting fixes on 3D plots
+
 ## Version 1.2.0 (09/06/2023)
 - Passive Azimuth Cuts Wrap 360deg
 - Updated 2D Passive Plots Formatting
 - Fixed Interpolation on 3D Passive Plots, now set in config.py - higher resolution leads to long load times
 - Save Results to Folder at Selected Frequency for Passive Scans
-  - TODO Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane when under Save Results Routine
 
 ## Version 1.1.0 (09/01/2023)
 - Codebase has been refactored into separate modules

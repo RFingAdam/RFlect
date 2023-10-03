@@ -11,6 +11,7 @@ import requests
 import json
 import sys
 import webbrowser
+import matplotlib.pyplot as plt
 
 
 class AntennaPlotGUI:
@@ -64,8 +65,6 @@ class AntennaPlotGUI:
         self.passive_scan_type = tk.StringVar()
         self.passive_scan_type.set("HPOL/VPOL")  # Default value
 
-        
-       
         # Determine if the script is being run as a standalone script or packaged executable
         if getattr(sys, 'frozen', False):
             # If packaged with PyInstaller, use the temporary folder where PyInstaller extracted the assets
@@ -86,11 +85,12 @@ class AntennaPlotGUI:
         self.label_scan_type = tk.Label(self.root, text="Select Measurement Type:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
         self.label_scan_type.grid(row=1, column=0, pady=10, columnspan=2)
 
-        #Initialize Default Scan Settings
+        # Initialize Default Scan Settings
         self.scan_type = tk.StringVar()
         self.scan_type.set("passive")
         self.passive_scan_type = tk.StringVar()
         self.passive_scan_type.set("VPOL/HPOL")
+        self.datasheet_plots_var = tk.BooleanVar(value=False)
 
         active_rb = tk.Radiobutton(self.root, text="Active", variable=self.scan_type, value="active",
                                    background=BUTTON_COLOR, foreground=LIGHT_TEXT_COLOR, selectcolor=DARK_BG_COLOR,
@@ -136,7 +136,7 @@ class AntennaPlotGUI:
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.active_file_path, float(self.cable_loss.get())), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.active_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get()), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_settings.grid(row=5, column=2, pady=10, padx=10)
@@ -202,7 +202,7 @@ class AntennaPlotGUI:
     def on_leave(self, e):
         e.widget['background'] = e.widget.original_color
 
-    #Updates GUI Visibility depending on selections
+    # Updates GUI Visibility depending on selections
     def update_visibility(self):
         scan_type_value = self.scan_type.get()
         if scan_type_value == "active":
@@ -248,6 +248,7 @@ class AntennaPlotGUI:
             self.btn_save_to_file.grid_forget()
             
     def show_settings(self):
+        # Show Saved or Default Scan Type
         scan_type_value = self.scan_type.get()
         settings_window = tk.Toplevel(self.root)
         settings_window.geometry("600x200")  # Increase the size
@@ -258,7 +259,7 @@ class AntennaPlotGUI:
             label.grid(row=0, column=0, columnspan=2, pady=20)
             # Add more active-specific settings here
         elif scan_type_value == "passive":
-          # Show settings specific to passive scan
+            # Show settings specific to passive scan
             label = tk.Label(settings_window, text="Passive Plot Settings")
             label.grid(row=0, column=0, columnspan=2, pady=10)
 
@@ -276,7 +277,13 @@ class AntennaPlotGUI:
                 r1.select()
             else:
                 r2.select()
-
+            # Create the "Datasheet Plots" Checkbutton
+            self.cb_datasheet_plots = tk.Checkbutton(settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var)
+            if self.passive_scan_type.get() == "VPOL/HPOL":
+                self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)  # Show checkbox
+            else:
+                self.cb_datasheet_plots.grid_remove()  # Hide checkbox
+            
             def save_passive_settings():
                 # Save the chosen plot type
                 self.passive_scan_type.set(self.plot_type_var.get())
@@ -287,7 +294,7 @@ class AntennaPlotGUI:
 
 
             save_button = tk.Button(settings_window, text="Save Settings", command=save_passive_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-            save_button.grid(row=2, column=0, columnspan=2, pady=20)
+            save_button.grid(row=3, column=0, columnspan=2, pady=20)
             
         elif scan_type_value == "vswr":
             # Show settings specific to VNA
@@ -408,8 +415,21 @@ class AntennaPlotGUI:
             self.selected_frequency.set('')
             self.frequency_dropdown['state'] = 'disabled'
 
-    #Method to import TRP or HPOL/VPOL data files for analysis       
+    # Method to reset the necessary variables and GUI elements upon file import
+    def reset_data(self):
+        plt.close('all')
+        self.data = None
+        self.hpol_file_path = None
+        self.vpol_file_path = None
+        self.freq_list = None
+        # TODO self.active_file_path = None
+        
+
+    # Method to import TRP or HPOL/VPOL data files for analysis       
     def import_files(self):
+        # Reset variables to clean any previous file imports
+        self.reset_data()
+
         if self.scan_type.get() == "active":
             self.TRP_file_path = filedialog.askopenfilename(title="Select the TRP Data File",
                                                             filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
@@ -437,7 +457,7 @@ class AntennaPlotGUI:
             
             first_file = filedialog.askopenfilename(title="Select the First Data File",
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-            #Check if user canceled the first selection
+            # Check if user canceled the first selection
             if not first_file:
                 return
             
@@ -508,7 +528,7 @@ class AntennaPlotGUI:
             theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
             
             #Call Method to Plot Passive Data
-            plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()))
+            plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), self.datasheet_plots_var.get())
             
             plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="total")
             plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="hpol")

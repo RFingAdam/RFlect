@@ -9,7 +9,7 @@ PHI_RESOLUTION = 120 #default 360 = 1deg spacing
 THETA_RESOLUTION = 60 #default 180 - 1deg spacing
 
 #Set Min/Max for optional 2D polar plots on passive scans - set in settings
-polar_dB_max = +5.0
+polar_dB_max = 5.0
 polar_dB_min = -20.0
 
 # GUI Settings
