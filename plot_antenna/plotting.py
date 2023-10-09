@@ -10,9 +10,68 @@ from tkinter import messagebox
 from tkinter import simpledialog
 
 # _____________Active Plotting Functions___________
-# TODO
+# Plot 2D Azimuth Power Cuts vs Phi for various value of theta to plot
+def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency):
+    """
+    Plot azimuth power pattern cuts for specified theta values.
+
+    Parameters:
+    - theta_angles_rad: 1D array of theta angles in radians.
+    - phi_angles_rad: 1D array of phi angles in radians.
+    - power_dBm_2d: 2D array of power values, shape should be (num_theta, num_phi).
+    - theta_values_to_plot_deg: List of theta angles in degrees for which to plot azimuth cuts.
+    """
+    plt.figure(figsize=(10, 6))
+    ax = plt.subplot(111, projection='polar')
+
+    for theta_deg in theta_values_to_plot:
+        # Find the closest index to the desired theta value
+        theta_idx = np.argmin(np.abs(np.rad2deg(theta_angles_rad) - theta_deg))
+        
+        # Extract the corresponding phi and power values
+        phi_values = phi_angles_rad
+        power_values = power_dBm_2d[theta_idx, :]
+        
+        # Append the first phi and power value to the end to wrap the data
+        phi_values = np.append(phi_values, phi_values[0])
+        power_values = np.append(power_values, power_values[0])
+        
+        ax.plot(phi_values, power_values, label=f'Theta = {theta_deg} deg')
+
+    # Gain Summary
+    max_power = np.max(power_dBm_2d)
+    min_power = np.min(power_dBm_2d)
+    # Average Gain Summary
+    power_mW = 10**(power_dBm_2d/10)
+    avg_power_mW = np.mean(power_mW)
+    avg_power_dBm = 10*np.log10(avg_power_mW)
+
+
+    # Add a text box or similar to your plot to display these values. For example:
+    textstr = f'Power Summary at {frequency} (MHz): Max: {max_power:.1f} (dBm) Min: {min_power:.1f} (dBm) Avg: {avg_power_dBm:.1f} (dBm)'
+    ax.annotate(textstr, xy=(-0.1, -0.1), xycoords='axes fraction', fontsize=10,
+                bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
+
+    ax.set_title("Azimuth Power Pattern Cuts vs. Phi")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.5, 1))
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.show()
+
+def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency):
+    # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+    theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
+    plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
+    
+    # TODO Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+
+    return
+
+def plot_active_3d_data():
+    # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
+    return
 
 # _____________Passive Plotting Functions___________
+# Generic Plotting Function
 def plot_data(data, title, x_label, y_label, legend_labels=None, x_data=None):
     """
     A generic function to plot data.
