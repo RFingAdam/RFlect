@@ -6,7 +6,6 @@ from tkinter import simpledialog, filedialog, Tk
 import os
 
 def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, vpol_path, active_path, cable_loss, datasheet_plots):
-    user_selected_frequency = selected_frequency
     # Initialize the GUI
     root = Tk()
     root.withdraw()  # Hide the main window
