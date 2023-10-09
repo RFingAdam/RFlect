@@ -1,5 +1,8 @@
 # RFlect - Release Notes
 
+## Version 1.4.0 (10/06/2023)
+- Started Active Scan Implementation
+  - Azimuth Power Pattern Cuts vs. Phi for various values of Theta
 ## Version 1.3.0 (10/03/2023)
 - Updated 2D Passive Plots Formatting
 - Added "Datasheet Plot" Setting for Passive Antenna Plots

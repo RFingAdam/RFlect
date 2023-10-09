@@ -1,5 +1,78 @@
 import numpy as np
 
+# TODO _____________Active Calculation Functions___________
+def calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, 
+                               inc_phi, inc_theta, h_power_dBm, v_power_dBm):
+    """
+    Calculate variables for TRP/Active Measurement Plotting.
+
+    Parameters:
+    - [all the input parameters]: Relevant data needed for calculations.
+
+    Returns:
+    - tuple: All required calculated variables.
+    """
+    # TODO Calculate the Required Variables for Active/TRP plotting
+    theta_points = (stop_theta - start_theta) + 1
+    phi_points = (stop_phi - start_phi) + 1
+    data_points = (theta_points)*(phi_points)
+
+    theta_angles_rad = np.deg2rad(np.arange(start_theta, stop_theta + inc_theta, inc_theta))
+    phi_angles_rad = np.deg2rad(np.arange(start_phi, stop_phi + inc_phi, inc_phi))
+
+    # Power calculations  
+    total_power_dBm = 10 * np.log10(10**(v_power_dBm/10) + 10**(h_power_dBm/10))
+    total_power_dBm_min = np.min(total_power_dBm)
+    total_power_dBm_nom = total_power_dBm - total_power_dBm_min
+    
+    h_power_dBm_min = np.min(h_power_dBm)
+    h_power_dBm_nom = h_power_dBm - h_power_dBm_min
+    
+    v_power_dBm_min = np.min(v_power_dBm)
+    v_power_dBm_nom = v_power_dBm - v_power_dBm_min
+
+    # Reshape data into 2D arrays for calculations
+    unique_theta = np.sort(np.arange(start_theta, stop_theta + inc_theta, inc_theta))
+    unique_phi = np.sort(np.arange(start_phi, stop_phi + inc_phi, inc_phi))
+
+    # Reshaping them into 2D arrays for easier calculations
+    h_power_dBm_2d = h_power_dBm.reshape((len(unique_theta), len(unique_phi)))
+    v_power_dBm_2d = v_power_dBm.reshape((len(unique_theta), len(unique_phi)))
+    total_power_dBm_2d = 10 * np.log10(10**(h_power_dBm_2d/10) + 10**(v_power_dBm_2d/10))
+
+    # TRP calculations using reshaped data
+    TRP_dBm = 10 * np.log10(np.sum(10**(h_power_dBm_2d/10 + v_power_dBm_2d/10) * 
+                                np.sin(theta_angles_rad)[:, None] * np.pi/2) / 
+                                (theta_points * phi_points))
+    h_TRP_dBm = 10 * np.log10(np.sum(10**(h_power_dBm_2d/10) * 
+                               np.sin(theta_angles_rad)[:, None] * np.pi/2) / 
+                               (theta_points * phi_points))
+    v_TRP_dBm = 10 * np.log10(np.sum(10**(v_power_dBm_2d/10) * 
+                               np.sin(theta_angles_rad)[:, None] * np.pi/2) / 
+                               (theta_points * phi_points))
+    
+    '''# TODO DEBUG Adding Print Statements for Debugging
+    print(f"Data Points: {data_points}")
+    print(f"Theta Angles (Rad): {theta_angles_rad[:5]}")
+    print(f"Phi Angles (Rad): {phi_angles_rad[:5]}")
+    print(f"Sample Total Power (dBm 2D): {total_power_dBm_2d[:5, :5]}")
+    print(f"Total Power Min (dBm): {total_power_dBm_min}")
+    print(f"Sample Total Power Nominal (dBm): {total_power_dBm_nom[:5]}")
+    print(f"Sample H Power (dBm 2D): {h_power_dBm_2d[:5, :5]}")
+    print(f"H Power Min (dBm): {h_power_dBm_min}")
+    print(f"Sample V Power (dBm 2D): {v_power_dBm_2d[:5, :5]}")
+    print(f"V Power Min (dBm): {v_power_dBm_min}")
+    print(f"Sample H Power Nominal (dBm): {h_power_dBm_nom[:5]}")
+    print(f"Sample V Power Nominal (dBm): {v_power_dBm_nom[:5]}")
+    print(f"TRP (dBm): {TRP_dBm}")
+    print(f"H TRP (dBm): {h_TRP_dBm}")
+    print(f"V TRP (dBm): {v_TRP_dBm}")
+    '''
+    return (data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
+            total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
+            v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm)
+
+# _____________Passive Calculation Functions___________
 #Auto Determine Polarization for HPOL & VPOL Files
 def determine_polarization(file_path):
     with open(file_path, 'r') as f:
