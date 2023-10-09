@@ -1,7 +1,7 @@
 from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file
 from save import save_to_results_folder
-from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables
-from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files
+from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables
+from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
 
 import os
@@ -28,12 +28,13 @@ class AntennaPlotGUI:
             # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = sys._MEIPASS
         except Exception:
-            base_path = os.path.abspath(".")
+            base_path = os.path.join(os.path.dirname(__file__), '..')
 
-        return os.path.join(base_path, relative_path) 
+        return os.path.abspath(os.path.join(base_path, relative_path))
     
     settings_path = resource_path("settings.json")
     with open(settings_path, "r") as file:
+
         settings = json.load(file)
         CURRENT_VERSION = settings["CURRENT_VERSION"]
 
@@ -46,7 +47,7 @@ class AntennaPlotGUI:
         self.freq_list = []      
         # Attributes for file paths
         self.hpol_file_path = None
-        self.active_file_path = None
+        self.TRP_file_path = None
         self.vpol_file_path = None
 
         #initializing VSWR/S11 settings
@@ -136,7 +137,7 @@ class AntennaPlotGUI:
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.active_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get()), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.TRP_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get()), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_settings.grid(row=5, column=2, pady=10, padx=10)
@@ -422,7 +423,7 @@ class AntennaPlotGUI:
         self.hpol_file_path = None
         self.vpol_file_path = None
         self.freq_list = None
-        # TODO self.active_file_path = None
+        self.TRP_file_path = None
         
 
     # Method to import TRP or HPOL/VPOL data files for analysis       
@@ -433,7 +434,6 @@ class AntennaPlotGUI:
         if self.scan_type.get() == "active":
             self.TRP_file_path = filedialog.askopenfilename(title="Select the TRP Data File",
                                                             filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-            self.update_active_frequency_list()
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "G&D":
             num_files = tk.simpledialog.askinteger("Input", "How many files would you like to import?", parent=self.root)
             if not num_files:
@@ -505,8 +505,33 @@ class AntennaPlotGUI:
     def process_data(self):
         if self.scan_type.get() == "active":
             # TODO Perform active calculations and plotting method calls
-            #future implementaiton
-            return
+            # Call read_active_file and retrieve data variables 
+            # Assuming `file_content` is a string containing the content of the selected file
+            data = read_active_file(self.TRP_file_path)
+            
+            # Unpacking the data for further use
+            (frequency,start_phi,start_theta,stop_phi,stop_theta,inc_phi,inc_theta,
+            calc_trp,theta_angles_deg,phi_angles_deg,h_power_dBm,v_power_dBm
+            ) = (data["Frequency"],data["Start Phi"],data["Start Theta"],data["Stop Phi"],
+            data["Stop Theta"],data["Inc Phi"],data["Inc Theta"], data["Calculated TRP(dBm)"],
+            data["Theta_Angles_Deg"],data["Phi_Angles_Deg"],data["H_Power_dBm"],data["V_Power_dBm"])
+
+            # Calculate Variables for TRP/Active Measurement Plotting        
+            active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
+            
+            #Define Active Variables
+            (data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
+            total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min,
+            v_power_dBm_2d,v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm,
+            h_TRP_dBm, v_TRP_dBm) = active_variables
+
+            # TODO Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+            # TODO Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+            plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
+            
+            # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
+            plot_active_3d_data()
+
         elif self.scan_type.get() == "passive":
             #After reading & parsing, hpol_data and vpol_data will be lists of dictionaries. 
             #Each dictionary will represent a frequency point and will contain:
