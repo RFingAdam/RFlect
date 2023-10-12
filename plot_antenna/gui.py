@@ -3,10 +3,12 @@ from save import save_to_results_folder
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
+from groupdelay import process_groupdelay_files
 
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from tkinter.simpledialog import askstring
 import requests
 import json
 import sys
@@ -92,6 +94,7 @@ class AntennaPlotGUI:
         self.passive_scan_type = tk.StringVar()
         self.passive_scan_type.set("VPOL/HPOL")
         self.datasheet_plots_var = tk.BooleanVar(value=False)
+        self.cb_groupdelay_sff_var = tk.BooleanVar(value=False)
 
         active_rb = tk.Radiobutton(self.root, text="Active", variable=self.scan_type, value="active",
                                    background=BUTTON_COLOR, foreground=LIGHT_TEXT_COLOR, selectcolor=DARK_BG_COLOR,
@@ -114,7 +117,6 @@ class AntennaPlotGUI:
         self.btn_import = tk.Button(self.root, text="Import File(s)", command=self.import_files, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_import.grid(row=2, column=3, columnspan=2, pady=10, padx=15)
         
-       
         # Cable Loss input for Passive scans
         self.label_cable_loss = tk.Label(self.root, text='Cable Loss:', bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
         self.cable_loss = tk.StringVar(self.root, value="0.0")
@@ -134,9 +136,11 @@ class AntennaPlotGUI:
         self.frequency_dropdown = ttk.Combobox(self.root, textvariable=self.selected_frequency, values=self.available_frequencies, state='readonly')
         self.frequency_dropdown.grid(row=3, column=1, pady=5)
 
+        # Button for View Results Routine
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
+        # Button for Save Results Routine
         self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.TRP_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get()), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
@@ -278,8 +282,10 @@ class AntennaPlotGUI:
                 r1.select()
             else:
                 r2.select()
+            
             # Create the "Datasheet Plots" Checkbutton
             self.cb_datasheet_plots = tk.Checkbutton(settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var)
+            
             if self.passive_scan_type.get() == "VPOL/HPOL":
                 self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)  # Show checkbox
             else:
@@ -313,6 +319,9 @@ class AntennaPlotGUI:
                 self.saved_limit2_freq2 = self.limit2_freq2.get()
                 self.saved_limit2_start = self.limit2_val1.get()
                 self.saved_limit2_stop = self.limit2_val2.get()
+
+                self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
+
                 # Close the settings window after saving
                 settings_window.destroy()
 
@@ -346,39 +355,46 @@ class AntennaPlotGUI:
                 self.saved_limit2_start = DEFAULT_LIMIT2_START
                 self.saved_limit2_stop = DEFAULT_LIMIT2_STOP
 
+                self.cb_groupdelay_sff_var.set(False)
+
+            # TODO Setting to Select UWB 2-Port Measurements to Plot Group Delay, Group Delay Variance, Maximum Distance Error, and System Fidelity Factor information
+            # Create the "Group Delay Setting" Checkbutton
+            self.cb_groupdelay_sff = tk.Checkbutton(settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var)
+            self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
+
             # Limit 1
-            tk.Label(settings_window, text="Limit 1 Frequency Start (GHz):").grid(row=1, column=0)
+            tk.Label(settings_window, text="Limit 1 Frequency Start (GHz):").grid(row=2, column=0)
             self.limit1_freq1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_freq1).grid(row=1, column=1)
+            tk.Entry(settings_window, textvariable=self.limit1_freq1).grid(row=2, column=1)
             
-            tk.Label(settings_window, text="Limit 1 Value Start:").grid(row=1, column=2)
+            tk.Label(settings_window, text="Limit 1 Value Start:").grid(row=2, column=2)
             self.limit1_val1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_val1).grid(row=1, column=3)
+            tk.Entry(settings_window, textvariable=self.limit1_val1).grid(row=2, column=3)
             
-            tk.Label(settings_window, text="Limit 1 Frequency End (GHz):").grid(row=2, column=0)
+            tk.Label(settings_window, text="Limit 1 Frequency End (GHz):").grid(row=3, column=0)
             self.limit1_freq2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_freq2).grid(row=2, column=1)
+            tk.Entry(settings_window, textvariable=self.limit1_freq2).grid(row=3, column=1)
             
-            tk.Label(settings_window, text="Limit 1 Value End:").grid(row=2, column=2)
+            tk.Label(settings_window, text="Limit 1 Value End:").grid(row=3, column=2)
             self.limit1_val2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_val2).grid(row=2, column=3)
+            tk.Entry(settings_window, textvariable=self.limit1_val2).grid(row=3, column=3)
             
             # Limit 2
-            tk.Label(settings_window, text="Limit 2 Frequency Start (GHz):").grid(row=3, column=0)
+            tk.Label(settings_window, text="Limit 2 Frequency Start (GHz):").grid(row=4, column=0)
             self.limit2_freq1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_freq1).grid(row=3, column=1)
+            tk.Entry(settings_window, textvariable=self.limit2_freq1).grid(row=4, column=1)
             
-            tk.Label(settings_window, text="Limit 2 Value Start:").grid(row=3, column=2)
+            tk.Label(settings_window, text="Limit 2 Value Start:").grid(row=4, column=2)
             self.limit2_val1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_val1).grid(row=3, column=3)
+            tk.Entry(settings_window, textvariable=self.limit2_val1).grid(row=4, column=3)
             
-            tk.Label(settings_window, text="Limit 2 Frequency End (GHz):").grid(row=4, column=0)
+            tk.Label(settings_window, text="Limit 2 Frequency End (GHz):").grid(row=5, column=0)
             self.limit2_freq2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_freq2).grid(row=4, column=1)
+            tk.Entry(settings_window, textvariable=self.limit2_freq2).grid(row=5, column=1)
             
-            tk.Label(settings_window, text="Limit 2 Value End:").grid(row=4, column=2)
+            tk.Label(settings_window, text="Limit 2 Value End:").grid(row=5, column=2)
             self.limit2_val2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_val2).grid(row=4, column=3)
+            tk.Entry(settings_window, textvariable=self.limit2_val2).grid(row=5, column=3)
         
             # Update the input fields with saved values if they exist
             if hasattr(self, 'saved_limit1_freq1'):
@@ -391,10 +407,11 @@ class AntennaPlotGUI:
                 self.limit2_val1.set(self.saved_limit2_start)
                 self.limit2_val2.set(self.saved_limit2_stop)
 
+            # Create the Save Settings & Default Settings button within VSWR Settings
             save_button = tk.Button(settings_window, text="Save Settings", command=save_vswr_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-            save_button.grid(row=5, column=0, columnspan=2, pady=20)
+            save_button.grid(row=6, column=0, columnspan=2, pady=20)
             default_button = tk.Button(settings_window, text="Default Settings", command=default_vswr_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-            default_button.grid(row=5, column=2, columnspan=2, pady=20)
+            default_button.grid(row=6, column=2, columnspan=2, pady=20)
 
     def update_passive_frequency_list(self):
         # Extracting frequencies from the HPOL file
@@ -487,7 +504,7 @@ class AntennaPlotGUI:
                     return
                 self.update_passive_frequency_list()
 
-        elif self.scan_type.get() == "vswr":
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == False:
             num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import?")
             if not num_files:
                 return
@@ -501,7 +518,34 @@ class AntennaPlotGUI:
                 file_paths.append(file_path)
 
             process_vswr_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)    
+        
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True:
+            # TODO Group Delay and SFF Routine
+            num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import? (8 typ. for Theta=0deg to 315deg in 45deg steps)")
+            if not num_files:
+                return
 
+            file_paths = []
+            for _ in range(num_files):
+                file_path = filedialog.askopenfilename(title="Select the 2-Port S-Parameter File(s) of format S11(dB), S22(dB), S21(dB), and S21(s)",
+                                                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+                if not file_path:  # if user cancels the dialog
+                    return
+                file_paths.append(file_path)
+
+            # Prompt User for X-axis/Frequency Plot Limits
+            root = tk.Tk()
+            root.withdraw()  # Don't need a full GUI, so keep the root window from appearing
+            
+            min_freq = askstring("Input", "Enter minimum frequency (GHz) or leave blank for default:")
+            max_freq = askstring("Input", "Enter maximum frequency (GHz) or leave blank for default:")
+            
+            # Convert to float or set to None if blank
+            min_freq = float(min_freq) if min_freq else None
+            max_freq = float(max_freq) if max_freq else None
+            
+            process_groupdelay_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop, min_freq, max_freq)    
+    
     def process_data(self):
         if self.scan_type.get() == "active":
             # TODO Perform active calculations and plotting method calls
