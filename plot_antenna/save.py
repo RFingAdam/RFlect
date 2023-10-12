@@ -1,5 +1,5 @@
-from calculations import angles_match, calculate_passive_variables
-from plotting import plot_passive_3d_component, plot_2d_passive_data
+from calculations import angles_match, calculate_passive_variables, calculate_active_variables
+from plotting import plot_passive_3d_component, plot_2d_passive_data, plot_active_2d_data
 from file_utils import read_active_file, read_passive_file
 
 from tkinter import simpledialog, filedialog, Tk
