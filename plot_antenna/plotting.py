@@ -16,7 +16,7 @@ def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_pow
     theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
     plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
     
-    # TODO Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+    # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
     plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
 
     return
@@ -287,7 +287,7 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
     
     # If save path specified, save otherwise show
     if save_path:
-        eff_db_path = os.path.join(save_path, "efficiency_%.png")
+        eff_db_path = os.path.join(save_path, "tota_gain.png")
         fig.savefig(eff_db_path, format='png')
         plt.close(fig)
     else:
@@ -429,9 +429,9 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
 
     # Define gain summary function for reuse
     def gain_summary(gain_values):
-        this_min = np.min(gain_values)
-        this_max = np.max(gain_values)
-        this_mean = 10 * np.log10(np.mean(10**(gain_values/10)))
+        this_min = np.nanmin(gain_values)
+        this_max = np.nanmax(gain_values)
+        this_mean = 10 * np.log10(np.nanmean(10**(gain_values/10)))
         return this_min, this_max, this_mean
     
     # Create polar plot for specific conditions
