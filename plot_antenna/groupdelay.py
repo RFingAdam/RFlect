@@ -26,7 +26,7 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
     plot_group_delay_error(data_dict, min_freq, max_freq)
     
     # TODO System Fidelity Factor
-    plot_total_system_fidelity(data_dict, min_freq, max_freq)
+    # plot_total_system_fidelity(data_dict, min_freq, max_freq)
 
     return
 

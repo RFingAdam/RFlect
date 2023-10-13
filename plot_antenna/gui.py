@@ -357,7 +357,6 @@ class AntennaPlotGUI:
 
                 self.cb_groupdelay_sff_var.set(False)
 
-            # TODO Setting to Select UWB 2-Port Measurements to Plot Group Delay, Group Delay Variance, Maximum Distance Error, and System Fidelity Factor information
             # Create the "Group Delay Setting" Checkbutton
             self.cb_groupdelay_sff = tk.Checkbutton(settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var)
             self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
@@ -520,7 +519,7 @@ class AntennaPlotGUI:
             process_vswr_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)    
         
         elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True:
-            # TODO Group Delay and SFF Routine
+            # Group Delay and SFF Routine
             num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import? (8 typ. for Theta=0deg to 315deg in 45deg steps)")
             if not num_files:
                 return
@@ -548,7 +547,6 @@ class AntennaPlotGUI:
     
     def process_data(self):
         if self.scan_type.get() == "active":
-            # TODO Perform active calculations and plotting method calls
             # Call read_active_file and retrieve data variables 
             # Assuming `file_content` is a string containing the content of the selected file
             data = read_active_file(self.TRP_file_path)
@@ -569,8 +567,8 @@ class AntennaPlotGUI:
             v_power_dBm_2d,v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm,
             h_TRP_dBm, v_TRP_dBm) = active_variables
 
-            # TODO Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
-            # TODO Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+            # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+            # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
             plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
             
             # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
