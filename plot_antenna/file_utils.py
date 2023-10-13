@@ -13,7 +13,7 @@ def read_passive_file(file_path):
         content = file.readlines()
     return parse_passive_file(content)
 
-# TODO Function to parse the data from active TRP files Extracted from Howland Antenna Chamber and WTL Program
+# Function to parse the data from active TRP files Extracted from Howland Antenna Chamber and WTL Program
 def parse_active_file(content):
     """
     Parse the TRP data file. Calculates some intermediate data to return less parameters to functions downstream
@@ -93,21 +93,6 @@ def parse_active_file(content):
     # Calculate Intermediary Data to Return less variables downstream
     h_power_dBm = np.array(h_unc_power_dBm) + h_cal_fact
     v_power_dBm = np.array(v_unc_power_dBm) + v_cal_fact
-
-    '''# TODO Adding Print Statements for Debugging
-    print(f"Parsed Frequency (MHz): {f}")
-    print(f"Parsed Start Phi (Deg): {start_phi}")
-    print(f"Parsed Stop Phi (Deg): {stop_phi}")
-    print(f"Parsed Inc Phi (Deg): {inc_phi}")
-    print(f"Parsed Start Theta (Deg): {start_theta}")
-    print(f"Parsed Stop Theta (Deg): {stop_theta}")
-    print(f"Parsed Inc Theta (Deg): {inc_theta}")
-    print(f"Parsed Calculated TRP (dBm): {calc_TRP}")
-    print(f"Sample Theta Angles (Deg): {theta_angles_deg[:5]}")
-    print(f"Sample Phi Angles (Deg): {phi_angles_deg[:5]}")
-    print(f"Sample H Power (dBm): {h_power_dBm[:5]}")
-    print(f"Sample V Power (dBm): {v_power_dBm[:5]}")
-    '''
     
     data = {
         "Frequency": f,
