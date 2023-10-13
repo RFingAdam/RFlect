@@ -1,11 +1,12 @@
-from calculations import angles_match, calculate_passive_variables, calculate_active_variables
-from plotting import plot_passive_3d_component, plot_2d_passive_data, plot_active_2d_data
+from calculations import angles_match, calculate_passive_variables
+from plotting import plot_passive_3d_component, plot_2d_passive_data
 from file_utils import read_active_file, read_passive_file
 
 from tkinter import simpledialog, filedialog, Tk
 import os
 
 def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, vpol_path, active_path, cable_loss, datasheet_plots):
+    user_selected_frequency = selected_frequency
     # Initialize the GUI
     root = Tk()
     root.withdraw()  # Hide the main window

@@ -1,5 +1,4 @@
 import os
-import numpy as np
 
 # TODO Read in TRP/Active Scan File 
 def read_active_file(file_path):
@@ -13,103 +12,10 @@ def read_passive_file(file_path):
         content = file.readlines()
     return parse_passive_file(content)
 
-# Function to parse the data from active TRP files Extracted from Howland Antenna Chamber and WTL Program
+# TODO Function to parse the data from active TRP files
 def parse_active_file(content):
-    """
-    Parse the TRP data file. Calculates some intermediate data to return less parameters to functions downstream
-
-    Parameters:
-    - content (str): Content of the data file.
-
-    Returns:
-    - dict: A dictionary containing parsed data and metadata.
-    """
-    # Validating file type
-    if "Total Radiated Power Test" not in content[5]:
-        raise ValueError("The selected file does not contain TRP data.")
-    
-    # Validate test type
-    test_type = content[15].split(":")[1].strip()
-    if test_type not in ["Discrete Test", "Semi-Discrete Angle Based Test"]:
-        raise ValueError("Currently only Discrete and Semi-Discrete Angle TRP data is supported. Please select a DISCRETE or SEMI-DISCRETE ANGLE TRP file.")
-    
-    # Extracting metadata and initializing data arrays
-    f = float(content[13].split(":")[1].split("MHz")[0].strip())
-
-    # Extract the file format
-    file_format = content[0].split()[-1]
-    
-    # Depending on the file format, the information is located on different lines
-    # TODO Consider a more dynamic approach vs relying on hard coded number for extraction
-    if file_format == "V5.02":
-        start_phi = float(content[34].split(":")[1].split("Deg")[0].strip())
-        stop_phi = float(content[35].split(":")[1].split("Deg")[0].strip())
-        inc_phi = float(content[34].split(":")[1].split("Deg")[0].strip())
-        
-        start_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
-        stop_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
-        inc_theta = float(content[41].split(":")[1].split("Deg")[0].strip())
-        
-        calc_TRP = float(content[50].split("=")[1].split(" ")[0].strip())
-        data_start_line = 55
-
-        v_cal_fact = float(content[48].split('=')[1].strip().split(' ')[0])
-        h_cal_fact = float(content[47].split('=')[1].strip().split(' ')[0])
-
-    else: # if file_format == "V5.03" or newer
-        start_phi = float(content[31].split(":")[1].split("Deg")[0].strip())
-        stop_phi = float(content[32].split(":")[1].split("Deg")[0].strip())
-        inc_phi = float(content[33].split(":")[1].split("Deg")[0].strip())
-        
-        start_theta = float(content[38].split(":")[1].split("Deg")[0].strip())
-        stop_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
-        inc_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
-        
-        calc_TRP = float(content[49].split('=')[1].strip().split(' ')[0])
-        data_start_line = 54
-
-        v_cal_fact = float(content[47].split('=')[1].strip().split(' ')[0])
-        h_cal_fact = float(content[46].split('=')[1].strip().split(' ')[0])
-
-        
-    # Extracting data points
-    theta_angles_deg = []
-    phi_angles_deg = []
-    h_unc_power_dBm = []
-    v_unc_power_dBm = []
-
-    for line in content[data_start_line:]:
-        # Assuming the data is space-separated; adjust as necessary
-        try:  # Add a try/except block to handle potential conversion errors
-            theta, phi, h_unc_power, v_unc_power = map(float, line.split())
-            theta_angles_deg.append(theta)
-            phi_angles_deg.append(phi)
-            h_unc_power_dBm.append(h_unc_power)
-            v_unc_power_dBm.append(v_unc_power)
-        except ValueError as e:
-            raise ValueError(f"Error parsing data line: {line}. {str(e)}")
-    
-    
-    # Calculate Intermediary Data to Return less variables downstream
-    h_power_dBm = np.array(h_unc_power_dBm) + h_cal_fact
-    v_power_dBm = np.array(v_unc_power_dBm) + v_cal_fact
-    
-    data = {
-        "Frequency": f,
-        "Start Phi": start_phi,
-        "Start Theta": start_theta,
-        "Stop Phi": stop_phi,
-        "Stop Theta": stop_theta,
-        "Inc Phi": inc_phi,
-        "Inc Theta": inc_theta,
-        "Calculated TRP(dBm)":calc_TRP,
-        "Theta_Angles_Deg": np.array(theta_angles_deg),
-        "Phi_Angles_Deg": np.array(phi_angles_deg),
-        "H_Power_dBm": np.array(h_power_dBm),
-        "V_Power_dBm": np.array(v_power_dBm),
-    }
-    
-    return data
+    #tbd
+    return
 
 # Function to parse the data from HPOL/VPOL files
 def parse_passive_file(content):
