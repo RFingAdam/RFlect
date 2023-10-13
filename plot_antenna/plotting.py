@@ -10,9 +10,174 @@ from tkinter import messagebox
 from tkinter import simpledialog
 
 # _____________Active Plotting Functions___________
-# TODO
+# Function called by gui.py to start the active plotting procedure after parsing and calculating variables
+def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency):
+    # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+    theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
+    plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
+    
+    # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+    plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
+
+    return
+
+# Plot 2D Azimuth Power Cuts vs Phi for various value of theta to plot
+def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency):
+    """
+    Plot azimuth power pattern cuts for specified theta values.
+
+    Parameters:
+    - theta_angles_rad: 1D array of theta angles in radians.
+    - phi_angles_rad: 1D array of phi angles in radians.
+    - power_dBm_2d: 2D array of power values, shape should be (num_theta, num_phi).
+    - theta_values_to_plot_deg: List of theta angles in degrees for which to plot azimuth cuts.
+    """
+    plt.figure(figsize=(10, 6))
+    ax = plt.subplot(111, projection='polar')
+
+    for theta_deg in theta_values_to_plot:
+        # Find the closest index to the desired theta value
+        theta_idx = np.argmin(np.abs(np.rad2deg(theta_angles_rad) - theta_deg))
+        
+        # Extract the corresponding phi and power values
+        phi_values = phi_angles_rad
+        power_values = power_dBm_2d[theta_idx, :]
+        
+        # Append the first phi and power value to the end to wrap the data
+        phi_values = np.append(phi_values, phi_values[0])
+        power_values = np.append(power_values, power_values[0])
+        
+        ax.plot(phi_values, power_values, label=f'Theta = {theta_deg} deg')
+
+    # Gain Summary
+    max_power = np.max(power_dBm_2d)
+    min_power = np.min(power_dBm_2d)
+    # Average Gain Summary
+    power_mW = 10**(power_dBm_2d/10)
+    avg_power_mW = np.mean(power_mW)
+    avg_power_dBm = 10*np.log10(avg_power_mW)
+
+
+    # Add a text box or similar to your plot to display these values. For example:
+    textstr = f'Power Summary at {frequency} (MHz): Max: {max_power:.1f} (dBm) Min: {min_power:.1f} (dBm) Avg: {avg_power_dBm:.1f} (dBm)'
+    ax.annotate(textstr, xy=(-0.1, -0.1), xycoords='axes fraction', fontsize=10,
+                bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
+
+    ax.set_title("Azimuth Power Pattern Cuts vs. Phi")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.5, 1))
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    # TODO if Save Results or View
+    plt.show()
+
+# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency):
+    
+    # Azimuth Power Pattern at Theta = 90deg
+    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi/2, atol=1e-6)).flatten()
+    if idx_theta_90.size > 0:
+        # Power Summary
+        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
+        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
+        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))  # average in linear scale converted back to dB
+        
+        plot_polar_power_pattern(f"Azimuth Power Pattern at Theta = 90deg, Freq = {frequency}MHz",
+                                phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power)
+    
+    # Elevation Power Pattern in the Phi = 90deg/270deg plane
+    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, np.pi/2, atol=1e-6)).flatten()
+    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, 3*np.pi/2, atol=1e-6)).flatten()
+
+    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
+        theta_phi_90 = theta_angles_rad
+        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
+        
+        theta_phi_270 = 2*np.pi - theta_angles_rad
+        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
+        
+        # Concatenate for min/max/avg calc
+        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
+        # Power Summary
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
+        
+        # Concatenate for plotting, leaving Theta=180 not interpolated
+        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
+        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
+
+        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 90/270deg, Freq = {frequency}MHz",
+                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power)
+
+    # Elevation Power Pattern in the Phi = 0deg/180deg plane
+    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
+    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
+
+    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
+        # For Phi=0, the theta values can be used directly.
+        theta_phi_0 = theta_angles_rad
+        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
+        
+        # For Phi=180, we should subtract the theta values from pi to ensure they are on the opposite side of the plot.
+        theta_phi_180 = 2*np.pi - theta_angles_rad
+        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
+        
+        # Concatenate for min/max/avg calc
+        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
+        # Power Summary
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
+        
+        # Concatenate for plotting, leaving Theta=180 not interpolated
+        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
+        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
+        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 0/180deg, Freq = {frequency}MHz",
+                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power)
+        
+# General Polar Plotting Function for Active Plots
+def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom'):
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+        
+    if plane == "azimuth":
+        # Append first data point to end for continuous plot
+        angles_rad = np.concatenate((angles_rad, [angles_rad[0]]))
+        power_dBm = np.concatenate((power_dBm, [power_dBm[0]]))
+        ax.set_theta_zero_location("E")
+        ax.set_theta_direction(1)
+        ax.set_rlabel_position(90)
+        ax.set_xticks(np.radians([0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]))
+        ax.set_xticklabels(['0°', '30°', '60°', '90°', '120°', '150°', '180°', '210°', '240°', '270°', '300°', '330°'])
+    elif plane == "elevation":
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(1)
+        ax.set_rlabel_position(0)
+        ax.set_xticks(np.radians([0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]))
+        ax.set_xticklabels(['0°', '30°', '60°', '90°', '120°', '150°', '180°', '150°', '120°', '90°', '60°', '30°'])
+    
+    ax.plot(angles_rad, power_dBm, label=title)
+    ax.grid(True, linestyle='--', linewidth=0.5)
+    
+    # Set labels and title
+    ax.set_title(title, va='bottom')
+    
+    summary_text = f"Max: {max_power:.1f} (dBm) Min: {min_power:.1f} (dBm) Avg: {avg_power:.1f} (dBm)"
+    
+    if summary_position == 'bottom':
+        ax.annotate(summary_text, xy=(0.5, -0.11), xycoords='axes fraction', ha='center', va='center',
+                    bbox=dict(boxstyle="round", alpha=0.1))
+    elif summary_position == 'top':
+        ax.annotate(summary_text, xy=(0.5, 1.15), xycoords='axes fraction', ha='center', va='center',
+                    bbox=dict(boxstyle="round", alpha=0.1))
+    
+    plt.show()
+
+def plot_active_3d_data():
+    # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
+    return
 
 # _____________Passive Plotting Functions___________
+# Generic Plotting Function
 def plot_data(data, title, x_label, y_label, legend_labels=None, x_data=None):
     """
     A generic function to plot data.
@@ -122,7 +287,7 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
     
     # If save path specified, save otherwise show
     if save_path:
-        eff_db_path = os.path.join(save_path, "efficiency_%.png")
+        eff_db_path = os.path.join(save_path, "tota_gain.png")
         fig.savefig(eff_db_path, format='png')
         plt.close(fig)
     else:
@@ -230,8 +395,22 @@ def plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB,
             ax.plot(phi_values, gain_values, label=f'Theta {theta}°')
 
     ax.set_title(f"Gain Pattern Azimuth Cuts - Total Gain at {selected_frequency} MHz")
-    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1))
+    ax.legend(loc="upper right", bbox_to_anchor=(1.4, 1))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    # Gain Summary
+    max_gain = np.max(selected_azimuth_freq)
+    min_gain = np.min(selected_azimuth_freq)
+    # Average Gain Summary
+    power_mW = 10**(selected_azimuth_freq/10)
+    avg_gain_lin = np.mean(power_mW)
+    avg_gain_dBi = 10*np.log10(avg_gain_lin)
+
+
+    # Add a text box or similar to your plot to display these values. For example:
+    textstr = f'Gain Summary at {selected_frequency} (MHz): Max: {max_gain:.1f} (dBm) Min: {min_gain:.1f} (dBm) Avg: {avg_gain_dBi:.1f} (dBm)'
+    ax.annotate(textstr, xy=(-0.1, -0.1), xycoords='axes fraction', fontsize=10,
+                bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
     
     if save_path:  
         azimuth_plot_path = os.path.join(save_path, f"Azimuth_Cuts_{selected_frequency}MHz.png")
@@ -250,9 +429,9 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
 
     # Define gain summary function for reuse
     def gain_summary(gain_values):
-        this_min = np.min(gain_values)
-        this_max = np.max(gain_values)
-        this_mean = 10 * np.log10(np.mean(10**(gain_values/10)))
+        this_min = np.nanmin(gain_values)
+        this_max = np.nanmax(gain_values)
+        this_mean = 10 * np.log10(np.nanmean(10**(gain_values/10)))
         return this_min, this_max, this_mean
     
     # Create polar plot for specific conditions
@@ -261,13 +440,13 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         ax = plt.subplot(111, projection='polar')
 
         # Common settings
-        ax.plot(theta_values, gain_values, linewidth=2, color='black')
+        ax.plot(theta_values, gain_values, linewidth=2) #,color='blue')
         ax.grid(True, color='gray', linestyle='--', linewidth=0.5)
-        ax.set_rlabel_position(90)
         
         # Plot type-specific settings
         settings = {
             'azimuth': {
+                'rlabel_position': 90,
                 'theta_zero_location': 'E',
                 'theta_direction': 1,
                 'ylim': [polar_dB_min, polar_dB_max],
@@ -276,12 +455,13 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
                 'xticklabels': ['0°', '30°', '60°', '90°', '120°', '150°', '180°', '210°', '240°', '270°', '300°', '330°']
             },
             'elevation': {
+                'rlabel_position': 0,
                 'theta_zero_location': 'N',
-                'theta_direction': -1,
+                'theta_direction': 1,
                 'ylim': [polar_dB_min, polar_dB_max],
                 'yticks': np.arange(polar_dB_min, polar_dB_max + 1, 5),
                 'xticks': np.deg2rad(np.arange(0, 360, 30)),
-                'xticklabels': ['90°', '60°', '30°', '0°', '330°', '300°', '270°', '240°', '210°', '180°', '150°', '120°']
+                'xticklabels': ['0°', '30°', '60°', '90°', '120°', '150°', '180°', '150°', '120°', '90°', '60°', '30°']
             }
         }
 
@@ -290,19 +470,31 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         
         # Create Gain Summary below plot
         this_min, this_max, this_mean = gain_summary(gain_values)
-        ax.text(0.5, -0.10, f"Gain Summary at {freq} MHz   min: {this_min:.1f} dBi   max: {this_max:.1f} dBi   avg: {this_mean:.1f} dBi", 
-            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', bbox=dict(facecolor='white', alpha=0.7))
-
+    
+        '''ax.text(0.5, -0.10, f"Gain Summary at {freq} MHz\nmin: {this_min:.1f} dBi\nmax: {this_max:.1f} dBi\navg: {this_mean:.1f} dBi", 
+            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='white', 
+            bbox=dict(facecolor='blue', alpha=0.7))  # Change text color to white and box to blue
+        '''
+        summary_text = (f"Gain Summary at {freq} MHz"
+                f" min: {this_min:.1f} (dBi)"
+                f" max: {this_max:.1f} (dBi)"
+                f" avg: {this_mean:.1f} (dBi)")
+        ax.annotate(summary_text, xy=(0.5, -0.11), xycoords='axes fraction', ha='center', va='center',
+                    bbox=dict(boxstyle="round", alpha=0.1))
+        
         if save_path:
             plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"))
             plt.close()
         else:
             plt.show()
     
-    # Create Subfolder to save additional 2D gain cuts        
-    two_d_data_subfolder = os.path.join(save_path, f'2D Gain Cuts at {selected_frequency} MHz')
-    os.makedirs(two_d_data_subfolder, exist_ok=True)
-
+    if save_path:
+        # Create Subfolder to save additional 2D gain cuts        
+        two_d_data_subfolder = os.path.join(save_path, f'2D Gain Cuts at {selected_frequency} MHz')
+        os.makedirs(two_d_data_subfolder, exist_ok=True)
+    else:
+        two_d_data_subfolder = None
+        
     # 1. Azimuth Gain Pattern for Theta = 90
     index = np.where(np.abs(plot_theta_deg - 90) < 0.01)[0]
     if index.size != 0:  # Check if index is not empty
@@ -324,10 +516,19 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         theta_values_phi_180 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_180])
         gain_values_phi_180 = plot_Total_Gain_dB[index_phi_180]
         
-        # Concatenating without closing the plot.
-        theta_values = np.concatenate([theta_values_phi_0, theta_values_phi_180])
-        gain_values = np.concatenate([gain_values_phi_0, gain_values_phi_180])
-        
+        # Flatten the 2D arrays to 1D arrays
+        theta_values_phi_0_flat = theta_values_phi_0.flatten()
+        theta_values_phi_180_flat = theta_values_phi_180.flatten()
+
+        # Ensure that gain arrays are also 1D and of matching shape
+        gain_values_phi_0_flat = np.repeat(gain_values_phi_0, theta_values_phi_0.shape[1])
+        gain_values_phi_180_flat = np.repeat(gain_values_phi_180, theta_values_phi_180.shape[1])
+
+        # Concatenating the flattened arrays with np.nan to introduce a break in the plot
+        theta_values = np.concatenate([theta_values_phi_0_flat, [np.nan], theta_values_phi_180_flat])
+        gain_values = np.concatenate([gain_values_phi_0_flat, [np.nan], gain_values_phi_180_flat])
+
+        # Now, both theta_values and gain_values should be 1D arrays of the same shape.
         create_polar_plot("Elevation Gain, Phi = 0 & 180 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
 
     # 3. Elevation Gain Pattern Phi = 90/270 (YZ-Plane: Phi=90° Plane)
@@ -338,14 +539,23 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         # Keeping the same as it aligns with the reference.
         theta_values_phi_90 = np.radians(plot_theta_deg[index_phi_90])
         gain_values_phi_90 = plot_Total_Gain_dB[index_phi_90]
-        
+
         theta_values_phi_270 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_270])
         gain_values_phi_270 = plot_Total_Gain_dB[index_phi_270]
-        
-        # Concatenating without closing the plot.
-        theta_values = np.concatenate([theta_values_phi_90, theta_values_phi_270])
-        gain_values = np.concatenate([gain_values_phi_90, gain_values_phi_270])
-        
+
+        # Flatten the 2D arrays to 1D arrays
+        theta_values_phi_90_flat = theta_values_phi_90.flatten()
+        theta_values_phi_270_flat = theta_values_phi_270.flatten()
+
+        # Ensure that gain arrays are also 1D and of matching shape
+        gain_values_phi_90_flat = np.repeat(gain_values_phi_90, theta_values_phi_90.shape[1])
+        gain_values_phi_270_flat = np.repeat(gain_values_phi_270, theta_values_phi_270.shape[1])
+
+        # Concatenating the flattened arrays with np.nan to introduce a break in the plot
+        theta_values = np.concatenate([theta_values_phi_90_flat, [np.nan], theta_values_phi_270_flat])
+        gain_values = np.concatenate([gain_values_phi_90_flat, [np.nan], gain_values_phi_270_flat])
+
+        # Now, both theta_values and gain_values should be 1D arrays of the same shape.
         create_polar_plot("Elevation Gain, Phi = 90 & 270 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
 
 def db_to_linear(db_value):

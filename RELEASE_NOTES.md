@@ -1,5 +1,15 @@
 # RFlect - Release Notes
 
+## Version 2.0.0 (10/16/2023)
+- Started Active Scan Implementation
+  - Azimuth Power Pattern Cuts vs. Phi for various values of Theta
+  - Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane for TRP cuts
+  - TODO 3D Plots for Phi, Theta and TRP
+- Added Gain Summary for Passive 2D Azimuth Gain Cuts
+- Fixed Issue with Save Results Overwriting Existing Files
+- Added Group Delay, Peak Group Delay Difference, Max. Distance Error, from 2-port VNA measurements (S21(s) or S12(s))
+- Total Gain not plotting in Save Results Routine
+
 ## Version 1.3.0 (10/03/2023)
 - Updated 2D Passive Plots Formatting
 - Added "Datasheet Plot" Setting for Passive Antenna Plots
@@ -32,7 +42,7 @@
 
 ## Version 1.0.0 (08/24/2023)
 
-### Features:
+### Release Features:
 - **Passive Scans Support**:
   - G&D files for 2D plotting results.
   - HPOL/VPOL files for 2D & 3D results.
