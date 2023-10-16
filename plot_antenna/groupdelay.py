@@ -42,7 +42,7 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
 
     return
 
-# Function to plot Peak-to-Peak Group Delay Difference & Corresponding Error
+# Function to plot Peak-to-peak Group Delay Difference & Corresponding Error
 def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
     # Plot Group Delay Vs Frequency
     plt.figure(figsize=(10,6))
