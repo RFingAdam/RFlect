@@ -1,6 +1,10 @@
-import pandas as pd
+from file_utils import parse_2port_data
+
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import os
+import re
 import numpy as np
 from numpy.fft import fft, ifft
 
@@ -9,14 +13,22 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
     # Placeholder for data storage with theta values as keys
     data_dict = {}
     
+    # Regular expression to match a number followed by 'deg'
+    pattern = re.compile(r'(\d+)deg')
+
     # Extract data from files
     for file_path in file_paths:
-        # TODO This might not always be the case. 
-        # Extracting theta from file name (assuming a naming convention)
-        theta = os.path.basename(file_path).split('_')[2][:-3]
+        # Extracting theta from file name using regex
+        filename = os.path.basename(file_path)
+        match = pattern.search(filename)
+        if match:
+            theta = match.group(1)  # This will be the number matched by (\d+)
+        else:
+            print(f"Warning: Could not extract theta from filename: {filename}")
+            continue  # Skip this file if no match is found
         
         # Parsing data
-        data = parse_groupdelay_data(file_path)
+        data = parse_2port_data(file_path)
         
         # Storing data
         data_dict[theta] = data
@@ -30,26 +42,7 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
 
     return
 
-# Parse Group Delay .csv file consisting of S11(dB), S22(dB), S21(dB) or S12(dB), and S21(s)or S12(s) data
-def parse_groupdelay_data(file_path):
-    # Load data considering the third row as header
-    data = pd.read_csv(file_path, skiprows=2)
-
-    # Remove leading/trailing whitespace from column names
-    data.columns = [col.strip() for col in data.columns]
-
-    # Check which columns are available in the data
-    available_columns = [col for col in ['! Stimulus(Hz)', 'S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)'] if col in data.columns]
-    
-    # If not all columns are available, handle it gracefully
-    if len(available_columns) < 5:
-        print(f"Warning: Not all expected columns are available in {file_path}. Available columns: {', '.join(available_columns)}.")
-    
-    # Use only the available columns
-    organized_data = data[available_columns]
-    
-    return organized_data
-
+# Function to plot Peak-to-Peak Group Delay Difference & Corresponding Error
 def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
     # Plot Group Delay Vs Frequency
     plt.figure(figsize=(10,6))

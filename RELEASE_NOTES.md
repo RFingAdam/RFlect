@@ -1,6 +1,12 @@
 # RFlect - Release Notes
 
-## Version 2.0.0 (10/16/2023)
+## Version 2.1.0 (10/16/2023)
+- Added Copper Mountain S2VNA/M5090 .csv export support (S11(dB), S22(dB), S21(dB) or S12(dB), S21(s) or S12(s))
+- Fixed Matplotlib backend to display plots properly
+- More Robust Group Delay File Import/Parsing Method
+- Updated README
+
+## Version 2.0.0 (10/13/2023)
 - Started Active Scan Implementation
   - Azimuth Power Pattern Cuts vs. Phi for various values of Theta
   - Added Azimuth and Elevation Cuts, Theta=90deg plane, Phi = 0/180deg plane, and Phi = 90/270deg plane for TRP cuts
