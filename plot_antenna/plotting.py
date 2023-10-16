@@ -1,9 +1,12 @@
 from config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
+from file_utils import parse_2port_data
 
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib import cm
 import scipy.interpolate as spi
 from tkinter import messagebox
@@ -778,35 +781,123 @@ def plot_gd_data(datasets, labels, x_range):
 
 # _____________CSV (VSWR/S11) Plotting Functions___________
 def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved_limit1_start, saved_limit1_stop, saved_limit2_freq1, saved_limit2_freq2, saved_limit2_start, saved_limit2_stop ):
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Try to read the first line to determine if it's a 2-port measurement with the header
+    # TODO Define Consistent Axis Methodology for Plotting S-Parameters
+    # TODO Define Limit 1, Limit 2, & S21 or S12 Limits
+    # TODO Handle Other Parameters for 2-port analysis like VSWR etc
+    with open(file_paths[0], 'r', encoding='utf-8-sig') as f:  # encoding='utf-8-sig' to handle BOM characters
+        first_line = f.readline()
 
-    for file_path in file_paths:
-        data = pd.read_csv(file_path)
-        freqs_ghz = data.iloc[:, 0] / 1e9
-        values = data.iloc[:, 1]
-        ax.plot(freqs_ghz, values, label=os.path.basename(file_path))
-
-        if values.mean() < 0:
-            ax.set_ylabel("Return Loss (dB)")
-            ax.set_title("S11, LogMag vs. Frequency")
-        else:
-            ax.set_ylabel("VSWR")
-            ax.set_title("VSWR vs. Frequency")
-
-        # Setting the x-axis limits based on the data frequency range
-        ax.set_xlim(freqs_ghz.min(), freqs_ghz.max()) 
-
-        # Check if the saved limit values are available and not zero
-        if saved_limit1_freq1 and saved_limit1_freq2 and saved_limit1_start and saved_limit1_stop:
-            print(f"Limit 1: {saved_limit1_freq1}, {saved_limit1_freq2}, {saved_limit1_start}, {saved_limit1_stop}")
-            ax.plot([saved_limit1_freq1, saved_limit1_freq2], [saved_limit1_start, saved_limit1_stop], linewidth=2, zorder=100, color='red', alpha=0.8)
+    if '!' in first_line: # Process S2VNA
+        # Collect all the data from the files into a list
+        all_data = [parse_2port_data(file_path) for file_path in file_paths]
         
-        if saved_limit2_freq1 and saved_limit2_freq2 and saved_limit2_start and saved_limit2_stop:
-            print(f"Limit 2: {saved_limit2_freq1}, {saved_limit2_freq2}, {saved_limit2_start}, {saved_limit2_stop}")
-            ax.plot([saved_limit2_freq1, saved_limit2_freq2], [saved_limit2_start, saved_limit2_stop], linewidth=2, zorder=100, color ='red', alpha=0.8)
+       # Define a preferred order for the S-parameters
+        preferred_order = ['S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)']
+        
+        # Extract all the unique S-parameters across the files
+        unique_columns = set(col for data in all_data for col in data.columns if col != '! Stimulus(Hz)')
 
-        ax.set_xlabel("Frequency (GHz)")
-        ax.legend()
-        ax.grid(True)
+        # Order the unique_columns based on the preferred order
+        ordered_columns = sorted(unique_columns, key=lambda x: preferred_order.index(x) if x in preferred_order else len(preferred_order))
+
+        # Create a subplot for each S-parameter
+        # TODO Dynmamic Figure Size based on number of plots or fixed
+        # fig, axes = plt.subplots(nrows=len(ordered_columns), figsize=(10, 3.5 * len(ordered_columns)))
+        fig, axes = plt.subplots(nrows=len(ordered_columns), figsize=(10, 10))
+
+        # If only one subplot, make sure 'axes' is a list for consistent indexing
+        if len(ordered_columns) == 1:
+            axes = [axes]
+
+        # Iterate over each S-parameter and plot the data from each file
+        for ax, column in zip(axes, ordered_columns):
+            for data, file_path in zip(all_data, file_paths):
+                if column in data:
+                    freqs_ghz = data['! Stimulus(Hz)'] / 1e9  # Convert to GHz
+                    values = data[column]
+                    ax.plot(freqs_ghz, values, label=f"{os.path.basename(file_path)}")
+
+                    ax.set_title(column)
+                    ax.set_xlabel('Frequency (GHz)')
+                    if 'dB' in column:
+                        ax.set_ylabel('Magnitude (dB)')
+                    elif 's' in column:
+                        ax.set_ylabel('Group Delay (ns)')    
+                    else:
+                        ax.set_ylabel('Value')
+                    ax.grid(True)
+                    ax.legend()
+
         plt.tight_layout()
+        plt.show()
+
+    else: # Process RVNA Files
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        for file_path in file_paths:
+            data = pd.read_csv(file_path)
+            freqs_ghz = data.iloc[:, 0] / 1e9
+            values = data.iloc[:, 1]
+            ax.plot(freqs_ghz, values, label=os.path.basename(file_path))
+
+            if values.mean() < 0:
+                ax.set_ylabel("Return Loss (dB)")
+                ax.set_title("S11, LogMag vs. Frequency")
+            else:
+                ax.set_ylabel("VSWR")
+                ax.set_title("VSWR vs. Frequency")
+
+            # Setting the x-axis limits based on the data frequency range
+            ax.set_xlim(freqs_ghz.min(), freqs_ghz.max()) 
+
+            # Check if the saved limit values are available and not zero
+            if saved_limit1_freq1 and saved_limit1_freq2 and saved_limit1_start and saved_limit1_stop:
+                print(f"Limit 1: {saved_limit1_freq1}, {saved_limit1_freq2}, {saved_limit1_start}, {saved_limit1_stop}")
+                ax.plot([saved_limit1_freq1, saved_limit1_freq2], [saved_limit1_start, saved_limit1_stop], linewidth=2, zorder=100, color='red', alpha=0.8)
+            
+            if saved_limit2_freq1 and saved_limit2_freq2 and saved_limit2_start and saved_limit2_stop:
+                print(f"Limit 2: {saved_limit2_freq1}, {saved_limit2_freq2}, {saved_limit2_start}, {saved_limit2_stop}")
+                ax.plot([saved_limit2_freq1, saved_limit2_freq2], [saved_limit2_start, saved_limit2_stop], linewidth=2, zorder=100, color ='red', alpha=0.8)
+
+            ax.set_xlabel("Frequency (GHz)")
+            ax.legend()
+            ax.grid(True)
+            plt.tight_layout()
+        plt.show()
+
+
+# Plots M5090 S2VNA S-Parameter Files Depending On what S-parameters are available
+def plot_2port_data(file_paths):
+    # Collect all the data from the files into a list
+    all_data = [parse_2port_data(file_path) for file_path in file_paths]
+    
+    # Extract all the unique S-parameters across the files
+    unique_columns = set(col for data in all_data for col in data.columns if col != '! Stimulus(Hz)')
+
+    # Create a subplot for each S-parameter
+    fig, axes = plt.subplots(nrows=len(unique_columns), figsize=(10, 6 * len(unique_columns)))
+
+    # If only one subplot, make sure 'axes' is a list for consistent indexing
+    if len(unique_columns) == 1:
+        axes = [axes]
+
+    # Iterate over each S-parameter and plot the data from each file
+    for ax, column in zip(axes, unique_columns):
+        for data, file_path in zip(all_data, file_paths):
+            if column in data:
+                freqs_ghz = data['! Stimulus(Hz)'] / 1e9  # Convert to GHz
+                values = data[column]
+                ax.plot(freqs_ghz, values, label=f"{os.path.basename(file_path)}")
+
+                ax.set_title(column)
+                ax.set_xlabel('Frequency (GHz)')
+                if 'dB' in column:
+                    ax.set_ylabel('Magnitude (dB)')
+                else:
+                    ax.set_ylabel('Value')
+                ax.grid(True)
+                ax.legend()
+
+    plt.tight_layout()
     plt.show()

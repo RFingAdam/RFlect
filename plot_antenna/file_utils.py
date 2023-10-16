@@ -1,7 +1,8 @@
 import os
 import numpy as np
+import pandas as pd
 
-# TODO Read in TRP/Active Scan File 
+# Read in TRP/Active Scan File 
 def read_active_file(file_path):
     with open(file_path, 'r') as file:
         content = file.readlines()
@@ -255,3 +256,23 @@ def process_gd_file(filepath):
             'Directivity': directivity,
             'Efficiency': efficiency
         }    
+
+# Parse Group Delay .csv file consisting of S11(dB), S22(dB), S21(dB) or S12(dB), and S21(s)or S12(s) data
+def parse_2port_data(file_path):
+    # Load data considering the third row as header
+    data = pd.read_csv(file_path, skiprows=2)
+
+    # Remove leading/trailing whitespace from column names
+    data.columns = [col.strip() for col in data.columns]
+
+    # Check which columns are available in the data
+    available_columns = [col for col in ['! Stimulus(Hz)', 'S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)'] if col in data.columns]
+    
+    # If not all columns are available, handle it gracefully
+    if len(available_columns) < 5:
+        print(f"Warning: Not all expected columns are available in {file_path}. Available columns: {', '.join(available_columns)}.")
+    
+    # Use only the available columns
+    organized_data = data[available_columns]
+    
+    return organized_data
