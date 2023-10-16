@@ -37,7 +37,7 @@ RFlect is a comprehensive antenna plotting tool, currently designed specifically
 - For other scan types, results will be displayed after data import.
 
 <details>
-<summary><strong>**Example Results (click to expand)**</strong></summary>
+<summary><strong> **Example Results (click to expand)** </strong></summary>
 
 Here are some examples of the results you can expect with this tool. Click on an image to view it in full size.
 
