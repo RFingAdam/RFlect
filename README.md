@@ -37,7 +37,7 @@ RFlect is a comprehensive antenna plotting tool, currently designed specifically
 - For other scan types, results will be displayed after data import.
 
 <details>
-<summary><strong>Example Results (click to expand)</strong></summary>
+<summary><strong>**Example Results (click to expand)**</strong></summary>
 
 Here are some examples of the results you can expect with this tool. Click on an image to view it in full size.
 
@@ -45,52 +45,43 @@ Here are some examples of the results you can expect with this tool. Click on an
 ## G&D Files
 ### Passive G&D Comparison
 ![G&D File - 1D Results](./assets/python_1d_results_g&d.png)
-
 Efficiency, Gain, and Directivity comparison of 'n' Number of G&D Files/Scans
 
 ## HPOL & VPOL Files
 ### Passive 1D Results
 ![Passive 1D Results](./assets/python_1d_results.png)
-
 Eff(%) vs Freq., Eff(dB) vs Freq., and Total Gain vs Freq.
 
 ### Passive 2D Results
 ![Passive 2D Results](./assets/python_passive_2d_results_azimuth.png)
-
 Gain Pattern Azimuth Cuts vs Phi for various Theta Angles
 
 ### Additional Passive "Datasheet" Plots
 ![Additional 1D Results](./assets/python_1d_results_datasheet.png)
 ![Additional 2D Results](./assets/python_2d_results_datasheet.png)
-
 Peak gain for Phi & Theta Polarization in addition to Total Gain per IEEE Definition and Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
 
 ### Passive 3D Results
 ![Passive 3D Results](./assets/python_passive_3d_results.png)
-
 3D Gain Pattern for Phi, Theta, and Total Gains
 
 # Active Routine
 ## TRP Files
 ### Active 2D Results
 ![Active 2D Results](./assets/python_active_2d_results_azimuth.png)
-
 Azimuth Power Cuts vs Phi for various Theta Angles
 
 ![Additional 2D Results](./assets/python_active_2d_results_datasheet.png)
-
 Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
 
 # VNA Routine
 ## Text/.csv Files
 ### 1 or 2-Port S-Parameters
 ![1 or 2-port S-Parameters](./assets/python_vna_results.png)
-
 'n' number of S-Parameter Files Plotted
 
 ## 2-Port, Group Delay Measurements
 ![Group Delay](./assets/python_groupdelay_results.png)
-
 Plots Group Delay vs Frequency for Various Theta (Azimuthal Rotation), Peak-to-peak Group Delay Difference over Theta, and Max Distance Error over Theta
 </details>
 
