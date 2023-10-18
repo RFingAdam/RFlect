@@ -1,5 +1,8 @@
 # RFlect - Release Notes
 
+## Version 2.1.1 (10/19/2023)
+- Added Support For Agilent VNA Group Delay Measurements
+
 ## Version 2.1.0 (10/16/2023)
 - Added Copper Mountain S2VNA/M5090 .csv export support (S11(dB), S22(dB), S21(dB) or S12(dB), S21(s) or S12(s))
 - Fixed Matplotlib backend to display plots properly

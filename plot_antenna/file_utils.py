@@ -276,3 +276,23 @@ def parse_2port_data(file_path):
     organized_data = data[available_columns]
     
     return organized_data
+
+# Function to parse group delay measurements from Agilent VNA
+def parse_agilent_data(file_path):
+    # Read the data, assuming the first row is a header row
+    # and the file is space or tab-delimited
+    data = pd.read_csv(file_path, skiprows=2)
+
+    # Rename columns for consistency with other data
+    # Assuming the first column is frequency and the second is group delay
+    data = data.rename(columns={
+        data.columns[0]: '! Stimulus(Hz)',
+        data.columns[1]: 'S21(s)'
+    })
+
+    # Check which columns are available in the data
+    available_columns = [col for col in ['! Stimulus(Hz)', 'S21(s)', 'S12(s)'] if col in data.columns]
+    # Use only the available columns
+    organized_data = data[available_columns]
+
+    return organized_data
