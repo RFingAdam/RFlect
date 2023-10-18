@@ -1,4 +1,5 @@
-from file_utils import parse_2port_data
+from file_utils import parse_2port_data, parse_agilent_data
+from matplotlib.ticker import ScalarFormatter
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -14,7 +15,7 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
     data_dict = {}
     
     # Regular expression to match a number followed by 'deg'
-    pattern = re.compile(r'(\d+)deg')
+    pattern = re.compile(r'(\d+)(deg|DEG)', re.IGNORECASE)
 
     # Extract data from files
     for file_path in file_paths:
@@ -27,12 +28,22 @@ def process_groupdelay_files(file_paths, saved_limit1_freq1, saved_limit1_freq2,
             print(f"Warning: Could not extract theta from filename: {filename}")
             continue  # Skip this file if no match is found
         
-        # Parsing data
-        data = parse_2port_data(file_path)
-        
-        # Storing data
-        data_dict[theta] = data
-    
+        # Read the first line to determine the source, if Agilent or S2VNA
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
+            first_line = f.readline() # Read the first line
+        if '!' in first_line:
+            # Process S2VNA 2-Port Measurement
+            data = parse_2port_data(file_path)
+        elif '#' in first_line:
+            # Process Agilent Group Delay Measurement
+            data = parse_agilent_data(file_path)
+        else:
+            print(f"Warning: Could not recognize file structure of: {filename}")
+            data = None
+
+        if data is not None:
+            # Storing data
+            data_dict[theta] = data
     # Plotting: 
     # Group Delay vs Frequency for Various Theta, Group Delay Difference vs Theta, & Max. Distance Error vs Theta
     plot_group_delay_error(data_dict, min_freq, max_freq)
@@ -47,6 +58,10 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
     # Plot Group Delay Vs Frequency
     plt.figure(figsize=(10,6))
     for theta, data in data_dict.items():
+        if min_freq is not None and max_freq is not None:
+            # Convert frequencies to GHz since your min_freq and max_freq are probably in GHz
+            data = data[(data['! Stimulus(Hz)'] >= min_freq*1e9) & (data['! Stimulus(Hz)'] <= max_freq*1e9)]
+
         if 'S21(s)' or 'S12(s)' in data.columns:
             if 'S21(s)' in data.columns:
                 data_group_delay = data['S21(s)']
@@ -59,9 +74,32 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
     # Set frequency range if specified
     if min_freq is not None and max_freq is not None:
         plt.xlim(min_freq*1e9, max_freq*1e9)
+    # Initialize an empty list to store the filtered frequency points
+    filtered_freq_points = []
 
+    # If min_freq and max_freq are specified, filter the frequency points
+    if min_freq is not None and max_freq is not None:
+        for theta, data in data_dict.items():
+            data = data[(data['! Stimulus(Hz)'] >= min_freq*1e9) & (data['! Stimulus(Hz)'] <= max_freq*1e9)]
+            data_dict[theta] = data  # Store the filtered data back in the data_dict
+
+            if len(filtered_freq_points) == 0:  # If the list is empty, populate it with the first set of filtered frequency points
+                filtered_freq_points = data['! Stimulus(Hz)'].to_numpy()
+
+    else:  # If no frequency range is specified, use all frequency points from the first dataset
+        filtered_freq_points = data_dict[next(iter(data_dict))]['! Stimulus(Hz)'].to_numpy()
+        plt.ylim(0, 5e-9)  # This sets the Y-axis limits from 0 to 5 ns
     plt.xlabel('Frequency (GHz)')
     plt.ylabel('Group Delay (ns)')
+
+    # Create a new formatter
+    formatter = ScalarFormatter(useOffset=False)
+    formatter.set_scientific(True)
+    formatter.set_powerlimits((9,9))  # This line forces the scientific notation to 10^9
+
+    # Apply the formatter
+    plt.gca().xaxis.set_major_formatter(formatter)
+
     plt.legend()
     plt.title('Group Delay vs Frequency for Various Theta (Azimuthal) Rotation')
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
@@ -103,6 +141,10 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
 
     plt.xlabel('Frequency (GHz)')
     plt.ylabel('Peak-to-Peak Group Delay Difference over Theta (ps)')
+
+    # Apply the formatter
+    plt.gca().xaxis.set_major_formatter(formatter)
+
     plt.legend()
     plt.title('Max Group Delay Difference over Theta')
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
@@ -120,6 +162,10 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
 
     plt.xlabel('Frequency (GHz)')
     plt.ylabel('Max Distance Error (cm)')
+    
+    # Apply the formatter
+    plt.gca().xaxis.set_major_formatter(formatter)
+
     plt.legend()
     plt.title('Max Distance Error over Theta')
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
