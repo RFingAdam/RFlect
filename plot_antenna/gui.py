@@ -1,4 +1,4 @@
-from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file
+from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file, convert_HpolVpol_files, generate_active_cal_file
 from save import save_to_results_folder
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
@@ -7,7 +7,7 @@ from groupdelay import process_groupdelay_files
 
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, Menu
 from tkinter.simpledialog import askstring
 import requests
 import json
@@ -162,8 +162,137 @@ class AntennaPlotGUI:
         self.title_label.grid(row=0, column=0, pady=(10, 0), columnspan=6, sticky="n")
         self.update_visibility()
 
+        # Create a new menu bar
+        menubar = Menu(root)
+
+        # Create a new drop-down menu
+        tools_menu = Menu(menubar, tearoff=0)  # 'tearoff=0' means the menu can't be separated from the window
+        tools_menu.add_command(label="HPOL/VPOL->CST FFS Converter", command=self.open_hpol_vpol_converter)
+        tools_menu.add_command(label="Active Chamber Calibration", command=self.open_active_chamber_cal)
+        
+        # Add the dropdown menu to the menu bar
+        menubar.add_cascade(label="Additional Tools", menu=tools_menu)
+
+        # Display the menu bar
+        root.config(menu=menubar)
+
         # Check for updates
         self.check_for_updates()
+
+    # Class Methods
+    # Function to start HPOL and VPOL gain text file conversion to the format readable by cst for FFS/ Efield data
+    def open_hpol_vpol_converter(self):
+        # TODO Implement the logic of the converter or open a new window for it
+        first_file = filedialog.askopenfilename(title="Select the First Data File",
+                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        # Check if user canceled the first selection
+        if not first_file:
+            return
+        
+        second_file = filedialog.askopenfilename(title="Select the Second Data File",
+                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        
+        self.vswr_file_path = filedialog.askopenfilename(title="Select the VSWR Data File for Accepted P(W,rms) calculations")
+        
+        if first_file and second_file:
+            # Determine file polarizations
+            first_polarization = determine_polarization(first_file)
+            second_polarization = determine_polarization(second_file)
+            
+            # Check if both files have the same polarization
+            if first_polarization == second_polarization:
+                messagebox.showerror("Error", "Both files cannot be of the same polarization.")
+                return
+
+            if first_polarization == "HPol":
+                self.hpol_file_path = first_file
+                self.vpol_file_path = second_file
+            else:
+                self.hpol_file_path = second_file
+                self.vpol_file_path = first_file
+
+            #Check if File names match and data is consistent between files
+            match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
+            if not match:
+                messagebox.showerror("Error", message)
+                return
+            self.update_passive_frequency_list()
+
+            # Hide buttons not related to this routine
+            self.btn_view_results.grid_remove()
+            self.btn_save_to_file.grid_remove()
+            self.btn_settings.grid_remove()
+            self.btn_import.grid_remove()
+            
+            # Create the new button if it doesn't exist, or just show it if it does
+            if not hasattr(self, 'convert_files_button'):
+                self.convert_files_button = tk.Button(self.root, text="Convert Files", command=lambda: convert_HpolVpol_files(self.vswr_file_path, self.hpol_file_path, self.vpol_file_path, float(self.cable_loss.get()), self.freq_list, float(self.selected_frequency.get()), callback=self.update_visibility), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+                self.convert_files_button.grid(column=0, row=5)  # Adjust grid position as necessary
+            else:
+                self.convert_files_button.grid()  # This shows the button
+    
+    # Function to start Active Chamber Calibration routine
+    def open_active_chamber_cal(self):
+        # Implement the logic of the calibration file import
+        power_measurement = filedialog.askopenfilename(title="Select the Signal Generator/Power Meter Measurement File",
+                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        # Check if user canceled the first selection
+        if not power_measurement:
+            return
+        self.power_measurement = power_measurement
+
+        BLPA_HORN_GAIN_STD = filedialog.askopenfilename(title="Select the BLPA or Horn Antenna Gain Standard File",
+                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        # Check if user canceled the first selection
+        if not BLPA_HORN_GAIN_STD:
+            return
+        self.BLPA_HORN_GAIN_STD = BLPA_HORN_GAIN_STD
+
+        first_file = filedialog.askopenfilename(title="Select the BLPA or Horn Antenna HPOL or VPOL File",
+                                                    filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+            # Check if user canceled the first selection
+        if not first_file:
+            return
+        
+        second_file = filedialog.askopenfilename(title="Select the other HPOL or VPOL File",
+                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        
+        if first_file and second_file:
+            # Determine file polarizations
+            first_polarization = determine_polarization(first_file)
+            second_polarization = determine_polarization(second_file)
+            
+            # Check if both files have the same polarization
+            if first_polarization == second_polarization:
+                messagebox.showerror("Error", "Both files cannot be of the same polarization.")
+                return
+
+            if first_polarization == "HPol":
+                self.hpol_file_path = first_file
+                self.vpol_file_path = second_file
+            else:
+                self.hpol_file_path = second_file
+                self.vpol_file_path = first_file
+
+            #Check if File names match and data is consistent between files
+            match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
+            if not match:
+                messagebox.showerror("Error", message)
+                return
+            self.update_passive_frequency_list()
+
+            # Hide buttons not related to this routine
+            self.btn_view_results.grid_remove()
+            self.btn_save_to_file.grid_remove()
+            self.btn_settings.grid_remove()
+            self.btn_import.grid_remove()
+            
+            # Create the new button if it doesn't exist, or just show it if it does
+            if not hasattr(self, 'generate_active_cal_button'):
+                self.convert_files_button = tk.Button(self.root, text="Generate Calibration File", command=lambda: generate_active_cal_file(self.power_measurement, self.BLPA_HORN_GAIN_STD, self.hpol_file_path, self.vpol_file_path, float(self.cable_loss.get()), self.freq_list, callback=self.update_visibility), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+                self.convert_files_button.grid(column=0, row=5)  # Adjust grid position as necessary
+            else:
+                self.convert_files_button.grid()  # This shows the button
 
     def get_latest_release(self):
         owner = "RFingAdam"
@@ -211,6 +340,12 @@ class AntennaPlotGUI:
 
     # Updates GUI Visibility depending on selections
     def update_visibility(self):
+        # If Convert routing was just run, Remove Convert button
+        if hasattr(self, 'convert_files_button'):
+            self.convert_files_button.grid_remove()
+        if hasattr(self, 'generate_active_cal_button'):
+            self.convert_files_button.grid_remove()
+
         scan_type_value = self.scan_type.get()
         if scan_type_value == "active":
             # Hide the cable loss input for Active scan type
@@ -238,7 +373,8 @@ class AntennaPlotGUI:
             self.label_cable_loss.grid(row=4, column=0, pady=5)
             self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
             self.btn_view_results.grid(row=5, column=0, pady=10)
-                            
+            self.btn_settings.grid()
+
         elif scan_type_value == "vswr":
             # Hide the cable loss input for Active scan type
             self.label_cable_loss.grid_forget()
