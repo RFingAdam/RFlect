@@ -1,5 +1,9 @@
 # RFlect - Release Notes
 
+## Version 2.2.1 (07/30/2024)
+- Added Support For Hpol/Vpol Conversion to CST .ffs, Farfield results for Importing to CST
+- Added Support for Active antenna chamber calibration file generation
+
 ## Version 2.1.1 (10/19/2023)
 - Added Support For Agilent VNA Group Delay Measurements
 
