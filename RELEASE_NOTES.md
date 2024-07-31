@@ -1,5 +1,9 @@
 # RFlect - Release Notes
 
+## Version 2.2.2 (07/31/2024)
+- Mirror Active & Passive 2D plots to appropriate conventions 
+- Added Labeling for 2D plots to show the Phi angle on the plot.
+
 ## Version 2.2.1 (07/30/2024)
 - Added Support For Hpol/Vpol Conversion to CST .ffs, Farfield results for Importing to CST
 - Added Support for Active antenna chamber calibration file generation

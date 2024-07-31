@@ -73,73 +73,8 @@ def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, t
     # TODO if Save Results or View
     plt.show()
 
-# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency):
-    
-    # Azimuth Power Pattern at Theta = 90deg
-    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi/2, atol=1e-6)).flatten()
-    if idx_theta_90.size > 0:
-        # Power Summary
-        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
-        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
-        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))  # average in linear scale converted back to dB
-        
-        plot_polar_power_pattern(f"Azimuth Power Pattern at Theta = 90deg, Freq = {frequency}MHz",
-                                phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power)
-    
-    # Elevation Power Pattern in the Phi = 90deg/270deg plane
-    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, np.pi/2, atol=1e-6)).flatten()
-    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, 3*np.pi/2, atol=1e-6)).flatten()
-
-    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
-        theta_phi_90 = theta_angles_rad
-        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
-        
-        theta_phi_270 = 2*np.pi - theta_angles_rad
-        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
-        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
-
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 90/270deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power)
-
-    # Elevation Power Pattern in the Phi = 0deg/180deg plane
-    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
-    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
-
-    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
-        # For Phi=0, the theta values can be used directly.
-        theta_phi_0 = theta_angles_rad
-        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
-        
-        # For Phi=180, we should subtract the theta values from pi to ensure they are on the opposite side of the plot.
-        theta_phi_180 = 2*np.pi - theta_angles_rad
-        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
-        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 0/180deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power)
-        
 # General Polar Plotting Function for Active Plots
-def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom'):
+def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom', annotations=None):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
         
     if plane == "azimuth":
@@ -173,8 +108,89 @@ def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min
         ax.annotate(summary_text, xy=(0.5, 1.15), xycoords='axes fraction', ha='center', va='center',
                     bbox=dict(boxstyle="round", alpha=0.1))
     
+    # Add annotations if provided
+    if annotations:
+        for annotation in annotations:
+            ax.annotate(annotation['text'], xy=annotation['xy'], xycoords='data', textcoords='offset points', xytext=annotation['xytext'], ha='center', fontsize=12, bbox=dict(boxstyle="round", alpha=0.5, facecolor='white'))
+    
     plt.show()
 
+# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency):
+    
+    # Azimuth Power Pattern at Theta = 90deg
+    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi/2, atol=1e-6)).flatten()
+    if idx_theta_90.size > 0:
+        # Power Summary
+        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
+        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
+        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))  # average in linear scale converted back to dB
+        
+        plot_polar_power_pattern(f"Total Power in Theta = 90deg Plane, Freq = {frequency}MHz",
+                                phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power)
+    
+    # Elevation Power Pattern in the Phi = 270deg/90deg plane
+    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, 3 * np.pi/2, atol=1e-6)).flatten()
+    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, np.pi/2, atol=1e-6)).flatten()
+
+    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
+        theta_phi_90 = theta_angles_rad
+        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
+        
+        theta_phi_270 = 2*np.pi - theta_angles_rad
+        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
+        
+        # Concatenate for min/max/avg calc
+        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
+        # Power Summary
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
+        
+        # Concatenate for plotting, leaving Theta=180 not interpolated
+        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
+        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
+        
+        annotations = [
+            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=270', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+        
+        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 270/90deg, Freq = {frequency}MHz",
+                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
+
+    # Elevation Power Pattern in the Phi = 180deg/0deg plane
+    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
+    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
+
+    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
+        # For Phi=0, the theta values can be used directly.
+        theta_phi_0 = theta_angles_rad
+        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
+        
+        # For Phi=180, we should subtract the theta values from pi to ensure they are on the opposite side of the plot.
+        theta_phi_180 = 2*np.pi - theta_angles_rad
+        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
+        
+        # Concatenate for min/max/avg calc
+        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
+        # Power Summary
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
+        
+        # Concatenate for plotting, leaving Theta=180 not interpolated
+        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
+        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
+        
+        annotations = [
+            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=180', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+        
+        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 180/0deg, Freq = {frequency}MHz",
+                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
+        
 def plot_active_3d_data():
     # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
     return
@@ -438,7 +454,7 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         return this_min, this_max, this_mean
     
     # Create polar plot for specific conditions
-    def create_polar_plot(title, theta_values, gain_values, freq, plot_type, save_path=None):
+    def create_polar_plot(title, theta_values, gain_values, freq, plot_type, save_path=None, annotations=None):
         plt.figure()
         ax = plt.subplot(111, projection='polar')
 
@@ -473,11 +489,7 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         
         # Create Gain Summary below plot
         this_min, this_max, this_mean = gain_summary(gain_values)
-    
-        '''ax.text(0.5, -0.10, f"Gain Summary at {freq} MHz\nmin: {this_min:.1f} dBi\nmax: {this_max:.1f} dBi\navg: {this_mean:.1f} dBi", 
-            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='white', 
-            bbox=dict(facecolor='blue', alpha=0.7))  # Change text color to white and box to blue
-        '''
+
         summary_text = (f"Gain Summary at {freq} MHz"
                 f" min: {this_min:.1f} (dBi)"
                 f" max: {this_max:.1f} (dBi)"
@@ -485,6 +497,11 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         ax.annotate(summary_text, xy=(0.5, -0.11), xycoords='axes fraction', ha='center', va='center',
                     bbox=dict(boxstyle="round", alpha=0.1))
         
+        # Add annotations if provided
+        if annotations:
+            for annotation in annotations:
+                ax.annotate(annotation['text'], xy=annotation['xy'], xycoords='data', textcoords='offset points', xytext=annotation['xytext'], ha='center')
+
         if save_path:
             plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"))
             plt.close()
@@ -503,13 +520,13 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
     if index.size != 0:  # Check if index is not empty
         phi_values = np.append(plot_phi_rad[index], plot_phi_rad[index][0])  # Append first value to end
         gain_values = np.append(plot_Total_Gain_dB[index], plot_Total_Gain_dB[index][0])  # Append first value to end
-        create_polar_plot("Azimuth Gain, Theta = 90 Degree Plane", phi_values, gain_values, selected_frequency, 'azimuth', two_d_data_subfolder)
+        create_polar_plot("Total Gain in Theta = 90 Degree Plane", phi_values, gain_values, selected_frequency, 'azimuth', two_d_data_subfolder)
     else:
         print("No data found for Azimuth Gain Pattern Theta = 90")
 
-   # 2. Elevation Gain Pattern Phi = 0/180 (XZ-Plane: Phi=0° Plane)
-    index_phi_0 = np.where(np.isclose(plot_phi_rad, 0, atol=1e-6))[0]
-    index_phi_180 = np.where(np.isclose(plot_phi_rad, np.pi, atol=1e-6))[0]
+    # 2. Elevation Gain Pattern Phi = 180/0 (XZ-Plane: Phi=0° Plane)
+    index_phi_0 = np.where(np.isclose(plot_phi_rad, np.pi, atol=1e-6))[0]
+    index_phi_180 = np.where(np.isclose(plot_phi_rad, 0, atol=1e-6))[0]
 
     if index_phi_0.size != 0 and index_phi_180.size != 0:
         # Adjusting theta_values_phi_0 and theta_values_phi_180 to match the reference.
@@ -532,11 +549,15 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         gain_values = np.concatenate([gain_values_phi_0_flat, [np.nan], gain_values_phi_180_flat])
 
         # Now, both theta_values and gain_values should be 1D arrays of the same shape.
-        create_polar_plot("Elevation Gain, Phi = 0 & 180 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
+        annotations = [
+            {'text': 'Phi=180', 'xy': (np.pi / 2, polar_dB_max), 'xytext': (0, 20)},
+            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, polar_dB_max), 'xytext': (0, 20)}
+        ]
+        create_polar_plot("Total Gain in Phi = 180 & 0 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder, annotations)
 
-    # 3. Elevation Gain Pattern Phi = 90/270 (YZ-Plane: Phi=90° Plane)
-    index_phi_90 = np.where(np.isclose(plot_phi_rad, np.pi / 2, atol=1e-6))[0]
-    index_phi_270 = np.where(np.isclose(plot_phi_rad, 3 * np.pi / 2, atol=1e-6))[0]
+    # 3. Elevation Gain Pattern Phi = 270/90 (YZ-Plane: Phi=90° Plane)
+    index_phi_90 = np.where(np.isclose(plot_phi_rad, 3 * np.pi / 2, atol=1e-6))[0]
+    index_phi_270 = np.where(np.isclose(plot_phi_rad, np.pi / 2, atol=1e-6))[0]
 
     if index_phi_90.size != 0 and index_phi_270.size != 0:
         # Keeping the same as it aligns with the reference.
@@ -559,8 +580,12 @@ def plot_additional_polar_patterns(plot_phi_rad, plot_theta_deg, plot_Total_Gain
         gain_values = np.concatenate([gain_values_phi_90_flat, [np.nan], gain_values_phi_270_flat])
 
         # Now, both theta_values and gain_values should be 1D arrays of the same shape.
-        create_polar_plot("Elevation Gain, Phi = 90 & 270 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder)
-
+        annotations = [
+            {'text': 'Phi=270', 'xy': (np.pi / 2, polar_dB_max), 'xytext': (0, 20)},
+            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, polar_dB_max), 'xytext': (0, 20)}
+        ]
+        create_polar_plot("Total Gain in Phi = 270 & 90 Degrees Plane", theta_values, gain_values, selected_frequency, 'elevation', two_d_data_subfolder, annotations)
+        
 def db_to_linear(db_value):
     return 10 ** (db_value / 10)
 
