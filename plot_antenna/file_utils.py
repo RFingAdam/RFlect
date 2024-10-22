@@ -526,7 +526,7 @@ def read_power_measurement(file_path):
                 frequency = float(line.split('=')[1].strip().replace('MHz', ''))
                 read_values = False  # Reset the flag
                 # print(f"Found frequency: {frequency} MHz")
-            elif "H-Pol" in line and frequency is not None:
+            elif "H-Pol" in line or "V-Pol" in line and frequency is not None:
                 read_values = True  # Next lines will contain the measurements
             elif read_values and frequency is not None and line.strip():
                 try:
@@ -605,7 +605,7 @@ def generate_active_cal_file(power_measurement_file, gain_standard_file, hpol_fi
         gain_standard_file (str): Path to the gain standard file.
         hpol_file (str): Path to the horizontal polarization data file.
         vpol_file (str): Path to the vertical polarization data file.
-        cable_loss (float): Cable loss value -  Not used.
+        cable_loss (float): Cable loss value -  Not used, but could be.
         freq_list (list): List of frequencies to include in the calibration file.
         callback (function, optional): Callback function to update visibility in the GUI.
 
@@ -649,12 +649,12 @@ def generate_active_cal_file(power_measurement_file, gain_standard_file, hpol_fi
     output_file = f"TRP Cal {common_part}1Amp 0 dBm {start_frequency}-{stop_frequency} {today}.txt"
     output_path = os.path.join(os.path.dirname(hpol_file), output_file)
 
-     # Write the result to a file
+    # Write the result to a file
     with open(output_path, 'w') as file:
         file.write(f"WTL Calibration File\n\nDate: {today}\nTime: {current_time}\n\n*******  Cal Data  ********\n")
         file.write("Freq\tH-Pol\tV-Pol\n(MHz)\t(dBm)\t(dBm)\n")
         for _, row in df_filtered.iterrows():
-            file.write(f"{row['Frequency']}\t{row['P+G-H']:.2f}\t{row['P+G-V']:.2f}\n")
+            file.write(f"{int(row['Frequency'])}\t{row['P+G-H']:.2f}\t{row['P+G-V']:.2f}\n")
 
     # Generate a summary file
     summary_file = f"TRP Cal Summary {common_part}1Amp 0 dBm {start_frequency}-{stop_frequency} {today}.txt"

@@ -1,5 +1,13 @@
 # RFlect - Release Notes
 
+## Version 3.0.0 (12/xx/2024)
+- Added Support for Report Generation to Word Documents via report.py
+- Added Support for OpenAI API for Image Captioning for report generation
+- Added Console in the GUI for Status Updates/Errors/Warnings/Messages
+- Implemented Active 3D plotting
+- Added Setting for Active & Passive 3D plotting to use a interpolated meshing
+- Added placeholder for NF2FF conversion for Passive measurements in the nearfield
+
 ## Version 2.2.2 (07/31/2024)
 - Mirror Active & Passive 2D plots to appropriate conventions 
 - Added Labeling for 2D plots to show the Phi angle on the plot.
