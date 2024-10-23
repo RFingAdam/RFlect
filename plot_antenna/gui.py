@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 # Custom class to write to both console and Text widget
 class DualOutput:
-    def __init__(self, widget, stream):
+    def __init__(self, widget, stream=None):
         self.widget = widget
         self.stream = stream
 
@@ -29,8 +29,9 @@ class DualOutput:
         self.widget.insert('end', string)
         self.widget.configure(state='disabled')
         self.widget.see('end')
-        self.stream.write(string)
-        self.stream.flush()
+        if self.stream:  # Only write to the stream if it's valid
+            self.stream.write(string)
+            self.stream.flush()
 
     def flush(self):
         pass
@@ -175,19 +176,15 @@ class AntennaPlotGUI:
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_settings.grid(row=5, column=3, pady=10, padx=10)
         
-        # TODO Button for Save Results to word document Routine
-        """self.btn_save_to_word = tk.Button(self.root, text="Save Results to Word", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.TRP_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get(), word=True), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-        self.btn_save_to_word.grid(row=5, column=2, pady=10, padx=10)"""
-        
         # Update background color for the entire window
         self.root.config(bg=DARK_BG_COLOR)
     
-        # TODO Bind hover effect to the buttons
-        """buttons = [self.btn_import, self.btn_view_results, self.btn_save_to_file, self.btn_save_to_word, self.btn_settings]
+        # Bind hover effect to the buttons
+        buttons = [self.btn_import, self.btn_view_results, self.btn_save_to_file, self.btn_settings]
         for btn in buttons:
             btn.bind("<Enter>", self.on_enter)
             btn.bind("<Leave>", self.on_leave)
-"""
+
         # Title
         self.title_label = tk.Label(self.root, text="RFlect - Antenna Plot Tool", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, font=HEADER_FONT)
         self.title_label.grid(row=0, column=0, pady=(10, 0), columnspan=6, sticky="n")
@@ -201,10 +198,14 @@ class AntennaPlotGUI:
         tools_menu.add_command(label="HPOL/VPOL->CST FFS Converter", command=self.open_hpol_vpol_converter)
         tools_menu.add_command(label="Active Chamber Calibration", command=self.open_active_chamber_cal)
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
-        
+
         # Load environment variables from the openai.env file
-        if os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2'):
+        openai_api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2')
+
+        if openai_api_key:
             tools_menu.add_command(label="Generate Report with AI", command=self.generate_ai_report_from_directory)
+        else:
+            print("OpenAI API key not found. AI functionality will be disabled.")
         # TODO add more tools here
 
         # Add the dropdown menu to the menu bar
@@ -372,7 +373,6 @@ class AntennaPlotGUI:
             # Hide buttons not related to this routine
             self.btn_view_results.grid_remove()
             self.btn_save_to_file.grid_remove()
-            # TODO self.btn_save_to_word.grid_remove()
             self.btn_settings.grid_remove()
             self.btn_import.grid_remove()
             self.log_message("CST .ffs file created successfully.")
@@ -443,7 +443,6 @@ class AntennaPlotGUI:
             # Hide buttons not related to this routine
             self.btn_view_results.grid_remove()
             self.btn_save_to_file.grid_remove()
-            # TODO self.btn_save_to_word.grid_remove
             self.btn_settings.grid_remove()
             self.btn_import.grid_remove()
             
@@ -527,13 +526,11 @@ class AntennaPlotGUI:
                 self.frequency_dropdown.grid_forget()
                 # Hide the save results button for G&D passive scans
                 self.btn_save_to_file.grid_forget()
-                # TODO self.btn_save_to_word.grid_forget()
             else:
                 self.label_frequency.grid(row=3, column=0, pady=5)
                 self.frequency_dropdown.grid(row=3, column=1, pady=5)
                 # Show the save results button for non-G&D passive scans
                 self.btn_save_to_file.grid(row=5, column=1, pady=10)  # Adjusting the row index
-                # TODO self.btn_save_to_word.grid(row=5, column=2, pady=10)  # Adjusting the row index
             # Show the cable loss input
             self.label_cable_loss.grid(row=4, column=0, pady=5)
             self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
@@ -554,7 +551,6 @@ class AntennaPlotGUI:
             self.btn_view_results.grid_forget()
             # Hide the save results button for .csv/VSWR files
             self.btn_save_to_file.grid_forget()
-            # TODO self.btn_save_to_word.grid_forget()
             
     def show_settings(self):
         # Show Saved or Default Scan Type
