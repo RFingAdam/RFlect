@@ -17,9 +17,13 @@ from openai import OpenAI
 load_dotenv('openapi.env')
 
 # Retrieve the OpenAI API key
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY2")
-    )
+api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")
+
+if api_key:
+    client = OpenAI(api_key=api_key)
+else:
+    client = None  # Handle the case when the API key is not provided
+    print("OpenAI API key is missing. AI functionality will be disabled.")
 
 # Helper function to encode an image as a base64 string for OpenAI API
 def encode_image(image_path):
@@ -29,7 +33,7 @@ def encode_image(image_path):
 class RFAnalyzer:
     def __init__(self, use_ai=False):
         self.messages = []
-        self.use_ai = use_ai # This flag determines wherer AI will be used for the analy
+        self.use_ai = use_ai and client is not None  # Enable AI only if the client is initialized
 
     '''def send_message(self, message):
         self.messages.append({"role": "user", "content": message})  # Append the user message to the messages list
@@ -53,7 +57,7 @@ class RFAnalyzer:
         if self.use_ai:
             return self.send_to_openai(image_path)
         else:
-            return self.generate_placeholder_caption(image_path)  
+            return self.generate_placeholder_caption(image_path) 
         
     def generate_placeholder_caption(self, image_path):
         """Generate a caption for the image based on the file name."""
@@ -185,7 +189,7 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
           
     # Call the modified plotting functions with save_path argument to save the plots
     if scan_type == "active":
-        # TODO Perform active calculations and plotting method calls
+        # Perform active calculations and plotting method calls
         # Assuming active data has been pre-processed similarly to how passive data is handled
         data = read_active_file(active_path)
         
