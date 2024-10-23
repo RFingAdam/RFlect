@@ -27,8 +27,9 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
     
 class RFAnalyzer:
-    def __init__(self):
+    def __init__(self, use_ai=False):
         self.messages = []
+        self.use_ai = use_ai # This flag determines wherer AI will be used for the analy
 
     '''def send_message(self, message):
         self.messages.append({"role": "user", "content": message})  # Append the user message to the messages list
@@ -46,8 +47,19 @@ class RFAnalyzer:
         reply = response.choices[0].message.content  # Extract the completion from the API response
         self.messages.append({"role": "assistant", "content": reply})  # Append the system reply to the messages list
         return reply'''
-        
+    
     def analyze_image(self, image_path):
+        """Analyze the image using OpenAI if the AI flag is set, or return a placeholder."""
+        if self.use_ai:
+            return self.send_to_openai(image_path)
+        else:
+            return self.generate_placeholder_caption(image_path)  
+        
+    def generate_placeholder_caption(self, image_path):
+        """Generate a caption for the image based on the file name."""
+        return f"Caption for {image_path}"
+            
+    def send_to_openai(self, image_path):
         base64_image = encode_image(image_path)
 
         headers = {
@@ -59,25 +71,50 @@ class RFAnalyzer:
             "model": "gpt-4o-mini",
             "messages": [
                 {
-                "role": "user",
-                "content": [
-                    {
-                    "type": "text",
-                    "text": "You are an expert RF Engineer analyzing antenna measurements including, gain, efficiency, directivity, 2D/3D patterns, and/or S-Parameters. Please provide a short, but detailed analysis of the images calling out and min/max/averages present. Based on the text file name or frequency range given, one should be able to assume the band of operation. ie if a scan is 2300-2600MHz, this is likely BLE or 2.4GHz Wifi, and the band is about 2.4-2.48GHz for any notable informations. There is no need to provide an analysis of data outside the band."
-                    },
-                    {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image}"
-                    }
-                    }
-                ]
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": """
+        You are an expert RF Engineer specializing in antenna measurements. Your task is to analyze the provided images and summarize key parameters such as gain, efficiency, directivity, 2D/3D patterns, and S-Parameters.
+
+        ### Steps to Follow:
+
+        1. **Analyze the Images**: Carefully examine the provided images for key parameters related to antenna measurements.
+
+        2. **Report Key Parameters**: Identify and report the minimum, maximum, and average values for the following parameters:
+        - Gain
+        - Efficiency
+        - Directivity
+        - 2D/3D Patterns
+        - S-Parameters
+
+        3. **Infer Operational Band**: Based on the filename or the specified frequency range, infer the operational band of the antenna.
+
+        4. **Focus on Relevant Data**: Concentrate exclusively on data that pertains to the identified operational band.
+
+        5. **Omit Irrelevant Data**: Avoid any analysis of data that falls outside the identified band.
+
+        ### Output Format:
+        - Provide your findings in clear and detailed Markdown format.
+
+        ### Example Conclusion:
+        - If the frequency range is 2300-2600 MHz, you might conclude that it likely corresponds to BLE or 2.4 GHz Wi-Fi, particularly noting the band of 2.4-2.48 GHz for generalization.
+                            """
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
                 }
             ],
-            "max_tokens": 300,
+            "max_tokens": 200,
             "temperature": 0.0,
-            "top_p": 0.1,
-            }
+            "top_p": 0.1
+        }
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         result = response.json()
         reply = result['choices'][0]['message']['content']
@@ -87,10 +124,9 @@ class RFAnalyzer:
         
 def generate_report(doc_title, images, save_path, analyzer, logo_path=None):
     print("Starting Report Generation...")
-    # Create a new Document
     doc = Document()
     
-    # Add logo to header if provided
+    # Add logo if applicable
     if logo_path and os.path.exists(logo_path):
         header = doc.sections[0].header
         paragraph = header.paragraphs[0]
@@ -98,23 +134,23 @@ def generate_report(doc_title, images, save_path, analyzer, logo_path=None):
         run.add_picture(logo_path, width=Inches(1))
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-    # Add title to the document
     doc.add_heading(doc_title, 0)
 
-    # Add images with captions and analysis to the document
     for img_path in images:
         if img_path is not None and os.path.exists(img_path):
             doc.add_picture(img_path, width=Inches(6))
+
+            # Use the analyzer to generate either an AI caption or a placeholder caption
             analysis = analyzer.analyze_image(img_path)
             doc.add_paragraph(analysis)
+
             doc.add_page_break()
         else:
             print(f"Warning: Image path {img_path} does not exist or is invalid.")
     
-    # Save the document
+    # Save the final report
     doc.save(os.path.join(save_path, f"{doc_title}.docx"))
     print("Report Generation Complete!")
-
 
 def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, vpol_path, active_path, cable_loss, datasheet_plots, word=False, logo_path=None):
     # Initialize the GUI
@@ -209,23 +245,3 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
         plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, float(selected_frequency), gain_type="vpol", save_path=user_selected_frequency_path)
     
     print(f"Data saved to {project_path}")
-# Changed word routine to be called from separate method to select a root directory for the report to include all test frequencies, not just the one being processed at the time
-"""
-    if word:
-        # Collect the paths of the generated images
-        for filename in os.listdir(two_d_data_path):
-            if filename.endswith(".png"):
-                image_paths.append(os.path.join(two_d_data_path, filename))
-        
-        # 3D plots
-        for gain_type in ["total", "hpol", "vpol"]:
-            plot_path = plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, float(selected_frequency), gain_type=gain_type, save_path=two_d_data_path)
-            image_paths.append(plot_path)
-    
-        # Initialize RFAnalyzer
-        analyzer = RFAnalyzer()
-        
-        # Generate the report
-        generate_report(project_name, image_paths, report_path, analyzer, logo_path)
-        print(f"Report saved to {report_path}")
-        """
