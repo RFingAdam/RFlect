@@ -1,5 +1,5 @@
 from calculations import angles_match, calculate_passive_variables, calculate_active_variables
-from plotting import plot_passive_3d_component, plot_2d_passive_data, plot_active_2d_data
+from plotting import plot_passive_3d_component, plot_2d_passive_data, plot_active_2d_data, plot_active_3d_data
 from file_utils import read_active_file, read_passive_file
 
 from tkinter import simpledialog, filedialog, Tk
@@ -135,24 +135,49 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
     # Create the directory structure
     project_path = os.path.join(directory, project_name)
     two_d_data_path = os.path.join(project_path, "2D Plots")
-    report_path = os.path.join(project_path, "Report")
-
-    user_selected_frequency_folder_name = f"3D Plots at {selected_frequency} MHz"
-    user_selected_frequency_path = os.path.join(project_path, user_selected_frequency_folder_name)
-
-    # Create directories if they don't exist
+    if word:
+        report_path = os.path.join(project_path, "Report")
+        os.makedirs(report_path, exist_ok=True)
+    if scan_type == "active":
+        three_d_data_path = os.path.join(project_path, "3D Plots")
+        os.makedirs(three_d_data_path, exist_ok=True)
+    elif scan_type == "passive":
+        user_selected_frequency_folder_name = f"3D Plots at {selected_frequency} MHz"
+        user_selected_frequency_path = os.path.join(project_path, user_selected_frequency_folder_name)
+        os.makedirs(user_selected_frequency_path, exist_ok=True)
     os.makedirs(two_d_data_path, exist_ok=True)
-    os.makedirs(user_selected_frequency_path, exist_ok=True)
-    os.makedirs(report_path, exist_ok=True)
-
-    # List to store the paths of images to be added to the report
-    image_paths = []
           
     # Call the modified plotting functions with save_path argument to save the plots
     if scan_type == "active":
         # TODO Perform active calculations and plotting method calls
-        # Future implementation
-        return
+        # Assuming active data has been pre-processed similarly to how passive data is handled
+        data = read_active_file(active_path)
+        
+        # Unpack the data
+        (frequency, start_phi, start_theta, stop_phi, stop_theta, inc_phi, inc_theta,
+        calc_trp, theta_angles_deg, phi_angles_deg, h_power_dBm, v_power_dBm) = (
+            data["Frequency"], data["Start Phi"], data["Start Theta"], data["Stop Phi"], 
+            data["Stop Theta"], data["Inc Phi"], data["Inc Theta"], data["Calculated TRP(dBm)"],
+            data["Theta_Angles_Deg"], data["Phi_Angles_Deg"], data["H_Power_dBm"], data["V_Power_dBm"]
+        )
+
+        # Calculate active variables
+        active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
+
+        # Unpack calculated active variables
+        (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
+        total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
+        v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+        
+        # Plot and save the 2D and 3D data (instead of displaying)
+        print("Saving 2D Active Plots...")
+        plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency, save_path=two_d_data_path)
+        
+        print("Saving 3D Active Plots...")
+        plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=three_d_data_path)
+        plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=True, save_path=three_d_data_path)
+        plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=True, save_path=three_d_data_path)
+    
     elif scan_type == "passive":
         # After reading & parsing, hpol_data and vpol_data will be lists of dictionaries. 
         # Each dictionary will represent a frequency point and will contain:
@@ -184,7 +209,8 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
         plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, float(selected_frequency), gain_type="vpol", save_path=user_selected_frequency_path)
     
     print(f"Data saved to {project_path}")
-
+# Changed word routine to be called from separate method to select a root directory for the report to include all test frequencies, not just the one being processed at the time
+"""
     if word:
         # Collect the paths of the generated images
         for filename in os.listdir(two_d_data_path):
@@ -202,3 +228,4 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
         # Generate the report
         generate_report(project_name, image_paths, report_path, analyzer, logo_path)
         print(f"Report saved to {report_path}")
+        """

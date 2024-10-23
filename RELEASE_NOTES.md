@@ -1,12 +1,16 @@
 # RFlect - Release Notes
 
 ## Version 3.0.0 (12/xx/2024)
-- Added Support for Report Generation to Word Documents via report.py
-- Added Support for OpenAI API for Image Captioning for report generation
-- Added Console in the GUI for Status Updates/Errors/Warnings/Messages
 - Implemented Active 3D plotting
-- Added Setting for Active & Passive 3D plotting to use a interpolated meshing
-- Added placeholder for NF2FF conversion for Passive measurements in the nearfield
+- Implement Save Results to File for Active Scans
+- Added Setting for Active & __TODO__ Passive 3D plotting to use a interpolated meshing
+- Added Console in the GUI for Status Updates/Errors/Warnings/Messages
+- __TODO__ Added Support for Report Generation to Word Documents via report.py
+  - __TODO__ Implement Report Generation for an entire selected folder to capture all tested frequencies and results
+  - TODO Impelent Report Generation for both Active and Passive Scans
+- __TODO__ Added Support for OpenAI API for Image Captioning for report generation
+- __TODO__ Added placeholder for NF2FF conversion for Passive measurements in the nearfield
+  
 
 ## Version 2.2.2 (07/31/2024)
 - Mirror Active & Passive 2D plots to appropriate conventions 

@@ -162,7 +162,13 @@ class AntennaPlotGUI:
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
         # Button for Save Results to file Routine
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.TRP_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get(), word=False), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.btn_save_to_file = tk.Button(
+            self.root,
+            text="Save Results to File",
+            command=lambda: self.save_results_to_file(),
+            bg=ACCENT_BLUE_COLOR,
+            fg=LIGHT_TEXT_COLOR
+        )
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
         
         # Button for Settings
@@ -221,6 +227,37 @@ class AntennaPlotGUI:
         sys.stderr = DualOutput(self.log_text, sys.stderr)
 
     # Class Methods
+    def save_results_to_file(self):
+        try:
+            scan_type = self.scan_type.get()
+            
+            if scan_type == "active":
+                # For active measurements, no need to get the frequency from user input
+                frequency = None  # Frequency will come from the active file
+            else:
+                # For passive measurements, ensure a frequency is selected
+                frequency = self.selected_frequency.get()
+                if not frequency:
+                    messagebox.showerror("Error", "Please select a frequency before saving.")
+                    return
+                frequency = float(frequency)  # Convert to float
+            
+            # Now proceed with saving results
+            save_to_results_folder(
+                frequency,  # Pass frequency (None for active, actual value for passive)
+                self.freq_list,
+                scan_type,
+                self.hpol_file_path,
+                self.vpol_file_path,
+                self.TRP_file_path,
+                float(self.cable_loss.get()),
+                self.datasheet_plots_var.get(),
+                word=False
+            )
+            
+        except ValueError as ve:
+            messagebox.showerror("Conversion Error", f"Invalid frequency or cable loss value. Error: {ve}")
+
     # Function to start HPOL and VPOL gain text file conversion to the format readable by cst for FFS/ Efield data
     def open_hpol_vpol_converter(self):
         # Implement the logic of the converter or open a new window for it
@@ -455,7 +492,7 @@ class AntennaPlotGUI:
         settings_window.geometry("600x200")  # Increase the size
         settings_window.title(f"{scan_type_value.capitalize()} Settings")
         if scan_type_value == "active":
-            # TODO Show settings specific to active scan
+            # Show settings specific to active scan
             label = tk.Label(settings_window, text="Active Plot Settings")
             label.grid(row=0, column=0, columnspan=2, pady=20)
             
@@ -794,7 +831,7 @@ class AntennaPlotGUI:
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
                 #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, v_power_dBm_2d, frequency)
 
-                # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
+                # 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
                 plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=self.interpolate_3d_plots)
                 plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=self.interpolate_3d_plots)
                 plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=self.interpolate_3d_plots)
