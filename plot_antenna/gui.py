@@ -1,5 +1,5 @@
 from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file, convert_HpolVpol_files, generate_active_cal_file
-from save import save_to_results_folder
+from save import save_to_results_folder,generate_report, save_to_results_folder, RFAnalyzer
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables, apply_nf2ff_transformation
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
@@ -7,7 +7,7 @@ from groupdelay import process_groupdelay_files
 
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk, Menu
+from tkinter import filedialog, messagebox, ttk, Menu, simpledialog
 from tkinter.simpledialog import askstring
 import tkinter.scrolledtext as ScrolledText
 import requests
@@ -200,7 +200,13 @@ class AntennaPlotGUI:
         tools_menu = Menu(menubar, tearoff=0)  # 'tearoff=0' means the menu can't be separated from the window
         tools_menu.add_command(label="HPOL/VPOL->CST FFS Converter", command=self.open_hpol_vpol_converter)
         tools_menu.add_command(label="Active Chamber Calibration", command=self.open_active_chamber_cal)
+        tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
         
+        # Load environment variables from the openai.env file
+        if os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2'):
+            tools_menu.add_command(label="Generate Report with AI", command=self.generate_ai_report_from_directory)
+        # TODO add more tools here
+
         # Add the dropdown menu to the menu bar
         menubar.add_cascade(label="Additional Tools", menu=tools_menu)
 
@@ -227,6 +233,71 @@ class AntennaPlotGUI:
         sys.stderr = DualOutput(self.log_text, sys.stderr)
 
     # Class Methods
+    # Recursively collect image files from the selected directory and subdirectories
+    def collect_image_paths(self, directory):
+        image_paths = []
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith(".png"):
+                    image_paths.append(os.path.join(root, file))
+        return image_paths
+    
+    # Function to import files from directory to be saved to .docx file
+    def generate_report_from_directory(self):
+        directory = filedialog.askdirectory(title="Select Directory Containing Measurement Images")
+        if not directory:
+            messagebox.showerror("Error", "No directory selected.")
+            return
+        
+        # Recursively collect image paths using the instance method
+        image_paths = self.collect_image_paths(directory)
+        
+        if not image_paths:
+            messagebox.showerror("Error", "No images found in the selected directory.")
+            return
+
+        report_title = simpledialog.askstring("Input", "Enter Report Title:")
+        if not report_title:
+            messagebox.showerror("Error", "Report title is required.")
+            return
+
+        # Initialize the RFAnalyzer without AI
+        analyzer = RFAnalyzer(use_ai=False)
+        save_path = filedialog.askdirectory(title="Select Directory to Save Report")
+        if save_path:
+            generate_report(report_title, image_paths, save_path, analyzer)
+            messagebox.showinfo("Success", "Report generated successfully.")
+        else:
+            messagebox.showerror("Error", "No directory selected to save the report.")
+
+    def generate_ai_report_from_directory(self):
+        directory = filedialog.askdirectory(title="Select Directory Containing Measurement Images")
+        if not directory:
+            messagebox.showerror("Error", "No directory selected.")
+            return
+        
+        # Recursively collect image paths using the instance method
+        image_paths = self.collect_image_paths(directory)
+        
+        if not image_paths:
+            messagebox.showerror("Error", "No images found in the selected directory.")
+            return
+
+        report_title = simpledialog.askstring("Input", "Enter Report Title:")
+        if not report_title:
+            messagebox.showerror("Error", "Report title is required.")
+            return
+
+        # Initialize the RFAnalyzer with AI flag enabled
+        analyzer = RFAnalyzer(use_ai=True)
+        save_path = filedialog.askdirectory(title="Select Directory to Save Report")
+        if save_path:
+            generate_report(report_title, image_paths, save_path, analyzer)
+            messagebox.showinfo("Success", "AI Report generated successfully.")
+        else:
+            messagebox.showerror("Error", "No directory selected to save the report.")
+
+    # Function to assign frequency for active or passive scans, since active scans don't require a selected_frequency(measurement is at one freq.)
     def save_results_to_file(self):
         try:
             scan_type = self.scan_type.get()
