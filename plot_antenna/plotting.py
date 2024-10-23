@@ -14,18 +14,22 @@ from tkinter import simpledialog
 
 # _____________Active Plotting Functions___________
 # Function called by gui.py to start the active plotting procedure after parsing and calculating variables
-def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency):
-    # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency, save_path=None):
+    # Plot Azimuth cuts for different theta values on one plot
     theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
-    plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
     
-    # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-    plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
-
+    # Save 2D Azimuth Power Cuts with naming consistency if save_path is provided
+    if save_path:
+        plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency, save_path=save_path)
+        plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency, save_path=save_path)
+    else:
+        plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
+        plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
+    
     return
 
 # Plot 2D Azimuth Power Cuts vs Phi for various value of theta to plot
-def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency):
+def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency, save_path=None):
     """
     Plot azimuth power pattern cuts for specified theta values.
 
@@ -70,11 +74,85 @@ def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, t
     ax.legend(loc="upper right", bbox_to_anchor=(1.5, 1))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
 
-    # TODO if Save Results or View
-    plt.show()
+    if save_path:
+        # Save the plot with appropriate naming
+        azimuth_plot_path = os.path.join(save_path, f"2D_Azimuth_Cuts_{frequency}_MHz.png")
+        plt.savefig(azimuth_plot_path, format='png')
+        plt.close()  # Close the plot after saving
+    else:
+        plt.show()
 
+# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency, save_path=None):
+    # Sanitize the frequency string to avoid special characters
+    sanitized_frequency = str(frequency).replace('/', '_').replace('=', '_').replace(':', '_')
+
+    # Azimuth Power Pattern at Theta = 90deg
+    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi / 2, atol=1e-6)).flatten()
+    if idx_theta_90.size > 0:
+        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
+        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
+        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))
+
+        title = f"Total Power in Theta = 90deg Plane, Freq = {sanitized_frequency}MHz"
+        plot_polar_power_pattern(title, phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power, save_path=save_path)
+
+    # Elevation Power Pattern in the Phi = 270deg/90deg plane
+    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, 3 * np.pi / 2, atol=1e-6)).flatten()
+    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, np.pi / 2, atol=1e-6)).flatten()
+
+    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
+        theta_phi_90 = theta_angles_rad
+        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
+
+        theta_phi_270 = 2 * np.pi - theta_angles_rad
+        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
+
+        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))
+
+        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
+        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
+
+        annotations = [
+            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=270', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+
+        title = f"Elevation Power Pattern at Phi = 270/90deg, Freq = {frequency}MHz"
+        plot_polar_power_pattern(title, theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations, save_path=save_path)
+
+    # Elevation Power Pattern in the Phi = 180deg/0deg plane
+    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
+    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
+
+    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
+        theta_phi_0 = theta_angles_rad
+        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
+
+        theta_phi_180 = 2 * np.pi - theta_angles_rad
+        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
+
+        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))
+
+        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
+        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
+
+        annotations = [
+            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=180', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+
+        title = f"Elevation Power Pattern at Phi = 180/0deg, Freq = {frequency}MHz"
+        plot_polar_power_pattern(title, theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations, save_path=save_path)
+        
 # General Polar Plotting Function for Active Plots
-def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom', annotations=None):
+def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom', annotations=None, save_path=None):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
         
     if plane == "azimuth":
@@ -113,87 +191,238 @@ def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min
         for annotation in annotations:
             ax.annotate(annotation['text'], xy=annotation['xy'], xycoords='data', textcoords='offset points', xytext=annotation['xytext'], ha='center', fontsize=12, bbox=dict(boxstyle="round", alpha=0.5, facecolor='white'))
     
-    plt.show()
+    if save_path:
+        # Sanitize the title string to avoid special characters in file names
+        sanitized_title = title.replace(' ', '_').replace('=', '_').replace(':', '_').replace('/', '_')
+        plot_path = os.path.join(save_path, f"{sanitized_title}.png")
+        plt.savefig(plot_path, format='png')
+        plt.close(fig)
+    else:
+        plt.show()
 
-# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency):
+def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=None):
+    """
+    Plot a 3D representation of the active data (TRP).
+
+    Parameters:
+    - theta_angles_deg (array): Theta angles in degrees.
+    - phi_angles_deg (array): Phi angles in degrees.
+    - total_power_dBm_2d (array): 2D array of power values in dBm.
+    - frequency (float): Frequency in MHz.
+    - power_type (str): Type of power ('total', 'hpol', 'vpol'). Default is 'total'.
+    - interpolate (bool): Whether to interpolate the data for smoother visualization.
+    - save_path (str): Path to save the plots. If None, the plot will be displayed.
+    """
+    # Ensure theta and phi angles are 1D arrays
+    theta_angles_deg = np.squeeze(theta_angles_deg)
+    phi_angles_deg = np.squeeze(phi_angles_deg)
+
+    # Ensure the Max EIRP is calculated before interpolation
+    max_eirp_dBm = np.max(total_power_dBm_2d)
+
+    # Adjusted Python TRP Calculation with theta weighting
+    theta_angles_rad = np.deg2rad(theta_angles_deg)  # Ensure theta is in radians
+    phi_angles_rad = np.deg2rad(phi_angles_deg)  # Ensure phi is in radians
+
+    # Convert power from dBm to linear scale (mW)
+    power_mW = 10**(total_power_dBm_2d / 10)
+
+    # Apply sin(theta) weighting and integrate over theta and phi
+    theta_weight = np.sin(theta_angles_rad)
+    TRP_mW = np.sum(power_mW * theta_weight[:, np.newaxis] * np.pi / 2) / (len(theta_angles_rad) * len(phi_angles_rad))
+
+    # Convert back to dBm
+    TRP_dBm = 10 * np.log10(TRP_mW)
+
+    if interpolate:
+        # Create meshgrid of theta and phi angles
+        THETA_deg, PHI_deg = np.meshgrid(theta_angles_deg, phi_angles_deg, indexing='ij')
+
+         # Flatten the data for interpolation
+        theta_flat = THETA_deg.flatten()
+        phi_flat = PHI_deg.flatten()
+        power_flat = total_power_dBm_2d.flatten()
+
+        # Ensure phi wraps from 0° to 360°
+        if phi_angles_deg[-1] < 360:
+            phi_angles_deg = np.append(phi_angles_deg, 360)
+            total_power_dBm_2d = np.column_stack((total_power_dBm_2d, total_power_dBm_2d[:, 0]))
+
+        # Check for NaN values in the data
+        if np.isnan(power_flat).any():
+            print("Warning: NaN values found in power_flat data.")
+
+        # Use the process_data function to interpolate the data
+        X, Y, Z, data_interp, R, theta_interp, phi_interp = process_data(power_flat, phi_flat, theta_flat)
+
+        if X is None:
+            print("Error in process_data. Exiting plot function.")
+            return
+
+        power_data = data_interp
+
+        # Check if power_data contains NaNs after interpolation
+        if np.isnan(power_data).all():
+            print("Error: Interpolated power_data contains all NaN values.")
+            return
+
+        # Normalize the power data
+        max_power_value = np.max(power_data)
+        min_power_value = np.min(power_data)
+        denominator = max_power_value - min_power_value
+        if denominator == 0:
+            print("Warning: max_power_value equals min_power_value. Normalizing data to zeros.")
+            power_normalized = np.zeros_like(power_data)
+        else:
+            power_normalized = (power_data - min_power_value) / denominator
+        
+        # Convert to spherical coordinates using normalized values
+        PHI, THETA = np.meshgrid(phi_interp, theta_interp)
+        theta_rad = np.deg2rad(THETA)
+        phi_rad = np.deg2rad(PHI)
+        R = 0.75 * power_normalized
+        X = R * np.sin(theta_rad) * np.cos(phi_rad)
+        Y = R * np.sin(theta_rad) * np.sin(phi_rad)
+        Z = R * np.cos(theta_rad)
+
+    else:
+        # Use the raw data without interpolation
+        # Create a meshgrid of theta and phi angles
+        THETA_deg, PHI_deg = np.meshgrid(theta_angles_deg, phi_angles_deg, indexing='ij')
+        PHI_rad = np.deg2rad(PHI_deg)
+        THETA_rad = np.deg2rad(THETA_deg)
+
+        # Ensure total_power_dBm_2d has correct shape
+        if total_power_dBm_2d.shape != THETA_deg.shape:
+            total_power_dBm_2d = total_power_dBm_2d.T
+
+        power_data = total_power_dBm_2d
+
+        # Normalize the power data
+        max_power_value = np.nanmax(power_data)
+        min_power_value = np.nanmin(power_data)
+        denominator = max_power_value - min_power_value
+        if denominator == 0:
+            print("Warning: max_power_value equals min_power_value. Normalizing data to zeros.")
+            power_normalized = np.zeros_like(power_data)
+        else:
+            power_normalized = (power_data - min_power_value) / denominator
+        power_normalized = np.nan_to_num(power_normalized)
+
+        # Adjust the radius for visualization
+        R_normalized = 0.75 * power_normalized
+
+        # Convert to Cartesian coordinates
+        X = R_normalized * np.sin(THETA_rad) * np.cos(PHI_rad)
+        Y = R_normalized * np.sin(THETA_rad) * np.sin(PHI_rad)
+        Z = R_normalized * np.cos(THETA_rad)
+
+        # For consistency, define theta_interp and phi_interp
+        theta_interp = theta_angles_deg
+        phi_interp = phi_angles_deg
+
+    # Proceed with plotting as before
+    plt.style.use('default')
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1,1,1, projection='3d')
     
-    # Azimuth Power Pattern at Theta = 90deg
-    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi/2, atol=1e-6)).flatten()
-    if idx_theta_90.size > 0:
-        # Power Summary
-        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
-        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
-        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))  # average in linear scale converted back to dB
-        
-        plot_polar_power_pattern(f"Total Power in Theta = 90deg Plane, Freq = {frequency}MHz",
-                                phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power)
-    
-    # Elevation Power Pattern in the Phi = 270deg/90deg plane
-    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, 3 * np.pi/2, atol=1e-6)).flatten()
-    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, np.pi/2, atol=1e-6)).flatten()
+    # Apply coloring based on actual power values (not normalized)
+    norm = plt.Normalize(min_power_value, max_power_value)
+    mappable = cm.ScalarMappable(norm=norm, cmap=cm.jet)
+    mappable.set_array(power_data)
 
-    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
-        theta_phi_90 = theta_angles_rad
-        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
-        
-        theta_phi_270 = 2*np.pi - theta_angles_rad
-        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
-        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
-        
-        annotations = [
-            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
-            {'text': 'Phi=270', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
-        ]
-        
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 270/90deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
+    # Plot the surface
+    surf = ax.plot_surface(
+        X, Y, Z,
+        facecolors=cm.jet(norm(power_data)),
+        linewidth=0.5, antialiased=True, shade=False, rstride=1, cstride=1, zorder=10
+    )
 
-    # Elevation Power Pattern in the Phi = 180deg/0deg plane
-    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
-    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
+    # Set the view angle
+    ax.view_init(elev=20, azim=-30)
 
-    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
-        # For Phi=0, the theta values can be used directly.
-        theta_phi_0 = theta_angles_rad
-        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
-        
-        # For Phi=180, we should subtract the theta values from pi to ensure they are on the opposite side of the plot.
-        theta_phi_180 = 2*np.pi - theta_angles_rad
-        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
-        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
-        
-        annotations = [
-            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
-            {'text': 'Phi=180', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
-        ]
-        
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 180/0deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
-        
-def plot_active_3d_data():
-    # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
-    return
+    # Remove axis tick labels but retain grid
+    ax.grid(True)
+    xticks = ax.get_xticks()
+    yticks = ax.get_yticks()
+    zticks = ax.get_zticks()
+
+    ax.set_xticklabels(['' if -1.2 < val < 1.2 else f'{val:.1f}' for val in xticks])
+    ax.set_yticklabels(['' if -1.2 < val < 1.2 else f'{val:.1f}' for val in yticks])
+    ax.set_zticklabels(['' if -1.2 < val < 1.2 else f'{val:.1f}' for val in zticks])
+
+    # Add quiver arrows (axes)
+    # Extract indices corresponding to X, Y, Z directions
+    idx_theta_90 = np.argmin(np.abs(theta_interp - 90))
+    idx_theta_0 = np.argmin(np.abs(theta_interp - 0))
+    idx_phi_0 = np.argmin(np.abs(phi_interp - 0))
+    idx_phi_90 = np.argmin(np.abs(phi_interp - 90))
+
+    # Get starting points for quivers
+    start_x = X[idx_theta_90, idx_phi_0]
+    start_y = Y[idx_theta_90, idx_phi_90]
+    start_z = Z[idx_theta_0, 0]  # phi index can be 0 since theta is 0
+
+    # Ensure starting points are not too close to zero
+    min_offset = 0.05
+    if np.abs(start_z) < min_offset:
+        start_z = min_offset
+
+    # Calculate the distances from each intersection point to the origin
+    dist_x = np.abs(start_x)
+    dist_y = np.abs(start_y)
+    dist_z = np.abs(start_z)
+
+    # Compute quiver lengths such that they don't exceed plot area
+    quiver_length = 0.25 * max(dist_x, dist_y, dist_z)  # Base length for X and Y axes
+    min_quiver_length = 0.1  # Minimum length to ensure visibility
+    quiver_length = max(quiver_length, min_quiver_length)
+
+    # Make Z-axis quiver longer to enhance visibility
+    quiver_length_z = quiver_length * 3.2  # Adjust the factor as needed
+
+    # Plot adjusted quiver arrows
+    ax.quiver(start_x, 0, 0, quiver_length*2.2, 0, 0, color='green', arrow_length_ratio=0.1, zorder=20)  # X-axis
+    ax.quiver(0, start_y, 0, 0, quiver_length*2.4, 0, color='red', arrow_length_ratio=0.1, zorder=20)    # Y-axis
+    ax.quiver(0, 0, start_z, 0, 0, quiver_length_z, color='blue', arrow_length_ratio=0.1, zorder=20)  # Z-axis
+
+    # Set Title based on power_type with rounded TRP values
+    if power_type == 'total':
+        plot_title = f"Total Radiated Power at {frequency} MHz, TRP = {TRP_dBm:.2f} dBm, Max EIRP = {max_eirp_dBm:.2f} dBm"
+    elif power_type == 'hpol':
+        plot_title = f"Phi Polarization: Radiated Power at {frequency} MHz, TRP = {TRP_dBm:.2f} dBm"
+    elif power_type == 'vpol':
+        plot_title = f"Theta Polarization: Radiated Power at {frequency} MHz, TRP = {TRP_dBm:.2f} dBm"
+    else:
+        plot_title = f"3D Radiation Pattern - {power_type} at {frequency} MHz, TRP = {TRP_dBm:.2f} dBm"
+    ax.set_title(plot_title, fontsize=16)
+
+
+    # Add a colorbar
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
+    cbar.set_label('Power (dBm)', rotation=270, labelpad=20, fontsize=14)
+    cbar.ax.tick_params(labelsize=12)
+
+    # Add Max Power to top of Legend
+    ax.text2D(1.12, 0.90, f"{max_eirp_dBm:.2f} dBm", transform=ax.transAxes, fontsize=12, weight='bold')
+
+    # If save path provided, save the plot
+    if save_path:
+        # Save the first view
+        plot_3d_path_1 = os.path.join(save_path, f"3D_TRP_{power_type}_{frequency}MHz_1of2.png")
+        fig.savefig(plot_3d_path_1, format='png')
+
+        # Adjust view angle to get the rear side of the 3D plot
+        ax.view_init(elev=20, azim=150)
+
+        # Save the second view
+        plot_3d_path_2 = os.path.join(save_path, f"3D_TRP_{power_type}_{frequency}MHz_2of2.png")
+        fig.savefig(plot_3d_path_2, format='png')
+
+        plt.close(fig)
+    else:
+        plt.show()
+
 
 # _____________Passive Plotting Functions___________
 # Generic Plotting Function
@@ -590,34 +819,40 @@ def db_to_linear(db_value):
     return 10 ** (db_value / 10)
 
 # Helper function to process gain data for plotting.
-def process_gain_data(selected_gain, selected_phi_angles_deg, selected_theta_angles_deg):
-    """
-    Helper function to process gain data for plotting.
-    """
-    # Reshape and mesh the data
+def process_data(selected_data, selected_phi_angles_deg, selected_theta_angles_deg):
+    # Get unique phi and theta values
     unique_phi = np.unique(selected_phi_angles_deg)
     unique_theta = np.unique(selected_theta_angles_deg)
-    reshaped_gain = selected_gain.reshape((len(unique_theta), len(unique_phi)))
-    reshaped_gain = np.column_stack((reshaped_gain, reshaped_gain[:, 0]))
-    unique_phi = np.append(unique_phi, 360)
-    
-    # Interpolate the data for smoother gradient shading
-    theta_interp = np.linspace(0, 180, THETA_RESOLUTION)
-    phi_interp = np.linspace(0, 360, PHI_RESOLUTION)
-    f_interp = spi.interp2d(unique_phi, unique_theta, reshaped_gain, kind='linear')
-    gain_interp = f_interp(phi_interp, theta_interp)
 
-    PHI, THETA = np.meshgrid(phi_interp, theta_interp)
-    
+    # Append 360° to phi if not already included (for wrapping)
+    if unique_phi[0] == 0 and unique_phi[-1] < 360:
+        unique_phi = np.append(unique_phi, 360)
+        # Append the first column of data to the end to maintain continuity
+        data_grid = selected_data.reshape((len(unique_theta), len(unique_phi) - 1))
+        data_grid = np.column_stack((data_grid, data_grid[:, 0]))  # Append first column to wrap
+    else:
+        data_grid = selected_data.reshape((len(unique_theta), len(unique_phi)))
+
+    # Interpolate the data for smoother gradient shading
+    theta_interp = np.linspace(unique_theta.min(), unique_theta.max(), THETA_RESOLUTION)
+    phi_interp = np.linspace(unique_phi.min(), unique_phi.max(), PHI_RESOLUTION)
+
+    # Create interpolation function
+    f_interp = spi.interp2d(unique_phi, unique_theta, data_grid, kind='linear')
+
+    # Interpolate data
+    data_interp = f_interp(phi_interp, theta_interp)
+
     # Convert to spherical coordinates
-    theta_rad = np.deg2rad(THETA)
-    phi_rad = np.deg2rad(PHI)
-    R = db_to_linear(gain_interp)
+    PHI_interp_grid, THETA_interp_grid = np.meshgrid(phi_interp, theta_interp)
+    theta_rad = np.deg2rad(THETA_interp_grid)
+    phi_rad = np.deg2rad(PHI_interp_grid)
+    R = db_to_linear(data_interp)
     X = R * np.sin(theta_rad) * np.cos(phi_rad)
     Y = R * np.sin(theta_rad) * np.sin(phi_rad)
     Z = R * np.cos(theta_rad)
-    
-    return X, Y, Z, gain_interp, R, theta_interp, phi_interp
+
+    return X, Y, Z, data_interp, R, theta_interp, phi_interp
 
 def normalize_gain(gain_dB):
     """
@@ -627,7 +862,7 @@ def normalize_gain(gain_dB):
     gain_max = np.max(gain_dB)
     return (gain_dB - gain_min) / (gain_max - gain_min)
  
-def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, freq_list, selected_frequency, gain_type, save_path=None):
+def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, h_gain_dB, v_gain_dB, Total_Gain_dB, freq_list, selected_frequency, gain_type, save_path=None):
     """
     Plot a 3D representation of the passive component data.
 
@@ -672,7 +907,7 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     selected_phi_angles_deg = phi_angles_deg[:, freq_idx]
     
     # Process gain data
-    X, Y, Z, gain_interp, R, theta_interp, phi_interp = process_gain_data(selected_gain, selected_phi_angles_deg, selected_theta_angles_deg)
+    X, Y, Z, gain_interp, R, theta_interp, phi_interp = process_data(selected_gain, selected_phi_angles_deg, selected_theta_angles_deg)
     
     # Normalize the gain values
     max_gain_value = np.max(gain_interp)
@@ -683,7 +918,7 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     PHI, THETA = np.meshgrid(phi_interp, theta_interp)
     theta_rad = np.deg2rad(THETA)
     phi_rad = np.deg2rad(PHI)
-    R = 0.75 * gain_normalized  # Adjusted to scale the gain to 75% of the usable area
+    R = 0.75 * gain_normalized
     X = R * np.sin(theta_rad) * np.cos(phi_rad)
     Y = R * np.sin(theta_rad) * np.sin(phi_rad)
     Z = R * np.cos(theta_rad)
@@ -720,18 +955,28 @@ def plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gai
     start_y = Y[gain_y_idx, gain_y_idx_phi]
     start_z = Z[gain_z_idx, 0]
 
+    # Ensure starting points are not too close to zero (which might hide the axis)
+    min_offset = 0.05  # Small offset to ensure visibility
+    if np.abs(start_z) < min_offset:
+        start_z = min_offset
+
     # Calculate the distances from each intersection point to the origin
-    dist_x = np.sqrt(start_x**2 + start_y**2 + start_z**2)
-    dist_y = np.sqrt(start_x**2 + start_y**2 + start_z**2)
-    dist_z = np.sqrt(start_x**2 + start_y**2 + start_z**2)
+    dist_x = np.abs(start_x)
+    dist_y = np.abs(start_y)
+    dist_z = np.abs(start_z)
 
     # Compute quiver lengths such that they don't exceed plot area
-    quiver_length = 0.25 * max(dist_x, dist_y, dist_z) # making them extend 25% further than the plots
+    quiver_length = 0.25 * max(dist_x, dist_y, dist_z)  # Base length for X and Y axes
+    min_quiver_length = 0.1  # Minimum length to ensure visibility
+    quiver_length = max(quiver_length, min_quiver_length)
+
+    # Make Z-axis quiver longer to enhance visibility
+    quiver_length_z = quiver_length * 3.2  # Adjust the factor as needed
 
     # Plot adjusted quiver arrows
-    ax.quiver(start_x, 0, 0, quiver_length, 0, 0, color='green', arrow_length_ratio=0.1, zorder=0)  # X-axis
-    ax.quiver(0, start_y, 0, 0, quiver_length, 0, color='red', arrow_length_ratio=0.1, zorder=0)  # Y-axis
-    ax.quiver(0, 0, start_z, 0, 0, quiver_length, color='blue', arrow_length_ratio=0.1, zorder=0)  # Z-axis
+    ax.quiver(start_x, 0, 0, quiver_length*2.2, 0, 0, color='green', arrow_length_ratio=0.1, zorder=20)  # X-axis
+    ax.quiver(0, start_y, 0, 0, quiver_length*2.4, 0, color='red', arrow_length_ratio=0.1, zorder=20)    # Y-axis
+    ax.quiver(0, 0, start_z, 0, 0, quiver_length_z, color='blue', arrow_length_ratio=0.1, zorder=20)  # Z-axis
 
     #Adjust the view angle for a top-down view
     #ax.view_init(elev=10, azim=-25)
