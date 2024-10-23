@@ -1,14 +1,15 @@
 from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file, convert_HpolVpol_files, generate_active_cal_file
-from save import save_to_results_folder
-from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables
+from save import save_to_results_folder,generate_report, save_to_results_folder, RFAnalyzer
+from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables, apply_nf2ff_transformation
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
 from groupdelay import process_groupdelay_files
 
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk, Menu
+from tkinter import filedialog, messagebox, ttk, Menu, simpledialog
 from tkinter.simpledialog import askstring
+import tkinter.scrolledtext as ScrolledText
 import requests
 import json
 import sys
@@ -17,6 +18,23 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+# Custom class to write to both console and Text widget
+class DualOutput:
+    def __init__(self, widget, stream=None):
+        self.widget = widget
+        self.stream = stream
+
+    def write(self, string):
+        self.widget.configure(state='normal')
+        self.widget.insert('end', string)
+        self.widget.configure(state='disabled')
+        self.widget.see('end')
+        if self.stream:  # Only write to the stream if it's valid
+            self.stream.write(string)
+            self.stream.flush()
+
+    def flush(self):
+        pass
 
 class AntennaPlotGUI:
     """
@@ -45,7 +63,7 @@ class AntennaPlotGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("RFlect")
-        self.root.geometry("450x300")  # Set a reasonable window size
+        self.root.geometry("600x400")  # Set a reasonable window size
 
         self.frequency_var = tk.StringVar(self.root)
         self.freq_list = []      
@@ -53,7 +71,7 @@ class AntennaPlotGUI:
         self.hpol_file_path = None
         self.TRP_file_path = None
         self.vpol_file_path = None
-
+        
         #initializing VSWR/S11 settings
         self.saved_limit1_freq1 = 0.0
         self.saved_limit1_freq2 = 0.0
@@ -69,6 +87,8 @@ class AntennaPlotGUI:
         
         self.passive_scan_type = tk.StringVar()
         self.passive_scan_type.set("HPOL/VPOL")  # Default value
+        
+        self.interpolate_3d_plots = True  # Default value; set to True if you want interpolation enabled by default
 
         # Determine if the script is being run as a standalone script or packaged executable
         if getattr(sys, 'frozen', False):
@@ -142,12 +162,20 @@ class AntennaPlotGUI:
         self.btn_view_results = tk.Button(self.root, text="View Results", command=self.process_data, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
         self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
 
-        # Button for Save Results Routine
-        self.btn_save_to_file = tk.Button(self.root, text="Save Results to File", command=lambda: save_to_results_folder(float(self.selected_frequency.get()), self.freq_list, self.scan_type.get(), self.hpol_file_path, self.vpol_file_path, self.TRP_file_path, float(self.cable_loss.get()), self.datasheet_plots_var.get()), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+        # Button for Save Results to file Routine
+        self.btn_save_to_file = tk.Button(
+            self.root,
+            text="Save Results to File",
+            command=lambda: self.save_results_to_file(),
+            bg=ACCENT_BLUE_COLOR,
+            fg=LIGHT_TEXT_COLOR
+        )
         self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
+        
+        # Button for Settings
         self.btn_settings = tk.Button(self.root, text="Settings", command=self.show_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-        self.btn_settings.grid(row=5, column=2, pady=10, padx=10)
-
+        self.btn_settings.grid(row=5, column=3, pady=10, padx=10)
+        
         # Update background color for the entire window
         self.root.config(bg=DARK_BG_COLOR)
     
@@ -169,7 +197,17 @@ class AntennaPlotGUI:
         tools_menu = Menu(menubar, tearoff=0)  # 'tearoff=0' means the menu can't be separated from the window
         tools_menu.add_command(label="HPOL/VPOL->CST FFS Converter", command=self.open_hpol_vpol_converter)
         tools_menu.add_command(label="Active Chamber Calibration", command=self.open_active_chamber_cal)
-        
+        tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
+
+        # Load environment variables from the openai.env file
+        openai_api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2')
+
+        if openai_api_key:
+            tools_menu.add_command(label="Generate Report with AI", command=self.generate_ai_report_from_directory)
+        else:
+            print("OpenAI API key not found. AI functionality will be disabled.")
+        # TODO add more tools here
+
         # Add the dropdown menu to the menu bar
         menubar.add_cascade(label="Additional Tools", menu=tools_menu)
 
@@ -179,14 +217,128 @@ class AntennaPlotGUI:
         # Check for updates
         self.check_for_updates()
 
+        # Create a frame to contain the log text area
+        log_frame = tk.Frame(self.root)
+        log_frame.grid(row=6, column=0, columnspan=4, sticky='nsew')
+        
+        # Add a ScrolledText widget for log output
+        self.log_text = ScrolledText.ScrolledText(log_frame, wrap=tk.WORD, height=10, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
+        self.log_text.grid(row=0, column=0, sticky='nsew')
+        
+        # Make the log frame expandable
+        self.root.grid_rowconfigure(6, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+        # Redirect stdout and stderr
+        sys.stdout = DualOutput(self.log_text, sys.stdout)
+        sys.stderr = DualOutput(self.log_text, sys.stderr)
+
     # Class Methods
+    # Recursively collect image files from the selected directory and subdirectories
+    def collect_image_paths(self, directory):
+        image_paths = []
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith(".png"):
+                    image_paths.append(os.path.join(root, file))
+        return image_paths
+    
+    # Function to import files from directory to be saved to .docx file
+    def generate_report_from_directory(self):
+        directory = filedialog.askdirectory(title="Select Directory Containing Measurement Images")
+        if not directory:
+            messagebox.showerror("Error", "No directory selected.")
+            return
+        
+        # Recursively collect image paths using the instance method
+        image_paths = self.collect_image_paths(directory)
+        
+        if not image_paths:
+            messagebox.showerror("Error", "No images found in the selected directory.")
+            return
+
+        report_title = simpledialog.askstring("Input", "Enter Report Title:")
+        if not report_title:
+            messagebox.showerror("Error", "Report title is required.")
+            return
+
+        # Initialize the RFAnalyzer without AI
+        analyzer = RFAnalyzer(use_ai=False)
+        save_path = filedialog.askdirectory(title="Select Directory to Save Report")
+        if save_path:
+            generate_report(report_title, image_paths, save_path, analyzer)
+            messagebox.showinfo("Success", "Report generated successfully.")
+        else:
+            messagebox.showerror("Error", "No directory selected to save the report.")
+
+    def generate_ai_report_from_directory(self):
+        directory = filedialog.askdirectory(title="Select Directory Containing Measurement Images")
+        if not directory:
+            messagebox.showerror("Error", "No directory selected.")
+            return
+        
+        # Recursively collect image paths using the instance method
+        image_paths = self.collect_image_paths(directory)
+        
+        if not image_paths:
+            messagebox.showerror("Error", "No images found in the selected directory.")
+            return
+
+        report_title = simpledialog.askstring("Input", "Enter Report Title:")
+        if not report_title:
+            messagebox.showerror("Error", "Report title is required.")
+            return
+
+        # Initialize the RFAnalyzer with AI flag enabled
+        analyzer = RFAnalyzer(use_ai=True)
+        save_path = filedialog.askdirectory(title="Select Directory to Save Report")
+        if save_path:
+            generate_report(report_title, image_paths, save_path, analyzer)
+            messagebox.showinfo("Success", "AI Report generated successfully.")
+        else:
+            messagebox.showerror("Error", "No directory selected to save the report.")
+
+    # Function to assign frequency for active or passive scans, since active scans don't require a selected_frequency(measurement is at one freq.)
+    def save_results_to_file(self):
+        try:
+            scan_type = self.scan_type.get()
+            
+            if scan_type == "active":
+                # For active measurements, no need to get the frequency from user input
+                frequency = None  # Frequency will come from the active file
+            else:
+                # For passive measurements, ensure a frequency is selected
+                frequency = self.selected_frequency.get()
+                if not frequency:
+                    messagebox.showerror("Error", "Please select a frequency before saving.")
+                    return
+                frequency = float(frequency)  # Convert to float
+            
+            # Now proceed with saving results
+            save_to_results_folder(
+                frequency,  # Pass frequency (None for active, actual value for passive)
+                self.freq_list,
+                scan_type,
+                self.hpol_file_path,
+                self.vpol_file_path,
+                self.TRP_file_path,
+                float(self.cable_loss.get()),
+                self.datasheet_plots_var.get(),
+                word=False
+            )
+            
+        except ValueError as ve:
+            messagebox.showerror("Conversion Error", f"Invalid frequency or cable loss value. Error: {ve}")
+
     # Function to start HPOL and VPOL gain text file conversion to the format readable by cst for FFS/ Efield data
     def open_hpol_vpol_converter(self):
-        # TODO Implement the logic of the converter or open a new window for it
+        # Implement the logic of the converter or open a new window for it
+        self.log_message("HPOL/VPOL to CST FFS Converter started...")
         first_file = filedialog.askopenfilename(title="Select the First Data File",
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         # Check if user canceled the first selection
         if not first_file:
+            self.log_message("File selection canceled.")
             return
         
         second_file = filedialog.askopenfilename(title="Select the Second Data File",
@@ -201,7 +353,7 @@ class AntennaPlotGUI:
             
             # Check if both files have the same polarization
             if first_polarization == second_polarization:
-                messagebox.showerror("Error", "Both files cannot be of the same polarization.")
+                self.log_message("Error", "Both files cannot be of the same polarization.")
                 return
 
             if first_polarization == "HPol":
@@ -214,7 +366,7 @@ class AntennaPlotGUI:
             #Check if File names match and data is consistent between files
             match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
             if not match:
-                messagebox.showerror("Error", message)
+                self.log_message("Error", message)
                 return
             self.update_passive_frequency_list()
 
@@ -223,7 +375,8 @@ class AntennaPlotGUI:
             self.btn_save_to_file.grid_remove()
             self.btn_settings.grid_remove()
             self.btn_import.grid_remove()
-            
+            self.log_message("CST .ffs file created successfully.")
+
             # Create the new button if it doesn't exist, or just show it if it does
             if not hasattr(self, 'convert_files_button'):
                 self.convert_files_button = tk.Button(self.root, text="Convert Files", command=lambda: convert_HpolVpol_files(self.vswr_file_path, self.hpol_file_path, self.vpol_file_path, float(self.cable_loss.get()), self.freq_list, float(self.selected_frequency.get()), callback=self.update_visibility), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
@@ -233,11 +386,14 @@ class AntennaPlotGUI:
     
     # Function to start Active Chamber Calibration routine
     def open_active_chamber_cal(self):
+        self.log_message("Active Chamber Calibration routine started....")
+
         # Implement the logic of the calibration file import
         power_measurement = filedialog.askopenfilename(title="Select the Signal Generator/Power Meter Measurement File",
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         # Check if user canceled the first selection
         if not power_measurement:
+            self.log_message("File selection canceled.")
             return
         self.power_measurement = power_measurement
 
@@ -245,13 +401,16 @@ class AntennaPlotGUI:
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         # Check if user canceled the first selection
         if not BLPA_HORN_GAIN_STD:
+            self.log_message("File selection canceled.")
             return
+        
         self.BLPA_HORN_GAIN_STD = BLPA_HORN_GAIN_STD
 
         first_file = filedialog.askopenfilename(title="Select the BLPA or Horn Antenna HPOL or VPOL File",
                                                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
             # Check if user canceled the first selection
         if not first_file:
+            self.log_message("File selection canceled.")
             return
         
         second_file = filedialog.askopenfilename(title="Select the other HPOL or VPOL File",
@@ -264,7 +423,7 @@ class AntennaPlotGUI:
             
             # Check if both files have the same polarization
             if first_polarization == second_polarization:
-                messagebox.showerror("Error", "Both files cannot be of the same polarization.")
+                self.log_message("Error", "Both files cannot be of the same polarization.")
                 return
 
             if first_polarization == "HPol":
@@ -277,7 +436,7 @@ class AntennaPlotGUI:
             #Check if File names match and data is consistent between files
             match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
             if not match:
-                messagebox.showerror("Error", message)
+                self.log_message("Error", message)
                 return
             self.update_passive_frequency_list()
 
@@ -287,6 +446,8 @@ class AntennaPlotGUI:
             self.btn_settings.grid_remove()
             self.btn_import.grid_remove()
             
+            self.log_message("Active Chamber Calibration File Created Successfully.")
+
             # Create the new button if it doesn't exist, or just show it if it does
             if not hasattr(self, 'generate_active_cal_button'):
                 self.convert_files_button = tk.Button(self.root, text="Generate Calibration File", command=lambda: generate_active_cal_file(self.power_measurement, self.BLPA_HORN_GAIN_STD, self.hpol_file_path, self.vpol_file_path, float(self.cable_loss.get()), self.freq_list, callback=self.update_visibility), bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
@@ -323,7 +484,8 @@ class AntennaPlotGUI:
             # Create a simple tkinter window for the dialog
             root = tk.Tk()
             root.withdraw()  # Hide the main window
-
+            self.log_message("Update Available. A new version {latest_version} is available!")
+                             
             answer = messagebox.askyesno("Update Available",
                                         f"A new version {latest_version} is available! Would you like to download it?")
 
@@ -397,10 +559,26 @@ class AntennaPlotGUI:
         settings_window.geometry("600x200")  # Increase the size
         settings_window.title(f"{scan_type_value.capitalize()} Settings")
         if scan_type_value == "active":
-            # TODO Show settings specific to active scan
-            label = tk.Label(settings_window, text="Placeholder for Active settings")
+            # Show settings specific to active scan
+            label = tk.Label(settings_window, text="Active Plot Settings")
             label.grid(row=0, column=0, columnspan=2, pady=20)
-            # Add more active-specific settings here
+            
+            # Add checkbox for interpolation setting
+            self.interpolate_var = tk.BooleanVar(value=self.interpolate_3d_plots)
+            cb_interpolate = tk.Checkbutton(settings_window, text="Interpolate 3D Plots", variable=self.interpolate_var)
+            cb_interpolate.grid(row=1, column=0, sticky=tk.W, padx=20)
+
+
+            def save_active_settings():
+                # Save the interpolate setting
+                self.interpolate_3d_plots = self.interpolate_var.get()
+                # Update the visibility of the main GUI
+                self.update_visibility()
+                # Close the settings window after saving
+                settings_window.destroy()
+            save_button = tk.Button(settings_window, text="Save Settings", command=save_active_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+            save_button.grid(row=3, column=0, columnspan=2, pady=20)
+
         elif scan_type_value == "passive":
             # Show settings specific to passive scan
             label = tk.Label(settings_window, text="Passive Plot Settings")
@@ -683,62 +861,100 @@ class AntennaPlotGUI:
             
             process_groupdelay_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop, min_freq, max_freq)    
     
+    def log_message(self, message):
+        self.log_text.configure(state='normal')
+        self.log_text.insert('end', message + '\n')
+        self.log_text.configure(state='disabled')
+        self.log_text.see('end')
+
     def process_data(self):
-        if self.scan_type.get() == "active":
-            # Call read_active_file and retrieve data variables 
-            # Assuming `file_content` is a string containing the content of the selected file
-            data = read_active_file(self.TRP_file_path)
-            
-            # Unpacking the data for further use
-            (frequency,start_phi,start_theta,stop_phi,stop_theta,inc_phi,inc_theta,
-            calc_trp,theta_angles_deg,phi_angles_deg,h_power_dBm,v_power_dBm
-            ) = (data["Frequency"],data["Start Phi"],data["Start Theta"],data["Stop Phi"],
-            data["Stop Theta"],data["Inc Phi"],data["Inc Theta"], data["Calculated TRP(dBm)"],
-            data["Theta_Angles_Deg"],data["Phi_Angles_Deg"],data["H_Power_dBm"],data["V_Power_dBm"])
+        try:
+            if self.scan_type.get() == "active":
+                # Call read_active_file and retrieve data variables 
+                # Assuming `file_content` is a string containing the content of the selected file
+                data = read_active_file(self.TRP_file_path)
+                
+                # Unpacking the data for further use
+                self.log_message("Processing active data...")
+                (frequency,start_phi,start_theta,stop_phi,stop_theta,inc_phi,inc_theta,
+                calc_trp,theta_angles_deg,phi_angles_deg,h_power_dBm,v_power_dBm
+                ) = (data["Frequency"],data["Start Phi"],data["Start Theta"],data["Stop Phi"],
+                data["Stop Theta"],data["Inc Phi"],data["Inc Theta"], data["Calculated TRP(dBm)"],
+                data["Theta_Angles_Deg"],data["Phi_Angles_Deg"],data["H_Power_dBm"],data["V_Power_dBm"])
 
-            # Calculate Variables for TRP/Active Measurement Plotting        
-            active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
-            
-            #Define Active Variables
-            (data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
-            total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min,
-            v_power_dBm_2d,v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm,
-            h_TRP_dBm, v_TRP_dBm) = active_variables
+                # Calculate Variables for TRP/Active Measurement Plotting        
+                active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
+                
+                #Define Active Variables
+                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
+                total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
+                v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
 
-            # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
-            # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-            plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
-            
-            # TODO 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
-            plot_active_3d_data()
+                # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+                # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+                plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
+                # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+                #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, h_power_dBm_2d, frequency)
+                # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+                #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, v_power_dBm_2d, frequency)
 
-        elif self.scan_type.get() == "passive":
-            #After reading & parsing, hpol_data and vpol_data will be lists of dictionaries. 
-            #Each dictionary will represent a frequency point and will contain:
-                #'frequency': The frequency value
-                #'cal_factor': Calibration factor for that frequency
-                #'data': A list of tuples, where each tuple contains (theta, phi, mag, phase).
-            parsed_hpol_data, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = read_passive_file(self.hpol_file_path)
-            hpol_data = parsed_hpol_data
+                # 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
+                plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=self.interpolate_3d_plots)
+                plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=self.interpolate_3d_plots)
+                plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=self.interpolate_3d_plots)
 
-            parsed_vpol_data, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = read_passive_file(self.vpol_file_path)
-            vpol_data = parsed_vpol_data
+                self.log_message("Active data processed successfully.")
+                return
             
-            #check to see if selected files have mismatched frequency or angle data
-            angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-                            start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v)
+            elif self.scan_type.get() == "passive":
+                self.log_message("Processing passive data...")
 
-            #Call Methods to Calculate Required Variables and Set up variables for plotting 
-            passive_variables = calculate_passive_variables(hpol_data, vpol_data, float(self.cable_loss.get()), start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h, self.freq_list, float(self.selected_frequency.get()))
-            theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
-            
-            #Call Method to Plot Passive Data
-            plot_2d_passive_data(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), self.datasheet_plots_var.get())
-            
-            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="total")
-            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="hpol")
-            plot_passive_3d_component(theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="vpol")
+                #After reading & parsing, hpol_data and vpol_data will be lists of dictionaries. 
+                #Each dictionary will represent a frequency point and will contain:
+                    #'frequency': The frequency value
+                    #'cal_factor': Calibration factor for that frequency
+                    #'data': A list of tuples, where each tuple contains (theta, phi, mag, phase).
+                parsed_hpol_data, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = read_passive_file(self.hpol_file_path)
+                hpol_data = parsed_hpol_data
 
-            return
-        
+                parsed_vpol_data, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = read_passive_file(self.vpol_file_path)
+                vpol_data = parsed_vpol_data
+                
+                # Check if angle data matches
+                if not angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
+                                start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v):
+                    messagebox.showerror("Error", "Angle data mismatch between HPol and VPol files.")
+                    self.log_message("Error: Angle data mismatch between HPol and VPol files.")
+                    return
+                
+                #Call Methods to Calculate Required Variables and Set up variables for plotting 
+                passive_variables = calculate_passive_variables(hpol_data, vpol_data, float(self.cable_loss.get()), start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h, self.freq_list, float(self.selected_frequency.get()))
+                theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
+                
+                # If frequency is below 500MHz, convert NF measurements to FF
+                if float(self.selected_frequency.get()) < 500:
+                    # Measurement distance is fixed at 1 meter
+                    measurement_distance = 1.0  # meters
+                    # Window function is fixed to 'none'
+                    window_function = 'none'
+
+                    self.log_message("Applying NF2FF Transformation...")
+                    hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
+                        hpol_data, vpol_data, float(self.selected_frequency.get()),
+                        start_phi_h, stop_phi_h, inc_phi_h,
+                        start_theta_h, stop_theta_h, inc_theta_h,
+                        measurement_distance, window_function
+                    )
+                else: # if frequency is above 500MHz, plot passive data normally
+                    hpol_far_field = h_gain_dB
+                    vpol_far_field = v_gain_dB
+                self.log_message("Passive data processed successfully.")
+                plot_2d_passive_data(theta_angles_deg, phi_angles_deg, hpol_far_field, vpol_far_field, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), self.datasheet_plots_var.get())
+                plot_passive_3d_component(theta_angles_deg, phi_angles_deg, hpol_far_field, vpol_far_field, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="total")
+                plot_passive_3d_component(theta_angles_deg, phi_angles_deg, hpol_far_field, vpol_far_field, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="hpol") 
+                plot_passive_3d_component(theta_angles_deg, phi_angles_deg, hpol_far_field, vpol_far_field, Total_Gain_dB, self.freq_list, float(self.selected_frequency.get()), gain_type="vpol")
+                
+                return
+        except Exception as e:
+            self.log_message(f"Error: {e}")    
     
