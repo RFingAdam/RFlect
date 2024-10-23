@@ -14,18 +14,22 @@ from tkinter import simpledialog
 
 # _____________Active Plotting Functions___________
 # Function called by gui.py to start the active plotting procedure after parsing and calculating variables
-def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency):
-    # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
+def plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency, save_path=None):
+    # Plot Azimuth cuts for different theta values on one plot
     theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165]
-    plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
     
-    # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-    plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
-
+    # Save 2D Azimuth Power Cuts with naming consistency if save_path is provided
+    if save_path:
+        plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency, save_path=save_path)
+        plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency, save_path=save_path)
+    else:
+        plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, theta_values_to_plot, frequency)
+        plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency)
+    
     return
 
 # Plot 2D Azimuth Power Cuts vs Phi for various value of theta to plot
-def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency):
+def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, theta_values_to_plot, frequency, save_path=None):
     """
     Plot azimuth power pattern cuts for specified theta values.
 
@@ -70,11 +74,85 @@ def plot_2d_azimuth_power_cuts(phi_angles_rad, theta_angles_rad, power_dBm_2d, t
     ax.legend(loc="upper right", bbox_to_anchor=(1.5, 1))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
 
-    # TODO if Save Results or View
-    plt.show()
+    if save_path:
+        # Save the plot with appropriate naming
+        azimuth_plot_path = os.path.join(save_path, f"2D_Azimuth_Cuts_{frequency}_MHz.png")
+        plt.savefig(azimuth_plot_path, format='png')
+        plt.close()  # Close the plot after saving
+    else:
+        plt.show()
 
+# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
+def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency, save_path=None):
+    # Sanitize the frequency string to avoid special characters
+    sanitized_frequency = str(frequency).replace('/', '_').replace('=', '_').replace(':', '_')
+
+    # Azimuth Power Pattern at Theta = 90deg
+    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi / 2, atol=1e-6)).flatten()
+    if idx_theta_90.size > 0:
+        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
+        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
+        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))
+
+        title = f"Total Power in Theta = 90deg Plane, Freq = {sanitized_frequency}MHz"
+        plot_polar_power_pattern(title, phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power, save_path=save_path)
+
+    # Elevation Power Pattern in the Phi = 270deg/90deg plane
+    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, 3 * np.pi / 2, atol=1e-6)).flatten()
+    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, np.pi / 2, atol=1e-6)).flatten()
+
+    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
+        theta_phi_90 = theta_angles_rad
+        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
+
+        theta_phi_270 = 2 * np.pi - theta_angles_rad
+        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
+
+        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))
+
+        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
+        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
+
+        annotations = [
+            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=270', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+
+        title = f"Elevation Power Pattern at Phi = 270/90deg, Freq = {frequency}MHz"
+        plot_polar_power_pattern(title, theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations, save_path=save_path)
+
+    # Elevation Power Pattern in the Phi = 180deg/0deg plane
+    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
+    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
+
+    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
+        theta_phi_0 = theta_angles_rad
+        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
+
+        theta_phi_180 = 2 * np.pi - theta_angles_rad
+        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
+
+        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
+        max_power = np.max(power_combined_calc)
+        min_power = np.min(power_combined_calc)
+        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))
+
+        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
+        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
+
+        annotations = [
+            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
+            {'text': 'Phi=180', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
+        ]
+
+        title = f"Elevation Power Pattern at Phi = 180/0deg, Freq = {frequency}MHz"
+        plot_polar_power_pattern(title, theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations, save_path=save_path)
+        
 # General Polar Plotting Function for Active Plots
-def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom', annotations=None):
+def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min_power, avg_power, summary_position='bottom', annotations=None, save_path=None):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
         
     if plane == "azimuth":
@@ -113,84 +191,14 @@ def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min
         for annotation in annotations:
             ax.annotate(annotation['text'], xy=annotation['xy'], xycoords='data', textcoords='offset points', xytext=annotation['xytext'], ha='center', fontsize=12, bbox=dict(boxstyle="round", alpha=0.5, facecolor='white'))
     
-    plt.show()
-
-# Plot Additional Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-def plot_additional_active_polar_plots(phi_angles_rad, theta_angles_rad, total_power_dBm_2d, frequency):
-    
-    # Azimuth Power Pattern at Theta = 90deg
-    idx_theta_90 = np.argwhere(np.isclose(theta_angles_rad, np.pi/2, atol=1e-6)).flatten()
-    if idx_theta_90.size > 0:
-        # Power Summary
-        max_power = np.max(total_power_dBm_2d[idx_theta_90, :])
-        min_power = np.min(total_power_dBm_2d[idx_theta_90, :])
-        avg_power = 10 * np.log10(np.mean(10 ** (total_power_dBm_2d[idx_theta_90, :] / 10)))  # average in linear scale converted back to dB
-        
-        plot_polar_power_pattern(f"Total Power in Theta = 90deg Plane, Freq = {frequency}MHz",
-                                phi_angles_rad, total_power_dBm_2d[idx_theta_90, :].flatten(), "azimuth", max_power, min_power, avg_power)
-    
-    # Elevation Power Pattern in the Phi = 270deg/90deg plane
-    idx_phi_90 = np.argwhere(np.isclose(phi_angles_rad, 3 * np.pi/2, atol=1e-6)).flatten()
-    idx_phi_270 = np.argwhere(np.isclose(phi_angles_rad, np.pi/2, atol=1e-6)).flatten()
-
-    if idx_phi_90.size > 0 and idx_phi_270.size > 0:
-        theta_phi_90 = theta_angles_rad
-        power_phi_90 = total_power_dBm_2d[:, idx_phi_90].flatten()
-        
-        theta_phi_270 = 2*np.pi - theta_angles_rad
-        power_phi_270 = total_power_dBm_2d[:, idx_phi_270].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_90, power_phi_270))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_90, [np.nan], theta_phi_270))
-        power_combined = np.concatenate((power_phi_90, [np.nan], power_phi_270))
-        
-        annotations = [
-            {'text': 'Phi=90', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
-            {'text': 'Phi=270', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
-        ]
-        
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 270/90deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
-
-    # Elevation Power Pattern in the Phi = 180deg/0deg plane
-    idx_phi_0 = np.argwhere(np.isclose(phi_angles_rad, np.pi, atol=1e-6)).flatten()
-    idx_phi_180 = np.argwhere(np.isclose(phi_angles_rad, 0, atol=1e-6)).flatten()
-
-    if idx_phi_0.size > 0 and idx_phi_180.size > 0:
-        # For Phi=0, the theta values can be used directly.
-        theta_phi_0 = theta_angles_rad
-        power_phi_0 = total_power_dBm_2d[:, idx_phi_0].flatten()
-        
-        # For Phi=180, we should subtract the theta values from pi to ensure they are on the opposite side of the plot.
-        theta_phi_180 = 2*np.pi - theta_angles_rad
-        power_phi_180 = total_power_dBm_2d[:, idx_phi_180].flatten()
-        
-        # Concatenate for min/max/avg calc
-        power_combined_calc = np.concatenate((power_phi_0, power_phi_180))
-        # Power Summary
-        max_power = np.max(power_combined_calc)
-        min_power = np.min(power_combined_calc)
-        avg_power = 10 * np.log10(np.mean(10 ** (power_combined_calc / 10)))  # average in linear scale converted back to dB
-        
-        # Concatenate for plotting, leaving Theta=180 not interpolated
-        theta_combined = np.concatenate((theta_phi_0, [np.nan], theta_phi_180))
-        power_combined = np.concatenate((power_phi_0, [np.nan], power_phi_180))
-        
-        annotations = [
-            {'text': 'Phi=0', 'xy': (3 * np.pi / 2, max_power), 'xytext': (0, 20)},
-            {'text': 'Phi=180', 'xy': (np.pi / 2, max_power), 'xytext': (0, 20)}
-        ]
-        
-        plot_polar_power_pattern(f"Elevation Power Pattern at Phi = 180/0deg, Freq = {frequency}MHz",
-                                theta_combined, power_combined, "elevation", max_power, min_power, avg_power, annotations=annotations)
-        
+    if save_path:
+        # Sanitize the title string to avoid special characters in file names
+        sanitized_title = title.replace(' ', '_').replace('=', '_').replace(':', '_').replace('/', '_')
+        plot_path = os.path.join(save_path, f"{sanitized_title}.png")
+        plt.savefig(plot_path, format='png')
+        plt.close(fig)
+    else:
+        plt.show()
 
 def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=None):
     """
@@ -405,7 +413,7 @@ def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, fr
         fig.savefig(plot_3d_path_1, format='png')
 
         # Adjust view angle to get the rear side of the 3D plot
-        ax.view_init(elev=20, azim=-30)  # Adjust the azimuthal angle to get the rear view
+        ax.view_init(elev=20, azim=150)
 
         # Save the second view
         plot_3d_path_2 = os.path.join(save_path, f"3D_TRP_{power_type}_{frequency}MHz_2of2.png")
