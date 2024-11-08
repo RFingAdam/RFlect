@@ -1,5 +1,5 @@
 from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file, convert_HpolVpol_files, generate_active_cal_file
-from save import save_to_results_folder,generate_report, save_to_results_folder, RFAnalyzer
+from save import save_to_results_folder,generate_report, RFAnalyzer
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables, apply_nf2ff_transformation
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
@@ -308,9 +308,11 @@ class AntennaPlotGUI:
             if scan_type == "active":
                 # For active measurements, no need to get the frequency from user input
                 frequency = None  # Frequency will come from the active file
+                cable_loss = None  # Cable loss is not applicable for active scans
             else:
                 # For passive measurements, ensure a frequency is selected
                 frequency = self.selected_frequency.get()
+                cable_loss = float(self.cable_loss.get())
                 if not frequency:
                     messagebox.showerror("Error", "Please select a frequency before saving.")
                     return
@@ -324,7 +326,7 @@ class AntennaPlotGUI:
                 self.hpol_file_path,
                 self.vpol_file_path,
                 self.TRP_file_path,
-                float(self.cable_loss.get()),
+                cable_loss,
                 self.datasheet_plots_var.get(),
                 word=False
             )
