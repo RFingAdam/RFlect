@@ -15,6 +15,7 @@ import json
 import sys
 import webbrowser
 import matplotlib
+import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
@@ -71,7 +72,8 @@ class AntennaPlotGUI:
         self.hpol_file_path = None
         self.TRP_file_path = None
         self.vpol_file_path = None
-        
+        self.min_max_vswr_var = tk.BooleanVar(value=getattr(self, 'saved_min_max_vswr', False))  # Default to False if not set
+
         #initializing VSWR/S11 settings
         self.saved_limit1_freq1 = 0.0
         self.saved_limit1_freq2 = 0.0
@@ -637,7 +639,7 @@ class AntennaPlotGUI:
                 self.saved_limit2_stop = self.limit2_val2.get()
 
                 self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
-
+                self.saved_min_max_vswr = self.min_max_vswr_var.get()  # Save checkbox state                
                 # Close the settings window after saving
                 settings_window.destroy()
 
@@ -672,10 +674,20 @@ class AntennaPlotGUI:
                 self.saved_limit2_stop = DEFAULT_LIMIT2_STOP
 
                 self.cb_groupdelay_sff_var.set(False)
+                self.saved_min_max_vswr = False 
+                if hasattr(self, 'saved_min_max_vswr'):
+                                self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Create the "Group Delay Setting" Checkbutton
             self.cb_groupdelay_sff = tk.Checkbutton(settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var)
             self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
+            
+            # Create the Min/Max VSWR Checkbutton
+            self.cb_min_max_vswr = tk.Checkbutton(settings_window, text="Tabled Min/Max VSWR", variable=self.min_max_vswr_var)
+            self.cb_min_max_vswr.grid(row=1, column=2, sticky=tk.W)  # Adjust the row/column as necessary
+            # If there’s a saved value, use it to initialize the checkbox
+            if hasattr(self, 'saved_min_max_vswr'):
+                self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Limit 1
             tk.Label(settings_window, text="Limit 1 Frequency Start (GHz):").grid(row=2, column=0)
@@ -819,7 +831,7 @@ class AntennaPlotGUI:
                     return
                 self.update_passive_frequency_list()
 
-        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == False:
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == False and self.min_max_vswr_var.get() == False:
             num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import?")
             if not num_files:
                 return
@@ -834,7 +846,7 @@ class AntennaPlotGUI:
 
             process_vswr_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)    
         
-        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True:
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True and self.min_max_vswr_var.get() == False:
             # Group Delay and SFF Routine
             num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import? (8 typ. for Theta=0deg to 315deg in 45deg steps)")
             if not num_files:
@@ -860,7 +872,94 @@ class AntennaPlotGUI:
             max_freq = float(max_freq) if max_freq else None
             
             process_groupdelay_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop, min_freq, max_freq)    
+        
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == False and self.min_max_vswr_var.get() == True:
+            # Min/Max VSWR Routine
+            num_files = tk.simpledialog.askinteger("Input", "How many VSWR files do you want to import?")
+            if not num_files:
+                return
+            # Get the number of frequency bands
+            num_bands = tk.simpledialog.askinteger("Input", "How many frequency bands would you like to define?")
+            if not num_bands:
+                return
+            # Gather frequency ranges for each band
+            bands = []
+            for i in range(num_bands):
+                freq_range_input = tk.simpledialog.askstring("Input", f"Enter frequency range for Band {i+1} as 'min,max' (in MHz):", parent=self.root)
+                try:
+                    freq_min, freq_max = map(float, freq_range_input.split(','))
+                    bands.append((freq_min, freq_max))
+                except ValueError:
+                    messagebox.showerror("Error", "Invalid frequency range. Please enter values in 'min,max' format.")
+                    return
+             # Select files for analysis
+            file_paths = []
+            for _ in range(num_files):
+                file_path = filedialog.askopenfilename(title="Select the VSWR 1-Port File(s) of format .csv", filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+                if not file_path:  # if user cancels the dialog
+                    return
+                file_paths.append(file_path)
+
+            # Process and calculate Min/Max VSWR for each band across all files
+            min_max_vswr_data = []
+            for idx, (freq_min, freq_max) in enumerate(bands, start=1):
+                band_results = self.calculate_min_max_vswr(file_paths, freq_min, freq_max)
+                min_max_vswr_data.append((f"Band {idx} ({freq_min}-{freq_max} MHz)", band_results))
+
+            # Display the Min/Max VSWR table with band information
+            self.display_vswr_table(min_max_vswr_data)
+
+        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True and self.min_max_vswr_var.get() == True:
+            # Can't have both Group Delay/SFF and Min/Max VSWR selected
+            messagebox.showerror("Error", "Cannot have both Group Delay/SFF and Min/Max VSWR selected.")
+            return
     
+    def calculate_min_max_vswr(self, file_paths, freq_min, freq_max):
+        min_max_vswr_data = []
+
+        for file_path in file_paths:
+            vswr_data = pd.read_csv(file_path)
+            
+            # Assuming frequency is in the first column and VSWR in the second
+            freqs = vswr_data.iloc[:, 0] / 1e6  # Convert from Hz to MHz if needed
+            vswr_values = vswr_data.iloc[:, 1]
+            
+            # Filter data within the frequency range
+            within_range = (freqs >= freq_min) & (freqs <= freq_max)
+            min_vswr = vswr_values[within_range].min()
+            max_vswr = vswr_values[within_range].max()
+            
+            min_max_vswr_data.append((file_path, min_vswr, max_vswr))
+        
+        return min_max_vswr_data
+    
+    def display_vswr_table(self, min_max_vswr_data):
+        result_window = tk.Toplevel(self.root)
+        result_window.title("Min/Max VSWR Results by Band")
+        
+        row = 0
+        for band_label, band_results in min_max_vswr_data:
+            # Display band header
+            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=3, pady=5)
+            row += 1
+
+            # Table headers for each band
+            headers = ["File", "Min VSWR", "Max VSWR"]
+            for col, header in enumerate(headers):
+                tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(row=row, column=col, padx=10, pady=5)
+            row += 1
+
+            # Data rows for each file in the band
+            for file, min_vswr, max_vswr in band_results:
+                tk.Label(result_window, text=os.path.basename(file)).grid(row=row, column=0, padx=10, pady=5)
+                tk.Label(result_window, text=f"{min_vswr:.2f}").grid(row=row, column=1, padx=10, pady=5)
+                tk.Label(result_window, text=f"{max_vswr:.2f}").grid(row=row, column=2, padx=10, pady=5)
+                row += 1
+
+            # Add some space between bands
+            row += 1
+
+
     def log_message(self, message):
         self.log_text.configure(state='normal')
         self.log_text.insert('end', message + '\n')
@@ -886,23 +985,46 @@ class AntennaPlotGUI:
                 active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
                 
                 #Define Active Variables
-                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
-                total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
-                v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
+                total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
+                phi_angles_deg_plot, phi_angles_rad_plot,
+                total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
+                total_power_dBm_min, total_power_dBm_nom,
+                h_power_dBm_min, h_power_dBm_nom,
+                v_power_dBm_min, v_power_dBm_nom,
+                TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+
+
 
                 # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-                plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
+                plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad_plot, total_power_dBm_2d_plot, frequency)
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
                 #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, h_power_dBm_2d, frequency)
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
                 #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, v_power_dBm_2d, frequency)
 
                 # 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=self.interpolate_3d_plots)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=self.interpolate_3d_plots)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=self.interpolate_3d_plots)
+                # For total power
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
+                    phi_angles_deg_plot, total_power_dBm_2d_plot,
+                    frequency, power_type='total', interpolate=self.interpolate_3d_plots
+                )
 
+                # For horizontal polarization (hpol)
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, h_power_dBm_2d,
+                    phi_angles_deg_plot, h_power_dBm_2d_plot,
+                    frequency, power_type='hpol', interpolate=self.interpolate_3d_plots
+                )
+
+                # For vertical polarization (vpol)
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, v_power_dBm_2d,
+                    phi_angles_deg_plot, v_power_dBm_2d_plot,
+                    frequency, power_type='vpol', interpolate=self.interpolate_3d_plots
+                )
                 self.log_message("Active data processed successfully.")
                 return
             

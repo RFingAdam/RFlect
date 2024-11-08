@@ -200,7 +200,9 @@ def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min
     else:
         plt.show()
 
-def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=None):
+def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
+                        phi_angles_deg_plot, total_power_dBm_2d_plot,
+                        frequency, power_type='total', interpolate=True, save_path=None):
     """
     Plot a 3D representation of the active data (TRP).
 
@@ -242,11 +244,6 @@ def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, fr
         theta_flat = THETA_deg.flatten()
         phi_flat = PHI_deg.flatten()
         power_flat = total_power_dBm_2d.flatten()
-
-        # Ensure phi wraps from 0° to 360°
-        if phi_angles_deg[-1] < 360:
-            phi_angles_deg = np.append(phi_angles_deg, 360)
-            total_power_dBm_2d = np.column_stack((total_power_dBm_2d, total_power_dBm_2d[:, 0]))
 
         # Check for NaN values in the data
         if np.isnan(power_flat).any():
