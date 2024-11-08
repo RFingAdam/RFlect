@@ -1,5 +1,8 @@
 # RFlect - Release Notes
 
+## Version 3.0.1 (11/8/2024)
+- Corrected Active TRP Measurement Calculation before Phi=0/360 append
+
 ## Version 3.0.0 (10/23/2024)
 - Implemented Active 3D plotting
 - Implement Save Results to File for Active Scans
