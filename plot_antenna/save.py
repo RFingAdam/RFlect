@@ -205,19 +205,41 @@ def save_to_results_folder(selected_frequency, freq_list, scan_type, hpol_path, 
         active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
 
         # Unpack calculated active variables
-        (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
-        total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
-        v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+        (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
+        total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
+        phi_angles_deg_plot, phi_angles_rad_plot,
+        total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
+        total_power_dBm_min, total_power_dBm_nom,
+        h_power_dBm_min, h_power_dBm_nom,
+        v_power_dBm_min, v_power_dBm_nom,
+        TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
         
         # Plot and save the 2D and 3D data (instead of displaying)
         print("Saving 2D Active Plots...")
         plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency, save_path=two_d_data_path)
         
         print("Saving 3D Active Plots...")
-        plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=three_d_data_path)
-        plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=True, save_path=three_d_data_path)
-        plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=True, save_path=three_d_data_path)
-    
+        # For total power
+        plot_active_3d_data(
+            theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
+            phi_angles_deg_plot, total_power_dBm_2d_plot,
+            frequency, power_type='total', interpolate=True, save_path=three_d_data_path
+        )
+
+        # For horizontal polarization (hpol)
+        plot_active_3d_data(
+            theta_angles_deg, phi_angles_deg, h_power_dBm_2d,
+            phi_angles_deg_plot, h_power_dBm_2d_plot,
+            frequency, power_type='hpol', interpolate=True, save_path=three_d_data_path
+        )
+
+        # For vertical polarization (vpol)
+        plot_active_3d_data(
+            theta_angles_deg, phi_angles_deg, v_power_dBm_2d,
+            phi_angles_deg_plot, v_power_dBm_2d_plot,
+            frequency, power_type='vpol', interpolate=True, save_path=three_d_data_path
+        )
+        
     elif scan_type == "passive":
         # After reading & parsing, hpol_data and vpol_data will be lists of dictionaries. 
         # Each dictionary will represent a frequency point and will contain:
