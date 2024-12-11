@@ -234,23 +234,35 @@ def process_gd_file(filepath):
         with open(filepath, 'r') as file:
             lines = file.readlines()
 
-        # Find the start of the data
+        data_start_line = None
         for i, line in enumerate(lines):
-            if "Freq" in line:
-                data_start_line = i + 10
+            if "Freq" in line and "Gain" in line and "Directivity" in line and "Efficiency" in line:
+                # The next non-blank line after this should be data_start_line
+                data_start_line = i + 1
+                # Now find the first truly numeric line
+                while data_start_line < len(lines) and (lines[data_start_line].strip() == "" or not lines[data_start_line].strip()[0].isdigit()):
+                    data_start_line += 1
                 break
-        else:
-            raise Exception("Could not find the start of the data in the provided file.")
+
+        if data_start_line is None:
+            raise Exception("Could not find the data header line in the provided file.")
 
         # Extract data
         for line in lines[data_start_line:]:
-            if line.strip() == "":
+            line = line.strip()
+            if not line:  # Blank line means end of data
                 break
             parts = line.split()
+            # Check if we have four columns and the first is numeric
+            if len(parts) < 4 or not parts[0].replace('.', '', 1).isdigit():
+                # Not a valid data line
+                continue  # or break, depending on file structure
+            
             frequency.append(float(parts[0]))
             gain.append(float(parts[1]))
             directivity.append(float(parts[2]))
             efficiency.append(float(parts[3]))
+
 
         return {
             'Frequency': frequency,
@@ -268,7 +280,10 @@ def parse_2port_data(file_path):
     data.columns = [col.strip() for col in data.columns]
 
     # Check which columns are available in the data
-    available_columns = [col for col in ['! Stimulus(Hz)', 'S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)'] if col in data.columns]
+    available_columns = [col for col in [
+        '! Stimulus(Hz)', 'S11(SWR)', 'S22(SWR)', 'S11(dB)', 'S22(dB)', 
+        'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)'
+    ] if col in data.columns]
     
     # If not all columns are available, handle it gracefully
     if len(available_columns) < 5:

@@ -1060,7 +1060,7 @@ def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved
         all_data = [parse_2port_data(file_path) for file_path in file_paths]
         
        # Define a preferred order for the S-parameters
-        preferred_order = ['S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)']
+        preferred_order = ['S11(dB)', 'S11(SWR)', 'S22(dB)', 'S22(SWR)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)']
         
         # Extract all the unique S-parameters across the files
         unique_columns = set(col for data in all_data for col in data.columns if col != '! Stimulus(Hz)')
@@ -1090,7 +1090,10 @@ def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved
                     if 'dB' in column:
                         ax.set_ylabel('Magnitude (dB)')
                     elif 's' in column:
-                        ax.set_ylabel('Group Delay (ns)')    
+                        ax.set_ylabel('Group Delay (ns)')
+                    elif 'SWR' in column:
+                        ax.set_ylabel('VSWR')  
+                        ax.set_ylim(top=5)  # Cap the Y-axis at 5 for VSWR
                     else:
                         ax.set_ylabel('Value')
                     ax.grid(True)
