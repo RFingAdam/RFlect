@@ -46,7 +46,7 @@ def calculate_min_max_parameters(file_paths, bands, param_name):
     results = []
 
     for i, (freq_min, freq_max) in enumerate(bands, start=1):
-        band_label = f"Band {i} ({freq_min}-{freq_max} MHz)"
+        band_label = f"({freq_min}-{freq_max} MHz)"
         band_data = []
 
         for file_path in file_paths:
@@ -96,8 +96,8 @@ def display_parameter_table(results, param_name, parent=None):
     Display the results from calculate_min_max_parameters in a Tkinter Toplevel window.
 
     Parameters:
-        results (list): The results list from calculate_min_max_parameters.
-        param_name (str): Name of the parameter (e.g., "VSWR", "S21").
+        results (list): The results list from calculate_min_max_parameter.
+        param_name (str): Name of the parameter (e.g., "VSWR").
         parent: The parent Tk widget (e.g., self.root from your main GUI class).
     """
     if parent is None:
@@ -128,7 +128,6 @@ def display_parameter_table(results, param_name, parent=None):
 
         # Add some space between bands
         row += 1
-
 
 class AntennaPlotGUI:
     """
@@ -883,66 +882,68 @@ class AntennaPlotGUI:
         
     def calculate_min_max_eff_gain(self, file_paths, bands):
         """
-        For each band, calculate the min and max of Gain (dBi) and Efficiency (dB).
-        - Gain in the G&D file is already in dBi, so we use it as is.
-        - Efficiency is in percentage; convert from % to dB:
-          Efficiency_dB = 10 * log10(Efficiency_%/100)
-
-        If zero or negative efficiency values occur, they are replaced with a small positive number to avoid log errors.
+        For each band, calculate the min, max, and average of Gain (dBi) and Efficiency (both as fraction and dB).
+        - Gain in the G&D file is already in dBi.
+        - Efficiency is in percentage; convert from % to fraction and dB:
+        Efficiency_dB = 10 * log10(Efficiency_%/100).
         """
         results = []
         all_data = []
         for fpath in file_paths:
             gd_data = process_gd_file(fpath)
             freq = np.array(gd_data['Frequency'])
-
-            # Gain is already in dBi from the G&D file  # MODIFIED
-            gain_dBi = np.array(gd_data['Gain'])  # already dBi, can be negative
-           
-            # Efficiency is in %. Convert to fraction and then to dB  # MODIFIED
+            
+            gain_dBi = np.array(gd_data['Gain'])  # Gain already in dBi
             eff_percent = np.array(gd_data['Efficiency'])
             eff_fraction = eff_percent / 100.0
-            eff_fraction[eff_fraction <= 0] = 1e-12
+            eff_fraction[eff_fraction <= 0] = 1e-12  # Avoid log issues
             eff_dB = 10 * np.log10(eff_fraction)
 
+            avg_eff_fraction = np.mean(eff_fraction)
+            avg_eff_dB = 10 * np.log10(avg_eff_fraction)
 
-            all_data.append((fpath, freq, gain_dBi, eff_dB))
+            all_data.append((fpath, freq, gain_dBi, eff_dB, avg_eff_fraction, avg_eff_dB))
         
-        # For each band, find min/max
         for i, (freq_min, freq_max) in enumerate(bands, start=1):
-            band_label = f"Band {i} ({freq_min}-{freq_max} MHz)"
+            band_label = f"({freq_min}-{freq_max} MHz)"
             band_results = []
-            for fpath, freq, gain_dBi, eff_dB in all_data:
+            for fpath, freq, gain_dBi, eff_dB, avg_eff_fraction, avg_eff_dB in all_data:
                 within_range = (freq >= freq_min) & (freq <= freq_max)
-                band_min_gain = gain_dBi[within_range].min() if np.any(within_range) else None
-                band_max_gain = gain_dBi[within_range].max() if np.any(within_range) else None
-                band_min_eff = eff_dB[within_range].min() if np.any(within_range) else None
-                band_max_eff = eff_dB[within_range].max() if np.any(within_range) else None
-                band_results.append((os.path.basename(fpath), band_min_gain, band_max_gain, band_min_eff, band_max_eff))
+                min_gain = gain_dBi[within_range].min() if np.any(within_range) else None
+                max_gain = gain_dBi[within_range].max() if np.any(within_range) else None
+                min_eff = eff_dB[within_range].min() if np.any(within_range) else None
+                max_eff = eff_dB[within_range].max() if np.any(within_range) else None
+                band_results.append((os.path.basename(fpath), min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB))
             results.append((band_label, band_results))
         
         return results
 
     def display_eff_gain_table(self, results):
-        result_window = tk.Toplevel(self.root)
-        result_window.title("Min/Max Gain & Efficiency (dB) Results by Band")
+        """
+        Display the calculated min, max, and average efficiency (percentage and dB) along with gain (dBi).
+        """
+        result_window = tk.Toplevel()
+        result_window.title("Min/Max Gain & Efficiency Results by Band")
         
         row = 0
         for band_label, band_data in results:
-            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=5, pady=5)
+            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=7, pady=5)
             row += 1
 
-            headers = ["File", "Min Gain(dB)", "Max Gain(dB)", "Min Eff(dB)", "Max Eff(dB)"]
+            headers = ["File", "Min Gain(dB)", "Max Gain(dB)", "Min Eff(dB)", "Max Eff(dB)", "Avg Eff(%)", "Avg Eff(dB)"]
             for col, header in enumerate(headers):
                 tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(row=row, column=col, padx=10, pady=5)
             row += 1
 
-            for file, min_gain, max_gain, min_eff, max_eff in band_data:
+            for file, min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB in band_data:
+                avg_eff_percent = avg_eff_fraction * 100
                 tk.Label(result_window, text=file).grid(row=row, column=0, padx=10, pady=5)
                 tk.Label(result_window, text=f"{min_gain:.2f}" if min_gain is not None else "N/A").grid(row=row, column=1, padx=10, pady=5)
                 tk.Label(result_window, text=f"{max_gain:.2f}" if max_gain is not None else "N/A").grid(row=row, column=2, padx=10, pady=5)
                 tk.Label(result_window, text=f"{min_eff:.2f}" if min_eff is not None else "N/A").grid(row=row, column=3, padx=10, pady=5)
                 tk.Label(result_window, text=f"{max_eff:.2f}" if max_eff is not None else "N/A").grid(row=row, column=4, padx=10, pady=5)
+                tk.Label(result_window, text=f"{avg_eff_percent:.2f}").grid(row=row, column=5, padx=10, pady=5)
+                tk.Label(result_window, text=f"{avg_eff_dB:.2f}").grid(row=row, column=6, padx=10, pady=5)
                 row += 1
 
             row += 1
@@ -965,15 +966,15 @@ class AntennaPlotGUI:
 
                 scenario_var = tk.StringVar(value="")
 
-                # Example scenarios
-                lora_863 = tk.Radiobutton(scenario_window, text="Single-band LoRa 863-870 MHz", variable=scenario_var, value="LoRa_863")
-                lora_863.grid(row=0, column=0, sticky='w', padx=10, pady=5)
+                # TODO Example scenarios
+                #lora_863 = tk.Radiobutton(scenario_window, text="Single-band LoRa 863-870 MHz", variable=scenario_var, value="LoRa_863")
+                #lora_863.grid(row=0, column=0, sticky='w', padx=10, pady=5)
 
-                lora_902 = tk.Radiobutton(scenario_window, text="Single-band LoRa 902-928 MHz", variable=scenario_var, value="LoRa_902")
-                lora_902.grid(row=1, column=0, sticky='w', padx=10, pady=5)
+                #lora_902 = tk.Radiobutton(scenario_window, text="Single-band LoRa 902-928 MHz", variable=scenario_var, value="LoRa_902")
+                #lora_902.grid(row=1, column=0, sticky='w', padx=10, pady=5)
 
-                lora_dual = tk.Radiobutton(scenario_window, text="Dual-band LoRa 863-928 MHz", variable=scenario_var, value="LoRa_863_928")
-                lora_dual.grid(row=2, column=0, sticky='w', padx=10, pady=5)
+                #lora_dual = tk.Radiobutton(scenario_window, text="Dual-band LoRa 863-928 MHz", variable=scenario_var, value="LoRa_863_928")
+                #lora_dual.grid(row=2, column=0, sticky='w', padx=10, pady=5)
 
                 wifi_6e = tk.Radiobutton(scenario_window, text="WiFi 6e (2.4, 5, 6 GHz)", variable=scenario_var, value="WiFi_6e")
                 wifi_6e.grid(row=3, column=0, sticky='w', padx=10, pady=5)
@@ -1022,7 +1023,7 @@ class AntennaPlotGUI:
                     # We have predefined bands and files_per_band from scenario.
                     all_band_results = []
                     for i, (f_min, f_max) in enumerate(self.selected_bands, start=1):
-                        band_label = f"Band {i} ({f_min}-{f_max} MHz)"
+                        band_label = f"({f_min}-{f_max} MHz)"
                         messagebox.showinfo("Band Selection", f"Please select {self.files_per_band} G&D files for {band_label}")
                         file_paths = []
                         for _ in range(self.files_per_band):
@@ -1324,54 +1325,44 @@ class AntennaPlotGUI:
             self.log_message(f"Error: {e}")    
     def display_final_summary(self, results):
         """
-        Create a final summary table after processing all bands.
-        results = [(band_label, [(file, min_gain, max_gain, min_eff, max_eff), ...]), ...]
+        Create a final summary table with Min, Max, and Average Efficiency (as % and dB) for each band.
         """
-
-        # Extract band labels
-        band_labels = [band_label for (band_label, _) in results]
-
-        # band_summary will store global min/max for each band
+        # Calculate overall averages for each band
         band_summary = {}
-
         for band_label, band_data in results:
-            # Extract min/max values from all files in this band
-            eff_mins = [x[3] for x in band_data if x[3] is not None]
-            eff_maxs = [x[4] for x in band_data if x[4] is not None]
+            eff_fractions = [x[5] for x in band_data if x[5] is not None]
+            eff_dBs = [x[6] for x in band_data if x[6] is not None]
             gain_mins = [x[1] for x in band_data if x[1] is not None]
             gain_maxs = [x[2] for x in band_data if x[2] is not None]
 
-            if eff_mins and eff_maxs and gain_mins and gain_maxs:
-                band_min_eff = min(eff_mins)
-                band_max_eff = max(eff_maxs)
-                band_min_gain = min(gain_mins)
-                band_max_gain = max(gain_maxs)
-            else:
-                band_min_eff = band_max_eff = band_min_gain = band_max_gain = None
-            
-            band_summary[band_label] = (band_min_eff, band_max_eff, band_min_gain, band_max_gain)
+            # Calculate global min/max/average values for the band
+            avg_eff_fraction = np.mean(eff_fractions) if eff_fractions else None
+            avg_eff_percent = avg_eff_fraction * 100 if avg_eff_fraction else None
+            avg_eff_dB = np.mean(eff_dBs) if eff_dBs else None
+            band_min_gain = min(gain_mins) if gain_mins else None
+            band_max_gain = max(gain_maxs) if gain_maxs else None
+            band_summary[band_label] = (avg_eff_percent, avg_eff_dB, band_min_gain, band_max_gain)
 
+        # Create summary window
         summary_window = tk.Toplevel(self.root)
         summary_window.title("Final Summary")
 
         # Header
-        tk.Label(summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=len(band_labels)+1, pady=10)
-        
+        tk.Label(summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=len(results) + 1, pady=10)
+
         # Band labels as headers
         tk.Label(summary_window, text="Parameter", font=("Arial", 10, "bold")).grid(row=1, column=0, padx=10, pady=5)
-        for col, bl in enumerate(band_labels, start=1):
-            tk.Label(summary_window, text=bl, font=("Arial", 10, "bold")).grid(row=1, column=col, padx=10, pady=5)
+        for col, (band_label, _) in enumerate(results, start=1):
+            tk.Label(summary_window, text=band_label, font=("Arial", 10, "bold")).grid(row=1, column=col, padx=10, pady=5)
 
         # Rows for parameters
-        tk.Label(summary_window, text="Min Eff(dB)=", font=("Arial", 10, "bold")).grid(row=2, column=0, sticky='w', padx=10, pady=5)
-        tk.Label(summary_window, text="Max Eff(dB)=", font=("Arial", 10, "bold")).grid(row=3, column=0, sticky='w', padx=10, pady=5)
-        tk.Label(summary_window, text="Min Gain(dBi)=", font=("Arial", 10, "bold")).grid(row=4, column=0, sticky='w', padx=10, pady=5)
-        tk.Label(summary_window, text="Max Gain(dBi)=", font=("Arial", 10, "bold")).grid(row=5, column=0, sticky='w', padx=10, pady=5)
+        parameters = ["Avg Eff(%)", "Avg Eff(dB)", "Min Gain(dBi)", "Max Gain(dBi)"]
+        for row, param in enumerate(parameters, start=2):
+            tk.Label(summary_window, text=param, font=("Arial", 10, "bold")).grid(row=row, column=0, sticky='w', padx=10, pady=5)
 
-        # Fill in values
-        for col, bl in enumerate(band_labels, start=1):
-            (b_min_eff, b_max_eff, b_min_gain, b_max_gain) = band_summary[bl]
-            tk.Label(summary_window, text=f"{b_min_eff:.2f}" if b_min_eff is not None else "N/A").grid(row=2, column=col, padx=10, pady=5)
-            tk.Label(summary_window, text=f"{b_max_eff:.2f}" if b_max_eff is not None else "N/A").grid(row=3, column=col, padx=10, pady=5)
-            tk.Label(summary_window, text=f"{b_min_gain:.2f}" if b_min_gain is not None else "N/A").grid(row=4, column=col, padx=10, pady=5)
-            tk.Label(summary_window, text=f"{b_max_gain:.2f}" if b_max_gain is not None else "N/A").grid(row=5, column=col, padx=10, pady=5)
+        # Fill in values for each band
+        for col, (band_label, _) in enumerate(results, start=1):
+            avg_eff_percent, avg_eff_dB, min_gain, max_gain = band_summary[band_label]
+            values = [avg_eff_percent, avg_eff_dB, min_gain, max_gain]
+            for row, value in enumerate(values, start=2):
+                tk.Label(summary_window, text=f"{value:.2f}" if value is not None else "N/A").grid(row=row, column=col, padx=10, pady=5)

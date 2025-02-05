@@ -1,6 +1,6 @@
 # RFlect - Release Notes
 
-## Version 3.1.0 (11/8/2024)
+## Version 3.1.0 (2/5/2025)
 - Corrected Active TRP Measurement Calculation before Phi=0/360 append
 - Corrected Active Save Results to File for TRP Measurements
 - Passive G&D File Alternate processing for Min/Max Gain & Efficiency in Tabled format
