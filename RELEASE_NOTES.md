@@ -1,5 +1,11 @@
 # RFlect - Release Notes
 
+## Version 3.1.0 (2/5/2025)
+- Corrected Active TRP Measurement Calculation before Phi=0/360 append
+- Corrected Active Save Results to File for TRP Measurements
+- Passive G&D File Alternate processing for Min/Max Gain & Efficiency in Tabled format
+- VSWR or S11/S22/S21/S12 LogMag .csv file import for VNA measurements and tabled min/max
+
 ## Version 3.0.0 (10/23/2024)
 - Implemented Active 3D plotting
 - Implement Save Results to File for Active Scans

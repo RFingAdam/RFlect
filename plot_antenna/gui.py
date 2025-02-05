@@ -1,9 +1,10 @@
 from file_utils import read_active_file, read_passive_file, check_matching_files, process_gd_file, convert_HpolVpol_files, generate_active_cal_file
-from save import save_to_results_folder,generate_report, save_to_results_folder, RFAnalyzer
+from save import save_to_results_folder,generate_report, RFAnalyzer
 from calculations import determine_polarization, angles_match, extract_passive_frequencies, calculate_passive_variables, calculate_active_variables, apply_nf2ff_transformation
 from plotting import plot_2d_passive_data, plot_passive_3d_component, plot_gd_data, process_vswr_files, plot_active_2d_data, plot_active_3d_data
 from config import *
 from groupdelay import process_groupdelay_files
+from file_utils import parse_2port_data 
 
 import os
 import tkinter as tk
@@ -15,8 +16,10 @@ import json
 import sys
 import webbrowser
 import matplotlib
+import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Custom class to write to both console and Text widget
 class DualOutput:
@@ -35,6 +38,96 @@ class DualOutput:
 
     def flush(self):
         pass
+
+def calculate_min_max_parameters(file_paths, bands, param_name):
+    """
+    Calculate Min/Max for a specified parameter (e.g., VSWR or S21) across defined frequency bands.
+    """
+    results = []
+
+    for i, (freq_min, freq_max) in enumerate(bands, start=1):
+        band_label = f"({freq_min}-{freq_max} MHz)"
+        band_data = []
+
+        for file_path in file_paths:
+            # Parse data from file
+            data = parse_2port_data(file_path)
+
+            # Ensure '! Stimulus(Hz)' exists
+            if '! Stimulus(Hz)' not in data.columns:
+                raise ValueError(f"File '{file_path}' does not have a '! Stimulus(Hz)' column.")
+
+            freqs_mhz = data['! Stimulus(Hz)'] / 1e6
+
+            # Determine the parameter column based on param_name
+            if param_name.upper() == "VSWR":
+                candidates = [c for c in data.columns if 'SWR' in c.upper()]
+                if not candidates:
+                    raise ValueError(f"No SWR columns found in '{file_path}' for VSWR calculation.")
+            else:
+                candidates = [c for c in data.columns if param_name.upper() in c.upper()]
+                if not candidates:
+                    raise ValueError(f"No columns containing '{param_name}' found in '{file_path}'.")
+            
+            # Use the first matching column
+            desired_col = candidates[0]
+
+            # Extract values and filter by frequency range
+            values = pd.to_numeric(data[desired_col], errors='coerce').dropna()
+            within_range = (freqs_mhz >= freq_min) & (freqs_mhz <= freq_max)
+
+            # Calculate min/max for the parameter
+            if np.any(within_range):
+                min_val = values[within_range].min()
+                max_val = values[within_range].max()
+            else:
+                min_val = None
+                max_val = None
+
+            band_data.append((file_path, min_val, max_val))
+
+        results.append((band_label, band_data))
+
+    return results
+
+
+def display_parameter_table(results, param_name, parent=None):
+    """
+    Display the results from calculate_min_max_parameters in a Tkinter Toplevel window.
+
+    Parameters:
+        results (list): The results list from calculate_min_max_parameter.
+        param_name (str): Name of the parameter (e.g., "VSWR").
+        parent: The parent Tk widget (e.g., self.root from your main GUI class).
+    """
+    if parent is None:
+        parent = tk.Tk()
+    else:
+        parent = tk.Toplevel(parent)
+
+    parent.title(f"Min/Max {param_name} Results by Band")
+
+    row = 0
+    for band_label, band_data in results:
+        # Display band header
+        tk.Label(parent, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=3, pady=5)
+        row += 1
+
+        # Table headers for each band
+        headers = ["File", f"Min {param_name}", f"Max {param_name}"]
+        for col, header in enumerate(headers):
+            tk.Label(parent, text=header, font=("Arial", 10, "bold")).grid(row=row, column=col, padx=10, pady=5)
+        row += 1
+
+        # Data rows for each file in the band
+        for file, min_val, max_val in band_data:
+            tk.Label(parent, text=os.path.basename(file)).grid(row=row, column=0, padx=10, pady=5)
+            tk.Label(parent, text=f"{min_val:.2f}" if min_val is not None else "N/A").grid(row=row, column=1, padx=10, pady=5)
+            tk.Label(parent, text=f"{max_val:.2f}" if max_val is not None else "N/A").grid(row=row, column=2, padx=10, pady=5)
+            row += 1
+
+        # Add some space between bands
+        row += 1
 
 class AntennaPlotGUI:
     """
@@ -71,6 +164,9 @@ class AntennaPlotGUI:
         self.hpol_file_path = None
         self.TRP_file_path = None
         self.vpol_file_path = None
+        self.min_max_vswr_var = tk.BooleanVar(value=getattr(self, 'saved_min_max_vswr', False))  # Default to False if not set
+        
+        self.min_max_eff_gain_var = tk.BooleanVar(value=False)
         
         #initializing VSWR/S11 settings
         self.saved_limit1_freq1 = 0.0
@@ -306,9 +402,11 @@ class AntennaPlotGUI:
             if scan_type == "active":
                 # For active measurements, no need to get the frequency from user input
                 frequency = None  # Frequency will come from the active file
+                cable_loss = None  # Cable loss is not applicable for active scans
             else:
                 # For passive measurements, ensure a frequency is selected
                 frequency = self.selected_frequency.get()
+                cable_loss = float(self.cable_loss.get())
                 if not frequency:
                     messagebox.showerror("Error", "Please select a frequency before saving.")
                     return
@@ -322,7 +420,7 @@ class AntennaPlotGUI:
                 self.hpol_file_path,
                 self.vpol_file_path,
                 self.TRP_file_path,
-                float(self.cable_loss.get()),
+                cable_loss,
                 self.datasheet_plots_var.get(),
                 word=False
             )
@@ -582,31 +680,47 @@ class AntennaPlotGUI:
         elif scan_type_value == "passive":
             # Show settings specific to passive scan
             label = tk.Label(settings_window, text="Passive Plot Settings")
-            label.grid(row=0, column=0, columnspan=2, pady=10)
-
-             # Radiobuttons for choosing plot type
+            label.grid(row=0, column=0, columnspan=3, pady=10)  # Adjust columnspan if needed
+            
+            # Radiobuttons for choosing plot type
             self.plot_type_var = tk.StringVar(value=self.passive_scan_type.get())
-
-            r1 = tk.Radiobutton(settings_window, text="G&D", variable=self.plot_type_var, value="G&D")
-            r1.grid(row=1, column=1, sticky=tk.W, padx=20)
 
             r2 = tk.Radiobutton(settings_window, text="VPOL/HPOL", variable=self.plot_type_var, value="VPOL/HPOL")
             r2.grid(row=1, column=0, sticky=tk.W, padx=20)
 
-            # Update the radiobuttons with saved values if they exist
-            if self.passive_scan_type.get() == "G&D":
-                r1.select()
-            else:
-                r2.select()
-            
+            r1 = tk.Radiobutton(settings_window, text="G&D", variable=self.plot_type_var, value="G&D")
+            r1.grid(row=1, column=1, sticky=tk.W, padx=20)
+
             # Create the "Datasheet Plots" Checkbutton
             self.cb_datasheet_plots = tk.Checkbutton(settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var)
-            
-            if self.passive_scan_type.get() == "VPOL/HPOL":
-                self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)  # Show checkbox
+
+            # Create the "Min/Max Eff & Gain" Checkbutton
+            self.cb_min_max_eff_gain = tk.Checkbutton(settings_window, text="Min/Max Eff & Gain", variable=self.min_max_eff_gain_var)
+
+            def on_radiobutton_change():
+                if self.plot_type_var.get() == "G&D":
+                    # Hide Datasheet Plots
+                    self.cb_datasheet_plots.grid_remove()
+                    # Show Min/Max Eff & Gain
+                    self.cb_min_max_eff_gain.grid(row=2, column=1, sticky=tk.W, padx=20)
+                else:
+                    # VPOL/HPOL selected
+                    # Show Datasheet Plots
+                    self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)
+                    # Hide Min/Max Eff & Gain
+                    self.cb_min_max_eff_gain.grid_remove()
+
+            # Initially set visibility based on current selection
+            if self.passive_scan_type.get() == "G&D":
+                self.cb_min_max_eff_gain.grid(row=2, column=1, sticky=tk.W, padx=20)
+                # Datasheet Plots hidden
             else:
-                self.cb_datasheet_plots.grid_remove()  # Hide checkbox
-            
+                self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)
+                # Min/Max Eff & Gain hidden
+
+            r1.config(command=on_radiobutton_change)
+            r2.config(command=on_radiobutton_change)
+
             def save_passive_settings():
                 # Save the chosen plot type
                 self.passive_scan_type.set(self.plot_type_var.get())
@@ -615,10 +729,9 @@ class AntennaPlotGUI:
                 # Close the settings window after saving
                 settings_window.destroy()
 
-
             save_button = tk.Button(settings_window, text="Save Settings", command=save_passive_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
-            save_button.grid(row=3, column=0, columnspan=2, pady=20)
-            
+            save_button.grid(row=3, column=0, columnspan=3, pady=20)
+                    
         elif scan_type_value == "vswr":
             # Show settings specific to VNA
             label = tk.Label(settings_window, text="VSWR/Return Loss Plot Settings")
@@ -637,7 +750,7 @@ class AntennaPlotGUI:
                 self.saved_limit2_stop = self.limit2_val2.get()
 
                 self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
-
+                self.saved_min_max_vswr = self.min_max_vswr_var.get()  # Save checkbox state                
                 # Close the settings window after saving
                 settings_window.destroy()
 
@@ -672,10 +785,20 @@ class AntennaPlotGUI:
                 self.saved_limit2_stop = DEFAULT_LIMIT2_STOP
 
                 self.cb_groupdelay_sff_var.set(False)
+                self.saved_min_max_vswr = False 
+                if hasattr(self, 'saved_min_max_vswr'):
+                                self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Create the "Group Delay Setting" Checkbutton
             self.cb_groupdelay_sff = tk.Checkbutton(settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var)
             self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
+            
+            # Create the Min/Max VSWR Checkbutton
+            self.cb_min_max_vswr = tk.Checkbutton(settings_window, text="Tabled Min/Max VSWR", variable=self.min_max_vswr_var)
+            self.cb_min_max_vswr.grid(row=1, column=2, sticky=tk.W)  # Adjust the row/column as necessary
+            # If there’s a saved value, use it to initialize the checkbox
+            if hasattr(self, 'saved_min_max_vswr'):
+                self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Limit 1
             tk.Label(settings_window, text="Limit 1 Frequency Start (GHz):").grid(row=2, column=0)
@@ -757,6 +880,73 @@ class AntennaPlotGUI:
         self.freq_list = None
         self.TRP_file_path = None
         
+    def calculate_min_max_eff_gain(self, file_paths, bands):
+        """
+        For each band, calculate the min, max, and average of Gain (dBi) and Efficiency (both as fraction and dB).
+        - Gain in the G&D file is already in dBi.
+        - Efficiency is in percentage; convert from % to fraction and dB:
+        Efficiency_dB = 10 * log10(Efficiency_%/100).
+        """
+        results = []
+        all_data = []
+        for fpath in file_paths:
+            gd_data = process_gd_file(fpath)
+            freq = np.array(gd_data['Frequency'])
+            
+            gain_dBi = np.array(gd_data['Gain'])  # Gain already in dBi
+            eff_percent = np.array(gd_data['Efficiency'])
+            eff_fraction = eff_percent / 100.0
+            eff_fraction[eff_fraction <= 0] = 1e-12  # Avoid log issues
+            eff_dB = 10 * np.log10(eff_fraction)
+
+            avg_eff_fraction = np.mean(eff_fraction)
+            avg_eff_dB = 10 * np.log10(avg_eff_fraction)
+
+            all_data.append((fpath, freq, gain_dBi, eff_dB, avg_eff_fraction, avg_eff_dB))
+        
+        for i, (freq_min, freq_max) in enumerate(bands, start=1):
+            band_label = f"({freq_min}-{freq_max} MHz)"
+            band_results = []
+            for fpath, freq, gain_dBi, eff_dB, avg_eff_fraction, avg_eff_dB in all_data:
+                within_range = (freq >= freq_min) & (freq <= freq_max)
+                min_gain = gain_dBi[within_range].min() if np.any(within_range) else None
+                max_gain = gain_dBi[within_range].max() if np.any(within_range) else None
+                min_eff = eff_dB[within_range].min() if np.any(within_range) else None
+                max_eff = eff_dB[within_range].max() if np.any(within_range) else None
+                band_results.append((os.path.basename(fpath), min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB))
+            results.append((band_label, band_results))
+        
+        return results
+
+    def display_eff_gain_table(self, results):
+        """
+        Display the calculated min, max, and average efficiency (percentage and dB) along with gain (dBi).
+        """
+        result_window = tk.Toplevel()
+        result_window.title("Min/Max Gain & Efficiency Results by Band")
+        
+        row = 0
+        for band_label, band_data in results:
+            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=7, pady=5)
+            row += 1
+
+            headers = ["File", "Min Gain(dB)", "Max Gain(dB)", "Min Eff(dB)", "Max Eff(dB)", "Avg Eff(%)", "Avg Eff(dB)"]
+            for col, header in enumerate(headers):
+                tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(row=row, column=col, padx=10, pady=5)
+            row += 1
+
+            for file, min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB in band_data:
+                avg_eff_percent = avg_eff_fraction * 100
+                tk.Label(result_window, text=file).grid(row=row, column=0, padx=10, pady=5)
+                tk.Label(result_window, text=f"{min_gain:.2f}" if min_gain is not None else "N/A").grid(row=row, column=1, padx=10, pady=5)
+                tk.Label(result_window, text=f"{max_gain:.2f}" if max_gain is not None else "N/A").grid(row=row, column=2, padx=10, pady=5)
+                tk.Label(result_window, text=f"{min_eff:.2f}" if min_eff is not None else "N/A").grid(row=row, column=3, padx=10, pady=5)
+                tk.Label(result_window, text=f"{max_eff:.2f}" if max_eff is not None else "N/A").grid(row=row, column=4, padx=10, pady=5)
+                tk.Label(result_window, text=f"{avg_eff_percent:.2f}").grid(row=row, column=5, padx=10, pady=5)
+                tk.Label(result_window, text=f"{avg_eff_dB:.2f}").grid(row=row, column=6, padx=10, pady=5)
+                row += 1
+
+            row += 1
 
     # Method to import TRP or HPOL/VPOL data files for analysis       
     def import_files(self):
@@ -767,40 +957,148 @@ class AntennaPlotGUI:
             self.TRP_file_path = filedialog.askopenfilename(title="Select the TRP Data File",
                                                             filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "G&D":
-            num_files = tk.simpledialog.askinteger("Input", "How many files would you like to import?", parent=self.root)
-            if not num_files:
-                return
-            datasets = []
-            file_names = []
-            for _ in range(num_files):
-                filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-                if not filepath:
-                    return
-                file_name = os.path.basename(filepath).replace('.txt', '')  # Extract filename without extension
-                file_names.append(file_name)
-                data = process_gd_file(filepath)
-                datasets.append(data)
+            if self.min_max_eff_gain_var.get():
+                # Prompt the user for scenario/type of measurement when min_max_eff_gain is enabled
+                scenario_window = tk.Toplevel(self.root)
+                scenario_window.title("Select Measurement Scenario")
+                scenario_window.geometry("400x300")
+                scenario_window.grab_set()  # Modal
 
-            # Prompt user for x-axis range
-            x_range_input = tk.simpledialog.askstring("Input", "Enter x-axis range as 'min,max' (or leave blank for auto-scale):", parent=self.root)
-            plot_gd_data(datasets, file_names, x_range_input)
+                scenario_var = tk.StringVar(value="")
+
+                # TODO Example scenarios
+                #lora_863 = tk.Radiobutton(scenario_window, text="Single-band LoRa 863-870 MHz", variable=scenario_var, value="LoRa_863")
+                #lora_863.grid(row=0, column=0, sticky='w', padx=10, pady=5)
+
+                #lora_902 = tk.Radiobutton(scenario_window, text="Single-band LoRa 902-928 MHz", variable=scenario_var, value="LoRa_902")
+                #lora_902.grid(row=1, column=0, sticky='w', padx=10, pady=5)
+
+                #lora_dual = tk.Radiobutton(scenario_window, text="Dual-band LoRa 863-928 MHz", variable=scenario_var, value="LoRa_863_928")
+                #lora_dual.grid(row=2, column=0, sticky='w', padx=10, pady=5)
+
+                wifi_6e = tk.Radiobutton(scenario_window, text="WiFi 6e (2.4, 5, 6 GHz)", variable=scenario_var, value="WiFi_6e")
+                wifi_6e.grid(row=3, column=0, sticky='w', padx=10, pady=5)
+
+                tk.Label(scenario_window, text="Number of files per band:").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+                files_per_band_var = tk.IntVar(value=4)  # default to 4
+                tk.Entry(scenario_window, textvariable=files_per_band_var, width=5).grid(row=4, column=1, padx=5, pady=5)
+
+                def on_scenario_ok():
+                    chosen = scenario_var.get()
+                    if chosen == "":
+                        messagebox.showerror("Error", "Please select a measurement scenario.")
+                        return
+
+                    self.files_per_band = files_per_band_var.get()
+
+                    # Define selected_bands based on scenario
+                    if chosen == "LoRa_863":
+                        self.selected_bands = [(863.0, 870.0)]
+                    elif chosen == "LoRa_902":
+                        self.selected_bands = [(902.0, 928.0)]
+                    elif chosen == "LoRa_863_928":
+                        self.selected_bands = [(863.0, 928.0)]
+                    elif chosen == "WiFi_6e":
+                        # WiFi6e triple-band
+                        self.selected_bands = [
+                            (2400.0, 2500.0),
+                            (4900.0, 5925.0),
+                            (5925.0, 7125.0)
+                        ]
+                    else:
+                        # If no predefined scenario selected, self.selected_bands = []
+                        # We'll handle in fallback logic
+                        self.selected_bands = []
+
+                    self.measurement_scenario = chosen
+                    scenario_window.destroy()
+
+                ok_button = tk.Button(scenario_window, text="OK", command=on_scenario_ok, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+                ok_button.grid(row=5, column=0, pady=20, padx=10)
+
+                self.root.wait_window(scenario_window)
+
+                # Now handle chosen scenario
+                if self.measurement_scenario in ["LoRa_863", "LoRa_902", "LoRa_863_928", "WiFi_6e"] and self.selected_bands:
+                    # We have predefined bands and files_per_band from scenario.
+                    all_band_results = []
+                    for i, (f_min, f_max) in enumerate(self.selected_bands, start=1):
+                        band_label = f"({f_min}-{f_max} MHz)"
+                        messagebox.showinfo("Band Selection", f"Please select {self.files_per_band} G&D files for {band_label}")
+                        file_paths = []
+                        for _ in range(self.files_per_band):
+                            filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")], title=f"Select File for {band_label}")
+                            if not filepath:
+                                return
+                            file_paths.append(filepath)
+
+                        band_results = self.calculate_min_max_eff_gain(file_paths, [(f_min, f_max)])
+                        self.display_eff_gain_table(band_results)
+                        all_band_results.extend(band_results)
+
+                    self.display_final_summary(all_band_results)
+
+                else:
+                    # Fallback: original logic if no predefined scenario or user wants to define bands manually
+                    num_files = tk.simpledialog.askinteger("Input", "How many G&D files would you like to import?", parent=self.root)
+                    if not num_files:
+                        return
+                    file_paths = []
+                    for _ in range(num_files):
+                        filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+                        if not filepath:
+                            return
+                        file_paths.append(filepath)
+
+                    num_bands = tk.simpledialog.askinteger("Input", "How many frequency bands would you like to define?")
+                    if not num_bands:
+                        return
+
+                    bands = []
+                    for i in range(num_bands):
+                        freq_range_input = tk.simpledialog.askstring("Input", f"Enter frequency range for Band {i+1} as 'min,max' (MHz):", parent=self.root)
+                        try:
+                            freq_min, freq_max = map(float, freq_range_input.split(','))
+                            bands.append((freq_min, freq_max))
+                        except ValueError:
+                            messagebox.showerror("Error", "Invalid frequency range. Please enter values in 'min,max' format.")
+                            return
+
+                    results = self.calculate_min_max_eff_gain(file_paths, bands)
+                    self.display_eff_gain_table(results)
+                    self.display_final_summary(results)
+
+            else:
+                # Original non-min_max_eff_gain logic for G&D
+                num_files = tk.simpledialog.askinteger("Input", "How many files would you like to import?", parent=self.root)
+                if not num_files:
+                    return
+                datasets = []
+                file_names = []
+                for _ in range(num_files):
+                    filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+                    if not filepath:
+                        return
+                    file_name = os.path.basename(filepath).replace('.txt', '')
+                    file_names.append(file_name)
+                    data = process_gd_file(filepath)
+                    datasets.append(data)
+
+                x_range_input = tk.simpledialog.askstring("Input", "Enter x-axis range as 'min,max' (or leave blank for auto-scale):", parent=self.root)
+                plot_gd_data(datasets, file_names, x_range_input)
 
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "VPOL/HPOL":
-            
             first_file = filedialog.askopenfilename(title="Select the First Data File",
                                                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-            # Check if user canceled the first selection
             if not first_file:
                 return
             
             second_file = filedialog.askopenfilename(title="Select the Second Data File",
                                                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
             if first_file and second_file:
-                # Determine file polarizations
                 first_polarization = determine_polarization(first_file)
                 second_polarization = determine_polarization(second_file)
                 
-                 # Check if both files have the same polarization
                 if first_polarization == second_polarization:
                     messagebox.showerror("Error", "Both files cannot be of the same polarization.")
                     return
@@ -812,55 +1110,100 @@ class AntennaPlotGUI:
                     self.hpol_file_path = second_file
                     self.vpol_file_path = first_file
 
-                #Check if File names match and data is consistent between files
                 match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
                 if not match:
                     messagebox.showerror("Error", message)
                     return
                 self.update_passive_frequency_list()
 
-        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == False:
-            num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import?")
-            if not num_files:
+        elif self.scan_type.get() == "vswr":
+            # Check for conflicting options
+            if self.cb_groupdelay_sff_var.get() and self.min_max_vswr_var.get():
+                messagebox.showerror("Error", "Cannot have both Group Delay/SFF and Min/Max VSWR selected.")
                 return
 
-            file_paths = []
-            for _ in range(num_files):
-                file_path = filedialog.askopenfilename(title="Select the VSWR/Return Loss File(s)",
-                                                       filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
-                if not file_path:  # if user cancels the dialog
+            # Scenario 1: Group Delay = False, Min/Max VSWR = False
+            # Just plot VSWR/Return Loss files
+            if not self.cb_groupdelay_sff_var.get() and not self.min_max_vswr_var.get():
+                num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import?")
+                if not num_files:
                     return
-                file_paths.append(file_path)
 
-            process_vswr_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)    
-        
-        elif self.scan_type.get() == "vswr" and self.cb_groupdelay_sff_var.get() == True:
-            # Group Delay and SFF Routine
-            num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import? (8 typ. for Theta=0deg to 315deg in 45deg steps)")
-            if not num_files:
-                return
+                file_paths = []
+                for _ in range(num_files):
+                    file_path = filedialog.askopenfilename(title="Select the VSWR/Return Loss File(s)",
+                                                        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+                    if not file_path:
+                        return
+                    file_paths.append(file_path)
 
-            file_paths = []
-            for _ in range(num_files):
-                file_path = filedialog.askopenfilename(title="Select the 2-Port S-Parameter File(s) of format S11(dB), S22(dB), S21(dB), and S21(s)",
-                                                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
-                if not file_path:  # if user cancels the dialog
+                process_vswr_files(file_paths,
+                                self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop,
+                                self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)
+
+            # Scenario 2: Group Delay = True, Min/Max VSWR = False
+            # Process group delay and SFF from 2-port data
+            elif self.cb_groupdelay_sff_var.get() and not self.min_max_vswr_var.get():
+                num_files = tk.simpledialog.askinteger("Input", "How many files do you want to import? (e.g. 8 for Theta=0° to 315° in 45° steps)")
+                if not num_files:
                     return
-                file_paths.append(file_path)
 
-            # Prompt User for X-axis/Frequency Plot Limits
-            root = tk.Tk()
-            root.withdraw()  # Don't need a full GUI, so keep the root window from appearing
-            
-            min_freq = askstring("Input", "Enter minimum frequency (GHz) or leave blank for default:")
-            max_freq = askstring("Input", "Enter maximum frequency (GHz) or leave blank for default:")
-            
-            # Convert to float or set to None if blank
-            min_freq = float(min_freq) if min_freq else None
-            max_freq = float(max_freq) if max_freq else None
-            
-            process_groupdelay_files(file_paths, self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop, self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop, min_freq, max_freq)    
-    
+                file_paths = []
+                for _ in range(num_files):
+                    file_path = filedialog.askopenfilename(title="Select the 2-Port S-Parameter File(s)",
+                                                        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+                    if not file_path:
+                        return
+                    file_paths.append(file_path)
+
+                root = tk.Tk()
+                root.withdraw()
+
+                min_freq = askstring("Input", "Enter minimum frequency (GHz) or leave blank for default:")
+                max_freq = askstring("Input", "Enter maximum frequency (GHz) or leave blank for default:")
+
+                min_freq = float(min_freq) if min_freq else None
+                max_freq = float(max_freq) if max_freq else None
+
+                process_groupdelay_files(file_paths,
+                                        self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop,
+                                        self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop,
+                                        min_freq, max_freq)
+
+            # Scenario 3: Group Delay = False, Min/Max VSWR = True
+            # Calculate and display min/max VSWR over defined bands
+            elif not self.cb_groupdelay_sff_var.get() and self.min_max_vswr_var.get():
+                num_files = tk.simpledialog.askinteger("Input", "How many VSWR files do you want to import?")
+                if not num_files:
+                    return
+
+                num_bands = tk.simpledialog.askinteger("Input", "How many frequency bands would you like to define?")
+                if not num_bands:
+                    return
+
+                bands = []
+                for i in range(num_bands):
+                    freq_range_input = tk.simpledialog.askstring("Input", f"Enter frequency range for Band {i+1} as 'min,max' (in MHz):", parent=self.root)
+                    try:
+                        freq_min, freq_max = map(float, freq_range_input.split(','))
+                        bands.append((freq_min, freq_max))
+                    except ValueError:
+                        messagebox.showerror("Error", "Invalid frequency range. Please enter values in 'min,max' format.")
+                        return
+
+                file_paths = []
+                for _ in range(num_files):
+                    file_path = filedialog.askopenfilename(title="Select the VSWR 1-Port File(s)",
+                                                        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+                    if not file_path:
+                        return
+                    file_paths.append(file_path)
+
+                # Using the previously discussed generic parameter min/max calculation
+                # Assuming you've implemented calculate_min_max_parameter and display_parameter_table
+                results = calculate_min_max_parameters(file_paths, bands, "VSWR")
+                display_parameter_table(results, "VSWR", parent=self.root)
+
     def log_message(self, message):
         self.log_text.configure(state='normal')
         self.log_text.insert('end', message + '\n')
@@ -886,23 +1229,46 @@ class AntennaPlotGUI:
                 active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
                 
                 #Define Active Variables
-                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
-                total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
-                v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
+                total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
+                phi_angles_deg_plot, phi_angles_rad_plot,
+                total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
+                total_power_dBm_min, total_power_dBm_nom,
+                h_power_dBm_min, h_power_dBm_nom,
+                v_power_dBm_min, v_power_dBm_nom,
+                TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+
+
 
                 # Plot Azimuth cuts for different theta values on one plot from theta_values_to_plot = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165] like below
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
-                plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d, frequency)
+                plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad_plot, total_power_dBm_2d_plot, frequency)
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
                 #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, h_power_dBm_2d, frequency)
                 # Plot Elevation and Azimuth cuts for the 3-planes Theta=90deg, Phi=0deg/180deg, and Phi=90deg/270deg
                 #plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad, v_power_dBm_2d, frequency)
 
                 # 3D TRP Surface Plots similar to the passive 3D data, but instead of gain TRP for Phi, Theta pol and Total Radiated Power(TRP)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=self.interpolate_3d_plots)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, h_power_dBm_2d, frequency, power_type='hpol', interpolate=self.interpolate_3d_plots)
-                plot_active_3d_data(theta_angles_deg, phi_angles_deg, v_power_dBm_2d, frequency, power_type='vpol', interpolate=self.interpolate_3d_plots)
+                # For total power
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
+                    phi_angles_deg_plot, total_power_dBm_2d_plot,
+                    frequency, power_type='total', interpolate=self.interpolate_3d_plots
+                )
 
+                # For horizontal polarization (hpol)
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, h_power_dBm_2d,
+                    phi_angles_deg_plot, h_power_dBm_2d_plot,
+                    frequency, power_type='hpol', interpolate=self.interpolate_3d_plots
+                )
+
+                # For vertical polarization (vpol)
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg, v_power_dBm_2d,
+                    phi_angles_deg_plot, v_power_dBm_2d_plot,
+                    frequency, power_type='vpol', interpolate=self.interpolate_3d_plots
+                )
                 self.log_message("Active data processed successfully.")
                 return
             
@@ -957,4 +1323,46 @@ class AntennaPlotGUI:
                 return
         except Exception as e:
             self.log_message(f"Error: {e}")    
-    
+    def display_final_summary(self, results):
+        """
+        Create a final summary table with Min, Max, and Average Efficiency (as % and dB) for each band.
+        """
+        # Calculate overall averages for each band
+        band_summary = {}
+        for band_label, band_data in results:
+            eff_fractions = [x[5] for x in band_data if x[5] is not None]
+            eff_dBs = [x[6] for x in band_data if x[6] is not None]
+            gain_mins = [x[1] for x in band_data if x[1] is not None]
+            gain_maxs = [x[2] for x in band_data if x[2] is not None]
+
+            # Calculate global min/max/average values for the band
+            avg_eff_fraction = np.mean(eff_fractions) if eff_fractions else None
+            avg_eff_percent = avg_eff_fraction * 100 if avg_eff_fraction else None
+            avg_eff_dB = np.mean(eff_dBs) if eff_dBs else None
+            band_min_gain = min(gain_mins) if gain_mins else None
+            band_max_gain = max(gain_maxs) if gain_maxs else None
+            band_summary[band_label] = (avg_eff_percent, avg_eff_dB, band_min_gain, band_max_gain)
+
+        # Create summary window
+        summary_window = tk.Toplevel(self.root)
+        summary_window.title("Final Summary")
+
+        # Header
+        tk.Label(summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=len(results) + 1, pady=10)
+
+        # Band labels as headers
+        tk.Label(summary_window, text="Parameter", font=("Arial", 10, "bold")).grid(row=1, column=0, padx=10, pady=5)
+        for col, (band_label, _) in enumerate(results, start=1):
+            tk.Label(summary_window, text=band_label, font=("Arial", 10, "bold")).grid(row=1, column=col, padx=10, pady=5)
+
+        # Rows for parameters
+        parameters = ["Avg Eff(%)", "Avg Eff(dB)", "Min Gain(dBi)", "Max Gain(dBi)"]
+        for row, param in enumerate(parameters, start=2):
+            tk.Label(summary_window, text=param, font=("Arial", 10, "bold")).grid(row=row, column=0, sticky='w', padx=10, pady=5)
+
+        # Fill in values for each band
+        for col, (band_label, _) in enumerate(results, start=1):
+            avg_eff_percent, avg_eff_dB, min_gain, max_gain = band_summary[band_label]
+            values = [avg_eff_percent, avg_eff_dB, min_gain, max_gain]
+            for row, value in enumerate(values, start=2):
+                tk.Label(summary_window, text=f"{value:.2f}" if value is not None else "N/A").grid(row=row, column=col, padx=10, pady=5)
