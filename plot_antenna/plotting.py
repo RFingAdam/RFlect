@@ -200,7 +200,9 @@ def plot_polar_power_pattern(title, angles_rad, power_dBm, plane, max_power, min
     else:
         plt.show()
 
-def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency, power_type='total', interpolate=True, save_path=None):
+def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
+                        phi_angles_deg_plot, total_power_dBm_2d_plot,
+                        frequency, power_type='total', interpolate=True, save_path=None):
     """
     Plot a 3D representation of the active data (TRP).
 
@@ -242,11 +244,6 @@ def plot_active_3d_data(theta_angles_deg, phi_angles_deg, total_power_dBm_2d, fr
         theta_flat = THETA_deg.flatten()
         phi_flat = PHI_deg.flatten()
         power_flat = total_power_dBm_2d.flatten()
-
-        # Ensure phi wraps from 0° to 360°
-        if phi_angles_deg[-1] < 360:
-            phi_angles_deg = np.append(phi_angles_deg, 360)
-            total_power_dBm_2d = np.column_stack((total_power_dBm_2d, total_power_dBm_2d[:, 0]))
 
         # Check for NaN values in the data
         if np.isnan(power_flat).any():
@@ -1063,7 +1060,7 @@ def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved
         all_data = [parse_2port_data(file_path) for file_path in file_paths]
         
        # Define a preferred order for the S-parameters
-        preferred_order = ['S11(dB)', 'S22(dB)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)']
+        preferred_order = ['S11(dB)', 'S11(SWR)', 'S22(dB)', 'S22(SWR)', 'S21(dB)', 'S12(dB)', 'S21(s)', 'S12(s)']
         
         # Extract all the unique S-parameters across the files
         unique_columns = set(col for data in all_data for col in data.columns if col != '! Stimulus(Hz)')
@@ -1093,7 +1090,10 @@ def process_vswr_files(file_paths, saved_limit1_freq1, saved_limit1_freq2, saved
                     if 'dB' in column:
                         ax.set_ylabel('Magnitude (dB)')
                     elif 's' in column:
-                        ax.set_ylabel('Group Delay (ns)')    
+                        ax.set_ylabel('Group Delay (ns)')
+                    elif 'SWR' in column:
+                        ax.set_ylabel('VSWR')  
+                        ax.set_ylim(top=5)  # Cap the Y-axis at 5 for VSWR
                     else:
                         ax.set_ylabel('Value')
                     ax.grid(True)

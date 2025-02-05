@@ -4,14 +4,7 @@ import numpy as np
 from scipy.constants import c  # Speed of light
 from scipy.signal import windows
 
-def calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, 
-                               inc_phi, inc_theta, h_power_dBm, v_power_dBm):
-    """
-    Calculate variables for TRP/Active Measurement Plotting.
-
-    Returns:
-    - tuple: All required calculated variables.
-    """
+def calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm):
     theta_points = int((stop_theta - start_theta) / inc_theta + 1)
     phi_points = int((stop_phi - start_phi) / inc_phi + 1)
     data_points = theta_points * phi_points
@@ -20,49 +13,56 @@ def calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta,
     theta_angles_deg = np.linspace(start_theta, stop_theta, theta_points)
     phi_angles_deg = np.linspace(start_phi, stop_phi, phi_points)
 
-    # Reshape data into 2D arrays
+    # Reshape data into 2D arrays for calculations
     h_power_dBm_2d = h_power_dBm.reshape((theta_points, phi_points))
     v_power_dBm_2d = v_power_dBm.reshape((theta_points, phi_points))
 
-    # Append 360 degrees if not already included
-    if phi_angles_deg[-1] < 360:
-        phi_angles_deg = np.append(phi_angles_deg, 360)
-        # Append first column of data to the end
-        h_power_dBm_2d = np.hstack((h_power_dBm_2d, h_power_dBm_2d[:, [0]]))
-        v_power_dBm_2d = np.hstack((v_power_dBm_2d, v_power_dBm_2d[:, [0]]))
-        phi_points += 1  # Increase the phi_points
-
-    # Convert angles to radians
+    # Convert angles to radians for calculations
     theta_angles_rad = np.deg2rad(theta_angles_deg)
     phi_angles_rad = np.deg2rad(phi_angles_deg)
 
-    # Recalculate total power in dBm
+    # Calculate total power in dBm
     total_power_dBm_2d = 10 * np.log10(10**(v_power_dBm_2d / 10) + 10**(h_power_dBm_2d / 10))
 
-    # Compute minimum and nominal power values if needed
+    # Calculate TRP using original arrays
+    power_mW = 10 ** (total_power_dBm_2d / 10)
+    theta_weight = np.sin(theta_angles_rad)
+    TRP_mW = np.sum(power_mW * theta_weight[:, np.newaxis]) * (np.pi / phi_points)
+    TRP_dBm = 10 * np.log10(TRP_mW)
+
+    # Similarly calculate h_TRP_dBm and v_TRP_dBm
+    h_TRP_mW = np.sum(10**(h_power_dBm_2d / 10) * theta_weight[:, np.newaxis]) * (np.pi / phi_points)
+    h_TRP_dBm = 10 * np.log10(h_TRP_mW)
+    v_TRP_mW = np.sum(10**(v_power_dBm_2d / 10) * theta_weight[:, np.newaxis]) * (np.pi / phi_points)
+    v_TRP_dBm = 10 * np.log10(v_TRP_mW)
+
+    # For plotting, create extended arrays
+    phi_angles_deg_plot = np.append(phi_angles_deg, 360)
+    phi_angles_rad_plot = np.deg2rad(phi_angles_deg_plot)
+
+    h_power_dBm_2d_plot = np.hstack((h_power_dBm_2d, h_power_dBm_2d[:, [0]]))
+    v_power_dBm_2d_plot = np.hstack((v_power_dBm_2d, v_power_dBm_2d[:, [0]]))
+    total_power_dBm_2d_plot = np.hstack((total_power_dBm_2d, total_power_dBm_2d[:, [0]]))
+
+    # Calculate min and nominal values for plotting
     total_power_dBm_min = np.min(total_power_dBm_2d)
-    total_power_dBm_nom = total_power_dBm_2d - total_power_dBm_min
-
+    total_power_dBm_nom = total_power_dBm_2d_plot - total_power_dBm_min
     h_power_dBm_min = np.min(h_power_dBm_2d)
-    h_power_dBm_nom = h_power_dBm_2d - h_power_dBm_min
-
+    h_power_dBm_nom = h_power_dBm_2d_plot - h_power_dBm_min
     v_power_dBm_min = np.min(v_power_dBm_2d)
-    v_power_dBm_nom = v_power_dBm_2d - v_power_dBm_min
+    v_power_dBm_nom = v_power_dBm_2d_plot - v_power_dBm_min
 
-    # Compute TRP_dBm, h_TRP_dBm, v_TRP_dBm
-    TRP_dBm = 10 * np.log10(np.sum(10**(total_power_dBm_2d / 10) * 
-                                    np.sin(theta_angles_rad)[:, None] * np.pi / 2) / 
-                                    (theta_points * phi_points))
-    h_TRP_dBm = 10 * np.log10(np.sum(10**(h_power_dBm_2d / 10) * 
-                               np.sin(theta_angles_rad)[:, None] * np.pi / 2) / 
-                               (theta_points * phi_points))
-    v_TRP_dBm = 10 * np.log10(np.sum(10**(v_power_dBm_2d / 10) * 
-                               np.sin(theta_angles_rad)[:, None] * np.pi / 2) / 
-                               (theta_points * phi_points))
+    # Return both original and extended arrays
+    return (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
+            total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
+            phi_angles_deg_plot, phi_angles_rad_plot,
+            total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
+            total_power_dBm_min, total_power_dBm_nom,
+            h_power_dBm_min, h_power_dBm_nom,
+            v_power_dBm_min, v_power_dBm_nom,
+            TRP_dBm, h_TRP_dBm, v_TRP_dBm)
 
-    return (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad, total_power_dBm_2d,
-            total_power_dBm_min, total_power_dBm_nom, h_power_dBm_2d, h_power_dBm_min, v_power_dBm_2d,
-            v_power_dBm_min, h_power_dBm_nom, v_power_dBm_nom, TRP_dBm, h_TRP_dBm, v_TRP_dBm)
+
 
 # _____________Passive Calculation Functions___________
 # Auto Determine Polarization for HPOL & VPOL Files
