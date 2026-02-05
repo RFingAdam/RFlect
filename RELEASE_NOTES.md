@@ -1,5 +1,140 @@
 # RFlect - Release Notes
 
+## Version 4.0.0 (02/04/2026) - MAJOR RELEASE
+
+**This is a major release with complete architecture refactoring and professional release infrastructure.**
+
+### 🏗️ Architecture Refactoring
+- **GUI Refactored to Mixin-Based Design**
+  - Migrated from monolithic `gui.py` (4,331 lines) to modular architecture
+  - GUI organized into focused mixins:
+    - `main_window.py` (585 lines) - Core AntennaPlotGUI class
+    - `dialogs_mixin.py` (1,162 lines) - Dialog methods
+    - `ai_chat_mixin.py` (1,492 lines) - AI Chat functionality
+    - `tools_mixin.py` (1,006 lines) - Bulk processing & analysis tools
+    - `callbacks_mixin.py` (900 lines) - File I/O & data processing
+  - Benefits: Improved maintainability, testability, and extensibility
+  - Archived legacy code to `_archive/` directory for reference
+
+### 🧹 Code Quality & Cleanup
+- **Eliminated Duplicate Code**
+  - Consolidated `DualOutput` class (was duplicated in 2 locations)
+  - Consolidated utility functions (`resource_path`, `get_user_data_dir`)
+  - Consolidated API key management methods
+  - Removed redundant `gui_components/` package
+- **Improved Error Handling**
+  - Fixed 8 bare `except:` clauses with specific exception types
+  - Added proper logging for error conditions
+  - Better error messages for user guidance
+- **Security Improvements**
+  - Standardized environment file naming (`.env`)
+  - Enhanced `.gitignore` patterns for credential protection
+  - Multi-layer API key storage: OS keyring → file → environment variables
+
+### 🚀 Release Infrastructure
+- **Dependency Management**
+  - Added `requirements.txt` with production dependencies
+  - Added `requirements-dev.txt` with testing and code quality tools
+  - All dependencies properly versioned and documented
+- **Modern Python Packaging**
+  - Created `pyproject.toml` following PEP 621 standards
+  - Entry point: `rflect` command for CLI usage
+  - Optional dependencies for dev tools and PyInstaller builds
+- **Testing Infrastructure**
+  - Comprehensive test suite with pytest
+  - 40+ unit tests for RF calculations
+  - File parsing tests with fixtures
+  - Integration test structure
+  - Coverage target: 60% overall, 80% for core modules
+- **CI/CD Automation**
+  - GitHub Actions workflow for automated testing
+    - Multi-OS (Ubuntu, Windows, macOS)
+    - Multi-Python (3.11, 3.12)
+    - Code coverage reporting to Codecov
+    - Linting with flake8 and black
+  - GitHub Actions workflow for automated releases
+    - Builds Windows .exe on version tags
+    - Creates GitHub releases with release notes
+    - Uploads artifacts for distribution
+- **Version Management**
+  - Added `.bumpversion.cfg` for automated version bumping
+  - Centralized version tracking across all files
+  - Created `plot_antenna/__init__.py` with package metadata
+
+### 🤖 AI Architecture Improvements
+- **Extracted AI Analysis Logic**
+  - Created `ai_analysis.py` module with `AntennaAnalyzer` class
+  - GUI-independent, reusable for future MCP server
+  - Pure analysis functions that don't depend on GUI state
+  - Added antenna engineering domain knowledge for AI prompts
+- **AI Feature Status Documentation**
+  - Created `AI_STATUS.md` documenting feature completeness
+  - Clearly marked AI features as experimental (~80-90% complete)
+  - Documented what works and what needs improvement
+  - Roadmap for AI feature completion (v4.1+)
+- **Optional AI Features**
+  - AI features require opt-in (OpenAI API key)
+  - Core RFlect functionality works without AI
+  - Clear status indicators in UI
+
+### 📚 Documentation
+- **Developer Guidelines**
+  - Created `CONTRIBUTING.md` with development setup
+  - Code style guidelines (Black, 100 char lines)
+  - Testing guidelines and coverage goals
+  - PR process and release workflow
+- **Updated README**
+  - Added installation methods (standalone .exe, from source)
+  - Clarified AI feature status (experimental)
+  - Added development instructions
+- **Project Organization**
+  - Clear file structure documentation
+  - Architecture explanations
+  - Contribution guidelines and priorities
+
+### 🔧 Technical Improvements
+- **Package Structure**
+  - Proper Python package with `__init__.py`
+  - Version available programmatically: `import plot_antenna; print(plot_antenna.__version__)`
+  - Better import organization
+- **Build System**
+  - PyInstaller configured for .exe builds
+  - Automated in CI/CD pipeline
+  - Version-tagged releases
+
+### ⚠️ Breaking Changes
+**None** - All existing workflows remain compatible. This is a major version bump due to architectural refactoring, but all features are preserved.
+
+### 🎯 Future Roadmap
+- **v4.1** (Planned Q2 2026)
+  - Complete pattern analysis functions (HPBW, F/B ratio)
+  - Implement batch frequency analysis
+  - Complete AI report templating system
+  - MCP server for programmatic access
+- **v4.2** (Planned Q3 2026)
+  - Vision API integration (AI analyzes plots visually)
+  - Simulation vs measurement comparison
+  - AI-powered anomaly detection
+
+### 📦 Installation
+Download `RFlect_v4.0.0.exe` from [GitHub Releases](https://github.com/RFingAdam/RFlect/releases)
+
+**For Developers**:
+```bash
+git clone https://github.com/RFingAdam/RFlect.git
+cd RFlect
+pip install -r requirements.txt
+python -m plot_antenna.main
+```
+
+### 📝 Migration Notes
+- No user action required - update via installer
+- Developers: Run `pip install -r requirements.txt` to update dependencies
+- API key storage location unchanged (AppData/RFlect)
+- All existing measurement files remain compatible
+
+---
+
 ## Version 3.2.0 (11/18/2025)
 - **Added Interactive Polarization Analysis Tool**
   - Calculate and visualize polarization parameters from HPOL/VPOL passive measurements

@@ -147,6 +147,8 @@ Calculate and visualize polarization parameters from HPOL/VPOL passive measureme
 - High-resolution interpolation (120×180 points) for smooth rendering
 
 ### AI-Powered Features
+> **⚠️ Status: Experimental** - AI features are functional but not production-ready (~80-90% complete). See [AI_STATUS.md](AI_STATUS.md) for details on what works and what needs improvement.
+
 RFlect integrates OpenAI's API for intelligent antenna analysis:
 
 **AI Chat Assistant** (Tools → AI Chat Assistant):
@@ -180,6 +182,8 @@ RFlect integrates OpenAI's API for intelligent antenna analysis:
 - Cross-platform support: Windows (%LOCALAPPDATA%\RFlect), macOS (~/Library/Application Support/RFlect), Linux (~/.config/RFlect)
 - GUI-based key management (Help → Manage OpenAI API Key)
 - Multiple storage backends: OS Keyring, user data file, environment variables
+
+**Note**: AI features are **optional** and require a valid OpenAI API key. RFlect works fully without AI features enabled. See [AI_STATUS.md](AI_STATUS.md) for current status and roadmap.
 
 ### Batch Processing
 Process multiple measurement files automatically:
