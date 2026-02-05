@@ -22,4 +22,4 @@ __license__ = "GPL-3.0"
 
 from .main import main
 
-__all__ = ['main', '__version__', '__author__', '__license__']
+__all__ = ["main", "__version__", "__author__", "__license__"]
