@@ -1,6 +1,6 @@
-from .config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
-from .file_utils import parse_2port_data
-from .calculations import calculate_trp
+from config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
+from file_utils import parse_2port_data
+from calculations import calculate_trp
 
 import matplotlib
 

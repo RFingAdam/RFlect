@@ -9,12 +9,12 @@ Create/edit config_local.py instead (see config_template.py for examples).
 """
 
 # Load default configuration from template
-from .config_template import *  # type: ignore[misc]  # noqa: F403
+from config_template import *  # type: ignore[misc]  # noqa: F403
 
 # Try to load local overrides (company-specific branding)
 # config_local.py is in .gitignore and won't be committed
 try:
-    from .config_local import *  # type: ignore[assignment,misc]  # noqa: F403
+    from config_local import *  # type: ignore[assignment,misc]  # noqa: F403
 
     print("[OK] Loaded custom branding from config_local.py")
 except ImportError:

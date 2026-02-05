@@ -24,11 +24,11 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
-from ..config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR, HEADER_FONT
-from ..calculations import extract_passive_frequencies
+from config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR, HEADER_FONT
+from calculations import extract_passive_frequencies
 
 # Import centralized API key management
-from ..api_keys import load_api_key, get_api_key, is_api_key_configured
+from api_keys import load_api_key, get_api_key, is_api_key_configured
 
 # Import mixins
 from .dialogs_mixin import DialogsMixin
