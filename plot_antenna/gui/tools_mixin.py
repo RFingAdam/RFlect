@@ -23,9 +23,9 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import requests
 
-from config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR
+from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR
 
-from file_utils import (
+from ..file_utils import (
     read_passive_file,
     check_matching_files,
     convert_HpolVpol_files,
@@ -34,13 +34,13 @@ from file_utils import (
     batch_process_passive_scans,
     batch_process_active_scans,
 )
-from calculations import (
+from ..calculations import (
     determine_polarization,
     calculate_polarization_parameters,
     export_polarization_data,
 )
-from plotting import plot_polarization_2d, plot_polarization_3d
-from save import generate_report, RFAnalyzer
+from ..plotting import plot_polarization_2d, plot_polarization_3d
+from ..save import generate_report, RFAnalyzer
 
 if TYPE_CHECKING:
     from .base_protocol import AntennaPlotGUIProtocol

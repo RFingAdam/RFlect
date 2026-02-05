@@ -8,7 +8,7 @@ import os
 import sys
 import json
 import tkinter as tk
-from file_utils import parse_2port_data
+from ..file_utils import parse_2port_data
 import pandas as pd
 import numpy as np
 

@@ -17,7 +17,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, Optional
 
-from config import (
+from ..config import (
     DARK_BG_COLOR,
     LIGHT_TEXT_COLOR,
     ACCENT_BLUE_COLOR,
@@ -29,22 +29,22 @@ from config import (
 
 # Import additional AI settings with fallbacks
 try:
-    from config import AI_TEXT_VERBOSITY
+    from ..config import AI_TEXT_VERBOSITY
 except ImportError:
     AI_TEXT_VERBOSITY = "auto"
 
 try:
-    from config import AI_GENERATE_REASONING_SUMMARY
+    from ..config import AI_GENERATE_REASONING_SUMMARY
 except ImportError:
     AI_GENERATE_REASONING_SUMMARY = False
 
 try:
-    from config import AI_INCLUDE_RECOMMENDATIONS
+    from ..config import AI_INCLUDE_RECOMMENDATIONS
 except ImportError:
     AI_INCLUDE_RECOMMENDATIONS = False
 
 # Import centralized API key management
-from api_keys import save_api_key as api_keys_save, delete_api_key as api_keys_delete, get_api_key
+from ..api_keys import save_api_key as api_keys_save, delete_api_key as api_keys_delete, get_api_key
 
 # Import utility functions
 from .utils import resource_path

@@ -1,12 +1,12 @@
-from calculations import angles_match, calculate_passive_variables, calculate_active_variables
-from plotting import (
+from .calculations import angles_match, calculate_passive_variables, calculate_active_variables
+from .plotting import (
     plot_passive_3d_component,
     plot_2d_passive_data,
     plot_active_2d_data,
     plot_active_3d_data,
 )
-from file_utils import read_active_file, read_passive_file
-import config
+from .file_utils import read_active_file, read_passive_file
+from . import config
 
 from tkinter import simpledialog, filedialog, Tk
 from docx import Document  # type: ignore[import-untyped]
@@ -20,7 +20,7 @@ import requests
 from openai import OpenAI
 
 # Import centralized API key management
-from api_keys import load_api_key, get_api_key, is_api_key_configured
+from .api_keys import load_api_key, get_api_key, is_api_key_configured
 
 # Load API key using centralized module (handles .env, keyring, user file, etc.)
 api_key = get_api_key()

@@ -1,4 +1,4 @@
-from file_utils import parse_2port_data, parse_agilent_data
+from .file_utils import parse_2port_data, parse_agilent_data
 from matplotlib.ticker import ScalarFormatter
 
 import matplotlib
