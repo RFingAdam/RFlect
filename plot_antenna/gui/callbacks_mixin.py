@@ -18,10 +18,10 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import matplotlib.pyplot as plt
 
-from config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
+from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
 
-from file_utils import read_passive_file, read_active_file, check_matching_files, process_gd_file
-from calculations import (
+from ..file_utils import read_passive_file, read_active_file, check_matching_files, process_gd_file
+from ..calculations import (
     determine_polarization,
     calculate_passive_variables,
     calculate_active_variables,
@@ -29,7 +29,7 @@ from calculations import (
     apply_directional_human_shadow,
     angles_match,
 )
-from plotting import (
+from ..plotting import (
     plot_2d_passive_data,
     plot_passive_3d_component,
     plot_active_2d_data,
@@ -37,7 +37,7 @@ from plotting import (
     plot_gd_data,
     process_vswr_files,
 )
-from groupdelay import process_groupdelay_files
+from ..groupdelay import process_groupdelay_files
 from .utils import calculate_min_max_parameters, display_parameter_table
 
 if TYPE_CHECKING:

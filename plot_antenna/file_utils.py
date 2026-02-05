@@ -1,4 +1,4 @@
-from calculations import angles_match, calculate_passive_variables
+from .calculations import angles_match, calculate_passive_variables
 
 import os
 import numpy as np
