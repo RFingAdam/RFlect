@@ -17,4 +17,4 @@ Structure:
 from .main_window import AntennaPlotGUI
 from . import utils
 
-__all__ = ['AntennaPlotGUI', 'utils']
+__all__ = ["AntennaPlotGUI", "utils"]

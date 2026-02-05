@@ -17,33 +17,34 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, Optional
 
-from config import (
-    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR,
-    AI_MODEL, AI_RESPONSE_STYLE, AI_MAX_TOKENS, AI_REASONING_EFFORT
+from ..config import (
+    DARK_BG_COLOR,
+    LIGHT_TEXT_COLOR,
+    ACCENT_BLUE_COLOR,
+    AI_MODEL,
+    AI_RESPONSE_STYLE,
+    AI_MAX_TOKENS,
+    AI_REASONING_EFFORT,
 )
 
 # Import additional AI settings with fallbacks
 try:
-    from config import AI_TEXT_VERBOSITY
+    from ..config import AI_TEXT_VERBOSITY
 except ImportError:
     AI_TEXT_VERBOSITY = "auto"
 
 try:
-    from config import AI_GENERATE_REASONING_SUMMARY
+    from ..config import AI_GENERATE_REASONING_SUMMARY
 except ImportError:
     AI_GENERATE_REASONING_SUMMARY = False
 
 try:
-    from config import AI_INCLUDE_RECOMMENDATIONS
+    from ..config import AI_INCLUDE_RECOMMENDATIONS
 except ImportError:
     AI_INCLUDE_RECOMMENDATIONS = False
 
 # Import centralized API key management
-from api_keys import (
-    save_api_key as api_keys_save,
-    delete_api_key as api_keys_delete,
-    get_api_key
-)
+from ..api_keys import save_api_key as api_keys_save, delete_api_key as api_keys_delete, get_api_key
 
 # Import utility functions
 from .utils import resource_path
@@ -87,6 +88,7 @@ class DialogsMixin:
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
+
         def resource_path(self, relative_path: str) -> str: ...
         def get_user_data_dir(self) -> str: ...
         def update_visibility(self) -> None: ...
@@ -113,9 +115,10 @@ class DialogsMixin:
 
         # Logo (smith_logo.png)
         try:
-            logo_path = resource_path(os.path.join('assets', 'smith_logo.png'))
+            logo_path = resource_path(os.path.join("assets", "smith_logo.png"))
             if os.path.exists(logo_path):
                 from PIL import Image, ImageTk
+
                 logo_img = Image.open(logo_path)
                 logo_img = logo_img.resize((80, 80), Image.Resampling.LANCZOS)
                 logo_photo = ImageTk.PhotoImage(logo_img)
@@ -132,7 +135,7 @@ class DialogsMixin:
             text="RFlect",
             font=("Arial", 28, "bold"),
             bg=DARK_BG_COLOR,
-            fg="#E63946"  # Red color similar to smith_logo.png
+            fg="#E63946",  # Red color similar to smith_logo.png
         )
         name_label.pack(side=tk.LEFT)
 
@@ -142,7 +145,7 @@ class DialogsMixin:
             text=f"Version {self.CURRENT_VERSION}",
             font=("Arial", 12),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         )
         version_label.pack()
 
@@ -152,7 +155,7 @@ class DialogsMixin:
             text="Antenna Measurement & Analysis Tool",
             font=("Arial", 10, "italic"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         )
         desc_label.pack(pady=(5, 20))
 
@@ -178,7 +181,7 @@ Features:
             font=("Arial", 9),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            justify=tk.LEFT
+            justify=tk.LEFT,
         )
         credits_label.pack()
 
@@ -188,7 +191,7 @@ Features:
             text="Licensed under GNU General Public License v3.0",
             font=("Arial", 8),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         )
         license_label.pack(pady=(5, 0))
 
@@ -204,19 +207,21 @@ Features:
             fg=LIGHT_TEXT_COLOR,
             relief=tk.FLAT,
             padx=10,
-            pady=5
+            pady=5,
         )
         github_btn.pack(side=tk.LEFT, padx=5)
 
         license_btn = tk.Button(
             links_frame,
             text="View License",
-            command=lambda: webbrowser.open("https://github.com/RFingAdam/RFlect/blob/main/LICENSE"),
+            command=lambda: webbrowser.open(
+                "https://github.com/RFingAdam/RFlect/blob/main/LICENSE"
+            ),
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
             relief=tk.FLAT,
             padx=10,
-            pady=5
+            pady=5,
         )
         license_btn.pack(side=tk.LEFT, padx=5)
 
@@ -227,7 +232,7 @@ Features:
             command=about_window.destroy,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            width=10
+            width=10,
         )
         close_btn.pack(pady=20)
 
@@ -275,7 +280,7 @@ Features:
             text="OpenAI API Key Management",
             font=("Arial", 14, "bold"),
             bg=DARK_BG_COLOR,
-            fg=ACCENT_BLUE_COLOR
+            fg=ACCENT_BLUE_COLOR,
         )
         title_label.pack(pady=(20, 10))
 
@@ -290,7 +295,7 @@ Your key is stored securely in your user data folder and never shared."""
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
             justify=tk.LEFT,
-            wraplength=500
+            wraplength=500,
         )
         desc_label.pack(pady=10, padx=20)
 
@@ -304,19 +309,21 @@ Your key is stored securely in your user data folder and never shared."""
             text=status_text,
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=status_color
+            fg=status_color,
         )
         status_label.pack(pady=10)
 
         # If key exists, show masked version
         if current_key:
-            masked_key = f"{current_key[:7]}...{current_key[-4:]}" if len(current_key) > 11 else "***"
+            masked_key = (
+                f"{current_key[:7]}...{current_key[-4:]}" if len(current_key) > 11 else "***"
+            )
             masked_label = tk.Label(
                 api_window,
                 text=f"Current: {masked_key}",
                 font=("Courier", 9),
                 bg=DARK_BG_COLOR,
-                fg=LIGHT_TEXT_COLOR
+                fg=LIGHT_TEXT_COLOR,
             )
             masked_label.pack()
 
@@ -325,20 +332,12 @@ Your key is stored securely in your user data folder and never shared."""
         input_frame.pack(pady=20, padx=20, fill=tk.X)
 
         tk.Label(
-            input_frame,
-            text="API Key:",
-            font=("Arial", 10),
-            bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            input_frame, text="API Key:", font=("Arial", 10), bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
         ).pack(anchor=tk.W)
 
         api_key_var = tk.StringVar(value=current_key if current_key else "")
         api_key_entry = tk.Entry(
-            input_frame,
-            textvariable=api_key_var,
-            width=60,
-            show="*",
-            font=("Courier", 9)
+            input_frame, textvariable=api_key_var, width=60, show="*", font=("Courier", 9)
         )
         api_key_entry.pack(fill=tk.X, pady=5)
 
@@ -359,7 +358,7 @@ Your key is stored securely in your user data folder and never shared."""
             command=toggle_show,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            width=8
+            width=8,
         )
         show_btn.pack(anchor=tk.W, pady=5)
 
@@ -371,10 +370,12 @@ Your key is stored securely in your user data folder and never shared."""
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            cursor="hand2"
+            cursor="hand2",
         )
         help_label.pack(pady=5)
-        help_label.bind("<Button-1>", lambda e: webbrowser.open("https://platform.openai.com/api-keys"))
+        help_label.bind(
+            "<Button-1>", lambda e: webbrowser.open("https://platform.openai.com/api-keys")
+        )
 
         # Buttons frame
         button_frame = tk.Frame(api_window, bg=DARK_BG_COLOR)
@@ -388,18 +389,21 @@ Your key is stored securely in your user data folder and never shared."""
 
             if not key.startswith("sk-"):
                 response = messagebox.askyesno(
-                    "Invalid Format",
-                    "API key doesn't start with 'sk-'. Save anyway?"
+                    "Invalid Format", "API key doesn't start with 'sk-'. Save anyway?"
                 )
                 if not response:
                     return
 
             if self.save_api_key(key):
-                messagebox.showinfo("Success", "API key saved successfully!\n\nAI features are now enabled.")
+                messagebox.showinfo(
+                    "Success", "API key saved successfully!\n\nAI features are now enabled."
+                )
                 api_window.destroy()
 
         def delete_key():
-            if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete the stored API key?"):
+            if messagebox.askyesno(
+                "Confirm Delete", "Are you sure you want to delete the stored API key?"
+            ):
                 if self.delete_api_key():
                     messagebox.showinfo("Deleted", "API key has been removed.")
                     api_window.destroy()
@@ -411,7 +415,7 @@ Your key is stored securely in your user data folder and never shared."""
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
             width=12,
-            pady=5
+            pady=5,
         )
         save_btn.pack(side=tk.LEFT, padx=5)
 
@@ -423,7 +427,7 @@ Your key is stored securely in your user data folder and never shared."""
                 bg="#F44336",
                 fg=LIGHT_TEXT_COLOR,
                 width=12,
-                pady=5
+                pady=5,
             )
             delete_btn.pack(side=tk.LEFT, padx=5)
 
@@ -435,7 +439,7 @@ Your key is stored securely in your user data folder and never shared."""
             fg=LIGHT_TEXT_COLOR,
             width=12,
             pady=5,
-            relief=tk.RIDGE
+            relief=tk.RIDGE,
         )
         cancel_btn.pack(side=tk.LEFT, padx=5)
 
@@ -461,8 +465,7 @@ Your key is stored securely in your user data folder and never shared."""
         scrollable_frame = tk.Frame(canvas, bg=DARK_BG_COLOR)
 
         scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -474,7 +477,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="AI Model & Configuration",
             font=("Arial", 14, "bold"),
             bg=DARK_BG_COLOR,
-            fg=ACCENT_BLUE_COLOR
+            fg=ACCENT_BLUE_COLOR,
         )
         title_label.pack(pady=(20, 10))
 
@@ -485,7 +488,7 @@ Your key is stored securely in your user data folder and never shared."""
             font=("Arial", 9),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            wraplength=600
+            wraplength=600,
         )
         desc_label.pack(pady=5, padx=20)
 
@@ -503,7 +506,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="AI Model:",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(0, 5))
         row_num += 1
 
@@ -523,9 +526,9 @@ Your key is stored securely in your user data folder and never shared."""
             main_frame,
             textvariable=model_var,
             values=[m[0] for m in models],
-            state='readonly',
+            state="readonly",
             width=45,
-            font=("Arial", 9)
+            font=("Arial", 9),
         )
         model_dropdown.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
         row_num += 1
@@ -538,7 +541,7 @@ Your key is stored securely in your user data folder and never shared."""
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
             fg="#A0A0A0",
-            wraplength=550
+            wraplength=550,
         )
         model_desc_label.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
         row_num += 1
@@ -548,13 +551,13 @@ Your key is stored securely in your user data folder and never shared."""
             desc = next((m[1] for m in models if m[0] == selected), "")
             model_desc_var.set(desc)
             # Enable/disable GPT-5 options based on model selection
-            is_gpt5 = selected.startswith('gpt-5')
-            state = 'readonly' if is_gpt5 else 'disabled'
+            is_gpt5 = selected.startswith("gpt-5")
+            state = "readonly" if is_gpt5 else "disabled"
             reasoning_dropdown.config(state=state)
             verbosity_dropdown.config(state=state)
             reasoning_summary_cb.config(state=tk.NORMAL if is_gpt5 else tk.DISABLED)
 
-        model_var.trace('w', update_model_desc)
+        model_var.trace("w", update_model_desc)
 
         # ─────────────────────────────────────────────────────────────────
         # RESPONSE STYLE (GPT-4 & GPT-5)
@@ -564,7 +567,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="Response Style:",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(10, 5))
         row_num += 1
 
@@ -574,9 +577,9 @@ Your key is stored securely in your user data folder and never shared."""
             main_frame,
             textvariable=style_var,
             values=["concise", "detailed"],
-            state='readonly',
+            state="readonly",
             width=45,
-            font=("Arial", 9)
+            font=("Arial", 9),
         )
         style_dropdown.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
         row_num += 1
@@ -586,7 +589,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="concise: ~80 words | detailed: ~200+ words with recommendations",
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
-            fg="#A0A0A0"
+            fg="#A0A0A0",
         ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
         row_num += 1
 
@@ -598,7 +601,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="Max Response Length (tokens):",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(10, 5))
         row_num += 1
 
@@ -610,7 +613,7 @@ Your key is stored securely in your user data folder and never shared."""
             increment=50,
             textvariable=tokens_var,
             width=10,
-            font=("Arial", 9)
+            font=("Arial", 9),
         )
         tokens_spinbox.grid(row=row_num, column=0, sticky=tk.W, pady=(0, 5))
         row_num += 1
@@ -620,7 +623,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="50-150: concise | 200-300: detailed | 400+: comprehensive",
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
-            fg="#A0A0A0"
+            fg="#A0A0A0",
         ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
         row_num += 1
 
@@ -632,7 +635,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="━━━ GPT-5.2 Advanced Settings ━━━",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=ACCENT_BLUE_COLOR
+            fg=ACCENT_BLUE_COLOR,
         )
         gpt5_section_label.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(15, 10))
         row_num += 1
@@ -642,7 +645,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="(Only applies when using GPT-5 models)",
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
-            fg="#808080"
+            fg="#808080",
         ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 10))
         row_num += 1
 
@@ -652,7 +655,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="Reasoning Effort:",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(5, 5))
         row_num += 1
 
@@ -663,9 +666,9 @@ Your key is stored securely in your user data folder and never shared."""
             main_frame,
             textvariable=reasoning_var,
             values=reasoning_levels,
-            state='readonly' if AI_MODEL.startswith('gpt-5') else 'disabled',
+            state="readonly" if AI_MODEL.startswith("gpt-5") else "disabled",
             width=45,
-            font=("Arial", 9)
+            font=("Arial", 9),
         )
         reasoning_dropdown.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
         row_num += 1
@@ -675,7 +678,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="none: fastest | low: light reasoning (recommended) | high/xhigh: deep analysis",
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
-            fg="#A0A0A0"
+            fg="#A0A0A0",
         ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 10))
         row_num += 1
 
@@ -685,7 +688,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="Text Verbosity:",
             font=("Arial", 10, "bold"),
             bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(5, 5))
         row_num += 1
 
@@ -696,9 +699,9 @@ Your key is stored securely in your user data folder and never shared."""
             main_frame,
             textvariable=verbosity_var,
             values=verbosity_levels,
-            state='readonly' if AI_MODEL.startswith('gpt-5') else 'disabled',
+            state="readonly" if AI_MODEL.startswith("gpt-5") else "disabled",
             width=45,
-            font=("Arial", 9)
+            font=("Arial", 9),
         )
         verbosity_dropdown.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
         row_num += 1
@@ -708,7 +711,7 @@ Your key is stored securely in your user data folder and never shared."""
             text="auto: based on max tokens | low: terse | medium: balanced | high: comprehensive",
             font=("Arial", 8, "italic"),
             bg=DARK_BG_COLOR,
-            fg="#A0A0A0"
+            fg="#A0A0A0",
         ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 10))
         row_num += 1
 
@@ -723,7 +726,7 @@ Your key is stored securely in your user data folder and never shared."""
             selectcolor=DARK_BG_COLOR,
             activebackground=DARK_BG_COLOR,
             activeforeground=LIGHT_TEXT_COLOR,
-            state=tk.NORMAL if AI_MODEL.startswith('gpt-5') else tk.DISABLED
+            state=tk.NORMAL if AI_MODEL.startswith("gpt-5") else tk.DISABLED,
         )
         reasoning_summary_cb.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(5, 5))
         row_num += 1
@@ -738,9 +741,11 @@ Your key is stored securely in your user data folder and never shared."""
             fg=LIGHT_TEXT_COLOR,
             selectcolor=DARK_BG_COLOR,
             activebackground=DARK_BG_COLOR,
-            activeforeground=LIGHT_TEXT_COLOR
+            activeforeground=LIGHT_TEXT_COLOR,
         )
-        include_recommendations_cb.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(5, 15))
+        include_recommendations_cb.grid(
+            row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(5, 15)
+        )
         row_num += 1
 
         # ─────────────────────────────────────────────────────────────────
@@ -762,7 +767,7 @@ Settings are saved to config_local.py and take effect immediately."""
             justify=tk.LEFT,
             relief=tk.RIDGE,
             padx=10,
-            pady=10
+            pady=10,
         )
         info_label.pack(pady=15, padx=30, fill=tk.X)
 
@@ -774,7 +779,9 @@ Settings are saved to config_local.py and take effect immediately."""
 
         def save_settings():
             # Update config_local.py
-            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config_local.py')
+            config_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "config_local.py"
+            )
 
             config_content = f"""# Auto-generated AI Settings
 # Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -797,34 +804,36 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 # Read existing config_local.py if it exists
                 existing_content = ""
                 if os.path.exists(config_path):
-                    with open(config_path, 'r', encoding='utf-8') as f:
+                    with open(config_path, "r", encoding="utf-8") as f:
                         existing_content = f.read()
 
                 # Remove old AI settings section if it exists
                 import re
+
                 existing_content = re.sub(
-                    r'# Auto-generated AI Settings.*?(?=\n# [A-Z]|\Z)',
-                    '',
+                    r"# Auto-generated AI Settings.*?(?=\n# [A-Z]|\Z)",
+                    "",
                     existing_content,
-                    flags=re.DOTALL
+                    flags=re.DOTALL,
                 )
 
                 # Also remove any standalone AI_ settings that might be floating
                 ai_settings = [
-                    'AI_MODEL', 'AI_RESPONSE_STYLE', 'AI_MAX_TOKENS',
-                    'AI_REASONING_EFFORT', 'AI_TEXT_VERBOSITY',
-                    'AI_GENERATE_REASONING_SUMMARY', 'AI_INCLUDE_RECOMMENDATIONS'
+                    "AI_MODEL",
+                    "AI_RESPONSE_STYLE",
+                    "AI_MAX_TOKENS",
+                    "AI_REASONING_EFFORT",
+                    "AI_TEXT_VERBOSITY",
+                    "AI_GENERATE_REASONING_SUMMARY",
+                    "AI_INCLUDE_RECOMMENDATIONS",
                 ]
                 for setting in ai_settings:
                     existing_content = re.sub(
-                        rf'^{setting}\s*=.*\n?',
-                        '',
-                        existing_content,
-                        flags=re.MULTILINE
+                        rf"^{setting}\s*=.*\n?", "", existing_content, flags=re.MULTILINE
                     )
 
                 # Write new settings
-                with open(config_path, 'w', encoding='utf-8') as f:
+                with open(config_path, "w", encoding="utf-8") as f:
                     final_content = existing_content.strip()
                     if final_content:
                         f.write(final_content + "\n\n")
@@ -837,7 +846,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                     f"Style: {style_var.get()}\n"
                     f"Max Tokens: {tokens_var.get()}\n\n"
                     "Changes will apply to new AI operations.\n"
-                    "Restart the application for full effect."
+                    "Restart the application for full effect.",
                 )
                 settings_window.destroy()
 
@@ -851,7 +860,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
             width=15,
-            pady=5
+            pady=5,
         )
         save_btn.pack(side=tk.LEFT, padx=5)
 
@@ -863,7 +872,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             fg=LIGHT_TEXT_COLOR,
             width=15,
             pady=5,
-            relief=tk.RIDGE
+            relief=tk.RIDGE,
         )
         cancel_btn.pack(side=tk.LEFT, padx=5)
 
@@ -899,117 +908,119 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         #  ACTIVE  (TRP) SETTINGS
         # ────────────────────────────────────
         if scan_type_value == "active":
-            tk.Label(settings_window, text="Active Plot Settings")\
-                .grid(row=0, column=0, columnspan=4, pady=20)
+            tk.Label(settings_window, text="Active Plot Settings").grid(
+                row=0, column=0, columnspan=4, pady=20
+            )
 
             # 3-D interpolation
-            self.interpolate_var = tk.BooleanVar(
-                value=self.interpolate_3d_plots)
-            tk.Checkbutton(settings_window, text="Interpolate 3-D Plots",
-                           variable=self.interpolate_var)\
-              .grid(row=1, column=0, sticky=tk.W, padx=20)
+            self.interpolate_var = tk.BooleanVar(value=self.interpolate_3d_plots)
+            tk.Checkbutton(
+                settings_window, text="Interpolate 3-D Plots", variable=self.interpolate_var
+            ).grid(row=1, column=0, sticky=tk.W, padx=20)
 
             # Manual / auto Z-axis
-            tk.Label(settings_window, text="3-D Z-Axis Scale:")\
-              .grid(row=2, column=0, sticky=tk.W, padx=20)
-            tk.Radiobutton(settings_window, text="Auto",
-                           variable=self.axis_scale_mode, value="auto")\
-              .grid(row=2, column=1, sticky=tk.W)
-            tk.Radiobutton(settings_window, text="Manual",
-                           variable=self.axis_scale_mode, value="manual")\
-              .grid(row=2, column=2, sticky=tk.W)
-            tk.Label(settings_window, text="Min dBm:")\
-              .grid(row=3, column=0, sticky=tk.W, padx=20)
-            tk.Entry(settings_window, textvariable=self.axis_min,
-                     width=6).grid(row=3, column=1)
-            tk.Label(settings_window, text="Max dBm:")\
-              .grid(row=3, column=2, sticky=tk.W)
-            tk.Entry(settings_window, textvariable=self.axis_max,
-                     width=6).grid(row=3, column=3)
+            tk.Label(settings_window, text="3-D Z-Axis Scale:").grid(
+                row=2, column=0, sticky=tk.W, padx=20
+            )
+            tk.Radiobutton(
+                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto"
+            ).grid(row=2, column=1, sticky=tk.W)
+            tk.Radiobutton(
+                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual"
+            ).grid(row=2, column=2, sticky=tk.W)
+            tk.Label(settings_window, text="Min dBm:").grid(row=3, column=0, sticky=tk.W, padx=20)
+            tk.Entry(settings_window, textvariable=self.axis_min, width=6).grid(row=3, column=1)
+            tk.Label(settings_window, text="Max dBm:").grid(row=3, column=2, sticky=tk.W)
+            tk.Entry(settings_window, textvariable=self.axis_max, width=6).grid(row=3, column=3)
 
             def save_active_settings():
                 self.interpolate_3d_plots = self.interpolate_var.get()
                 self.update_visibility()
                 settings_window.destroy()
 
-            tk.Button(settings_window, text="Save Settings",
-                      command=save_active_settings,
-                      bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)\
-              .grid(row=5, column=0, columnspan=4, pady=20)
+            tk.Button(
+                settings_window,
+                text="Save Settings",
+                command=save_active_settings,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).grid(row=5, column=0, columnspan=4, pady=20)
 
         # ────────────────────────────────────
         #  PASSIVE  (HPOL/VPOL  or  G&D) SETTINGS
         # ────────────────────────────────────
         elif scan_type_value == "passive":
-            tk.Label(settings_window, text="Passive Plot Settings")\
-              .grid(row=0, column=0, columnspan=4, pady=10)
+            tk.Label(settings_window, text="Passive Plot Settings").grid(
+                row=0, column=0, columnspan=4, pady=10
+            )
 
             # VPOL/HPOL  vs  G&D
-            self.plot_type_var = tk.StringVar(
-                value=self.passive_scan_type.get())
-            r_hv = tk.Radiobutton(settings_window, text="VPOL / HPOL",
-                                  variable=self.plot_type_var, value="VPOL/HPOL")
-            r_gd = tk.Radiobutton(settings_window, text="G&D",
-                                  variable=self.plot_type_var, value="G&D")
+            self.plot_type_var = tk.StringVar(value=self.passive_scan_type.get())
+            r_hv = tk.Radiobutton(
+                settings_window, text="VPOL / HPOL", variable=self.plot_type_var, value="VPOL/HPOL"
+            )
+            r_gd = tk.Radiobutton(
+                settings_window, text="G&D", variable=self.plot_type_var, value="G&D"
+            )
             r_hv.grid(row=1, column=0, sticky=tk.W, padx=20)
             r_gd.grid(row=1, column=1, sticky=tk.W, padx=20)
 
             # Datasheet-style plots  (only for VPOL/HPOL)
             self.cb_datasheet_plots = tk.Checkbutton(
-                settings_window, text="Datasheet Plots",
-                variable=self.datasheet_plots_var)
+                settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var
+            )
 
             # ECC calculation  (only for VPOL/HPOL)
             self.cb_ecc_analysis_var = tk.BooleanVar(
-                value=getattr(self, "ecc_analysis_enabled", False))
+                value=getattr(self, "ecc_analysis_enabled", False)
+            )
             self.cb_ecc_analysis = tk.Checkbutton(
                 settings_window,
                 text="Calculate Envelope Correlation Coefficient (ECC)",
-                variable=self.cb_ecc_analysis_var)
+                variable=self.cb_ecc_analysis_var,
+            )
 
             # Min/Max Eff & Gain  (only for G&D)
             self.cb_min_max_eff_gain = tk.Checkbutton(
-                settings_window, text="Min/Max Eff & Gain",
-                variable=self.min_max_eff_gain_var)
+                settings_window, text="Min/Max Eff & Gain", variable=self.min_max_eff_gain_var
+            )
 
             # Human-torso shadowing model
-            self.cb_shadowing_var = tk.BooleanVar(
-                value=getattr(self, "shadowing_enabled", False))
-            tk.Checkbutton(settings_window,
-                           text="Apply Human Torso Shadow",
-                           variable=self.cb_shadowing_var)\
-              .grid(row=6, column=0, sticky=tk.W, padx=20)
-            tk.Label(settings_window, text="Shadow Direction:")\
-              .grid(row=6, column=1, sticky=tk.E)
-            self.shadow_direction_var = tk.StringVar(
-                value=getattr(self, "shadow_direction", "-X"))
-            ttk.Combobox(settings_window, textvariable=self.shadow_direction_var,
-                         values=["+X", "-X"], width=4, state="readonly")\
-              .grid(row=6, column=2)
+            self.cb_shadowing_var = tk.BooleanVar(value=getattr(self, "shadowing_enabled", False))
+            tk.Checkbutton(
+                settings_window, text="Apply Human Torso Shadow", variable=self.cb_shadowing_var
+            ).grid(row=6, column=0, sticky=tk.W, padx=20)
+            tk.Label(settings_window, text="Shadow Direction:").grid(row=6, column=1, sticky=tk.E)
+            self.shadow_direction_var = tk.StringVar(value=getattr(self, "shadow_direction", "-X"))
+            ttk.Combobox(
+                settings_window,
+                textvariable=self.shadow_direction_var,
+                values=["+X", "-X"],
+                width=4,
+                state="readonly",
+            ).grid(row=6, column=2)
 
             # 3-D axis controls (shared with Active logic)
-            self.lbl_axis      = tk.Label(settings_window, text="3-D Z-Axis Scale:")
-            self.rb_axis_auto  = tk.Radiobutton(settings_window, text="Auto",
-                                                variable=self.axis_scale_mode,
-                                                value="auto")
-            self.rb_axis_man   = tk.Radiobutton(settings_window, text="Manual",
-                                                variable=self.axis_scale_mode,
-                                                value="manual")
-            self.lbl_min_dbi   = tk.Label(settings_window, text="Min dBi:")
-            self.ent_min_dbi   = tk.Entry(settings_window,
-                                          textvariable=self.axis_min, width=6)
-            self.lbl_max_dbi   = tk.Label(settings_window, text="Max dBi:")
-            self.ent_max_dbi   = tk.Entry(settings_window,
-                                          textvariable=self.axis_max, width=6)
+            self.lbl_axis = tk.Label(settings_window, text="3-D Z-Axis Scale:")
+            self.rb_axis_auto = tk.Radiobutton(
+                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto"
+            )
+            self.rb_axis_man = tk.Radiobutton(
+                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual"
+            )
+            self.lbl_min_dbi = tk.Label(settings_window, text="Min dBi:")
+            self.ent_min_dbi = tk.Entry(settings_window, textvariable=self.axis_min, width=6)
+            self.lbl_max_dbi = tk.Label(settings_window, text="Max dBi:")
+            self.ent_max_dbi = tk.Entry(settings_window, textvariable=self.axis_max, width=6)
 
             # put them in the grid now (we'll hide some later)
-            self.lbl_axis    .grid(row=3, column=0, sticky=tk.W, padx=20)
+            self.lbl_axis.grid(row=3, column=0, sticky=tk.W, padx=20)
             self.rb_axis_auto.grid(row=3, column=1, sticky=tk.W)
-            self.rb_axis_man .grid(row=3, column=2, sticky=tk.W)
-            self.lbl_min_dbi .grid(row=4, column=0, sticky=tk.W, padx=20)
-            self.ent_min_dbi .grid(row=4, column=1)
-            self.lbl_max_dbi .grid(row=4, column=2, sticky=tk.W)
-            self.ent_max_dbi .grid(row=4, column=3)
+            self.rb_axis_man.grid(row=3, column=2, sticky=tk.W)
+            self.lbl_min_dbi.grid(row=4, column=0, sticky=tk.W, padx=20)
+            self.ent_min_dbi.grid(row=4, column=1)
+            self.lbl_max_dbi.grid(row=4, column=2, sticky=tk.W)
+            self.ent_max_dbi.grid(row=4, column=3)
 
             # Helper to show / hide controls depending on radio-selection
             def refresh_passive_ui():
@@ -1018,14 +1029,11 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                     self.cb_datasheet_plots.grid_remove()
                     self.cb_ecc_analysis.grid_remove()
                     # show G&D-specific
-                    self.cb_min_max_eff_gain.grid(row=2, column=1,
-                                                  sticky=tk.W, padx=20)
+                    self.cb_min_max_eff_gain.grid(row=2, column=1, sticky=tk.W, padx=20)
                 else:  # VPOL/HPOL
                     self.cb_min_max_eff_gain.grid_remove()
-                    self.cb_datasheet_plots.grid(row=2, column=0,
-                                                 sticky=tk.W, padx=20)
-                    self.cb_ecc_analysis .grid(row=5, column=0,
-                                                sticky=tk.W, padx=20)
+                    self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)
+                    self.cb_ecc_analysis.grid(row=5, column=0, sticky=tk.W, padx=20)
 
             # first run + connect
             refresh_passive_ui()
@@ -1036,15 +1044,18 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             def save_passive_settings():
                 self.passive_scan_type.set(self.plot_type_var.get())
                 self.ecc_analysis_enabled = self.cb_ecc_analysis_var.get()
-                self.shadowing_enabled    = self.cb_shadowing_var.get()
-                self.shadow_direction     = self.shadow_direction_var.get()
+                self.shadowing_enabled = self.cb_shadowing_var.get()
+                self.shadow_direction = self.shadow_direction_var.get()
                 self.update_visibility()
                 settings_window.destroy()
 
-            tk.Button(settings_window, text="Save Settings",
-                      command=save_passive_settings,
-                      bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)\
-              .grid(row=8, column=0, columnspan=4, pady=20)
+            tk.Button(
+                settings_window,
+                text="Save Settings",
+                command=save_passive_settings,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).grid(row=8, column=0, columnspan=4, pady=20)
 
         elif scan_type_value == "vswr":
             # Show settings specific to VNA
@@ -1052,7 +1063,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             label.grid(row=0, column=0, columnspan=2, pady=10)
 
             def save_vswr_settings():
-               # Save the entered values with checks
+                # Save the entered values with checks
                 self.saved_limit1_freq1 = self.limit1_freq1.get()
                 self.saved_limit1_freq2 = self.limit1_freq2.get()
                 self.saved_limit1_start = self.limit1_val1.get()
@@ -1100,18 +1111,24 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
                 self.cb_groupdelay_sff_var.set(False)
                 self.saved_min_max_vswr = False
-                if hasattr(self, 'saved_min_max_vswr'):
-                                self.min_max_vswr_var.set(self.saved_min_max_vswr)
+                if hasattr(self, "saved_min_max_vswr"):
+                    self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Create the "Group Delay Setting" Checkbutton
-            self.cb_groupdelay_sff = tk.Checkbutton(settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var)
+            self.cb_groupdelay_sff = tk.Checkbutton(
+                settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var
+            )
             self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
 
             # Create the Min/Max VSWR Checkbutton
-            self.cb_min_max_vswr = tk.Checkbutton(settings_window, text="Tabled Min/Max VSWR", variable=self.min_max_vswr_var)
-            self.cb_min_max_vswr.grid(row=1, column=2, sticky=tk.W)  # Adjust the row/column as necessary
+            self.cb_min_max_vswr = tk.Checkbutton(
+                settings_window, text="Tabled Min/Max VSWR", variable=self.min_max_vswr_var
+            )
+            self.cb_min_max_vswr.grid(
+                row=1, column=2, sticky=tk.W
+            )  # Adjust the row/column as necessary
             # If there's a saved value, use it to initialize the checkbox
-            if hasattr(self, 'saved_min_max_vswr'):
+            if hasattr(self, "saved_min_max_vswr"):
                 self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Limit 1
@@ -1149,7 +1166,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             tk.Entry(settings_window, textvariable=self.limit2_val2).grid(row=5, column=3)
 
             # Update the input fields with saved values if they exist
-            if hasattr(self, 'saved_limit1_freq1'):
+            if hasattr(self, "saved_limit1_freq1"):
                 self.limit1_freq1.set(self.saved_limit1_freq1)
                 self.limit1_freq2.set(self.saved_limit1_freq2)
                 self.limit1_val1.set(self.saved_limit1_start)
@@ -1160,7 +1177,19 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 self.limit2_val2.set(self.saved_limit2_stop)
 
             # Create the Save Settings & Default Settings button within VSWR Settings
-            save_button = tk.Button(settings_window, text="Save Settings", command=save_vswr_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+            save_button = tk.Button(
+                settings_window,
+                text="Save Settings",
+                command=save_vswr_settings,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            )
             save_button.grid(row=6, column=0, columnspan=2, pady=20)
-            default_button = tk.Button(settings_window, text="Default Settings", command=default_vswr_settings, bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+            default_button = tk.Button(
+                settings_window,
+                text="Default Settings",
+                command=default_vswr_settings,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            )
             default_button.grid(row=6, column=2, columnspan=2, pady=20)

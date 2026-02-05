@@ -19,35 +19,34 @@ from typing import TYPE_CHECKING, Optional, List, Any
 
 import numpy as np
 
-from config import (
-    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR,
-    AI_MODEL, AI_MAX_TOKENS
-)
+from ..config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, AI_MODEL, AI_MAX_TOKENS
 
 # Import AI settings with fallbacks
 try:
-    from config import AI_TEMPERATURE
+    from ..config import AI_TEMPERATURE
 except ImportError:
     AI_TEMPERATURE = 0.7
 
 try:
-    from config import AI_REASONING_EFFORT
+    from ..config import AI_REASONING_EFFORT
 except ImportError:
     AI_REASONING_EFFORT = "low"
 
 try:
-    from config import AI_TEXT_VERBOSITY
+    from ..config import AI_TEXT_VERBOSITY
 except ImportError:
     AI_TEXT_VERBOSITY = "auto"
 
 try:
-    from config import AI_GENERATE_REASONING_SUMMARY
+    from ..config import AI_GENERATE_REASONING_SUMMARY
 except ImportError:
     AI_GENERATE_REASONING_SUMMARY = False
 
-from plotting import (
-    plot_2d_passive_data, plot_passive_3d_component,
-    plot_active_2d_data, plot_active_3d_data
+from ..plotting import (
+    plot_2d_passive_data,
+    plot_passive_3d_component,
+    plot_active_2d_data,
+    plot_active_3d_data,
 )
 
 if TYPE_CHECKING:
@@ -93,6 +92,7 @@ class AIChatMixin:
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
+
         def process_data(self) -> None: ...
         def _process_data_without_plotting(self) -> bool: ...
 
@@ -101,7 +101,7 @@ class AIChatMixin:
     # ────────────────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _figure_to_base64(fig, format: str = 'png', dpi: int = 100) -> str:
+    def _figure_to_base64(fig, format: str = "png", dpi: int = 100) -> str:
         """Convert a matplotlib figure to a base64-encoded string.
 
         Args:
@@ -115,10 +115,16 @@ class AIChatMixin:
         import matplotlib.pyplot as plt
 
         buf = io.BytesIO()
-        fig.savefig(buf, format=format, dpi=dpi, bbox_inches='tight',
-                    facecolor=fig.get_facecolor(), edgecolor='none')
+        fig.savefig(
+            buf,
+            format=format,
+            dpi=dpi,
+            bbox_inches="tight",
+            facecolor=fig.get_facecolor(),
+            edgecolor="none",
+        )
         buf.seek(0)
-        img_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        img_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         buf.close()
         return img_base64
 
@@ -134,6 +140,7 @@ class AIChatMixin:
         """
         try:
             from PIL import Image, ImageTk
+
             img_data = base64.b64decode(base64_str)
             img = Image.open(io.BytesIO(img_data))
             return ImageTk.PhotoImage(img)
@@ -141,8 +148,9 @@ class AIChatMixin:
             print("[WARNING] PIL not available for inline image display")
             return None
 
-    def _insert_image_in_chat(self, chat_text: tk.Text, base64_str: str,
-                               max_width: int = 400) -> None:
+    def _insert_image_in_chat(
+        self, chat_text: tk.Text, base64_str: str, max_width: int = 400
+    ) -> None:
         """Insert a base64-encoded image into a Tkinter Text widget.
 
         Args:
@@ -161,13 +169,13 @@ class AIChatMixin:
             if img.width > max_width:
                 ratio = max_width / img.width
                 new_height = int(img.height * ratio)
-                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)  # type: ignore[assignment]
 
             # Convert to PhotoImage
             photo = ImageTk.PhotoImage(img)
 
             # Store reference to prevent garbage collection
-            if not hasattr(self, '_chat_images'):
+            if not hasattr(self, "_chat_images"):
                 self._chat_images: List[Any] = []
             self._chat_images.append(photo)
 
@@ -188,11 +196,12 @@ class AIChatMixin:
     def open_ai_chat(self):
         """Open AI chat assistant for real-time data analysis."""
         # Check if API key is configured
-        if not (os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2')):
+        if not (os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")):
             from tkinter import messagebox
+
             messagebox.showwarning(
                 "API Key Required",
-                "Please configure your OpenAI API key first.\n\nGo to Help -> Manage OpenAI API Key"
+                "Please configure your OpenAI API key first.\n\nGo to Help -> Manage OpenAI API Key",
             )
             return
 
@@ -207,7 +216,7 @@ class AIChatMixin:
             text="AI Chat Assistant - Analyze Your Data",
             font=("Arial", 14, "bold"),
             bg=DARK_BG_COLOR,
-            fg=ACCENT_BLUE_COLOR
+            fg=ACCENT_BLUE_COLOR,
         )
         title_label.pack(pady=10)
 
@@ -223,7 +232,7 @@ class AIChatMixin:
             font=("Arial", 10),
             relief=tk.FLAT,
             padx=10,
-            pady=10
+            pady=10,
         )
         chat_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -312,7 +321,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
             width=10,
-            height=2
+            height=2,
         )
         send_btn.pack(side=tk.RIGHT, padx=(10, 0))
 
@@ -327,7 +336,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             relief=tk.SOLID,
             borderwidth=1,
             padx=5,
-            pady=5
+            pady=5,
         )
         user_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -345,7 +354,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             command=chat_window.destroy,
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            width=10
+            width=10,
         )
         close_btn.pack(pady=(0, 10))
 
@@ -357,23 +366,31 @@ Ask me anything about your measurements, patterns, or RF analysis!
         context_parts.append(f"Scan Type: {self.scan_type.get()}")
 
         # Active scan data
-        if self.scan_type.get() == "active" and hasattr(self, 'TRP_file_path') and self.TRP_file_path:
+        if (
+            self.scan_type.get() == "active"
+            and hasattr(self, "TRP_file_path")
+            and self.TRP_file_path
+        ):
             context_parts.append(f"Active TRP File: {os.path.basename(self.TRP_file_path)}")
             # Try to extract frequency if available
-            if hasattr(self, 'freq_list') and self.freq_list:
-                context_parts.append(f"Frequencies: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz")
+            if hasattr(self, "freq_list") and self.freq_list:
+                context_parts.append(
+                    f"Frequencies: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz"
+                )
 
         # Passive scan data
         elif self.scan_type.get() == "passive":
-            if hasattr(self, 'hpol_file_path') and self.hpol_file_path:
+            if hasattr(self, "hpol_file_path") and self.hpol_file_path:
                 context_parts.append(f"HPOL File: {os.path.basename(self.hpol_file_path)}")
-            if hasattr(self, 'vpol_file_path') and self.vpol_file_path:
+            if hasattr(self, "vpol_file_path") and self.vpol_file_path:
                 context_parts.append(f"VPOL File: {os.path.basename(self.vpol_file_path)}")
-            if hasattr(self, 'freq_list') and self.freq_list:
-                context_parts.append(f"Frequencies: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz")
+            if hasattr(self, "freq_list") and self.freq_list:
+                context_parts.append(
+                    f"Frequencies: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz"
+                )
 
         # Selected frequency
-        if hasattr(self, 'selected_frequency') and self.selected_frequency.get():
+        if hasattr(self, "selected_frequency") and self.selected_frequency.get():
             try:
                 freq = float(self.selected_frequency.get())
                 context_parts.append(f"Selected Frequency: {freq:.1f} MHz")
@@ -393,7 +410,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
         from openai import OpenAI
 
         # Get API key
-        api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY2')
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")
         if not api_key:
             return "API key not found. Please configure it in Help -> Manage OpenAI API Key."
 
@@ -401,10 +418,10 @@ Ask me anything about your measurements, patterns, or RF analysis!
         client = OpenAI(api_key=api_key)
 
         # Get AI model from config
-        ai_model = AI_MODEL if 'AI_MODEL' in globals() else 'gpt-4o-mini'
+        ai_model = AI_MODEL if "AI_MODEL" in globals() else "gpt-4o-mini"
 
         # Validate model supports function/tool calling (required for AI Chat)
-        incompatible_models = ['o1-preview', 'o1-mini', 'o3-mini', 'o3', 'o1']
+        incompatible_models = ["o1-preview", "o1-mini", "o3-mini", "o3", "o1"]
         if any(ai_model.startswith(prefix) for prefix in incompatible_models):
             return (
                 f"Error: Model '{ai_model}' does not support function calling, which is required for AI Chat Assistant.\n\n"
@@ -416,7 +433,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             )
 
         # Determine if using GPT-5 (Responses API) or GPT-4 (Chat Completions API)
-        is_gpt5_model = ai_model.startswith('gpt-5')
+        is_gpt5_model = ai_model.startswith("gpt-5")
 
         # Define available functions that AI can call
         available_functions = {
@@ -424,7 +441,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             "generate_3d_plot": self._ai_generate_3d_plot,
             "get_gain_statistics": self._ai_get_gain_statistics,
             "analyze_pattern": self._ai_analyze_pattern,
-            "compare_polarizations": self._ai_compare_polarizations
+            "compare_polarizations": self._ai_compare_polarizations,
         }
 
         # Build enhanced system message
@@ -460,12 +477,18 @@ You can call these functions to help answer user questions:
 
         if is_gpt5_model:
             # Use GPT-5.2 Responses API with tool calling
-            return self._get_gpt5_response(client, ai_model, system_message, chat_history, available_functions)
+            return self._get_gpt5_response(
+                client, ai_model, system_message, chat_history, available_functions
+            )
         else:
             # Use GPT-4 Chat Completions API with function calling
-            return self._get_gpt4_response(client, ai_model, system_message, chat_history, available_functions)
+            return self._get_gpt4_response(
+                client, ai_model, system_message, chat_history, available_functions
+            )
 
-    def _get_gpt4_response(self, client, ai_model, system_message, chat_history, available_functions):
+    def _get_gpt4_response(
+        self, client, ai_model, system_message, chat_history, available_functions
+    ):
         """Handle GPT-4 family models using Chat Completions API with function calling."""
         # Function definitions for OpenAI Chat Completions API
         function_definitions = [
@@ -477,15 +500,15 @@ You can call these functions to help answer user questions:
                     "properties": {
                         "frequency": {
                             "type": "number",
-                            "description": "Frequency in MHz to plot. If not specified, uses currently selected frequency."
+                            "description": "Frequency in MHz to plot. If not specified, uses currently selected frequency.",
                         },
                         "plot_type": {
                             "type": "string",
                             "enum": ["polar", "rectangular", "azimuth_cuts"],
-                            "description": "Type of 2D plot to generate"
-                        }
-                    }
-                }
+                            "description": "Type of 2D plot to generate",
+                        },
+                    },
+                },
             },
             {
                 "name": "generate_3d_plot",
@@ -494,9 +517,13 @@ You can call these functions to help answer user questions:
                     "type": "object",
                     "properties": {
                         "frequency": {"type": "number", "description": "Frequency in MHz"},
-                        "component": {"type": "string", "enum": ["total", "hpol", "vpol"], "description": "Which polarization component to plot"}
-                    }
-                }
+                        "component": {
+                            "type": "string",
+                            "enum": ["total", "hpol", "vpol"],
+                            "description": "Which polarization component to plot",
+                        },
+                    },
+                },
             },
             {
                 "name": "get_gain_statistics",
@@ -504,9 +531,12 @@ You can call these functions to help answer user questions:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz. If not specified, uses currently selected frequency."}
-                    }
-                }
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz. If not specified, uses currently selected frequency.",
+                        }
+                    },
+                },
             },
             {
                 "name": "analyze_pattern",
@@ -514,9 +544,12 @@ You can call these functions to help answer user questions:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to analyze"}
-                    }
-                }
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to analyze",
+                        }
+                    },
+                },
             },
             {
                 "name": "compare_polarizations",
@@ -524,10 +557,13 @@ You can call these functions to help answer user questions:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to compare"}
-                    }
-                }
-            }
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to compare",
+                        }
+                    },
+                },
+            },
         ]
 
         # Prepare messages for API
@@ -535,8 +571,8 @@ You can call these functions to help answer user questions:
         messages.extend(chat_history)
 
         try:
-            max_tokens_value = AI_MAX_TOKENS if 'AI_MAX_TOKENS' in globals() else 500
-            temperature_value = AI_TEMPERATURE if 'AI_TEMPERATURE' in globals() else 0.7
+            max_tokens_value = AI_MAX_TOKENS if "AI_MAX_TOKENS" in globals() else 500
+            temperature_value = AI_TEMPERATURE if "AI_TEMPERATURE" in globals() else 0.7
 
             # Build API call parameters
             api_params = {
@@ -545,7 +581,7 @@ You can call these functions to help answer user questions:
                 "functions": function_definitions,
                 "function_call": "auto",
                 "max_tokens": max_tokens_value,
-                "temperature": temperature_value
+                "temperature": temperature_value,
             }
 
             # Initial API call
@@ -553,7 +589,9 @@ You can call these functions to help answer user questions:
             response_message = response.choices[0].message
 
             print(f"[AI Debug] Model: {ai_model} (Chat Completions API)")
-            print(f"[AI Debug] Has function_call: {hasattr(response_message, 'function_call') and response_message.function_call is not None}")
+            print(
+                f"[AI Debug] Has function_call: {hasattr(response_message, 'function_call') and response_message.function_call is not None}"
+            )
 
             # Handle function calling
             if response_message.function_call:
@@ -566,26 +604,26 @@ You can call these functions to help answer user questions:
                     function_response = available_functions[function_name](**function_args)
 
                     # Add function call and result to messages
-                    messages.append({
-                        "role": "assistant",
-                        "content": None,
-                        "function_call": {
-                            "name": function_name,
-                            "arguments": response_message.function_call.arguments
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": None,
+                            "function_call": {
+                                "name": function_name,
+                                "arguments": response_message.function_call.arguments,
+                            },
                         }
-                    })
-                    messages.append({
-                        "role": "function",
-                        "name": function_name,
-                        "content": function_response
-                    })
+                    )
+                    messages.append(
+                        {"role": "function", "name": function_name, "content": function_response}
+                    )
 
                     # Get final response
                     second_response = client.chat.completions.create(
                         model=ai_model,
                         messages=messages,
                         max_tokens=max_tokens_value,
-                        temperature=temperature_value
+                        temperature=temperature_value,
                     )
 
                     content = second_response.choices[0].message.content
@@ -601,7 +639,9 @@ You can call these functions to help answer user questions:
         except Exception as e:
             raise Exception(f"OpenAI Chat Completions API error: {str(e)}")
 
-    def _get_gpt5_response(self, client, ai_model, system_message, chat_history, available_functions):
+    def _get_gpt5_response(
+        self, client, ai_model, system_message, chat_history, available_functions
+    ):
         """Handle GPT-5.2 family models using Responses API with tool calling."""
         # Tool definitions for GPT-5.2 Responses API (internally-tagged format)
         # Note: With strict=True, 'required' must include ALL properties
@@ -614,12 +654,16 @@ You can call these functions to help answer user questions:
                     "type": "object",
                     "properties": {
                         "frequency": {"type": "number", "description": "Frequency in MHz to plot."},
-                        "plot_type": {"type": "string", "enum": ["polar", "rectangular", "azimuth_cuts"], "description": "Type of 2D plot to generate"}
+                        "plot_type": {
+                            "type": "string",
+                            "enum": ["polar", "rectangular", "azimuth_cuts"],
+                            "description": "Type of 2D plot to generate",
+                        },
                     },
                     "required": ["frequency", "plot_type"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
+                "strict": True,
             },
             {
                 "type": "function",
@@ -629,12 +673,16 @@ You can call these functions to help answer user questions:
                     "type": "object",
                     "properties": {
                         "frequency": {"type": "number", "description": "Frequency in MHz"},
-                        "component": {"type": "string", "enum": ["total", "hpol", "vpol"], "description": "Which polarization component to plot"}
+                        "component": {
+                            "type": "string",
+                            "enum": ["total", "hpol", "vpol"],
+                            "description": "Which polarization component to plot",
+                        },
                     },
                     "required": ["frequency", "component"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
+                "strict": True,
             },
             {
                 "type": "function",
@@ -646,9 +694,9 @@ You can call these functions to help answer user questions:
                         "frequency": {"type": "number", "description": "Frequency in MHz."}
                     },
                     "required": ["frequency"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
+                "strict": True,
             },
             {
                 "type": "function",
@@ -657,12 +705,15 @@ You can call these functions to help answer user questions:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to analyze"}
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to analyze",
+                        }
                     },
                     "required": ["frequency"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
+                "strict": True,
             },
             {
                 "type": "function",
@@ -671,27 +722,30 @@ You can call these functions to help answer user questions:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to compare"}
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to compare",
+                        }
                     },
                     "required": ["frequency"],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
-                "strict": True
-            }
+                "strict": True,
+            },
         ]
 
         # Build input for Responses API
-        input_messages = [
-            {"role": "system", "content": system_message}
-        ]
+        input_messages = [{"role": "system", "content": system_message}]
         for msg in chat_history:
             input_messages.append({"role": msg["role"], "content": msg["content"]})
 
         # Get GPT-5.2 parameters from config
-        reasoning_effort = AI_REASONING_EFFORT if 'AI_REASONING_EFFORT' in globals() else "low"
-        text_verbosity = AI_TEXT_VERBOSITY if 'AI_TEXT_VERBOSITY' in globals() else "auto"
-        generate_summary = AI_GENERATE_REASONING_SUMMARY if 'AI_GENERATE_REASONING_SUMMARY' in globals() else False
-        max_tokens_value = AI_MAX_TOKENS if 'AI_MAX_TOKENS' in globals() else 500
+        reasoning_effort = AI_REASONING_EFFORT if "AI_REASONING_EFFORT" in globals() else "low"
+        text_verbosity = AI_TEXT_VERBOSITY if "AI_TEXT_VERBOSITY" in globals() else "auto"
+        generate_summary = (
+            AI_GENERATE_REASONING_SUMMARY if "AI_GENERATE_REASONING_SUMMARY" in globals() else False
+        )
+        max_tokens_value = AI_MAX_TOKENS if "AI_MAX_TOKENS" in globals() else 500
 
         # Auto-map verbosity based on max_tokens if set to "auto"
         if text_verbosity == "auto":
@@ -717,31 +771,31 @@ You can call these functions to help answer user questions:
                 input=input_messages,
                 tools=tool_definitions,
                 reasoning=reasoning_config,
-                text={"verbosity": text_verbosity}
+                text={"verbosity": text_verbosity},
             )
 
             # Check for tool calls in the response output
             tool_calls = []
             text_output = None
 
-            if hasattr(response, 'output') and response.output:
+            if hasattr(response, "output") and response.output:
                 for item in response.output:
-                    item_type = getattr(item, 'type', None)
-                    if item_type == 'function_call':
+                    item_type = getattr(item, "type", None)
+                    if item_type == "function_call":
                         tool_calls.append(item)
-                    elif item_type == 'message':
+                    elif item_type == "message":
                         # Extract text from message content
-                        for content_item in getattr(item, 'content', []):
-                            if getattr(content_item, 'type', None) == 'output_text':
-                                text_output = getattr(content_item, 'text', '')
+                        for content_item in getattr(item, "content", []):
+                            if getattr(content_item, "type", None) == "output_text":
+                                text_output = getattr(content_item, "text", "")
 
             # Handle tool calls
             if tool_calls:
                 # Process each tool call
                 for tool_call in tool_calls:
-                    function_name = getattr(tool_call, 'name', None)
-                    call_id = getattr(tool_call, 'call_id', None)
-                    arguments_str = getattr(tool_call, 'arguments', '{}')
+                    function_name = getattr(tool_call, "name", None)
+                    call_id = getattr(tool_call, "call_id", None)
+                    arguments_str = getattr(tool_call, "arguments", "{}")
 
                     print(f"[AI] GPT-5.2 calling tool: {function_name} (call_id: {call_id})")
 
@@ -753,41 +807,45 @@ You can call these functions to help answer user questions:
                             function_response = json.dumps({"error": str(func_error)})
 
                         # Add tool result to input and make follow-up call
-                        input_messages.append({
-                            "type": "function_call",
-                            "call_id": call_id,
-                            "name": function_name,
-                            "arguments": arguments_str
-                        })
-                        input_messages.append({
-                            "type": "function_call_output",
-                            "call_id": call_id,
-                            "output": function_response
-                        })
+                        input_messages.append(
+                            {
+                                "type": "function_call",
+                                "call_id": call_id,
+                                "name": function_name,
+                                "arguments": arguments_str,
+                            }
+                        )
+                        input_messages.append(
+                            {
+                                "type": "function_call_output",
+                                "call_id": call_id,
+                                "output": function_response,
+                            }
+                        )
 
                 # Make follow-up call with tool results
                 follow_up_response = client.responses.create(
                     model=ai_model,
                     input=input_messages,
                     reasoning=reasoning_config,
-                    text={"verbosity": text_verbosity}
+                    text={"verbosity": text_verbosity},
                 )
 
                 # Extract text from follow-up response
-                if hasattr(follow_up_response, 'output_text') and follow_up_response.output_text:
+                if hasattr(follow_up_response, "output_text") and follow_up_response.output_text:
                     return follow_up_response.output_text.strip()
 
-                if hasattr(follow_up_response, 'output') and follow_up_response.output:
+                if hasattr(follow_up_response, "output") and follow_up_response.output:
                     for item in follow_up_response.output:
-                        if getattr(item, 'type', None) == 'message':
-                            for content_item in getattr(item, 'content', []):
-                                if getattr(content_item, 'type', None) == 'output_text':
-                                    return getattr(content_item, 'text', '').strip()
+                        if getattr(item, "type", None) == "message":
+                            for content_item in getattr(item, "content", []):
+                                if getattr(content_item, "type", None) == "output_text":
+                                    return getattr(content_item, "text", "").strip()
 
                 return "Analysis complete."
 
             # No tool calls - return direct text response
-            if hasattr(response, 'output_text') and response.output_text:
+            if hasattr(response, "output_text") and response.output_text:
                 return response.output_text.strip()
 
             if text_output:
@@ -806,26 +864,34 @@ You can call these functions to help answer user questions:
         """Generate and display 2D radiation pattern plot."""
         try:
             # Use selected frequency if not specified
-            if frequency is None and hasattr(self, 'selected_frequency'):
+            if frequency is None and hasattr(self, "selected_frequency"):
                 try:
                     frequency = float(self.selected_frequency.get())
                 except (ValueError, AttributeError, TypeError):
                     return json.dumps({"error": "No frequency specified and no valid selection"})
 
             # Check if files have been imported based on scan type
-            scan_type = str(self.scan_type.get()) if hasattr(self, 'scan_type') else None
-            has_passive_data = hasattr(self, 'hpol_file_path') and self.hpol_file_path
-            has_active_data = hasattr(self, 'TRP_file_path') and self.TRP_file_path
+            scan_type = str(self.scan_type.get()) if hasattr(self, "scan_type") else None
+            has_passive_data = hasattr(self, "hpol_file_path") and self.hpol_file_path
+            has_active_data = hasattr(self, "TRP_file_path") and self.TRP_file_path
 
             if scan_type == "passive" and not has_passive_data:
-                return json.dumps({"error": "No passive measurement data loaded. Please import HPOL and VPOL files first."})
+                return json.dumps(
+                    {
+                        "error": "No passive measurement data loaded. Please import HPOL and VPOL files first."
+                    }
+                )
             elif scan_type == "active" and not has_active_data:
-                return json.dumps({"error": "No active measurement data loaded. Please import a TRP file first."})
+                return json.dumps(
+                    {"error": "No active measurement data loaded. Please import a TRP file first."}
+                )
             elif not has_passive_data and not has_active_data:
-                return json.dumps({"error": "No measurement data loaded. Please import antenna data files first."})
+                return json.dumps(
+                    {"error": "No measurement data loaded. Please import antenna data files first."}
+                )
 
             # Update selected frequency and process data
-            if hasattr(self, 'selected_frequency'):
+            if hasattr(self, "selected_frequency"):
                 self.selected_frequency.set(str(frequency))
 
             # Process data at the requested frequency
@@ -833,13 +899,18 @@ You can call these functions to help answer user questions:
                 self.process_data()
             except Exception as e:
                 import traceback
+
                 error_details = traceback.format_exc()
                 print(f"[AI Error] 2D plot data processing failed:\n{error_details}")
                 return json.dumps({"error": f"Failed to process data: {str(e)}"})
 
             # Check if we have loaded data after processing
-            if not hasattr(self, 'freq_list') or not self.freq_list:
-                return json.dumps({"error": "No frequency data available. The data files may not contain frequency information."})
+            if not hasattr(self, "freq_list") or not self.freq_list:
+                return json.dumps(
+                    {
+                        "error": "No frequency data available. The data files may not contain frequency information."
+                    }
+                )
 
             # Find closest frequency
             freq_array = np.array(self.freq_list)
@@ -847,30 +918,47 @@ You can call these functions to help answer user questions:
             actual_freq = float(self.freq_list[freq_idx])
 
             # Update the selected frequency in the GUI
-            if hasattr(self, 'selected_frequency'):
+            if hasattr(self, "selected_frequency"):
                 self.selected_frequency.set(str(actual_freq))
 
             # Actually generate the plot based on scan type
             if str(self.scan_type.get()) == "passive":
                 # Get required data
-                theta_angles_deg = getattr(self, 'theta_list', None)
-                phi_angles_deg = getattr(self, 'phi_list', None)
-                h_gain_dB = getattr(self, 'h_gain_dB', None)
-                v_gain_dB = getattr(self, 'v_gain_dB', None)
-                total_gain_dB = getattr(self, 'total_gain_dB', None)
-                hpol_far_field = getattr(self, 'hpol_far_field', None)
-                vpol_far_field = getattr(self, 'vpol_far_field', None)
-                datasheet_plots = getattr(self, 'datasheet_plots_var', None)
+                theta_angles_deg = getattr(self, "theta_list", None)
+                phi_angles_deg = getattr(self, "phi_list", None)
+                h_gain_dB = getattr(self, "h_gain_dB", None)
+                v_gain_dB = getattr(self, "v_gain_dB", None)
+                total_gain_dB = getattr(self, "total_gain_dB", None)
+                hpol_far_field = getattr(self, "hpol_far_field", None)
+                vpol_far_field = getattr(self, "vpol_far_field", None)
+                datasheet_plots = getattr(self, "datasheet_plots_var", None)
 
-                print(f"[AI Debug 2D] Data check: theta={theta_angles_deg is not None}, phi={phi_angles_deg is not None}, h_gain={h_gain_dB is not None}, v_gain={v_gain_dB is not None}, total={total_gain_dB is not None}, hpol_ff={hpol_far_field is not None}, vpol_ff={vpol_far_field is not None}")
+                print(
+                    f"[AI Debug 2D] Data check: theta={theta_angles_deg is not None}, phi={phi_angles_deg is not None}, h_gain={h_gain_dB is not None}, v_gain={v_gain_dB is not None}, total={total_gain_dB is not None}, hpol_ff={hpol_far_field is not None}, vpol_ff={vpol_far_field is not None}"
+                )
 
-                if all(x is not None for x in [theta_angles_deg, phi_angles_deg, h_gain_dB, v_gain_dB, total_gain_dB, hpol_far_field, vpol_far_field]):
+                if all(
+                    x is not None
+                    for x in [
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        h_gain_dB,
+                        v_gain_dB,
+                        total_gain_dB,
+                        hpol_far_field,
+                        vpol_far_field,
+                    ]
+                ):
                     # Call the actual plotting function (NOW it will display plots)
                     plot_2d_passive_data(
-                        theta_angles_deg, phi_angles_deg,
-                        hpol_far_field, vpol_far_field, total_gain_dB,
-                        self.freq_list, actual_freq,
-                        datasheet_plots.get() if datasheet_plots else False
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        hpol_far_field,
+                        vpol_far_field,
+                        total_gain_dB,
+                        self.freq_list,
+                        actual_freq,
+                        datasheet_plots.get() if datasheet_plots else False,
                     )
 
                     # Try to get detailed analysis, but fall back to simple response if it fails
@@ -909,55 +997,72 @@ You can call these functions to help answer user questions:
                         else:
                             pattern_type = "directional"
 
-                        return json.dumps({
-                            "success": True,
-                            "action": "2D polar plots displayed (azimuth and elevation cuts)",
-                            "frequency_MHz": actual_freq,
-                            "analysis": {
-                                "pattern_type": pattern_type,
-                                "peak_gain_dBi": round(max_gain, 2),
-                                "peak_location": {"theta_deg": round(peak_theta, 1), "phi_deg": round(peak_phi, 1)},
-                                "min_gain_dBi": round(min_gain, 2),
-                                "average_gain_dBi": round(avg_gain, 2),
-                                "gain_variation_dB": round(gain_variation, 2),
-                                "polarization": {
-                                    "h_pol_peak_dBi": round(h_max, 2),
-                                    "v_pol_peak_dBi": round(v_max, 2),
-                                    "cross_pol_ratio_dB": round(cross_pol_ratio, 2),
-                                    "dominant": "H-pol" if h_max > v_max else "V-pol"
+                        return json.dumps(
+                            {
+                                "success": True,
+                                "action": "2D polar plots displayed (azimuth and elevation cuts)",
+                                "frequency_MHz": actual_freq,
+                                "analysis": {
+                                    "pattern_type": pattern_type,
+                                    "peak_gain_dBi": round(max_gain, 2),
+                                    "peak_location": {
+                                        "theta_deg": round(peak_theta, 1),
+                                        "phi_deg": round(peak_phi, 1),
+                                    },
+                                    "min_gain_dBi": round(min_gain, 2),
+                                    "average_gain_dBi": round(avg_gain, 2),
+                                    "gain_variation_dB": round(gain_variation, 2),
+                                    "polarization": {
+                                        "h_pol_peak_dBi": round(h_max, 2),
+                                        "v_pol_peak_dBi": round(v_max, 2),
+                                        "cross_pol_ratio_dB": round(cross_pol_ratio, 2),
+                                        "dominant": "H-pol" if h_max > v_max else "V-pol",
+                                    },
+                                    "assessment": f"This {'omnidirectional' if gain_variation < 5 else 'directional'} antenna exhibits a peak gain of {max_gain:.1f} dBi at theta={peak_theta:.0f} deg, phi={peak_phi:.0f} deg. The {gain_variation:.1f} dB variation indicates {'excellent azimuthal uniformity' if gain_variation < 3 else 'moderate directivity' if gain_variation < 10 else 'strong directivity'}. {'H-pol dominates with ' + str(abs(round(cross_pol_ratio, 1))) + ' dB higher peak gain' if cross_pol_ratio > 2 else 'V-pol dominates with ' + str(abs(round(cross_pol_ratio, 1))) + ' dB higher peak gain' if cross_pol_ratio < -2 else 'Balanced polarization characteristics observed'}.",
                                 },
-                                "assessment": f"This {'omnidirectional' if gain_variation < 5 else 'directional'} antenna exhibits a peak gain of {max_gain:.1f} dBi at theta={peak_theta:.0f} deg, phi={peak_phi:.0f} deg. The {gain_variation:.1f} dB variation indicates {'excellent azimuthal uniformity' if gain_variation < 3 else 'moderate directivity' if gain_variation < 10 else 'strong directivity'}. {'H-pol dominates with ' + str(abs(round(cross_pol_ratio, 1))) + ' dB higher peak gain' if cross_pol_ratio > 2 else 'V-pol dominates with ' + str(abs(round(cross_pol_ratio, 1))) + ' dB higher peak gain' if cross_pol_ratio < -2 else 'Balanced polarization characteristics observed'}."
                             }
-                        })
+                        )
                     except Exception as analysis_error:
-                        print(f"[AI Warning] Could not generate detailed analysis: {analysis_error}")
+                        print(
+                            f"[AI Warning] Could not generate detailed analysis: {analysis_error}"
+                        )
                         # Return simple success message if analysis fails
-                        return json.dumps({
-                            "success": True,
-                            "action": "2D polar plots displayed successfully",
-                            "frequency_MHz": actual_freq,
-                            "message": "Plots displayed showing azimuth and elevation cuts with H-pol, V-pol, and total gain patterns. The plots are now visible in separate windows for detailed inspection."
-                        })
+                        return json.dumps(
+                            {
+                                "success": True,
+                                "action": "2D polar plots displayed successfully",
+                                "frequency_MHz": actual_freq,
+                                "message": "Plots displayed showing azimuth and elevation cuts with H-pol, V-pol, and total gain patterns. The plots are now visible in separate windows for detailed inspection.",
+                            }
+                        )
                 else:
                     return json.dumps({"error": "Required passive scan data not available"})
 
             elif str(self.scan_type.get()) == "active":
                 # Get active scan data
-                data_points = getattr(self, 'data_points', None)
-                theta_angles_rad = getattr(self, 'theta_angles_rad', None)
-                phi_angles_rad = getattr(self, 'phi_angles_rad', None)
-                total_power_dBm_2d = getattr(self, 'total_power_dBm_2d', None)
+                data_points = getattr(self, "data_points", None)
+                theta_angles_rad = getattr(self, "theta_angles_rad", None)
+                phi_angles_rad = getattr(self, "phi_angles_rad", None)
+                total_power_dBm_2d = getattr(self, "total_power_dBm_2d", None)
 
-                if all(x is not None for x in [data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d]):
+                if all(
+                    x is not None
+                    for x in [data_points, theta_angles_rad, phi_angles_rad, total_power_dBm_2d]
+                ):
                     plot_active_2d_data(
-                        data_points, theta_angles_rad, phi_angles_rad,
-                        total_power_dBm_2d, actual_freq
+                        data_points,
+                        theta_angles_rad,
+                        phi_angles_rad,
+                        total_power_dBm_2d,
+                        actual_freq,
                     )
-                    return json.dumps({
-                        "success": True,
-                        "action": "2D azimuth power cuts displayed",
-                        "frequency": actual_freq
-                    })
+                    return json.dumps(
+                        {
+                            "success": True,
+                            "action": "2D azimuth power cuts displayed",
+                            "frequency": actual_freq,
+                        }
+                    )
                 else:
                     return json.dumps({"error": "Required active scan data not available"})
             else:
@@ -968,9 +1073,11 @@ You can call these functions to help answer user questions:
 
     def _ai_generate_3d_plot(self, frequency=None, component="total"):
         """Generate and display 3D radiation pattern plot."""
-        print(f"[AI Debug] _ai_generate_3d_plot called with frequency={frequency}, component={component}")
+        print(
+            f"[AI Debug] _ai_generate_3d_plot called with frequency={frequency}, component={component}"
+        )
         try:
-            if frequency is None and hasattr(self, 'selected_frequency'):
+            if frequency is None and hasattr(self, "selected_frequency"):
                 try:
                     frequency = float(self.selected_frequency.get())
                 except (ValueError, AttributeError, TypeError):
@@ -979,27 +1086,41 @@ You can call these functions to help answer user questions:
             print(f"[AI Debug] Target frequency: {frequency} MHz")
 
             # Check if files have been imported based on scan type
-            scan_type = str(self.scan_type.get()) if hasattr(self, 'scan_type') else None
-            has_passive_data = hasattr(self, 'hpol_file_path') and self.hpol_file_path
-            has_active_data = hasattr(self, 'TRP_file_path') and self.TRP_file_path
+            scan_type = str(self.scan_type.get()) if hasattr(self, "scan_type") else None
+            has_passive_data = hasattr(self, "hpol_file_path") and self.hpol_file_path
+            has_active_data = hasattr(self, "TRP_file_path") and self.TRP_file_path
 
-            print(f"[AI Debug] Scan type: {scan_type}, has_passive: {has_passive_data}, has_active: {has_active_data}")
+            print(
+                f"[AI Debug] Scan type: {scan_type}, has_passive: {has_passive_data}, has_active: {has_active_data}"
+            )
             if has_active_data:
                 print(f"[AI Debug] TRP file: {self.TRP_file_path}")
 
             if scan_type == "passive" and not has_passive_data:
-                return json.dumps({"error": "No passive measurement data loaded. Please import HPOL and VPOL files first."})
+                return json.dumps(
+                    {
+                        "error": "No passive measurement data loaded. Please import HPOL and VPOL files first."
+                    }
+                )
             elif scan_type == "active" and not has_active_data:
-                return json.dumps({"error": "No active measurement data loaded. Please import a TRP file first."})
+                return json.dumps(
+                    {"error": "No active measurement data loaded. Please import a TRP file first."}
+                )
             elif scan_type is None:
-                return json.dumps({"error": "Scan type not set. Please select a scan type and import data."})
+                return json.dumps(
+                    {"error": "Scan type not set. Please select a scan type and import data."}
+                )
             elif not has_passive_data and not has_active_data:
-                return json.dumps({"error": "No measurement data loaded. Please import antenna data files first."})
+                return json.dumps(
+                    {"error": "No measurement data loaded. Please import antenna data files first."}
+                )
 
-            print(f"[AI Debug] Files loaded - Scan type: {scan_type}, Passive: {has_passive_data}, Active: {has_active_data}")
+            print(
+                f"[AI Debug] Files loaded - Scan type: {scan_type}, Passive: {has_passive_data}, Active: {has_active_data}"
+            )
 
             # Update selected frequency and process data
-            if hasattr(self, 'selected_frequency'):
+            if hasattr(self, "selected_frequency"):
                 self.selected_frequency.set(str(frequency))
 
             # Process data WITHOUT automatically showing plots
@@ -1011,47 +1132,69 @@ You can call these functions to help answer user questions:
                     return json.dumps({"error": "Failed to process measurement data"})
             except Exception as e:
                 import traceback
+
                 error_details = traceback.format_exc()
                 print(f"[AI Error] 3D plot data processing failed:\n{error_details}")
                 return json.dumps({"error": f"Failed to process data: {str(e)}"})
 
             # Check if we have loaded data after processing
-            if not hasattr(self, 'freq_list') or not self.freq_list:
-                return json.dumps({"error": "No frequency data available. The data files may not contain frequency information."})
+            if not hasattr(self, "freq_list") or not self.freq_list:
+                return json.dumps(
+                    {
+                        "error": "No frequency data available. The data files may not contain frequency information."
+                    }
+                )
 
             print(f"[AI Debug] Freq list has {len(self.freq_list)} frequencies")
-            print(f"[AI Debug] Freq range: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz")
+            print(
+                f"[AI Debug] Freq range: {min(self.freq_list):.1f} - {max(self.freq_list):.1f} MHz"
+            )
 
             # Find closest frequency
             freq_array = np.array(self.freq_list)
             freq_idx = np.argmin(np.abs(freq_array - frequency))
             actual_freq = float(self.freq_list[freq_idx])
 
-            print(f"[AI Debug] Requested: {frequency} MHz, Actual: {actual_freq} MHz, Index: {freq_idx}")
+            print(
+                f"[AI Debug] Requested: {frequency} MHz, Actual: {actual_freq} MHz, Index: {freq_idx}"
+            )
 
             # Update the selected frequency in the GUI
-            if hasattr(self, 'selected_frequency'):
+            if hasattr(self, "selected_frequency"):
                 self.selected_frequency.set(str(actual_freq))
 
             # Generate 3D plot based on scan type
             if str(self.scan_type.get()) == "passive":
                 print(f"[AI Debug] Scan type: passive")
-                theta_angles_deg = getattr(self, 'theta_list', None)
-                phi_angles_deg = getattr(self, 'phi_list', None)
-                h_gain_dB = getattr(self, 'h_gain_dB', None)
-                v_gain_dB = getattr(self, 'v_gain_dB', None)
-                total_gain_dB = getattr(self, 'total_gain_dB', None)
-                hpol_far_field = getattr(self, 'hpol_far_field', None)
-                vpol_far_field = getattr(self, 'vpol_far_field', None)
+                theta_angles_deg = getattr(self, "theta_list", None)
+                phi_angles_deg = getattr(self, "phi_list", None)
+                h_gain_dB = getattr(self, "h_gain_dB", None)
+                v_gain_dB = getattr(self, "v_gain_dB", None)
+                total_gain_dB = getattr(self, "total_gain_dB", None)
+                hpol_far_field = getattr(self, "hpol_far_field", None)
+                vpol_far_field = getattr(self, "vpol_far_field", None)
 
-                print(f"[AI Debug] Data arrays: theta={theta_angles_deg is not None}, phi={phi_angles_deg is not None}, h={h_gain_dB is not None}, v={v_gain_dB is not None}, total={total_gain_dB is not None}, hpol_ff={hpol_far_field is not None}, vpol_ff={vpol_far_field is not None}")
+                print(
+                    f"[AI Debug] Data arrays: theta={theta_angles_deg is not None}, phi={phi_angles_deg is not None}, h={h_gain_dB is not None}, v={v_gain_dB is not None}, total={total_gain_dB is not None}, hpol_ff={hpol_far_field is not None}, vpol_ff={vpol_far_field is not None}"
+                )
 
                 # Get axis mode settings
-                axis_mode = getattr(self, 'axis_scale_mode', None)
-                zmin_var = getattr(self, 'axis_min', None)
-                zmax_var = getattr(self, 'axis_max', None)
+                axis_mode = getattr(self, "axis_scale_mode", None)
+                zmin_var = getattr(self, "axis_min", None)
+                zmax_var = getattr(self, "axis_max", None)
 
-                if all(x is not None for x in [theta_angles_deg, phi_angles_deg, h_gain_dB, v_gain_dB, total_gain_dB, hpol_far_field, vpol_far_field]):
+                if all(
+                    x is not None
+                    for x in [
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        h_gain_dB,
+                        v_gain_dB,
+                        total_gain_dB,
+                        hpol_far_field,
+                        vpol_far_field,
+                    ]
+                ):
                     # Perform analysis BEFORE plotting
                     try:
                         # Type assertions for numpy arrays (validated by if-check above)
@@ -1061,7 +1204,9 @@ You can call these functions to help answer user questions:
                         assert theta_angles_deg is not None
                         assert phi_angles_deg is not None
 
-                        print(f"[AI Debug] Starting pre-plot analysis for component={component}, freq_idx={freq_idx}")
+                        print(
+                            f"[AI Debug] Starting pre-plot analysis for component={component}, freq_idx={freq_idx}"
+                        )
                         # Get peak location and detailed analysis
                         if component == "total":
                             gain_data = total_gain_dB[:, freq_idx]
@@ -1103,51 +1248,67 @@ You can call these functions to help answer user questions:
                         else:
                             coverage = "highly directive beam"
 
-                        analysis_json = json.dumps({
-                            "success": True,
-                            "action": f"3D {component} gain pattern displayed (interactive, rotatable)",
-                            "frequency_MHz": actual_freq,
-                            "component": component,
-                            "analysis": {
-                                "peak_gain_dBi": round(max_gain, 2),
-                                "peak_direction": {"theta_deg": round(peak_theta, 1), "phi_deg": round(peak_phi, 1)},
-                                "minimum_gain_dBi": round(min_gain, 2),
-                                "average_gain_dBi": round(avg_gain, 2),
-                                "gain_variation_dB": round(gain_variation, 2),
-                                "3dB_beamwidth_coverage_pct": round(solid_angle_coverage, 1),
-                                "front_to_back_ratio_dB": round(fb_ratio, 1) if fb_ratio else "N/A",
-                                "pattern_characteristics": coverage,
-                                "expert_assessment": f"The 3D radiation pattern at {actual_freq} MHz reveals a {coverage} with {max_gain:.1f} dBi peak gain directed toward theta={peak_theta:.0f} deg, phi={peak_phi:.0f} deg. The {gain_variation:.1f} dB front-to-back variation and {solid_angle_coverage:.0f}% solid angle coverage at -3dB suggest {'isotropic behavior suitable for mobile/IoT applications' if gain_variation < 5 else 'moderate directivity with acceptable omnidirectional properties' if gain_variation < 10 else 'directive characteristics ideal for point-to-point links' if gain_variation > 15 else 'balanced directivity for sectoral coverage'}.{' Front-to-back ratio of ' + str(round(fb_ratio, 1)) + ' dB indicates ' + ('poor' if fb_ratio and fb_ratio < 10 else 'adequate' if fb_ratio and fb_ratio < 20 else 'excellent') + ' isolation.' if fb_ratio else ''}"
+                        analysis_json = json.dumps(
+                            {
+                                "success": True,
+                                "action": f"3D {component} gain pattern displayed (interactive, rotatable)",
+                                "frequency_MHz": actual_freq,
+                                "component": component,
+                                "analysis": {
+                                    "peak_gain_dBi": round(max_gain, 2),
+                                    "peak_direction": {
+                                        "theta_deg": round(peak_theta, 1),
+                                        "phi_deg": round(peak_phi, 1),
+                                    },
+                                    "minimum_gain_dBi": round(min_gain, 2),
+                                    "average_gain_dBi": round(avg_gain, 2),
+                                    "gain_variation_dB": round(gain_variation, 2),
+                                    "3dB_beamwidth_coverage_pct": round(solid_angle_coverage, 1),
+                                    "front_to_back_ratio_dB": (
+                                        round(fb_ratio, 1) if fb_ratio else "N/A"
+                                    ),
+                                    "pattern_characteristics": coverage,
+                                    "expert_assessment": f"The 3D radiation pattern at {actual_freq} MHz reveals a {coverage} with {max_gain:.1f} dBi peak gain directed toward theta={peak_theta:.0f} deg, phi={peak_phi:.0f} deg. The {gain_variation:.1f} dB front-to-back variation and {solid_angle_coverage:.0f}% solid angle coverage at -3dB suggest {'isotropic behavior suitable for mobile/IoT applications' if gain_variation < 5 else 'moderate directivity with acceptable omnidirectional properties' if gain_variation < 10 else 'directive characteristics ideal for point-to-point links' if gain_variation > 15 else 'balanced directivity for sectoral coverage'}.{' Front-to-back ratio of ' + str(round(fb_ratio, 1)) + ' dB indicates ' + ('poor' if fb_ratio and fb_ratio < 10 else 'adequate' if fb_ratio and fb_ratio < 20 else 'excellent') + ' isolation.' if fb_ratio else ''}",
+                                },
                             }
-                        })
+                        )
                         print(f"[AI Debug] Analysis JSON prepared; proceeding to plotting")
                     except Exception as analysis_error:
                         print(f"[AI Warning] Pre-plot analysis failed: {analysis_error}")
                         import traceback
+
                         print(f"[AI Traceback] {traceback.format_exc()}")
-                        analysis_json = json.dumps({
-                            "success": True,
-                            "action": f"3D {component} gain pattern displayed successfully",
-                            "frequency_MHz": actual_freq,
-                            "component": component,
-                            "message": f"Interactive 3D {component} radiation pattern displayed at {actual_freq} MHz. (Analysis unavailable)"
-                        })
+                        analysis_json = json.dumps(
+                            {
+                                "success": True,
+                                "action": f"3D {component} gain pattern displayed successfully",
+                                "frequency_MHz": actual_freq,
+                                "component": component,
+                                "message": f"Interactive 3D {component} radiation pattern displayed at {actual_freq} MHz. (Analysis unavailable)",
+                            }
+                        )
 
                     # Plot AFTER analysis JSON is ready
                     print(f"[AI Debug] All data available, calling plot_passive_3d_component...")
                     try:
                         plot_passive_3d_component(
-                            theta_angles_deg, phi_angles_deg,
-                            hpol_far_field, vpol_far_field, total_gain_dB,
-                            self.freq_list, actual_freq, component,
-                            axis_mode=axis_mode.get() if axis_mode else 'auto',
+                            theta_angles_deg,
+                            phi_angles_deg,
+                            hpol_far_field,
+                            vpol_far_field,
+                            total_gain_dB,
+                            self.freq_list,
+                            actual_freq,
+                            component,
+                            axis_mode=axis_mode.get() if axis_mode else "auto",
                             zmin=float(zmin_var.get()) if zmin_var else -15.0,
-                            zmax=float(zmax_var.get()) if zmax_var else 15.0
+                            zmax=float(zmax_var.get()) if zmax_var else 15.0,
                         )
                         print(f"[AI Debug] plot_passive_3d_component completed successfully")
                     except Exception as plot_error:
                         print(f"[AI Error] Plotting failed: {plot_error}")
                         import traceback
+
                         print(f"[AI Traceback] {traceback.format_exc()}")
                         # Append plotting error info to analysis_json
                         try:
@@ -1162,31 +1323,39 @@ You can call these functions to help answer user questions:
                     return json.dumps({"error": "Required passive scan data not available"})
 
             elif str(self.scan_type.get()) == "active":
-                theta_angles_deg = getattr(self, 'theta_angles_deg', None)
-                phi_angles_deg = getattr(self, 'phi_angles_deg', None)
-                total_power_dBm_2d = getattr(self, 'total_power_dBm_2d', None)
-                phi_angles_deg_plot = getattr(self, 'phi_angles_deg_plot', None)
-                total_power_dBm_2d_plot = getattr(self, 'total_power_dBm_2d_plot', None)
+                theta_angles_deg = getattr(self, "theta_angles_deg", None)
+                phi_angles_deg = getattr(self, "phi_angles_deg", None)
+                total_power_dBm_2d = getattr(self, "total_power_dBm_2d", None)
+                phi_angles_deg_plot = getattr(self, "phi_angles_deg_plot", None)
+                total_power_dBm_2d_plot = getattr(self, "total_power_dBm_2d_plot", None)
 
                 # Get axis settings
-                axis_mode = getattr(self, 'axis_mode', None)
-                zmin_var = getattr(self, 'zmin_var', None)
-                zmax_var = getattr(self, 'zmax_var', None)
+                axis_mode = getattr(self, "axis_mode", None)
+                zmin_var = getattr(self, "zmin_var", None)
+                zmax_var = getattr(self, "zmax_var", None)
 
-                if all(x is not None for x in [theta_angles_deg, phi_angles_deg, total_power_dBm_2d]):
+                if all(
+                    x is not None for x in [theta_angles_deg, phi_angles_deg, total_power_dBm_2d]
+                ):
                     plot_active_3d_data(
-                        theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
-                        phi_angles_deg_plot, total_power_dBm_2d_plot,
-                        actual_freq, power_type=component,
-                        axis_mode=axis_mode.get() if axis_mode else 'auto',
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        total_power_dBm_2d,
+                        phi_angles_deg_plot,
+                        total_power_dBm_2d_plot,
+                        actual_freq,
+                        power_type=component,
+                        axis_mode=axis_mode.get() if axis_mode else "auto",
                         zmin=float(zmin_var.get()) if zmin_var else -15.0,
-                        zmax=float(zmax_var.get()) if zmax_var else 15.0
+                        zmax=float(zmax_var.get()) if zmax_var else 15.0,
                     )
-                    return json.dumps({
-                        "success": True,
-                        "action": f"3D {component} power pattern displayed",
-                        "frequency": actual_freq
-                    })
+                    return json.dumps(
+                        {
+                            "success": True,
+                            "action": f"3D {component} power pattern displayed",
+                            "frequency": actual_freq,
+                        }
+                    )
                 else:
                     return json.dumps({"error": "Required active scan data not available"})
             else:
@@ -1198,14 +1367,14 @@ You can call these functions to help answer user questions:
     def _ai_get_gain_statistics(self, frequency=None):
         """Calculate gain statistics from loaded data."""
         try:
-            if frequency is None and hasattr(self, 'selected_frequency'):
+            if frequency is None and hasattr(self, "selected_frequency"):
                 try:
                     frequency = float(self.selected_frequency.get())
                 except (ValueError, AttributeError, TypeError):
                     return json.dumps({"error": "No frequency specified"})
 
             # Check if we have loaded data
-            if not hasattr(self, 'freq_list') or not self.freq_list:
+            if not hasattr(self, "freq_list") or not self.freq_list:
                 return json.dumps({"error": "No measurement data loaded"})
 
             # Find closest frequency
@@ -1216,31 +1385,37 @@ You can call these functions to help answer user questions:
             stats = {
                 "frequency_requested": frequency,
                 "frequency_actual": actual_freq,
-                "scan_type": self.scan_type.get()
+                "scan_type": self.scan_type.get(),
             }
 
             # Get gain/power data based on scan type
-            if self.scan_type.get() == "passive" and hasattr(self, 'total_gain_dB'):
-                gain_data = getattr(self, 'total_gain_dB')[:, freq_idx]
-                stats.update({
-                    "max_gain_dBi": float(np.max(gain_data)),
-                    "min_gain_dBi": float(np.min(gain_data)),
-                    "avg_gain_dBi": float(np.mean(gain_data)),
-                    "std_dev_dB": float(np.std(gain_data))
-                })
-            elif self.scan_type.get() == "active" and hasattr(self, 'total_power_dBm_2d'):
-                power_data = getattr(self, 'total_power_dBm_2d')
-                stats.update({
-                    "max_power_dBm": float(np.max(power_data)),
-                    "min_power_dBm": float(np.min(power_data)),
-                    "avg_power_dBm": float(np.mean(power_data)),
-                    "std_dev_dB": float(np.std(power_data)),
-                    "TRP_dBm": float(getattr(self, 'TRP_dBm', 0)),
-                    "h_TRP_dBm": float(getattr(self, 'h_TRP_dBm', 0)),
-                    "v_TRP_dBm": float(getattr(self, 'v_TRP_dBm', 0))
-                })
+            if self.scan_type.get() == "passive" and hasattr(self, "total_gain_dB"):
+                gain_data = getattr(self, "total_gain_dB")[:, freq_idx]
+                stats.update(
+                    {
+                        "max_gain_dBi": float(np.max(gain_data)),
+                        "min_gain_dBi": float(np.min(gain_data)),
+                        "avg_gain_dBi": float(np.mean(gain_data)),
+                        "std_dev_dB": float(np.std(gain_data)),
+                    }
+                )
+            elif self.scan_type.get() == "active" and hasattr(self, "total_power_dBm_2d"):
+                power_data = getattr(self, "total_power_dBm_2d")
+                stats.update(
+                    {
+                        "max_power_dBm": float(np.max(power_data)),
+                        "min_power_dBm": float(np.min(power_data)),
+                        "avg_power_dBm": float(np.mean(power_data)),
+                        "std_dev_dB": float(np.std(power_data)),
+                        "TRP_dBm": float(getattr(self, "TRP_dBm", 0)),
+                        "h_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
+                        "v_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
+                    }
+                )
             else:
-                stats["note"] = "Gain data not available in current format. Please ensure data is loaded and processed."
+                stats["note"] = (
+                    "Gain data not available in current format. Please ensure data is loaded and processed."
+                )
 
             return json.dumps(stats)
         except Exception as e:
@@ -1249,14 +1424,14 @@ You can call these functions to help answer user questions:
     def _ai_analyze_pattern(self, frequency=None):
         """Analyze radiation pattern characteristics."""
         try:
-            if frequency is None and hasattr(self, 'selected_frequency'):
+            if frequency is None and hasattr(self, "selected_frequency"):
                 try:
                     frequency = float(self.selected_frequency.get())
                 except (ValueError, AttributeError, TypeError):
                     return json.dumps({"error": "No frequency specified"})
 
             # Check if we have loaded data
-            if not hasattr(self, 'freq_list') or not self.freq_list:
+            if not hasattr(self, "freq_list") or not self.freq_list:
                 return json.dumps({"error": "No measurement data loaded"})
 
             # Find closest frequency
@@ -1264,17 +1439,14 @@ You can call these functions to help answer user questions:
             freq_idx = np.argmin(np.abs(freq_array - frequency))
             actual_freq = self.freq_list[freq_idx]
 
-            analysis = {
-                "frequency": actual_freq,
-                "scan_type": self.scan_type.get()
-            }
+            analysis = {"frequency": actual_freq, "scan_type": self.scan_type.get()}
 
             # Analyze based on scan type
             if self.scan_type.get() == "passive":
                 # Get gain data at this frequency
-                total_gain = getattr(self, 'total_gain_dB')[:, freq_idx]
-                theta_list = getattr(self, 'theta_list')
-                phi_list = getattr(self, 'phi_list')
+                total_gain = getattr(self, "total_gain_dB")[:, freq_idx]
+                theta_list = getattr(self, "theta_list")
+                phi_list = getattr(self, "phi_list")
 
                 # Find peak gain and its location
                 max_gain_idx = np.argmax(total_gain)
@@ -1307,24 +1479,26 @@ You can call these functions to help answer user questions:
                 else:
                     pattern_type = "moderately directional"
 
-                analysis.update({
-                    "pattern_type": pattern_type,
-                    "max_gain_dBi": max_gain,
-                    "max_gain_theta_deg": max_theta,
-                    "max_gain_phi_deg": max_phi,
-                    "min_gain_dBi": min_gain,
-                    "avg_gain_dBi": avg_gain,
-                    "gain_std_dev": gain_variance,
-                    "null_count": int(null_count),
-                    "estimated_3dB_beamwidth_deg": float(beamwidth_estimate),
-                    "front_to_back_ratio_dB": float(max_gain - min_gain)
-                })
+                analysis.update(
+                    {
+                        "pattern_type": pattern_type,
+                        "max_gain_dBi": max_gain,
+                        "max_gain_theta_deg": max_theta,
+                        "max_gain_phi_deg": max_phi,
+                        "min_gain_dBi": min_gain,
+                        "avg_gain_dBi": avg_gain,
+                        "gain_std_dev": gain_variance,
+                        "null_count": int(null_count),
+                        "estimated_3dB_beamwidth_deg": float(beamwidth_estimate),
+                        "front_to_back_ratio_dB": float(max_gain - min_gain),
+                    }
+                )
 
             elif self.scan_type.get() == "active":
                 # Analyze active scan data
-                total_power = getattr(self, 'total_power_dBm_2d')
-                theta_angles_deg = getattr(self, 'theta_angles_deg')
-                phi_angles_deg = getattr(self, 'phi_angles_deg')
+                total_power = getattr(self, "total_power_dBm_2d")
+                theta_angles_deg = getattr(self, "theta_angles_deg")
+                phi_angles_deg = getattr(self, "phi_angles_deg")
 
                 max_power = float(np.max(total_power))
                 min_power = float(np.min(total_power))
@@ -1335,15 +1509,17 @@ You can call these functions to help answer user questions:
                 max_theta = float(theta_angles_deg[max_idx[0]])
                 max_phi = float(phi_angles_deg[max_idx[1]])
 
-                analysis.update({
-                    "pattern_type": "active radiated power distribution",
-                    "max_power_dBm": max_power,
-                    "max_power_theta_deg": max_theta,
-                    "max_power_phi_deg": max_phi,
-                    "min_power_dBm": min_power,
-                    "avg_power_dBm": avg_power,
-                    "power_range_dB": float(max_power - min_power)
-                })
+                analysis.update(
+                    {
+                        "pattern_type": "active radiated power distribution",
+                        "max_power_dBm": max_power,
+                        "max_power_theta_deg": max_theta,
+                        "max_power_phi_deg": max_phi,
+                        "min_power_dBm": min_power,
+                        "avg_power_dBm": avg_power,
+                        "power_range_dB": float(max_power - min_power),
+                    }
+                )
 
             return json.dumps(analysis)
 
@@ -1353,7 +1529,7 @@ You can call these functions to help answer user questions:
     def _ai_compare_polarizations(self, frequency=None):
         """Compare HPOL and VPOL performance."""
         try:
-            if frequency is None and hasattr(self, 'selected_frequency'):
+            if frequency is None and hasattr(self, "selected_frequency"):
                 try:
                     frequency = float(self.selected_frequency.get())
                 except (ValueError, AttributeError, TypeError):
@@ -1363,12 +1539,14 @@ You can call these functions to help answer user questions:
 
             # Handle active scan with H/V power data
             if scan_type == "active":
-                if not (hasattr(self, 'h_power_dBm_2d') and hasattr(self, 'v_power_dBm_2d')):
-                    return json.dumps({"error": "HPOL and VPOL power data not loaded for active scan"})
+                if not (hasattr(self, "h_power_dBm_2d") and hasattr(self, "v_power_dBm_2d")):
+                    return json.dumps(
+                        {"error": "HPOL and VPOL power data not loaded for active scan"}
+                    )
 
-                h_power = getattr(self, 'h_power_dBm_2d')
-                v_power = getattr(self, 'v_power_dBm_2d')
-                actual_freq = getattr(self, 'active_frequency', frequency)
+                h_power = getattr(self, "h_power_dBm_2d")
+                v_power = getattr(self, "v_power_dBm_2d")
+                actual_freq = getattr(self, "active_frequency", frequency)
 
                 h_max = float(np.max(h_power))
                 h_min = float(np.min(h_power))
@@ -1393,27 +1571,33 @@ You can call these functions to help answer user questions:
                     dominant_pol = "Balanced"
                     pol_advantage_dB = 0.0
 
-                return json.dumps({
-                    "frequency": actual_freq,
-                    "scan_type": "active",
-                    "hpol_max_power_dBm": h_max,
-                    "hpol_min_power_dBm": h_min,
-                    "hpol_avg_power_dBm": h_avg,
-                    "hpol_TRP_dBm": float(getattr(self, 'h_TRP_dBm', 0)),
-                    "vpol_max_power_dBm": v_max,
-                    "vpol_min_power_dBm": v_min,
-                    "vpol_avg_power_dBm": v_avg,
-                    "vpol_TRP_dBm": float(getattr(self, 'v_TRP_dBm', 0)),
-                    "cross_pol_avg_dB": avg_xpd,
-                    "dominant_polarization": dominant_pol,
-                    "polarization_advantage_dB": float(pol_advantage_dB)
-                })
+                return json.dumps(
+                    {
+                        "frequency": actual_freq,
+                        "scan_type": "active",
+                        "hpol_max_power_dBm": h_max,
+                        "hpol_min_power_dBm": h_min,
+                        "hpol_avg_power_dBm": h_avg,
+                        "hpol_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
+                        "vpol_max_power_dBm": v_max,
+                        "vpol_min_power_dBm": v_min,
+                        "vpol_avg_power_dBm": v_avg,
+                        "vpol_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
+                        "cross_pol_avg_dB": avg_xpd,
+                        "dominant_polarization": dominant_pol,
+                        "polarization_advantage_dB": float(pol_advantage_dB),
+                    }
+                )
 
             # Handle passive scan
             if scan_type != "passive":
-                return json.dumps({"error": "Polarization comparison only available for passive or active scans with HPOL/VPOL data"})
+                return json.dumps(
+                    {
+                        "error": "Polarization comparison only available for passive or active scans with HPOL/VPOL data"
+                    }
+                )
 
-            if not (hasattr(self, 'h_gain_dB') and hasattr(self, 'v_gain_dB')):
+            if not (hasattr(self, "h_gain_dB") and hasattr(self, "v_gain_dB")):
                 return json.dumps({"error": "HPOL and VPOL gain data not loaded"})
 
             # Find closest frequency
@@ -1422,10 +1606,10 @@ You can call these functions to help answer user questions:
             actual_freq = float(self.freq_list[freq_idx])
 
             # Get gain data for both polarizations
-            h_gain = getattr(self, 'h_gain_dB')[:, freq_idx]
-            v_gain = getattr(self, 'v_gain_dB')[:, freq_idx]
-            theta_list = getattr(self, 'theta_list')
-            phi_list = getattr(self, 'phi_list')
+            h_gain = getattr(self, "h_gain_dB")[:, freq_idx]
+            v_gain = getattr(self, "v_gain_dB")[:, freq_idx]
+            theta_list = getattr(self, "theta_list")
+            phi_list = getattr(self, "phi_list")
 
             # Calculate statistics for each polarization
             h_max = float(np.max(h_gain))
@@ -1485,7 +1669,7 @@ You can call these functions to help answer user questions:
                 "cross_pol_discrimination_min_dB": min_xpd,
                 "dominant_polarization": dominant_pol,
                 "polarization_advantage_dB": float(pol_advantage_dB),
-                "polarization_purity": purity_assessment
+                "polarization_purity": purity_assessment,
             }
 
             return json.dumps(comparison)

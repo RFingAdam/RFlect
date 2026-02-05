@@ -20,12 +20,12 @@ This template provides neutral/generic branding by default.
 interpolate_3d_plots = True  # Default value, can be set to False to disable interpolation
 
 # 3D Plotting Interpolation Resolution for viewing plots (lower for better performance)
-PHI_RESOLUTION = 120        # default 360 = 1deg spacing
-THETA_RESOLUTION = 60       # default 180 - 1deg spacing
+PHI_RESOLUTION = 120  # default 360 = 1deg spacing
+THETA_RESOLUTION = 60  # default 180 - 1deg spacing
 
 # 3D Plotting Interpolation Resolution for Saving plots (higher for better resolution in documentation)
-PHI_RESOLUTION_Save = 360   # default 360 = 1deg spacing
-THETA_RESOLUTION_Save = 180 # default 180 - 1deg spacing
+PHI_RESOLUTION_Save = 360  # default 360 = 1deg spacing
+THETA_RESOLUTION_Save = 180  # default 180 - 1deg spacing
 
 # Set Min/Max for optional 2D polar plots on passive scans
 polar_dB_max = 5.0
@@ -57,106 +57,106 @@ BRAND_NAME = None  # No specific branding by default
 
 # Brand Colors (RGB tuples: (Red, Green, Blue) with values 0-255)
 # Neutral gray/blue color scheme
-BRAND_PRIMARY_COLOR = (70, 130, 180)    # Steel Blue
-BRAND_DARK_COLOR = (50, 50, 50)         # Dark Gray  
-BRAND_LIGHT_COLOR = (128, 128, 128)     # Medium Gray
+BRAND_PRIMARY_COLOR = (70, 130, 180)  # Steel Blue
+BRAND_DARK_COLOR = (50, 50, 50)  # Dark Gray
+BRAND_LIGHT_COLOR = (128, 128, 128)  # Medium Gray
 
 # Logo Configuration
-LOGO_FILENAME = None                    # No logo by default
-LOGO_WIDTH_INCHES = 2.0                 # Width of logo in report header
-LOGO_ALIGNMENT = "LEFT"                 # "LEFT", "CENTER", or "RIGHT"
+LOGO_FILENAME = None  # No logo by default
+LOGO_WIDTH_INCHES = 2.0  # Width of logo in report header
+LOGO_ALIGNMENT = "LEFT"  # "LEFT", "CENTER", or "RIGHT"
 
 # Report Footer
-BRAND_TAGLINE = None                    # No tagline by default
-BRAND_WEBSITE = None                    # No website by default
+BRAND_TAGLINE = None  # No tagline by default
+BRAND_WEBSITE = None  # No website by default
 
 # Report Styling
 REPORT_SUBTITLE = "Antenna Measurement & Analysis Report"
-TITLE_FONT_SIZE = 28                    # Title page font size in points
-SUBTITLE_FONT_SIZE = 14                 # Subtitle font size in points
-HEADING1_FONT_SIZE = 18                 # Section heading font size
-HEADING2_FONT_SIZE = 14                 # Subsection heading font size
+TITLE_FONT_SIZE = 28  # Title page font size in points
+SUBTITLE_FONT_SIZE = 14  # Subtitle font size in points
+HEADING1_FONT_SIZE = 18  # Section heading font size
+HEADING2_FONT_SIZE = 14  # Subsection heading font size
 
 # ============================================================================
 # AI ANALYSIS CONFIGURATION (OpenAI)
 # ============================================================================
 
 # AI Model Settings
-AI_MODEL = "gpt-4o-mini"                # OpenAI model to use (default: gpt-4o-mini for compatibility)
-                                         #
-                                         # RECOMMENDED MODELS FOR AI CHAT (with function calling):
-                                         #
-                                         # GPT-5.2 FAMILY (LATEST - Uses Responses API):
-                                         # - "gpt-5.2" - Flagship model, best quality, supports tools + vision
-                                         # - "gpt-5-mini" ⭐ RECOMMENDED - Great balance of speed/cost/quality
-                                         # - "gpt-5-nano" - Fastest, lowest cost, good for simple analysis
-                                         #
-                                         # GPT-4 FAMILY (LEGACY - Uses Chat Completions API):
-                                         # - "gpt-4o-mini" - Best legacy value, fast, supports functions + vision
-                                         # - "gpt-4o" - Premium quality, supports functions + vision
-                                         # - "chatgpt-4o-latest" - Latest 4o version
-                                         #
-                                         # ❌ NOT COMPATIBLE WITH AI CHAT:
-                                         # - "o1-preview", "o1-mini", "o3-mini" - NO function calling support
-                                         #   These models cannot call Python functions interactively
-                                         #
-                                         # GPT-5.2 ADVANTAGES:
-                                         # ✅ Uses new Responses API with reasoning control
-                                         # ✅ Supports tools (function calling) with strict schemas
-                                         # ✅ Supports vision (image analysis for plots)
-                                         # ✅ Configurable reasoning effort (none/low/medium/high)
-                                         # ✅ Configurable text verbosity (low/medium/high)
-                                         # ✅ Better structured output support
-                                         #
-                                         # WHEN TO USE ALTERNATIVES:
-                                         # - Use "gpt-5.2" for best quality analysis
-                                         # - Use "gpt-5-mini" for balanced speed/quality
-                                         # - Use "gpt-4o-mini" if GPT-5 API access not available
-                                         # - DON'T use O-series models for AI chat (no function calling)
-AI_MAX_TOKENS = 150                     # Maximum response length (150 = ~100 words, 300 = ~200 words)
-                                         # NOTE: For GPT-5, this maps to verbosity levels:
-                                         # ≤100 → "low", ≤250 → "medium", >250 → "high"
-AI_TEMPERATURE = 0.2                    # Lower = more consistent (0.0-1.0)
-                                         # NOTE: GPT-4 uses this directly. GPT-5 maps it to reasoning.effort:
-                                         # ≤0.1 → "none", ≤0.3 → "low", ≤0.6 → "medium", >0.6 → "high"
-AI_TOP_P = 0.8                          # Nucleus sampling parameter (GPT-4 only, not used for GPT-5)
-AI_TIMEOUT_SECONDS = 30                 # API request timeout
+AI_MODEL = "gpt-4o-mini"  # OpenAI model to use (default: gpt-4o-mini for compatibility)
+#
+# RECOMMENDED MODELS FOR AI CHAT (with function calling):
+#
+# GPT-5.2 FAMILY (LATEST - Uses Responses API):
+# - "gpt-5.2" - Flagship model, best quality, supports tools + vision
+# - "gpt-5-mini" ⭐ RECOMMENDED - Great balance of speed/cost/quality
+# - "gpt-5-nano" - Fastest, lowest cost, good for simple analysis
+#
+# GPT-4 FAMILY (LEGACY - Uses Chat Completions API):
+# - "gpt-4o-mini" - Best legacy value, fast, supports functions + vision
+# - "gpt-4o" - Premium quality, supports functions + vision
+# - "chatgpt-4o-latest" - Latest 4o version
+#
+# ❌ NOT COMPATIBLE WITH AI CHAT:
+# - "o1-preview", "o1-mini", "o3-mini" - NO function calling support
+#   These models cannot call Python functions interactively
+#
+# GPT-5.2 ADVANTAGES:
+# ✅ Uses new Responses API with reasoning control
+# ✅ Supports tools (function calling) with strict schemas
+# ✅ Supports vision (image analysis for plots)
+# ✅ Configurable reasoning effort (none/low/medium/high)
+# ✅ Configurable text verbosity (low/medium/high)
+# ✅ Better structured output support
+#
+# WHEN TO USE ALTERNATIVES:
+# - Use "gpt-5.2" for best quality analysis
+# - Use "gpt-5-mini" for balanced speed/quality
+# - Use "gpt-4o-mini" if GPT-5 API access not available
+# - DON'T use O-series models for AI chat (no function calling)
+AI_MAX_TOKENS = 150  # Maximum response length (150 = ~100 words, 300 = ~200 words)
+# NOTE: For GPT-5, this maps to verbosity levels:
+# ≤100 → "low", ≤250 → "medium", >250 → "high"
+AI_TEMPERATURE = 0.2  # Lower = more consistent (0.0-1.0)
+# NOTE: GPT-4 uses this directly. GPT-5 maps it to reasoning.effort:
+# ≤0.1 → "none", ≤0.3 → "low", ≤0.6 → "medium", >0.6 → "high"
+AI_TOP_P = 0.8  # Nucleus sampling parameter (GPT-4 only, not used for GPT-5)
+AI_TIMEOUT_SECONDS = 30  # API request timeout
 
 # AI Prompt Settings
-AI_RESPONSE_STYLE = "concise"           # "concise" or "detailed"
-                                         # - "concise": Single-paragraph technical descriptions (~80 words)
-                                         # - "detailed": Multi-section analysis with recommendations (~200+ words)
-AI_INCLUDE_RECOMMENDATIONS = False      # Include design recommendations in each caption
-                                         # Set True for educational reports, False for concise documentation
-AI_MAX_WORDS = 80                       # Target word count for AI responses
-                                         # Suggested ranges: 60-80 (concise), 150-250 (detailed), 300+ (research-level)
+AI_RESPONSE_STYLE = "concise"  # "concise" or "detailed"
+# - "concise": Single-paragraph technical descriptions (~80 words)
+# - "detailed": Multi-section analysis with recommendations (~200+ words)
+AI_INCLUDE_RECOMMENDATIONS = False  # Include design recommendations in each caption
+# Set True for educational reports, False for concise documentation
+AI_MAX_WORDS = 80  # Target word count for AI responses
+# Suggested ranges: 60-80 (concise), 150-250 (detailed), 300+ (research-level)
 
 # Advanced AI Parameters (GPT-5.2 Responses API)
 # These parameters are ONLY used when AI_MODEL is a GPT-5 variant (gpt-5*, gpt-5.2)
 # For GPT-4 models, these are ignored and Chat Completions API parameters (temperature, top_p) are used instead
 
-AI_REASONING_EFFORT = "low"              # GPT-5.2 reasoning intensity: "none", "low", "medium", "high", "xhigh"
-                                         # - "none": No reasoning tokens, fastest response (like GPT-4 behavior)
-                                         # - "low": Light reasoning for straightforward technical analysis (RECOMMENDED for RF reports)
-                                         # - "medium": Balanced reasoning for complex patterns
-                                         # - "high": Deep reasoning for research-level analysis (slower, more expensive)
-                                         # - "xhigh": Maximum reasoning effort for most complex problems
-                                         # NOTE: RF antenna analysis is domain-specific but not highly complex reasoning,
-                                         # so "low" provides best speed/quality/cost balance
+AI_REASONING_EFFORT = "low"  # GPT-5.2 reasoning intensity: "none", "low", "medium", "high", "xhigh"
+# - "none": No reasoning tokens, fastest response (like GPT-4 behavior)
+# - "low": Light reasoning for straightforward technical analysis (RECOMMENDED for RF reports)
+# - "medium": Balanced reasoning for complex patterns
+# - "high": Deep reasoning for research-level analysis (slower, more expensive)
+# - "xhigh": Maximum reasoning effort for most complex problems
+# NOTE: RF antenna analysis is domain-specific but not highly complex reasoning,
+# so "low" provides best speed/quality/cost balance
 
-AI_TEXT_VERBOSITY = "auto"               # GPT-5.2 output verbosity: "auto", "low", "medium", "high"
-                                         # - "auto": Let model decide based on AI_MAX_TOKENS (RECOMMENDED)
-                                         # - "low": Terse, minimal prose (good for captions)
-                                         # - "medium": Balanced detail (good for technical reports)
-                                         # - "high": Comprehensive explanations (research papers)
-                                         # When "auto", maps AI_MAX_TOKENS: ≤100→low, ≤250→medium, >250→high
+AI_TEXT_VERBOSITY = "auto"  # GPT-5.2 output verbosity: "auto", "low", "medium", "high"
+# - "auto": Let model decide based on AI_MAX_TOKENS (RECOMMENDED)
+# - "low": Terse, minimal prose (good for captions)
+# - "medium": Balanced detail (good for technical reports)
+# - "high": Comprehensive explanations (research papers)
+# When "auto", maps AI_MAX_TOKENS: ≤100→low, ≤250→medium, >250→high
 
-AI_GENERATE_REASONING_SUMMARY = False    # GPT-5.2 only: Include reasoning summary in response
-                                         # When True, provides insight into model's thought process
-                                         # Useful for debugging or understanding complex analysis decisions
-                                         # Adds ~50-100 tokens to response, minimal cost impact
+AI_GENERATE_REASONING_SUMMARY = False  # GPT-5.2 only: Include reasoning summary in response
+# When True, provides insight into model's thought process
+# Useful for debugging or understanding complex analysis decisions
+# Adds ~50-100 tokens to response, minimal cost impact
 
-AI_USE_STRUCTURED_OUTPUT = False         # Enable JSON structured output for consistent formatting
-                                         # When True, enforces schema-based responses (requires schema definition in code)
-                                         # Useful for programmatic parsing but reduces natural language quality
-                                         # RECOMMENDED: Keep False for readable report captions
+AI_USE_STRUCTURED_OUTPUT = False  # Enable JSON structured output for consistent formatting
+# When True, enforces schema-based responses (requires schema definition in code)
+# Useful for programmatic parsing but reduces natural language quality
+# RECOMMENDED: Keep False for readable report captions
