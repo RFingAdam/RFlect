@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rflect"
+version = "4.0.0"
+description = "Antenna measurement visualization and analysis tool"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "Adam"}
+]
+keywords = ["antenna", "RF", "measurement", "visualization", "plotting", "analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+]
+
+dependencies = [
+    "numpy>=1.26.0,<2.0.0",
+    "scipy>=1.14.0,<2.0.0",
+    "matplotlib>=3.10.0,<4.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "python-docx>=1.2.0,<2.0.0",
+    "openai>=1.38.0,<2.0.0",
+    "keyring>=25.0.0,<26.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "tqdm>=4.65.0,<5.0.0",
+    "requests>=2.31.0,<3.0.0",
+    "Pillow>=10.0.0,<11.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=24.0.0",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "bump2version>=1.0.0",
+]
+exe = [
+    "pyinstaller>=6.10.0",
+    "pyinstaller-hooks-contrib>=2024.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/RFingAdam/RFlect"
+Repository = "https://github.com/RFingAdam/RFlect"
+Issues = "https://github.com/RFingAdam/RFlect/issues"
+
+[project.scripts]
+rflect = "plot_antenna.main:main"
+
+[tool.setuptools]
+packages = ["plot_antenna", "plot_antenna.gui"]
+
+[tool.setuptools.package-data]
+plot_antenna = ["../settings.json", "../assets/*.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=plot_antenna --cov-report=html --cov-report=term"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | __pycache__
+  | plot_antenna/_archive
+)/
+'''
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    'plot_antenna/_archive',
+    'build',
+    'dist',
+]
