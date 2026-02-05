@@ -58,3 +58,16 @@ AI_CHAT_WORKFLOW.md
 
 # VS Code workspace files
 *.code-workspace
+.vscode/.ropeproject
+
+# IDE caches
+.idea/
+.vscode/.ropeproject
+
+# Ruff cache
+.ruff_cache/
+
+# MyPy cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
