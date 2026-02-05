@@ -13,11 +13,41 @@ build/
 dist/
 debug/
 
+# Virtual environments
+venv_clean/
+.claude/
+
 # PyInstaller spec files
 *.spec
 
 # Icon files
 *.ico
 
-#OpenApi Key
+# Company logo files (users should add their own)
+*_logo.png
+*_logo.jpg
+*_logo.jpeg
+*_logo.svg
+assets/*_logo.*
+
+# Local configuration (company-specific branding)
+plot_antenna/config_local.py
+
+# Environment files (API keys) - NEVER COMMIT
+.env
+*.env
 openapi.env
+openai.env
+.env.local
+
+# User-specific files
+recent_files.json
+
+# Archive directory
+plot_antenna/_archive/
+
+# Temp. files
+AI_CHAT_WORKFLOW.md
+
+# VS Code workspace files
+*.code-workspace

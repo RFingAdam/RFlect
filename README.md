@@ -1,7 +1,7 @@
 # RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 
 RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files from Copper Mountain RVNA and S2VNA software of S11/VSWR/Group Delay(S21(s)) measurements, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
 
@@ -87,12 +87,154 @@ Plots Group Delay vs Frequency for Various Theta (Azimuthal Rotation), Peak-to-p
 </details>
 
 ## Additional Features
-- Save your results using the **Save Results to File** button.
-- Adjust the frequency and other parameters using the provided dropdown menus and input fields.
+
+### File Management
+- Save your results using the **Save Results to File** button
+- Adjust the frequency and other parameters using the provided dropdown menus and input fields
+- **Recent Files**: Access up to 5 recently opened files via File → Recent Files
+- **Keyboard Shortcuts**: Ctrl+O (Import), Ctrl+Q (Exit)
+
+### Menu Structure
+RFlect features a professional menu bar with organized access to all functionality:
+
+- **File Menu**
+  - Import File(s)...
+  - Recent Files (with history of 5 most recent files)
+  - Clear Recent Files
+  - Exit
+
+- **Tools Menu**
+  - Bulk Passive Processing
+  - Bulk Active Processing
+  - Polarization Analysis (Export)
+  - Polarization Analysis (Interactive)
+  - HPOL/VPOL → CST FFS Converter
+  - Active Chamber Calibration
+  - Generate Report
+  - Generate Report with AI
+  - AI Chat Assistant
+
+- **Help Menu**
+  - About RFlect
+  - Manage OpenAI API Key
+  - AI Settings
+  - Check for Updates
+  - View on GitHub
+  - Report an Issue
+
+### Polarization Analysis Tool
+Calculate and visualize polarization parameters from HPOL/VPOL passive measurements:
+
+**Two Analysis Modes (Tools Menu)**:
+- **Polarization Analysis (Export)**: Batch export all frequencies to CSV/TXT files with complete polarization data
+- **Polarization Analysis (Interactive)**: Live visualization with frequency selection dropdown
+
+**Calculated Parameters**:
+| Parameter | Description |
+|-----------|-------------|
+| Axial Ratio (AR) | Measure of polarization ellipticity in dB (Ludwig-3 definition) |
+| Tilt Angle | Orientation of polarization ellipse in degrees |
+| Polarization Sense | LHCP vs RHCP classification (+1/-1) |
+| Cross-Pol Discrimination (XPD) | Ratio of co-pol to cross-pol power in dB |
+
+**2D Visualizations** (6 subplots):
+- AR, Tilt, Sense, and XPD contour maps
+- Polar plots of AR and Tilt at horizon (θ=90°)
+
+**3D Visualizations** (2 spherical plots):
+- AR sphere with color and radius varying by axial ratio
+- Polarization sense sphere (Red=LHCP, Blue=RHCP)
+- High-resolution interpolation (120×180 points) for smooth rendering
+
+### AI-Powered Features
+RFlect integrates OpenAI's API for intelligent antenna analysis:
+
+**AI Chat Assistant** (Tools → AI Chat Assistant):
+- Real-time conversational analysis of your antenna measurements
+- Function-calling implementation for on-demand analysis:
+  - `generate_2d_plot` - 2D radiation pattern descriptions with gain statistics
+  - `generate_3d_plot` - 3D spherical pattern descriptions with peak locations
+  - `get_gain_statistics` - Min/max/avg gain, standard deviation, frequency analysis
+  - `analyze_pattern` - Nulls, beamwidth, front-to-back ratio, pattern type classification
+  - `compare_polarizations` - HPOL vs VPOL comparison with XPD analysis
+- Context-aware responses based on loaded data
+- Persistent chat history within session
+- Supports GPT-4o-mini, GPT-4o, GPT-5, and O3 models
+
+**AI Settings** (Help → AI Settings):
+| Setting | Options |
+|---------|---------|
+| Model Selection | GPT-4o-mini (recommended), GPT-4o, GPT-5-nano, GPT-5-mini, GPT-5.2 |
+| Response Style | Concise (~80 words), Detailed (~200+ words) |
+| Max Tokens | 50-1000 tokens |
+| Reasoning Effort | none, low, medium, high, xhigh (GPT-5 models) |
+| Text Verbosity | auto, low, medium, high |
+
+**AI-Powered Report Generation**:
+- Intelligent executive summaries based on measurement analysis
+- Dual-API support: Chat Completions API (GPT-4) and Responses API (GPT-5)
+- Context-aware conclusions and recommendations
+
+**Secure API Key Storage**:
+- Keys stored in user's AppData folder (not in app directory)
+- Cross-platform support: Windows (%LOCALAPPDATA%\RFlect), macOS (~/Library/Application Support/RFlect), Linux (~/.config/RFlect)
+- GUI-based key management (Help → Manage OpenAI API Key)
+- Multiple storage backends: OS Keyring, user data file, environment variables
+
+### Batch Processing
+Process multiple measurement files automatically:
+
+**Bulk Passive Processing** (Tools Menu):
+- Automatically finds all HPOL/VPOL pairs in a directory
+- Processes multiple frequencies per antenna pair
+- Generates 2D and 3D plots for each pair/frequency
+- Saves results to organized subfolders
+
+**Bulk Active Processing** (Tools Menu):
+- Finds all TRP measurement files in a directory
+- Generates 2D azimuth/elevation cuts
+- Creates 3D TRP visualization plots
+- Saves results to per-file subfolders
+
+### Group Delay & Advanced Analysis
+**CST Far-Field File Support**:
+- Import CST simulation far-field .txt files
+- Group Delay analysis from phase vs frequency data
+- Fidelity factor calculations
+- Envelope Correlation Coefficient (ECC) from 2-antenna HPOL/VPOL measurements
+
+**VNA 2-Port Measurements**:
+- Support for S2VNA and RVNA data formats
+- Configurable limit lines on VSWR vs Frequency plots
+- Frequency range filtering
+
+### 3D Plot Enhancements
+All 3D radiation pattern plots feature:
+- Transparent background panes for improved axis visibility
+- Coordinate axes rendered on top of surface (no depth shading)
+- Increased arrow thickness (2.5px) for better visibility
+- Cleaned tick labels for professional appearance
+- Applied to Active TRP, Passive Gain, and Polarization 3D plots
+
+<details>
+<summary><strong>3D Plot Autoscale Options</strong></summary>
+
+For comparison of multiple scans, configure 3D plotting via Settings:
+- **Autoscale**: Automatic Z-axis scaling based on data range
+- **Manual Fixed Scaling**: Set consistent min/max values across multiple plots
+</details>
 
 ## Note to Users
-- Always ensure the data you're importing is consistent with the scan type you've selected.
-- For best results, ensure that settings are appropriately adjusted before importing data.
+- Always ensure the data you're importing is consistent with the scan type you've selected
+- For best results, ensure that settings are appropriately adjusted before importing data
+- AI features require a valid OpenAI API key (configure via Help → Manage OpenAI API Key)
+- Status bar at the bottom of the window provides real-time operation feedback
+
+## System Requirements
+- Windows, macOS, or Linux
+- Python 3.12+ (for source installation)
+- SciPy 1.14.0+ (uses RegularGridInterpolator)
+- NumPy with trapezoid function support
 
 ---
 

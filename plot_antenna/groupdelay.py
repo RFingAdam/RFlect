@@ -265,7 +265,7 @@ def calculate_SFF_with_gaussian_pulse(freq, S_param):
     h_sys = h_sys / np.max(np.abs(h_sys))
 
     # 6. Calculate System Fidelity Factor comparing h_sys and p_t
-    SFF = np.abs(np.trapz(h_sys * p_t))**2 / (np.trapz(np.abs(h_sys)**2) * np.trapz(np.abs(p_t)**2))
+    SFF = np.abs(np.trapezoid(h_sys * p_t))**2 / (np.trapezoid(np.abs(h_sys)**2) * np.trapezoid(np.abs(p_t)**2))
     
     # Update time vector to match the length of h_sys
     t = np.linspace(-6e-9, 6e-9, len(h_sys))  
