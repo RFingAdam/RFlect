@@ -19,30 +19,30 @@ from typing import TYPE_CHECKING, Optional, List, Any
 
 import numpy as np
 
-from ..config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, AI_MODEL, AI_MAX_TOKENS
+from config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, AI_MODEL, AI_MAX_TOKENS
 
 # Import AI settings with fallbacks
 try:
-    from ..config import AI_TEMPERATURE
+    from config import AI_TEMPERATURE
 except ImportError:
     AI_TEMPERATURE = 0.7
 
 try:
-    from ..config import AI_REASONING_EFFORT
+    from config import AI_REASONING_EFFORT
 except ImportError:
     AI_REASONING_EFFORT = "low"
 
 try:
-    from ..config import AI_TEXT_VERBOSITY
+    from config import AI_TEXT_VERBOSITY
 except ImportError:
     AI_TEXT_VERBOSITY = "auto"
 
 try:
-    from ..config import AI_GENERATE_REASONING_SUMMARY
+    from config import AI_GENERATE_REASONING_SUMMARY
 except ImportError:
     AI_GENERATE_REASONING_SUMMARY = False
 
-from ..plotting import (
+from plotting import (
     plot_2d_passive_data,
     plot_passive_3d_component,
     plot_active_2d_data,
