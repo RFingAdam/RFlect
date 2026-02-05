@@ -7,13 +7,13 @@ import datetime
 
 # Read in TRP/Active Scan File 
 def read_active_file(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         content = file.readlines()
     return parse_active_file(content)
 
 # Read in Passive HPOL/VPOL Files
 def read_passive_file(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         content = file.readlines()
     return parse_passive_file(content)
 
@@ -132,8 +132,12 @@ def parse_passive_file(content):
     
     # Initialize variables to store PHI and THETA details
     all_data = []
-    start_phi, stop_phi, inc_phi = None, None, None
-    start_theta, stop_theta, inc_theta = None, None, None
+    start_phi: float | None = None
+    stop_phi: float | None = None
+    inc_phi: float | None = None
+    start_theta: float | None = None
+    stop_theta: float | None = None
+    inc_theta: float | None = None
     
     # Extract Theta & PHI details
     for line in content:
@@ -150,6 +154,10 @@ def parse_passive_file(content):
         elif "Axis2 Increment" in line:
             inc_theta = float(line.split(":")[1].split("Deg")[0].strip())
     
+    # Validate that all required values were extracted
+    if start_phi is None or stop_phi is None or inc_phi is None or start_theta is None or stop_theta is None or inc_theta is None:
+        raise ValueError("Failed to extract all required angle parameters from passive file")
+    
     # Calculate the expected number of data points
     theta_points = (stop_theta - start_theta) / inc_theta + 1
     phi_points = (stop_phi - start_phi) / inc_phi + 1
@@ -162,6 +170,8 @@ def parse_passive_file(content):
             break
         cal_factor_value = float(cal_factor_line.split('=')[1].strip().split(' ')[0])
         freq_line = next((line for line in content if "Test Frequency = " in line), None)
+        if not freq_line:
+            break
         freq_value = float(freq_line.split('=')[1].strip().split(' ')[0])
 
         start_index = next((i for i, line in enumerate(content) if "THETA\t  PHI\t  Mag\t Phase" in line), None)
@@ -205,7 +215,7 @@ def check_matching_files(file1, file2):
         return False, "File names do not match."
 
     # Extract frequency and angular data from files
-    with open(file1, 'r') as f1, open(file2, 'r') as f2:
+    with open(file1, 'r', encoding='utf-8') as f1, open(file2, 'r', encoding='utf-8') as f2:
         content1 = f1.readlines()
         content2 = f2.readlines()
 
@@ -222,6 +232,79 @@ def check_matching_files(file1, file2):
 
     return True, "" 
 
+def validate_hpol_vpol_files(hpol_file, vpol_file):
+    """
+    Validates that HPOL and VPOL files are correctly paired and assigned.
+    
+    Checks:
+    1. Files are from the same measurement set (matching filenames except polarization)
+    2. Files have matching frequency and angle data
+    3. Files are correctly identified as HPOL and VPOL (not swapped)
+    
+    Parameters:
+        hpol_file: Path to file selected as HPOL
+        vpol_file: Path to file selected as VPOL
+        
+    Returns:
+        (is_valid, error_message) tuple
+        - is_valid: True if validation passes, False otherwise
+        - error_message: String describing the error, empty if valid
+    """
+    # Extract filenames
+    hpol_filename = os.path.splitext(os.path.basename(hpol_file))[0].upper()
+    vpol_filename = os.path.splitext(os.path.basename(vpol_file))[0].upper()
+    
+    # Check 1: Verify polarization identifiers in filenames
+    hpol_has_hpol = 'HPOL' in hpol_filename or 'H_POL' in hpol_filename or '_H_' in hpol_filename
+    vpol_has_vpol = 'VPOL' in vpol_filename or 'V_POL' in vpol_filename or '_V_' in vpol_filename
+    
+    hpol_has_vpol = 'VPOL' in hpol_filename or 'V_POL' in hpol_filename or '_V_' in hpol_filename
+    vpol_has_hpol = 'HPOL' in vpol_filename or 'H_POL' in vpol_filename or '_H_' in vpol_filename
+    
+    # Check if files are swapped
+    if hpol_has_vpol and vpol_has_hpol:
+        return False, ("⚠️ FILES ARE SWAPPED!\n\n"
+                      f"The file you selected as HPOL appears to be VPOL: '{os.path.basename(hpol_file)}'\n"
+                      f"The file you selected as VPOL appears to be HPOL: '{os.path.basename(vpol_file)}'\n\n"
+                      "Please swap your file selections.")
+    
+    # Check if HPOL file is actually HPOL
+    if not hpol_has_hpol and hpol_has_vpol:
+        return False, (f"⚠️ INCORRECT FILE!\n\n"
+                      f"The file you selected as HPOL appears to be VPOL:\n'{os.path.basename(hpol_file)}'\n\n"
+                      "Please select the correct HPOL file.")
+    
+    # Check if VPOL file is actually VPOL
+    if not vpol_has_vpol and vpol_has_hpol:
+        return False, (f"⚠️ INCORRECT FILE!\n\n"
+                      f"The file you selected as VPOL appears to be HPOL:\n'{os.path.basename(vpol_file)}'\n\n"
+                      "Please select the correct VPOL file.")
+    
+    # Check 2: Verify files are from same measurement set
+    # Extract base filename (before polarization identifier)
+    hpol_base = hpol_filename.replace('HPOL', '').replace('H_POL', '').replace('_H_', '_').replace('_H', '').replace('H_', '')
+    vpol_base = vpol_filename.replace('VPOL', '').replace('V_POL', '').replace('_V_', '_').replace('_V', '').replace('V_', '')
+    
+    # More lenient base name matching (after removing polarization indicators)
+    # Compare last 10 chars or so to allow for different prefixes
+    if len(hpol_base) >= 10 and len(vpol_base) >= 10:
+        if hpol_base[-10:] != vpol_base[-10:]:
+            # Try the original check_matching_files method
+            base_match, _ = check_matching_files(hpol_file, vpol_file)
+            if not base_match:
+                return False, (f"⚠️ FILE MISMATCH!\n\n"
+                              f"Files may not be from the same measurement:\n"
+                              f"HPOL: '{os.path.basename(hpol_file)}'\n"
+                              f"VPOL: '{os.path.basename(vpol_file)}'\n\n"
+                              "Please verify you selected matching files.")
+    
+    # Check 3: Use existing check_matching_files for frequency/angle validation
+    files_match, match_error = check_matching_files(hpol_file, vpol_file)
+    if not files_match:
+        return False, f"⚠️ DATA MISMATCH!\n\n{match_error}\n\nFiles must have matching frequency and angle parameters."
+    
+    return True, ""
+
 def process_gd_file(filepath):
         """
         Reads the G&D file and extracts frequency, gain, directivity, and efficiency data.
@@ -231,7 +314,7 @@ def process_gd_file(filepath):
         directivity = []
         efficiency = []
 
-        with open(filepath, 'r') as file:
+        with open(filepath, 'r', encoding='utf-8') as file:
             lines = file.readlines()
 
         data_start_line = None
@@ -515,7 +598,7 @@ Farfield
 
     # Join with the directory path
     output_path = os.path.join(os.path.dirname(hpol_file_path), new_file_name)
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write(header)
         f.writelines(data_lines)
 
@@ -533,7 +616,7 @@ def read_power_measurement(file_path):
         dict: A dictionary with frequencies as keys and power measurements as values.
     """
     data = {}
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         frequency = None
         read_values = False  # Initialize read_values at the start
         for line in file:
@@ -567,7 +650,7 @@ def read_gain_standard(file_path):
         dict: A dictionary with frequencies as keys and gain values as values.
     """
     data = {}
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
             if line.strip() and line[0].isdigit():  # Check if the line starts with a digit
                 parts = line.split()
@@ -589,7 +672,7 @@ def read_polarization_data(file_path):
         dict: A dictionary with frequencies as keys and polarization values as values.
     """
     data = {}
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         frequency = None
         read_values = False
         for line in file:
@@ -665,7 +748,7 @@ def generate_active_cal_file(power_measurement_file, gain_standard_file, hpol_fi
     output_path = os.path.join(os.path.dirname(hpol_file), output_file)
 
     # Write the result to a file
-    with open(output_path, 'w') as file:
+    with open(output_path, 'w', encoding='utf-8') as file:
         file.write(f"WTL Calibration File\n\nDate: {today}\nTime: {current_time}\n\n*******  Cal Data  ********\n")
         file.write("Freq\tH-Pol\tV-Pol\n(MHz)\t(dBm)\t(dBm)\n")
         for _, row in df_filtered.iterrows():
@@ -675,7 +758,7 @@ def generate_active_cal_file(power_measurement_file, gain_standard_file, hpol_fi
     summary_file = f"TRP Cal Summary {common_part}1Amp 0 dBm {start_frequency}-{stop_frequency} {today}.txt"
     summary_path = os.path.join(os.path.dirname(hpol_file), summary_file)
 
-    with open(summary_path, 'w') as file:
+    with open(summary_path, 'w', encoding='utf-8') as file:
         file.write(f"Calibration Summary\n\nDate: {today}\nTime: {current_time}\n\n")
         file.write(f"Power Measurement File: {power_measurement_file}\n")
         file.write(f"Gain Standard File: {gain_standard_file}\n")
@@ -691,3 +774,200 @@ def generate_active_cal_file(power_measurement_file, gain_standard_file, hpol_fi
     # Callback to update visibility in the GUI
     if callback:
         callback()
+
+# --------------------------------------------------------------------------
+# Bulk passive scan processing
+# --------------------------------------------------------------------------
+# NOTE: plotting imports happen inside the function to avoid circular imports.
+def batch_process_passive_scans(folder_path, freq_list, selected_frequencies,
+                                cable_loss=0.0, datasheet_plots=False, save_base=None,
+                                axis_mode='auto', zmin: float = -15.0, zmax: float = 15.0):
+    """
+    Batch‑process all HPOL/VPOL pairs in a directory.
+
+    Parameters:
+        folder_path (str): Directory containing measurement files.
+        freq_list (list of float): Full list of available frequencies (MHz).
+        selected_frequencies (list of float): Frequencies to process for each pair (MHz).
+        cable_loss (float): Cable loss applied to all datasets.
+        datasheet_plots (bool): Whether to generate datasheet‑style plots.
+        save_base (str or None): Optional directory to write results; a subfolder per pair will be created.
+        axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
+        zmin (float): Minimum z‑axis limit when axis_mode='manual'.
+        zmax (float): Maximum z‑axis limit when axis_mode='manual'.
+
+    This routine scans ``folder_path`` for files ending in ``AP_HPol.txt`` and
+    ``AP_VPol.txt``.  For each matching pair it computes passive gain data
+    using :func:`calculate_passive_variables` and then generates 2D and 3D plots
+    using :mod:`plotting`.  Results are saved into per‑pair subfolders in
+    ``save_base`` if provided.
+    """
+    import os
+    from plotting import plot_2d_passive_data, plot_passive_3d_component
+
+    # Find all HPOL and VPOL files
+    files = os.listdir(folder_path)
+    hpol_files = [f for f in files if f.endswith('AP_HPol.txt')]
+    vpol_files = [f for f in files if f.endswith('AP_VPol.txt')]
+
+    # Match by filename prefix
+    pairs = []
+    for h_file in hpol_files:
+        base = h_file.replace('AP_HPol.txt', '')
+        match = base + 'AP_VPol.txt'
+        if match in vpol_files:
+            pairs.append((os.path.join(folder_path, h_file),
+                          os.path.join(folder_path, match)))
+
+    if not pairs:
+        print(f'No HPOL/VPOL pairs found in {folder_path}.')
+        return
+
+    for h_path, v_path in pairs:
+        print(f'Processing pair: {os.path.basename(h_path)}, {os.path.basename(v_path)}')
+        # Parse both files
+        parsed_h, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = read_passive_file(h_path)
+        parsed_v, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = read_passive_file(v_path)
+
+        # Verify angle grids match
+        if not angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
+                            start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v):
+            print(f'  Warning: angle mismatch between {h_path} and {v_path}.  Skipping.')
+            continue
+
+        for sel_freq in selected_frequencies:
+            print(f'  Processing frequency {sel_freq} MHz…')
+            # Compute gains for this frequency
+            theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = calculate_passive_variables(
+                parsed_h, parsed_v, cable_loss,
+                start_phi_h, stop_phi_h, inc_phi_h,
+                start_theta_h, stop_theta_h, inc_theta_h,
+                freq_list, sel_freq
+            )
+
+            # Create per‑pair/frequency subfolder if requested
+            if save_base:
+                base_name = os.path.splitext(os.path.basename(h_path))[0].replace('AP_HPol', '')
+                subfolder = os.path.join(save_base, f'{base_name}_{sel_freq}MHz')
+                os.makedirs(subfolder, exist_ok=True)
+            else:
+                subfolder = None
+
+            # 2D plots
+            plot_2d_passive_data(theta_deg, phi_deg,
+                                 v_gain_dB, h_gain_dB, total_gain_dB,
+                                 freq_list, sel_freq, datasheet_plots,
+                                 save_path=subfolder)
+
+            # 3D plots (total, hpol and vpol)
+            for pol in ('total', 'hpol', 'vpol'):
+                plot_passive_3d_component(theta_deg, phi_deg,
+                                          h_gain_dB, v_gain_dB, total_gain_dB,
+                                          freq_list, sel_freq, pol,
+                                          axis_mode=axis_mode,
+                                          zmin=zmin, zmax=zmax,
+                                          save_path=subfolder)
+
+
+def batch_process_active_scans(folder_path, save_base=None, interpolate=True,
+                               axis_mode='auto', zmin: float = -15.0, zmax: float = 15.0):
+    """
+    Batch‑process all active TRP measurement files in a directory.
+
+    Parameters:
+        folder_path (str): Directory containing TRP measurement files.
+        save_base (str or None): Optional directory to write results; a subfolder per file will be created.
+        interpolate (bool): Whether to interpolate 3D plots for smoother visualization.
+        axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
+        zmin (float): Minimum z‑axis limit (dBm) when axis_mode='manual'.
+        zmax (float): Maximum z‑axis limit (dBm) when axis_mode='manual'.
+
+    This routine scans ``folder_path`` for TRP data files (e.g., files ending in ``.txt``).
+    For each file, it:
+      1. Reads and parses the TRP data using :func:`read_active_file`.
+      2. Calculates active variables using :func:`calculate_active_variables`.
+      3. Generates 2D azimuth/elevation cuts and 3D TRP plots.
+      4. Saves results to per‑file subfolders in ``save_base`` if provided.
+    """
+    import os
+    from plotting import plot_active_2d_data, plot_active_3d_data
+    from calculations import calculate_active_variables
+
+    # Find all TRP files in the folder
+    files = os.listdir(folder_path)
+    trp_files = [f for f in files if f.endswith('.txt') and 'TRP' in f.upper()]
+
+    if not trp_files:
+        print(f'No TRP files found in {folder_path}.')
+        return
+
+    for trp_file in trp_files:
+        file_path = os.path.join(folder_path, trp_file)
+        print(f'Processing TRP file: {trp_file}')
+
+        try:
+            # Read active file
+            data = read_active_file(file_path)
+
+            # Extract data
+            frequency = data["Frequency"]
+            start_phi = data["Start Phi"]
+            start_theta = data["Start Theta"]
+            stop_phi = data["Stop Phi"]
+            stop_theta = data["Stop Theta"]
+            inc_phi = data["Inc Phi"]
+            inc_theta = data["Inc Theta"]
+            h_power_dBm = data["H_Power_dBm"]
+            v_power_dBm = data["V_Power_dBm"]
+
+            # Calculate active variables
+            active_vars = calculate_active_variables(
+                start_phi, stop_phi, start_theta, stop_theta,
+                inc_phi, inc_theta, h_power_dBm, v_power_dBm
+            )
+
+            # Unpack variables
+            (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
+             total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
+             phi_angles_deg_plot, phi_angles_rad_plot,
+             total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
+             total_power_dBm_min, total_power_dBm_nom,
+             h_power_dBm_min, h_power_dBm_nom,
+             v_power_dBm_min, v_power_dBm_nom,
+             TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_vars
+
+            # Create subfolder for this file if save_base is provided
+            if save_base:
+                base_name = os.path.splitext(trp_file)[0]
+                subfolder = os.path.join(save_base, f'{base_name}_{frequency}MHz')
+                os.makedirs(subfolder, exist_ok=True)
+            else:
+                subfolder = None
+
+            # Generate 2D plots
+            plot_active_2d_data(
+                data_points, theta_angles_rad, phi_angles_rad_plot,
+                total_power_dBm_2d_plot, frequency,
+                save_path=subfolder
+            )
+
+            # Generate 3D plots for total, hpol, and vpol
+            for power_type, power_2d, power_2d_plot in [
+                ('total', total_power_dBm_2d, total_power_dBm_2d_plot),
+                ('hpol', h_power_dBm_2d, h_power_dBm_2d_plot),
+                ('vpol', v_power_dBm_2d, v_power_dBm_2d_plot)
+            ]:
+                plot_active_3d_data(
+                    theta_angles_deg, phi_angles_deg,
+                    power_2d, phi_angles_deg_plot, power_2d_plot,
+                    frequency, power_type=power_type,
+                    interpolate=interpolate,
+                    axis_mode=axis_mode,
+                    zmin=zmin, zmax=zmax,
+                    save_path=subfolder
+                )
+
+            print(f'  ✓ Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)')
+
+        except Exception as e:
+            print(f'  ✗ Error processing {trp_file}: {e}')
