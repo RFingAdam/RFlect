@@ -9,9 +9,9 @@ from .file_utils import read_active_file, read_passive_file
 from . import config
 
 from tkinter import simpledialog, filedialog, Tk
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx import Document  # type: ignore[import-untyped]
+from docx.shared import Inches, Pt, RGBColor  # type: ignore[import-untyped]
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # type: ignore[import-untyped]
 
 import datetime
 import os
