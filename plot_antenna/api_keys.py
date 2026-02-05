@@ -1,4 +1,4 @@
-"""
+r"""
 API Key Management for RFlect
 
 This module provides secure API key storage and retrieval:
@@ -20,15 +20,19 @@ import base64
 # Try to import keyring for secure storage (optional dependency)
 try:
     import keyring  # type: ignore[import-unresolved]
+
     KEYRING_AVAILABLE = True
 except ImportError:
     keyring = None  # type: ignore[assignment]
     KEYRING_AVAILABLE = False
-    print("[INFO] keyring not installed - using fallback storage. Install with: pip install keyring")
+    print(
+        "[INFO] keyring not installed - using fallback storage. Install with: pip install keyring"
+    )
 
 # Try to import dotenv for .env file loading
 try:
     from dotenv import load_dotenv
+
     DOTENV_AVAILABLE = True
 except ImportError:
     DOTENV_AVAILABLE = False
@@ -43,13 +47,13 @@ ENV_FILE_NAMES = [".env", "openai.env", "openapi.env"]  # .env takes priority
 
 def get_user_data_dir():
     """Get user-specific data directory for storing settings."""
-    if sys.platform == 'win32':
-        app_data = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
-        user_dir = os.path.join(app_data, 'RFlect')
-    elif sys.platform == 'darwin':
-        user_dir = os.path.expanduser('~/Library/Application Support/RFlect')
+    if sys.platform == "win32":
+        app_data = os.getenv("LOCALAPPDATA", os.path.expanduser("~"))
+        user_dir = os.path.join(app_data, "RFlect")
+    elif sys.platform == "darwin":
+        user_dir = os.path.expanduser("~/Library/Application Support/RFlect")
     else:
-        user_dir = os.path.expanduser('~/.config/RFlect')
+        user_dir = os.path.expanduser("~/.config/RFlect")
 
     os.makedirs(user_dir, exist_ok=True)
     return user_dir
@@ -57,7 +61,7 @@ def get_user_data_dir():
 
 def get_fallback_key_path():
     """Get path to fallback key file."""
-    return os.path.join(get_user_data_dir(), '.openai_key')
+    return os.path.join(get_user_data_dir(), ".openai_key")
 
 
 def _load_from_keyring():
@@ -80,7 +84,7 @@ def _load_from_fallback_file():
     if not os.path.exists(key_path):
         return None
     try:
-        with open(key_path, 'r', encoding='utf-8') as f:
+        with open(key_path, "r", encoding="utf-8") as f:
             encoded_key = f.read().strip()
             if encoded_key:
                 key = base64.b64decode(encoded_key.encode()).decode()
@@ -147,13 +151,13 @@ def load_api_key():
     # 1. Try OS keyring first (most secure)
     key = _load_from_keyring()
     if key:
-        os.environ['OPENAI_API_KEY'] = key
+        os.environ["OPENAI_API_KEY"] = key
         return key
 
     # 2. Try user data file (fallback storage)
     key = _load_from_fallback_file()
     if key:
-        os.environ['OPENAI_API_KEY'] = key
+        os.environ["OPENAI_API_KEY"] = key
         return key
 
     # 3. Try environment variable (may be set externally)
@@ -192,7 +196,7 @@ def save_api_key(api_key):
     if KEYRING_AVAILABLE and keyring is not None:
         try:
             keyring.set_password(SERVICE_NAME, KEY_NAME, api_key)
-            os.environ['OPENAI_API_KEY'] = api_key
+            os.environ["OPENAI_API_KEY"] = api_key
             print("[OK] API key saved to secure storage (OS keyring)")
             return True
         except Exception as e:
@@ -203,9 +207,9 @@ def save_api_key(api_key):
     try:
         key_path = get_fallback_key_path()
         encoded_key = base64.b64encode(api_key.encode()).decode()
-        with open(key_path, 'w', encoding='utf-8') as f:
+        with open(key_path, "w", encoding="utf-8") as f:
             f.write(encoded_key)
-        os.environ['OPENAI_API_KEY'] = api_key
+        os.environ["OPENAI_API_KEY"] = api_key
         print("[OK] API key saved to user storage")
         return True
     except Exception as e:

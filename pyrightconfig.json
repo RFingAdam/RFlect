@@ -1,0 +1,28 @@
+{
+  "include": [
+    "plot_antenna",
+    "tests"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "build",
+    "dist",
+    "plot_antenna/_archive"
+  ],
+  "stubPath": "",
+  "venvPath": ".",
+  "venv": "venv",
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Windows",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "pythonVersion": "3.11",
+      "extraPaths": [
+        "."
+      ]
+    }
+  ]
+}

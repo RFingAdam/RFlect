@@ -23,18 +23,24 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import requests
 
-from config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR
+from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR
 
-from file_utils import (
-    read_passive_file, check_matching_files, convert_HpolVpol_files,
-    generate_active_cal_file, validate_hpol_vpol_files, batch_process_passive_scans,
-    batch_process_active_scans
+from ..file_utils import (
+    read_passive_file,
+    check_matching_files,
+    convert_HpolVpol_files,
+    generate_active_cal_file,
+    validate_hpol_vpol_files,
+    batch_process_passive_scans,
+    batch_process_active_scans,
 )
-from calculations import (
-    determine_polarization, calculate_polarization_parameters, export_polarization_data
+from ..calculations import (
+    determine_polarization,
+    calculate_polarization_parameters,
+    export_polarization_data,
 )
-from plotting import plot_polarization_2d, plot_polarization_3d
-from save import generate_report, RFAnalyzer
+from ..plotting import plot_polarization_2d, plot_polarization_3d
+from ..save import generate_report, RFAnalyzer
 
 if TYPE_CHECKING:
     from .base_protocol import AntennaPlotGUIProtocol
@@ -68,6 +74,7 @@ class ToolsMixin:
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
+
         def log_message(self, message: str) -> None: ...
         def update_visibility(self) -> None: ...
         def update_passive_frequency_list(self) -> None: ...
@@ -114,46 +121,53 @@ class ToolsMixin:
         tk.Label(report_dialog, text="Report Generation", font=("Arial", 14, "bold")).pack(pady=10)
 
         # Report title
-        tk.Label(report_dialog, text="Report Title:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Report Title:", font=("Arial", 10)).pack(anchor="w", padx=20)
         title_var = tk.StringVar(value="Antenna Measurement Report")
         tk.Entry(report_dialog, textvariable=title_var, width=50).pack(padx=20, pady=5)
 
         # Project name
-        tk.Label(report_dialog, text="Project Name:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Project Name:", font=("Arial", 10)).pack(anchor="w", padx=20)
         project_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=project_var, width=50).pack(padx=20, pady=5)
 
         # Antenna type
-        tk.Label(report_dialog, text="Antenna Type (e.g., Patch, Monopole, PIFA):", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(
+            report_dialog, text="Antenna Type (e.g., Patch, Monopole, PIFA):", font=("Arial", 10)
+        ).pack(anchor="w", padx=20)
         antenna_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=antenna_var, width=50).pack(padx=20, pady=5)
 
         # Frequency range
-        tk.Label(report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(
+            report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):", font=("Arial", 10)
+        ).pack(anchor="w", padx=20)
         freq_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=freq_var, width=50).pack(padx=20, pady=5)
 
         # Author
-        tk.Label(report_dialog, text="Author/Engineer:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Author/Engineer:", font=("Arial", 10)).pack(
+            anchor="w", padx=20
+        )
         author_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=author_var, width=50).pack(padx=20, pady=5)
 
         # Options
         include_summary_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(report_dialog, text="Include Executive Summary",
-                      variable=include_summary_var).pack(anchor='w', padx=20, pady=5)
+        tk.Checkbutton(
+            report_dialog, text="Include Executive Summary", variable=include_summary_var
+        ).pack(anchor="w", padx=20, pady=5)
 
         result = {}
-        result['cancelled'] = True
+        result["cancelled"] = True
 
         def on_generate():
-            result['cancelled'] = False
-            result['title'] = title_var.get()
-            result['project'] = project_var.get()
-            result['antenna'] = antenna_var.get()
-            result['freq'] = freq_var.get()
-            result['author'] = author_var.get()
-            result['summary'] = include_summary_var.get()
+            result["cancelled"] = False
+            result["title"] = title_var.get()
+            result["project"] = project_var.get()
+            result["antenna"] = antenna_var.get()
+            result["freq"] = freq_var.get()
+            result["author"] = author_var.get()
+            result["summary"] = include_summary_var.get()
             report_dialog.destroy()
 
         def on_cancel():
@@ -162,39 +176,49 @@ class ToolsMixin:
         # Buttons
         button_frame = tk.Frame(report_dialog)
         button_frame.pack(pady=20)
-        tk.Button(button_frame, text="Generate Report", command=on_generate,
-                 bg="#4CAF50", fg="white", padx=20).pack(side='left', padx=10)
-        tk.Button(button_frame, text="Cancel", command=on_cancel,
-                 padx=20).pack(side='left', padx=10)
+        tk.Button(
+            button_frame,
+            text="Generate Report",
+            command=on_generate,
+            bg="#4CAF50",
+            fg="white",
+            padx=20,
+        ).pack(side="left", padx=10)
+        tk.Button(button_frame, text="Cancel", command=on_cancel, padx=20).pack(
+            side="left", padx=10
+        )
 
         # Wait for dialog to close
         self.root.wait_window(report_dialog)
 
-        if result['cancelled']:
+        if result["cancelled"]:
             return
 
         # Build metadata dictionary
         metadata = {
-            'project_name': result['project'],
-            'antenna_type': result['antenna'],
-            'frequency_range': result['freq'],
-            'author': result['author'],
-            'date': datetime.datetime.now().strftime('%B %d, %Y')
+            "project_name": result["project"],
+            "antenna_type": result["antenna"],
+            "frequency_range": result["freq"],
+            "author": result["author"],
+            "date": datetime.datetime.now().strftime("%B %d, %Y"),
         }
 
         # Build project context for AI
-        project_context = {
-            'antenna_type': result['antenna'],
-            'frequency_range': result['freq']
-        }
+        project_context = {"antenna_type": result["antenna"], "frequency_range": result["freq"]}
 
         # Initialize the RFAnalyzer without AI
         analyzer = RFAnalyzer(use_ai=False, project_context=project_context)
 
         save_path = filedialog.askdirectory(title="Select Directory to Save Report")
         if save_path:
-            generate_report(result['title'], image_paths, save_path, analyzer,
-                          metadata=metadata, include_summary=result['summary'])
+            generate_report(
+                result["title"],
+                image_paths,
+                save_path,
+                analyzer,
+                metadata=metadata,
+                include_summary=result["summary"],
+            )
             messagebox.showinfo("Success", f"Report '{result['title']}' generated successfully!")
         else:
             messagebox.showerror("Error", "No directory selected to save the report.")
@@ -221,61 +245,74 @@ class ToolsMixin:
         report_dialog.grab_set()
 
         # Title
-        tk.Label(report_dialog, text="AI-Enhanced Report Generation",
-                font=("Arial", 14, "bold")).pack(pady=10)
-        tk.Label(report_dialog, text="AI will analyze each measurement image and generate detailed technical insights.",
-                font=("Arial", 9), wraplength=500).pack(pady=5)
+        tk.Label(
+            report_dialog, text="AI-Enhanced Report Generation", font=("Arial", 14, "bold")
+        ).pack(pady=10)
+        tk.Label(
+            report_dialog,
+            text="AI will analyze each measurement image and generate detailed technical insights.",
+            font=("Arial", 9),
+            wraplength=500,
+        ).pack(pady=5)
 
         # Report title
-        tk.Label(report_dialog, text="Report Title:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Report Title:", font=("Arial", 10)).pack(anchor="w", padx=20)
         title_var = tk.StringVar(value="Antenna Measurement Report - AI Analysis")
         tk.Entry(report_dialog, textvariable=title_var, width=60).pack(padx=20, pady=5)
 
         # Project name
-        tk.Label(report_dialog, text="Project Name:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Project Name:", font=("Arial", 10)).pack(anchor="w", padx=20)
         project_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=project_var, width=60).pack(padx=20, pady=5)
 
         # Antenna type
-        tk.Label(report_dialog, text="Antenna Type (helps AI understand context):",
-                font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(
+            report_dialog, text="Antenna Type (helps AI understand context):", font=("Arial", 10)
+        ).pack(anchor="w", padx=20)
         antenna_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=antenna_var, width=60).pack(padx=20, pady=5)
 
         # Frequency range
-        tk.Label(report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):",
-                font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(
+            report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):", font=("Arial", 10)
+        ).pack(anchor="w", padx=20)
         freq_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=freq_var, width=60).pack(padx=20, pady=5)
 
         # Application/Requirements
-        tk.Label(report_dialog, text="Application & Requirements (optional):",
-                font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(
+            report_dialog, text="Application & Requirements (optional):", font=("Arial", 10)
+        ).pack(anchor="w", padx=20)
         req_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=req_var, width=60).pack(padx=20, pady=5)
 
         # Author
-        tk.Label(report_dialog, text="Author/Engineer:", font=("Arial", 10)).pack(anchor='w', padx=20)
+        tk.Label(report_dialog, text="Author/Engineer:", font=("Arial", 10)).pack(
+            anchor="w", padx=20
+        )
         author_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=author_var, width=60).pack(padx=20, pady=5)
 
         # Options
         include_summary_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(report_dialog, text="Include AI-Generated Executive Summary",
-                      variable=include_summary_var).pack(anchor='w', padx=20, pady=5)
+        tk.Checkbutton(
+            report_dialog,
+            text="Include AI-Generated Executive Summary",
+            variable=include_summary_var,
+        ).pack(anchor="w", padx=20, pady=5)
 
         result = {}
-        result['cancelled'] = True
+        result["cancelled"] = True
 
         def on_generate():
-            result['cancelled'] = False
-            result['title'] = title_var.get()
-            result['project'] = project_var.get()
-            result['antenna'] = antenna_var.get()
-            result['freq'] = freq_var.get()
-            result['requirements'] = req_var.get()
-            result['author'] = author_var.get()
-            result['summary'] = include_summary_var.get()
+            result["cancelled"] = False
+            result["title"] = title_var.get()
+            result["project"] = project_var.get()
+            result["antenna"] = antenna_var.get()
+            result["freq"] = freq_var.get()
+            result["requirements"] = req_var.get()
+            result["author"] = author_var.get()
+            result["summary"] = include_summary_var.get()
             report_dialog.destroy()
 
         def on_cancel():
@@ -284,35 +321,43 @@ class ToolsMixin:
         # Buttons
         button_frame = tk.Frame(report_dialog)
         button_frame.pack(pady=15)
-        tk.Button(button_frame, text="Generate AI Report", command=on_generate,
-                 bg="#2196F3", fg="white", padx=20, pady=5).pack(side='left', padx=10)
-        tk.Button(button_frame, text="Cancel", command=on_cancel,
-                 padx=20, pady=5).pack(side='left', padx=10)
+        tk.Button(
+            button_frame,
+            text="Generate AI Report",
+            command=on_generate,
+            bg="#2196F3",
+            fg="white",
+            padx=20,
+            pady=5,
+        ).pack(side="left", padx=10)
+        tk.Button(button_frame, text="Cancel", command=on_cancel, padx=20, pady=5).pack(
+            side="left", padx=10
+        )
 
         # Wait for dialog to close
         self.root.wait_window(report_dialog)
 
-        if result['cancelled']:
+        if result["cancelled"]:
             return
 
         # Build metadata dictionary
         metadata = {
-            'project_name': result['project'],
-            'antenna_type': result['antenna'],
-            'frequency_range': result['freq'],
-            'author': result['author'],
-            'date': datetime.datetime.now().strftime('%B %d, %Y')
+            "project_name": result["project"],
+            "antenna_type": result["antenna"],
+            "frequency_range": result["freq"],
+            "author": result["author"],
+            "date": datetime.datetime.now().strftime("%B %d, %Y"),
         }
 
         # Build enhanced project context for AI
         project_context = {
-            'antenna_type': result['antenna'],
-            'frequency_range': result['freq'],
-            'application': 'General RF Application'
+            "antenna_type": result["antenna"],
+            "frequency_range": result["freq"],
+            "application": "General RF Application",
         }
 
-        if result['requirements']:
-            project_context['requirements'] = result['requirements']
+        if result["requirements"]:
+            project_context["requirements"] = result["requirements"]
 
         # Initialize the RFAnalyzer WITH AI enabled
         analyzer = RFAnalyzer(use_ai=True, project_context=project_context)
@@ -322,12 +367,20 @@ class ToolsMixin:
             self.log_message("Starting AI-enhanced report generation...")
             self.log_message(f"Processing {len(image_paths)} images with AI analysis...")
 
-            generate_report(result['title'], image_paths, save_path, analyzer,
-                          metadata=metadata, include_summary=result['summary'])
+            generate_report(
+                result["title"],
+                image_paths,
+                save_path,
+                analyzer,
+                metadata=metadata,
+                include_summary=result["summary"],
+            )
 
-            messagebox.showinfo("Success",
-                              f"AI-enhanced report '{result['title']}' generated successfully!\n\n"
-                              f"Each measurement has been analyzed by AI for technical insights.")
+            messagebox.showinfo(
+                "Success",
+                f"AI-enhanced report '{result['title']}' generated successfully!\n\n"
+                f"Each measurement has been analyzed by AI for technical insights.",
+            )
         else:
             messagebox.showerror("Error", "No directory selected to save the report.")
 
@@ -343,28 +396,29 @@ class ToolsMixin:
 
         # Ask the user for selected frequency points
         freq_input = askstring(
-            "Input",
-            "Enter frequency points (MHz) to plot, comma-separated (e.g., 2400,2480,4900):"
+            "Input", "Enter frequency points (MHz) to plot, comma-separated (e.g., 2400,2480,4900):"
         )
         if not freq_input:
             return
         try:
-            selected_freqs = [float(x.strip()) for x in freq_input.split(',') if x.strip()]
+            selected_freqs = [float(x.strip()) for x in freq_input.split(",") if x.strip()]
             if not selected_freqs:
                 raise ValueError
         except Exception:
-            messagebox.showerror("Error", "Invalid frequency list. Please enter comma-separated numbers.")
+            messagebox.showerror(
+                "Error", "Invalid frequency list. Please enter comma-separated numbers."
+            )
             return
 
         # Determine the full list of frequencies from the first HPOL file
         try:
-            hpol_files = [f for f in os.listdir(directory) if f.endswith('AP_HPol.txt')]
+            hpol_files = [f for f in os.listdir(directory) if f.endswith("AP_HPol.txt")]
             if not hpol_files:
                 raise FileNotFoundError
             # Use the first HPOL file to extract available frequencies
             first_hpol_path = os.path.join(directory, hpol_files[0])
             parsed_data, *_ = read_passive_file(first_hpol_path)
-            freq_list = sorted({entry['frequency'] for entry in parsed_data})
+            freq_list = sorted({entry["frequency"] for entry in parsed_data})
         except Exception:
             messagebox.showerror("Error", "Unable to determine frequency list from files.")
             return
@@ -382,17 +436,23 @@ class ToolsMixin:
 
         # Retrieve cable loss from the entry
         try:
-            cable_loss = float(self.cable_loss.get()) if isinstance(self.cable_loss, tk.StringVar) else float(self.cable_loss)
+            cable_loss = (
+                float(self.cable_loss.get())
+                if isinstance(self.cable_loss, tk.StringVar)
+                else float(self.cable_loss)
+            )
         except Exception:
             cable_loss = 0.0
 
         # Determine whether to generate datasheet plots
-        datasheet_plots = bool(self.datasheet_plots_var.get()) if hasattr(self, 'datasheet_plots_var') else False
+        datasheet_plots = (
+            bool(self.datasheet_plots_var.get()) if hasattr(self, "datasheet_plots_var") else False
+        )
 
         # Axis scaling settings
-        axis_mode = self.axis_scale_mode.get() if hasattr(self, 'axis_scale_mode') else 'auto'
-        zmin = float(self.axis_min.get()) if hasattr(self, 'axis_min') else -15
-        zmax = float(self.axis_max.get()) if hasattr(self, 'axis_max') else 15
+        axis_mode = self.axis_scale_mode.get() if hasattr(self, "axis_scale_mode") else "auto"
+        zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15
+        zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15
 
         # Invoke batch processing
         try:
@@ -405,9 +465,11 @@ class ToolsMixin:
                 save_base=save_base,
                 axis_mode=axis_mode,
                 zmin=zmin,
-                zmax=zmax
+                zmax=zmax,
             )
-            messagebox.showinfo("Success", f"Bulk processing complete. Results saved to {save_base}")
+            messagebox.showinfo(
+                "Success", f"Bulk processing complete. Results saved to {save_base}"
+            )
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred during processing: {e}")
 
@@ -430,12 +492,12 @@ class ToolsMixin:
         os.makedirs(save_base, exist_ok=True)
 
         # Get interpolation setting
-        interpolate = self.interpolate_3d_plots if hasattr(self, 'interpolate_3d_plots') else True
+        interpolate = self.interpolate_3d_plots if hasattr(self, "interpolate_3d_plots") else True
 
         # Axis scaling settings
-        axis_mode = self.axis_scale_mode.get() if hasattr(self, 'axis_scale_mode') else 'auto'
-        zmin = float(self.axis_min.get()) if hasattr(self, 'axis_min') else -15.0
-        zmax = float(self.axis_max.get()) if hasattr(self, 'axis_max') else 15.0
+        axis_mode = self.axis_scale_mode.get() if hasattr(self, "axis_scale_mode") else "auto"
+        zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15.0
+        zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15.0
 
         # Invoke batch processing
         try:
@@ -445,9 +507,11 @@ class ToolsMixin:
                 interpolate=interpolate,
                 axis_mode=axis_mode,
                 zmin=zmin,
-                zmax=zmax
+                zmax=zmax,
             )
-            messagebox.showinfo("Success", f"Bulk active processing complete. Results saved to {save_base}")
+            messagebox.showinfo(
+                "Success", f"Bulk active processing complete. Results saved to {save_base}"
+            )
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred during processing: {e}")
 
@@ -464,16 +528,14 @@ class ToolsMixin:
 
         # Import HPOL file
         hpol_file = filedialog.askopenfilename(
-            title="Select HPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            title="Select HPOL File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
         if not hpol_file:
             return
 
         # Import VPOL file
         vpol_file = filedialog.askopenfilename(
-            title="Select VPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            title="Select VPOL File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
         if not vpol_file:
             return
@@ -488,11 +550,7 @@ class ToolsMixin:
         self.log_message("[OK] File validation passed - files correctly paired")
 
         # Get cable loss
-        cable_loss_str = askstring(
-            "Input",
-            "Enter cable loss (dB):",
-            initialvalue="0.0"
-        )
+        cable_loss_str = askstring("Input", "Enter cable loss (dB):", initialvalue="0.0")
         if cable_loss_str is None:
             return
         try:
@@ -508,10 +566,9 @@ class ToolsMixin:
 
         # Ask for output format
         format_choice = messagebox.askyesno(
-            "Output Format",
-            "Export as CSV?\n\nYes = CSV format\nNo = TXT format"
+            "Output Format", "Export as CSV?\n\nYes = CSV format\nNo = TXT format"
         )
-        output_format = 'csv' if format_choice else 'txt'
+        output_format = "csv" if format_choice else "txt"
 
         try:
             # Parse files
@@ -521,9 +578,7 @@ class ToolsMixin:
 
             # Calculate polarization parameters
             self.log_message("Calculating polarization parameters...")
-            pol_results = calculate_polarization_parameters(
-                hpol_data, vpol_data, cable_loss
-            )
+            pol_results = calculate_polarization_parameters(hpol_data, vpol_data, cable_loss)
 
             # Export results
             self.log_message(f"Exporting results as {output_format.upper()} files...")
@@ -532,22 +587,24 @@ class ToolsMixin:
             # Generate summary
             summary_lines = ["Polarization Analysis Summary", "=" * 60, ""]
             for result in pol_results:
-                freq = result['frequency']
-                ar_mean = np.mean(result['axial_ratio_dB'])
-                ar_min = np.min(result['axial_ratio_dB'])
-                ar_max = np.max(result['axial_ratio_dB'])
+                freq = result["frequency"]
+                ar_mean = np.mean(result["axial_ratio_dB"])
+                ar_min = np.min(result["axial_ratio_dB"])
+                ar_max = np.max(result["axial_ratio_dB"])
 
-                tilt_mean = np.mean(result['tilt_angle_deg'])
+                tilt_mean = np.mean(result["tilt_angle_deg"])
 
                 # Count LHCP vs RHCP points
-                lhcp_count = np.sum(result['sense'] > 0)
-                rhcp_count = np.sum(result['sense'] < 0)
-                total_points = len(result['sense'])
+                lhcp_count = np.sum(result["sense"] > 0)
+                rhcp_count = np.sum(result["sense"] < 0)
+                total_points = len(result["sense"])
                 lhcp_pct = (lhcp_count / total_points) * 100
                 rhcp_pct = (rhcp_count / total_points) * 100
 
                 summary_lines.append(f"Frequency: {freq} MHz")
-                summary_lines.append(f"  Axial Ratio: Min={ar_min:.2f} dB, Max={ar_max:.2f} dB, Avg={ar_mean:.2f} dB")
+                summary_lines.append(
+                    f"  Axial Ratio: Min={ar_min:.2f} dB, Max={ar_max:.2f} dB, Avg={ar_mean:.2f} dB"
+                )
                 summary_lines.append(f"  Tilt Angle: Avg={tilt_mean:.2f} deg")
                 summary_lines.append(f"  Polarization: LHCP={lhcp_pct:.1f}%, RHCP={rhcp_pct:.1f}%")
                 summary_lines.append("")
@@ -556,7 +613,7 @@ class ToolsMixin:
 
             # Save summary
             summary_path = os.path.join(output_dir, "polarization_summary.txt")
-            with open(summary_path, 'w', encoding='utf-8') as f:
+            with open(summary_path, "w", encoding="utf-8") as f:
                 f.write(summary_text)
 
             # Show summary to user
@@ -569,7 +626,7 @@ class ToolsMixin:
                 f"Results saved to:\n{output_dir}\n\n"
                 f"Files generated:\n"
                 f"- polarization_<freq>MHz.{output_format} (one per frequency)\n"
-                f"- polarization_summary.txt"
+                f"- polarization_summary.txt",
             )
 
         except Exception as e:
@@ -586,16 +643,14 @@ class ToolsMixin:
 
         # Import HPOL file
         hpol_file = filedialog.askopenfilename(
-            title="Select HPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            title="Select HPOL File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
         if not hpol_file:
             return
 
         # Import VPOL file
         vpol_file = filedialog.askopenfilename(
-            title="Select VPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            title="Select VPOL File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
         if not vpol_file:
             return
@@ -610,11 +665,7 @@ class ToolsMixin:
         self.log_message("[OK] File validation passed - files correctly paired")
 
         # Get cable loss
-        cable_loss_str = askstring(
-            "Input",
-            "Enter cable loss (dB):",
-            initialvalue="0.0"
-        )
+        cable_loss_str = askstring("Input", "Enter cable loss (dB):", initialvalue="0.0")
         if cable_loss_str is None:
             return
         try:
@@ -631,16 +682,14 @@ class ToolsMixin:
 
             # Calculate polarization parameters for all frequencies
             self.log_message("Calculating polarization parameters...")
-            pol_results = calculate_polarization_parameters(
-                hpol_data, vpol_data, cable_loss
-            )
+            pol_results = calculate_polarization_parameters(hpol_data, vpol_data, cable_loss)
 
             if not pol_results:
                 messagebox.showerror("Error", "No polarization results calculated")
                 return
 
             # Create frequency selection dialog
-            freq_list = [result['frequency'] for result in pol_results]
+            freq_list = [result["frequency"] for result in pol_results]
 
             # Show frequency selection dialog
             freq_dialog = tk.Toplevel(self.root)
@@ -650,7 +699,9 @@ class ToolsMixin:
             freq_dialog.grab_set()
 
             # Frequency selection
-            tk.Label(freq_dialog, text="Select Frequency (MHz):", font=("Arial", 11, "bold")).pack(pady=10)
+            tk.Label(freq_dialog, text="Select Frequency (MHz):", font=("Arial", 11, "bold")).pack(
+                pady=10
+            )
             freq_var = tk.StringVar(value=str(freq_list[0]))
             freq_listbox = tk.Listbox(freq_dialog, height=6, font=("Arial", 10))
             for freq in freq_list:
@@ -659,66 +710,79 @@ class ToolsMixin:
             freq_listbox.pack(pady=5)
 
             # Plot options
-            tk.Label(freq_dialog, text="Visualization Options:", font=("Arial", 11, "bold")).pack(pady=10)
+            tk.Label(freq_dialog, text="Visualization Options:", font=("Arial", 11, "bold")).pack(
+                pady=10
+            )
             plot_2d_var = tk.BooleanVar(value=True)
             plot_3d_var = tk.BooleanVar(value=True)
 
-            tk.Checkbutton(freq_dialog, text="Show 2D Plots (Contour + Polar)",
-                          variable=plot_2d_var, font=("Arial", 10)).pack()
-            tk.Checkbutton(freq_dialog, text="Show 3D Plots (Spherical)",
-                          variable=plot_3d_var, font=("Arial", 10)).pack()
+            tk.Checkbutton(
+                freq_dialog,
+                text="Show 2D Plots (Contour + Polar)",
+                variable=plot_2d_var,
+                font=("Arial", 10),
+            ).pack()
+            tk.Checkbutton(
+                freq_dialog,
+                text="Show 3D Plots (Spherical)",
+                variable=plot_3d_var,
+                font=("Arial", 10),
+            ).pack()
 
             # Export option
             tk.Label(freq_dialog, text="Export Options:", font=("Arial", 11, "bold")).pack(pady=10)
             export_var = tk.BooleanVar(value=False)
-            tk.Checkbutton(freq_dialog, text="Export data to file",
-                          variable=export_var, font=("Arial", 10)).pack()
+            tk.Checkbutton(
+                freq_dialog, text="Export data to file", variable=export_var, font=("Arial", 10)
+            ).pack()
 
             # Results container
-            result_container = {'cancelled': True}
+            result_container = {"cancelled": True}
 
             def on_ok():
-                result_container['cancelled'] = False
+                result_container["cancelled"] = False
                 selection = freq_listbox.curselection()
                 if selection:
-                    result_container['freq_idx'] = selection[0]
-                    result_container['plot_2d'] = plot_2d_var.get()
-                    result_container['plot_3d'] = plot_3d_var.get()
-                    result_container['export'] = export_var.get()
+                    result_container["freq_idx"] = selection[0]
+                    result_container["plot_2d"] = plot_2d_var.get()
+                    result_container["plot_3d"] = plot_3d_var.get()
+                    result_container["export"] = export_var.get()
                 freq_dialog.destroy()
 
             def on_cancel():
-                result_container['cancelled'] = True
+                result_container["cancelled"] = True
                 freq_dialog.destroy()
 
             # Buttons
             button_frame = tk.Frame(freq_dialog)
             button_frame.pack(pady=20)
-            tk.Button(button_frame, text="OK", command=on_ok, width=10,
-                     font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=5)
-            tk.Button(button_frame, text="Cancel", command=on_cancel, width=10,
-                     font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
+            tk.Button(
+                button_frame, text="OK", command=on_ok, width=10, font=("Arial", 10, "bold")
+            ).pack(side=tk.LEFT, padx=5)
+            tk.Button(
+                button_frame, text="Cancel", command=on_cancel, width=10, font=("Arial", 10)
+            ).pack(side=tk.LEFT, padx=5)
 
             # Wait for dialog to close
             self.root.wait_window(freq_dialog)
 
-            if result_container['cancelled']:
+            if result_container["cancelled"]:
                 return
 
             # Get selected frequency data
-            freq_idx = result_container['freq_idx']
+            freq_idx = result_container["freq_idx"]
             selected_result = pol_results[freq_idx]
-            frequency = selected_result['frequency']
+            frequency = selected_result["frequency"]
 
             self.log_message(f"Visualizing polarization data for {frequency} MHz...")
 
             # Extract data (use correct keys from calculate_polarization_parameters)
-            theta_deg = selected_result['theta']
-            phi_deg = selected_result['phi']
-            ar_db = selected_result['axial_ratio_dB']
-            tilt_deg = selected_result['tilt_angle_deg']
-            sense = selected_result['sense']
-            xpd_db = selected_result['cross_pol_discrimination_dB']
+            theta_deg = selected_result["theta"]
+            phi_deg = selected_result["phi"]
+            ar_db = selected_result["axial_ratio_dB"]
+            tilt_deg = selected_result["tilt_angle_deg"]
+            sense = selected_result["sense"]
+            xpd_db = selected_result["cross_pol_discrimination_dB"]
 
             # Get unique theta and phi values for plotting
             unique_theta = np.unique(theta_deg)
@@ -733,33 +797,36 @@ class ToolsMixin:
             xpd_db_2d = xpd_db.reshape(n_theta, n_phi)
 
             # Generate plots
-            if result_container['plot_2d']:
+            if result_container["plot_2d"]:
                 self.log_message("Generating 2D polarization plots...")
-                plot_polarization_2d(unique_theta, unique_phi, ar_db_2d, tilt_deg_2d,
-                                    sense_2d, xpd_db_2d, frequency)
+                plot_polarization_2d(
+                    unique_theta, unique_phi, ar_db_2d, tilt_deg_2d, sense_2d, xpd_db_2d, frequency
+                )
 
-            if result_container['plot_3d']:
+            if result_container["plot_3d"]:
                 self.log_message("Generating 3D polarization plots...")
-                plot_polarization_3d(unique_theta, unique_phi, ar_db_2d, tilt_deg_2d,
-                                    sense_2d, frequency)
+                plot_polarization_3d(
+                    unique_theta, unique_phi, ar_db_2d, tilt_deg_2d, sense_2d, frequency
+                )
 
             # Export if requested
-            if result_container['export']:
+            if result_container["export"]:
                 output_dir = filedialog.askdirectory(title="Select Output Directory for Export")
                 if output_dir:
                     format_choice = messagebox.askyesno(
-                        "Output Format",
-                        "Export as CSV?\n\nYes = CSV format\nNo = TXT format"
+                        "Output Format", "Export as CSV?\n\nYes = CSV format\nNo = TXT format"
                     )
-                    output_format = 'csv' if format_choice else 'txt'
+                    output_format = "csv" if format_choice else "txt"
 
-                    self.log_message(f"Exporting {frequency} MHz data as {output_format.upper()}...")
+                    self.log_message(
+                        f"Exporting {frequency} MHz data as {output_format.upper()}..."
+                    )
                     export_polarization_data([selected_result], output_dir, format=output_format)
 
                     messagebox.showinfo(
                         "Export Complete",
                         f"Polarization data exported to:\n{output_dir}\n\n"
-                        f"File: polarization_{frequency}MHz.{output_format}"
+                        f"File: polarization_{frequency}MHz.{output_format}",
                     )
 
             self.log_message("Interactive polarization analysis complete!")
@@ -774,7 +841,7 @@ class ToolsMixin:
 
     def save_results_to_file(self):
         """Save measurement results to file."""
-        from save import save_to_results_folder
+        from ..save import save_to_results_folder
 
         try:
             scan_type = self.scan_type.get()
@@ -805,25 +872,33 @@ class ToolsMixin:
                 self.axis_scale_mode.get(),
                 self.axis_min.get(),
                 self.axis_max.get(),
-                word=False
+                word=False,
             )
 
         except ValueError as ve:
-            messagebox.showerror("Conversion Error", f"Invalid frequency or cable loss value. Error: {ve}")
+            messagebox.showerror(
+                "Conversion Error", f"Invalid frequency or cable loss value. Error: {ve}"
+            )
 
     def open_hpol_vpol_converter(self):
         """Start HPOL and VPOL gain text file conversion to CST FFS format."""
         self.log_message("HPOL/VPOL to CST FFS Converter started...")
-        first_file = filedialog.askopenfilename(title="Select the First Data File",
-                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        first_file = filedialog.askopenfilename(
+            title="Select the First Data File",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+        )
         if not first_file:
             self.log_message("File selection canceled.")
             return
 
-        second_file = filedialog.askopenfilename(title="Select the Second Data File",
-                                                filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        second_file = filedialog.askopenfilename(
+            title="Select the Second Data File",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+        )
 
-        self.vswr_file_path = filedialog.askopenfilename(title="Select the VSWR Data File for Accepted P(W,rms) calculations")
+        self.vswr_file_path = filedialog.askopenfilename(
+            title="Select the VSWR Data File for Accepted P(W,rms) calculations"
+        )
 
         if first_file and second_file:
             # Determine file polarizations
@@ -857,15 +932,21 @@ class ToolsMixin:
             self.log_message("CST .ffs file created successfully.")
 
             # Create the new button if it doesn't exist, or just show it if it does
-            if not hasattr(self, 'convert_files_button'):
+            if not hasattr(self, "convert_files_button"):
                 self.convert_files_button = tk.Button(
-                    self.root, text="Convert Files",
+                    self.root,
+                    text="Convert Files",
                     command=lambda: convert_HpolVpol_files(
-                        self.vswr_file_path, self.hpol_file_path, self.vpol_file_path,
-                        float(self.cable_loss.get()), self.freq_list,
-                        float(self.selected_frequency.get()), callback=self.update_visibility
+                        self.vswr_file_path,
+                        self.hpol_file_path,
+                        self.vpol_file_path,
+                        float(self.cable_loss.get()),
+                        self.freq_list,
+                        float(self.selected_frequency.get()),
+                        callback=self.update_visibility,
                     ),
-                    bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR
+                    bg=ACCENT_BLUE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 )
                 self.convert_files_button.grid(column=0, row=5)
             else:
@@ -878,7 +959,7 @@ class ToolsMixin:
         # Implement the logic of the calibration file import
         power_measurement = filedialog.askopenfilename(
             title="Select the Signal Generator/Power Meter Measurement File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
         if not power_measurement:
             self.log_message("File selection canceled.")
@@ -887,7 +968,7 @@ class ToolsMixin:
 
         BLPA_HORN_GAIN_STD = filedialog.askopenfilename(
             title="Select the BLPA or Horn Antenna Gain Standard File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
         if not BLPA_HORN_GAIN_STD:
             self.log_message("File selection canceled.")
@@ -897,7 +978,7 @@ class ToolsMixin:
 
         first_file = filedialog.askopenfilename(
             title="Select the BLPA or Horn Antenna HPOL or VPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
         if not first_file:
             self.log_message("File selection canceled.")
@@ -905,7 +986,7 @@ class ToolsMixin:
 
         second_file = filedialog.askopenfilename(
             title="Select the other HPOL or VPOL File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
 
         if first_file and second_file:
@@ -941,16 +1022,21 @@ class ToolsMixin:
             self.log_message("Active Chamber Calibration File Created Successfully.")
 
             # Create the new button if it doesn't exist, or just show it if it does
-            if not hasattr(self, 'generate_active_cal_button'):
+            if not hasattr(self, "generate_active_cal_button"):
                 self.convert_files_button = tk.Button(
-                    self.root, text="Generate Calibration File",
+                    self.root,
+                    text="Generate Calibration File",
                     command=lambda: generate_active_cal_file(
-                        self.power_measurement, self.BLPA_HORN_GAIN_STD,
-                        self.hpol_file_path, self.vpol_file_path,
-                        float(self.cable_loss.get()), self.freq_list,
-                        callback=self.update_visibility
+                        self.power_measurement,
+                        self.BLPA_HORN_GAIN_STD,
+                        self.hpol_file_path,
+                        self.vpol_file_path,
+                        float(self.cable_loss.get()),
+                        self.freq_list,
+                        callback=self.update_visibility,
                     ),
-                    bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR
+                    bg=ACCENT_BLUE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 )
                 self.convert_files_button.grid(column=0, row=5)
             else:
@@ -986,8 +1072,10 @@ class ToolsMixin:
         if latest_version and latest_version > self.CURRENT_VERSION:
             self.log_message(f"Update Available. A new version {latest_version} is available!")
 
-            answer = messagebox.askyesno("Update Available",
-                                        f"A new version {latest_version} is available! Would you like to download it?")
+            answer = messagebox.askyesno(
+                "Update Available",
+                f"A new version {latest_version} is available! Would you like to download it?",
+            )
 
             if answer:
                 self.download_latest_release(release_url)
@@ -998,9 +1086,9 @@ class ToolsMixin:
 
     def on_enter(self, e):
         """Mouse hover enter effect."""
-        e.widget.original_color = e.widget['background']
-        e.widget['background'] = HOVER_COLOR
+        e.widget.original_color = e.widget["background"]
+        e.widget["background"] = HOVER_COLOR
 
     def on_leave(self, e):
         """Mouse hover leave effect."""
-        e.widget['background'] = e.widget.original_color
+        e.widget["background"] = e.widget.original_color

@@ -21,11 +21,11 @@ def sample_passive_data():
         dict: Dictionary containing phi, theta angles and gain measurements
     """
     return {
-        'phi': np.linspace(0, 360, 37),  # 10-degree steps
-        'theta': np.linspace(0, 180, 19),  # 10-degree steps
-        'h_gain': np.random.randn(19, 37) * 5 + 10,  # HPOL gain (dBi)
-        'v_gain': np.random.randn(19, 37) * 5 + 10,  # VPOL gain (dBi)
-        'frequency': 2400.0  # MHz
+        "phi": np.linspace(0, 360, 37),  # 10-degree steps
+        "theta": np.linspace(0, 180, 19),  # 10-degree steps
+        "h_gain": np.random.randn(19, 37) * 5 + 10,  # HPOL gain (dBi)
+        "v_gain": np.random.randn(19, 37) * 5 + 10,  # VPOL gain (dBi)
+        "frequency": 2400.0,  # MHz
     }
 
 
@@ -37,10 +37,10 @@ def sample_active_data():
         dict: Dictionary containing phi, theta angles and power measurements
     """
     return {
-        'phi': np.linspace(0, 360, 37),
-        'theta': np.linspace(0, 180, 19),
-        'power_dbm': np.random.randn(19, 37) * 3 + 5,  # Power in dBm
-        'frequency': 2400.0  # MHz
+        "phi": np.linspace(0, 360, 37),
+        "theta": np.linspace(0, 180, 19),
+        "power_dbm": np.random.randn(19, 37) * 3 + 5,  # Power in dBm
+        "frequency": 2400.0,  # MHz
     }
 
 
@@ -59,8 +59,8 @@ def mock_vna_data():
     """
     freqs = np.linspace(2000, 3000, 101)  # 2-3 GHz, 101 points
     return {
-        'frequency_mhz': freqs,
-        's11_db': -15 - 10 * np.random.rand(101),  # S11 magnitude in dB
-        's11_phase': np.random.randn(101) * 50,  # Phase in degrees
-        'vswr': 1.5 + 0.5 * np.random.rand(101)  # VSWR
+        "frequency_mhz": freqs,
+        "s11_db": -15 - 10 * np.random.rand(101),  # S11 magnitude in dB
+        "s11_phase": np.random.randn(101) * 50,  # Phase in degrees
+        "vswr": 1.5 + 0.5 * np.random.rand(101),  # VSWR
     }

@@ -18,23 +18,26 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import matplotlib.pyplot as plt
 
-from config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
+from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
 
-from file_utils import (
-    read_passive_file, read_active_file, check_matching_files,
-    process_gd_file
+from ..file_utils import read_passive_file, read_active_file, check_matching_files, process_gd_file
+from ..calculations import (
+    determine_polarization,
+    calculate_passive_variables,
+    calculate_active_variables,
+    apply_nf2ff_transformation,
+    apply_directional_human_shadow,
+    angles_match,
 )
-from calculations import (
-    determine_polarization, calculate_passive_variables, calculate_active_variables,
-    apply_nf2ff_transformation, apply_directional_human_shadow,
-    angles_match
+from ..plotting import (
+    plot_2d_passive_data,
+    plot_passive_3d_component,
+    plot_active_2d_data,
+    plot_active_3d_data,
+    plot_gd_data,
+    process_vswr_files,
 )
-from plotting import (
-    plot_2d_passive_data, plot_passive_3d_component,
-    plot_active_2d_data, plot_active_3d_data, plot_gd_data,
-    process_vswr_files
-)
-from groupdelay import process_groupdelay_files
+from ..groupdelay import process_groupdelay_files
 from .utils import calculate_min_max_parameters, display_parameter_table
 
 if TYPE_CHECKING:
@@ -112,6 +115,7 @@ class CallbacksMixin:
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
+
         def update_visibility(self) -> None: ...
         def update_passive_frequency_list(self) -> None: ...
         def add_recent_file(self, filepath: str) -> None: ...
@@ -123,7 +127,7 @@ class CallbacksMixin:
 
     def reset_data(self):
         """Reset all data variables and close matplotlib figures."""
-        plt.close('all')
+        plt.close("all")
         self.data = None
         self.hpol_file_path = None
         self.vpol_file_path = None
@@ -143,10 +147,10 @@ class CallbacksMixin:
         all_data = []
         for fpath in file_paths:
             gd_data = process_gd_file(fpath)
-            freq = np.array(gd_data['Frequency'])
+            freq = np.array(gd_data["Frequency"])
 
-            gain_dBi = np.array(gd_data['Gain'])
-            eff_percent = np.array(gd_data['Efficiency'])
+            gain_dBi = np.array(gd_data["Gain"])
+            eff_percent = np.array(gd_data["Efficiency"])
             eff_fraction = eff_percent / 100.0
             eff_fraction[eff_fraction <= 0] = 1e-12
             eff_dB = 10 * np.log10(eff_fraction)
@@ -165,7 +169,17 @@ class CallbacksMixin:
                 max_gain = gain_dBi[within_range].max() if np.any(within_range) else None
                 min_eff = eff_dB[within_range].min() if np.any(within_range) else None
                 max_eff = eff_dB[within_range].max() if np.any(within_range) else None
-                band_results.append((os.path.basename(fpath), min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB))
+                band_results.append(
+                    (
+                        os.path.basename(fpath),
+                        min_gain,
+                        max_gain,
+                        min_eff,
+                        max_eff,
+                        avg_eff_fraction,
+                        avg_eff_dB,
+                    )
+                )
             results.append((band_label, band_results))
 
         return results
@@ -177,23 +191,55 @@ class CallbacksMixin:
 
         row = 0
         for band_label, band_data in results:
-            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=7, pady=5)
+            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(
+                row=row, column=0, columnspan=7, pady=5
+            )
             row += 1
 
-            headers = ["File", "Min Gain(dB)", "Max Gain(dB)", "Min Eff(dB)", "Max Eff(dB)", "Avg Eff(%)", "Avg Eff(dB)"]
+            headers = [
+                "File",
+                "Min Gain(dB)",
+                "Max Gain(dB)",
+                "Min Eff(dB)",
+                "Max Eff(dB)",
+                "Avg Eff(%)",
+                "Avg Eff(dB)",
+            ]
             for col, header in enumerate(headers):
-                tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(row=row, column=col, padx=10, pady=5)
+                tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(
+                    row=row, column=col, padx=10, pady=5
+                )
             row += 1
 
-            for file, min_gain, max_gain, min_eff, max_eff, avg_eff_fraction, avg_eff_dB in band_data:
+            for (
+                file,
+                min_gain,
+                max_gain,
+                min_eff,
+                max_eff,
+                avg_eff_fraction,
+                avg_eff_dB,
+            ) in band_data:
                 avg_eff_percent = avg_eff_fraction * 100
                 tk.Label(result_window, text=file).grid(row=row, column=0, padx=10, pady=5)
-                tk.Label(result_window, text=f"{min_gain:.2f}" if min_gain is not None else "N/A").grid(row=row, column=1, padx=10, pady=5)
-                tk.Label(result_window, text=f"{max_gain:.2f}" if max_gain is not None else "N/A").grid(row=row, column=2, padx=10, pady=5)
-                tk.Label(result_window, text=f"{min_eff:.2f}" if min_eff is not None else "N/A").grid(row=row, column=3, padx=10, pady=5)
-                tk.Label(result_window, text=f"{max_eff:.2f}" if max_eff is not None else "N/A").grid(row=row, column=4, padx=10, pady=5)
-                tk.Label(result_window, text=f"{avg_eff_percent:.2f}").grid(row=row, column=5, padx=10, pady=5)
-                tk.Label(result_window, text=f"{avg_eff_dB:.2f}").grid(row=row, column=6, padx=10, pady=5)
+                tk.Label(
+                    result_window, text=f"{min_gain:.2f}" if min_gain is not None else "N/A"
+                ).grid(row=row, column=1, padx=10, pady=5)
+                tk.Label(
+                    result_window, text=f"{max_gain:.2f}" if max_gain is not None else "N/A"
+                ).grid(row=row, column=2, padx=10, pady=5)
+                tk.Label(
+                    result_window, text=f"{min_eff:.2f}" if min_eff is not None else "N/A"
+                ).grid(row=row, column=3, padx=10, pady=5)
+                tk.Label(
+                    result_window, text=f"{max_eff:.2f}" if max_eff is not None else "N/A"
+                ).grid(row=row, column=4, padx=10, pady=5)
+                tk.Label(result_window, text=f"{avg_eff_percent:.2f}").grid(
+                    row=row, column=5, padx=10, pady=5
+                )
+                tk.Label(result_window, text=f"{avg_eff_dB:.2f}").grid(
+                    row=row, column=6, padx=10, pady=5
+                )
                 row += 1
 
             row += 1
@@ -217,21 +263,31 @@ class CallbacksMixin:
         summary_window = tk.Toplevel(self.root)
         summary_window.title("Final Summary")
 
-        tk.Label(summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=len(results) + 1, pady=10)
+        tk.Label(
+            summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")
+        ).grid(row=0, column=0, columnspan=len(results) + 1, pady=10)
 
-        tk.Label(summary_window, text="Parameter", font=("Arial", 10, "bold")).grid(row=1, column=0, padx=10, pady=5)
+        tk.Label(summary_window, text="Parameter", font=("Arial", 10, "bold")).grid(
+            row=1, column=0, padx=10, pady=5
+        )
         for col, (band_label, _) in enumerate(results, start=1):
-            tk.Label(summary_window, text=band_label, font=("Arial", 10, "bold")).grid(row=1, column=col, padx=10, pady=5)
+            tk.Label(summary_window, text=band_label, font=("Arial", 10, "bold")).grid(
+                row=1, column=col, padx=10, pady=5
+            )
 
         parameters = ["Avg Eff(%)", "Avg Eff(dB)", "Min Gain(dBi)", "Max Gain(dBi)"]
         for row, param in enumerate(parameters, start=2):
-            tk.Label(summary_window, text=param, font=("Arial", 10, "bold")).grid(row=row, column=0, sticky='w', padx=10, pady=5)
+            tk.Label(summary_window, text=param, font=("Arial", 10, "bold")).grid(
+                row=row, column=0, sticky="w", padx=10, pady=5
+            )
 
         for col, (band_label, _) in enumerate(results, start=1):
             avg_eff_percent, avg_eff_dB, min_gain, max_gain = band_summary[band_label]
             values = [avg_eff_percent, avg_eff_dB, min_gain, max_gain]
             for row, value in enumerate(values, start=2):
-                tk.Label(summary_window, text=f"{value:.2f}" if value is not None else "N/A").grid(row=row, column=col, padx=10, pady=5)
+                tk.Label(summary_window, text=f"{value:.2f}" if value is not None else "N/A").grid(
+                    row=row, column=col, padx=10, pady=5
+                )
 
     # ────────────────────────────────────────────────────────────────────────
     # FILE IMPORT
@@ -244,7 +300,7 @@ class CallbacksMixin:
         if self.scan_type.get() == "active":
             self.TRP_file_path = filedialog.askopenfilename(
                 title="Select the TRP Data File",
-                filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+                filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
             )
             if self.TRP_file_path:
                 self.add_recent_file(self.TRP_file_path)
@@ -253,12 +309,18 @@ class CallbacksMixin:
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "G&D":
             self._import_gd_files()
 
-        elif (self.scan_type.get() == "passive"
-              and self.passive_scan_type.get() == "VPOL/HPOL"
-              and self.ecc_analysis_enabled):
+        elif (
+            self.scan_type.get() == "passive"
+            and self.passive_scan_type.get() == "VPOL/HPOL"
+            and self.ecc_analysis_enabled
+        ):
             self._import_ecc_files()
 
-        elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "VPOL/HPOL" and not self.ecc_analysis_enabled:
+        elif (
+            self.scan_type.get() == "passive"
+            and self.passive_scan_type.get() == "VPOL/HPOL"
+            and not self.ecc_analysis_enabled
+        ):
             self._import_vpol_hpol_files()
 
         elif self.scan_type.get() == "vswr":
@@ -275,13 +337,21 @@ class CallbacksMixin:
 
             scenario_var = tk.StringVar(value="")
 
-            wifi_6e = tk.Radiobutton(scenario_window, text="WiFi 6e (2.4, 5, 6 GHz)",
-                                     variable=scenario_var, value="WiFi_6e")
-            wifi_6e.grid(row=3, column=0, sticky='w', padx=10, pady=5)
+            wifi_6e = tk.Radiobutton(
+                scenario_window,
+                text="WiFi 6e (2.4, 5, 6 GHz)",
+                variable=scenario_var,
+                value="WiFi_6e",
+            )
+            wifi_6e.grid(row=3, column=0, sticky="w", padx=10, pady=5)
 
-            tk.Label(scenario_window, text="Number of files per band:").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+            tk.Label(scenario_window, text="Number of files per band:").grid(
+                row=4, column=0, sticky="w", padx=10, pady=5
+            )
             files_per_band_var = tk.IntVar(value=4)
-            tk.Entry(scenario_window, textvariable=files_per_band_var, width=5).grid(row=4, column=1, padx=5, pady=5)
+            tk.Entry(scenario_window, textvariable=files_per_band_var, width=5).grid(
+                row=4, column=1, padx=5, pady=5
+            )
 
             def on_scenario_ok():
                 chosen = scenario_var.get()
@@ -298,33 +368,40 @@ class CallbacksMixin:
                 elif chosen == "LoRa_863_928":
                     self.selected_bands = [(863.0, 928.0)]
                 elif chosen == "WiFi_6e":
-                    self.selected_bands = [
-                        (2400.0, 2500.0),
-                        (4900.0, 5925.0),
-                        (5925.0, 7125.0)
-                    ]
+                    self.selected_bands = [(2400.0, 2500.0), (4900.0, 5925.0), (5925.0, 7125.0)]
                 else:
                     self.selected_bands = []
 
                 self.measurement_scenario = chosen
                 scenario_window.destroy()
 
-            ok_button = tk.Button(scenario_window, text="OK", command=on_scenario_ok,
-                                  bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR)
+            ok_button = tk.Button(
+                scenario_window,
+                text="OK",
+                command=on_scenario_ok,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            )
             ok_button.grid(row=5, column=0, pady=20, padx=10)
 
             self.root.wait_window(scenario_window)
 
-            if self.measurement_scenario in ["LoRa_863", "LoRa_902", "LoRa_863_928", "WiFi_6e"] and self.selected_bands:
+            if (
+                self.measurement_scenario in ["LoRa_863", "LoRa_902", "LoRa_863_928", "WiFi_6e"]
+                and self.selected_bands
+            ):
                 all_band_results = []
                 for i, (f_min, f_max) in enumerate(self.selected_bands, start=1):
                     band_label = f"({f_min}-{f_max} MHz)"
-                    messagebox.showinfo("Band Selection", f"Please select {self.files_per_band} G&D files for {band_label}")
+                    messagebox.showinfo(
+                        "Band Selection",
+                        f"Please select {self.files_per_band} G&D files for {band_label}",
+                    )
                     file_paths = []
                     for _ in range(self.files_per_band):
                         filepath = filedialog.askopenfilename(
                             filetypes=[("Text files", "*.txt")],
-                            title=f"Select File for {band_label}"
+                            title=f"Select File for {band_label}",
                         )
                         if not filepath:
                             return
@@ -337,7 +414,9 @@ class CallbacksMixin:
                 self.display_final_summary(all_band_results)
             else:
                 # Fallback manual band definition
-                num_files = askinteger("Input", "How many G&D files would you like to import?", parent=self.root)
+                num_files = askinteger(
+                    "Input", "How many G&D files would you like to import?", parent=self.root
+                )
                 if not num_files:
                     return
                 file_paths = []
@@ -347,21 +426,30 @@ class CallbacksMixin:
                         return
                     file_paths.append(filepath)
 
-                num_bands = askinteger("Input", "How many frequency bands would you like to define?")
+                num_bands = askinteger(
+                    "Input", "How many frequency bands would you like to define?"
+                )
                 if not num_bands:
                     return
 
                 bands = []
                 for i in range(num_bands):
-                    freq_range_input = askstring("Input", f"Enter frequency range for Band {i+1} as 'min,max' (MHz):", parent=self.root)
+                    freq_range_input = askstring(
+                        "Input",
+                        f"Enter frequency range for Band {i+1} as 'min,max' (MHz):",
+                        parent=self.root,
+                    )
                     if not freq_range_input:
                         messagebox.showerror("Error", "No frequency range entered.")
                         return
                     try:
-                        freq_min, freq_max = map(float, freq_range_input.split(','))
+                        freq_min, freq_max = map(float, freq_range_input.split(","))
                         bands.append((freq_min, freq_max))
                     except ValueError:
-                        messagebox.showerror("Error", "Invalid frequency range. Please enter values in 'min,max' format.")
+                        messagebox.showerror(
+                            "Error",
+                            "Invalid frequency range. Please enter values in 'min,max' format.",
+                        )
                         return
 
                 results = self.calculate_min_max_eff_gain(file_paths, bands)
@@ -369,7 +457,9 @@ class CallbacksMixin:
                 self.display_final_summary(results)
         else:
             # Original non-min_max_eff_gain logic for G&D
-            num_files = askinteger("Input", "How many files would you like to import?", parent=self.root)
+            num_files = askinteger(
+                "Input", "How many files would you like to import?", parent=self.root
+            )
             if not num_files:
                 return
             datasets = []
@@ -378,29 +468,43 @@ class CallbacksMixin:
                 filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
                 if not filepath:
                     return
-                file_name = os.path.basename(filepath).replace('.txt', '')
+                file_name = os.path.basename(filepath).replace(".txt", "")
                 file_names.append(file_name)
                 data = process_gd_file(filepath)
                 datasets.append(data)
 
-            x_range_input = askstring("Input", "Enter x-axis range as 'min,max' (or leave blank for auto-scale):", parent=self.root)
+            x_range_input = askstring(
+                "Input",
+                "Enter x-axis range as 'min,max' (or leave blank for auto-scale):",
+                parent=self.root,
+            )
             plot_gd_data(datasets, file_names, x_range_input)
 
     def _import_ecc_files(self):
         """Handle ECC (Envelope Correlation Coefficient) analysis file imports."""
-        n_scans = askinteger("ECC Analysis", "How many antenna placements to compare?", parent=self.root)
+        n_scans = askinteger(
+            "ECC Analysis", "How many antenna placements to compare?", parent=self.root
+        )
         if not n_scans:
             return
 
         scan_labels = []
         for i in range(n_scans):
-            lbl = askstring("Placement Label", f"Enter a short label for placement #{i+1} (e.g. 'Pos1', 'Pos2'):", parent=self.root)
+            lbl = askstring(
+                "Placement Label",
+                f"Enter a short label for placement #{i+1} (e.g. 'Pos1', 'Pos2'):",
+                parent=self.root,
+            )
             scan_labels.append(lbl or f"Scan {i+1}")
 
         plt.figure(figsize=(8, 5))
 
         for idx, placement in enumerate(scan_labels, start=1):
-            nbands = askinteger(f"ECC Analysis - {placement}", f"How many bands for '{placement}'?", parent=self.root)
+            nbands = askinteger(
+                f"ECC Analysis - {placement}",
+                f"How many bands for '{placement}'?",
+                parent=self.root,
+            )
             if not nbands:
                 continue
 
@@ -420,27 +524,27 @@ class CallbacksMixin:
 
                 ecc_results = []
                 for h1p, v1p, h2p, v2p in zip(h1, v1, h2, v2):
-                    if abs(h1p['frequency'] - h2p['frequency']) > 0.1:
+                    if abs(h1p["frequency"] - h2p["frequency"]) > 0.1:
                         continue
-                    f = h1p['frequency']
+                    f = h1p["frequency"]
 
-                    mag_h1 = np.array(h1p['mag'])
-                    ph_h1 = np.radians(h1p['phase'])
+                    mag_h1 = np.array(h1p["mag"])
+                    ph_h1 = np.radians(h1p["phase"])
                     E1_theta = 10 ** (mag_h1 / 20) * np.exp(1j * ph_h1)
 
-                    mag_v1 = np.array(v1p['mag'])
-                    ph_v1 = np.radians(v1p['phase'])
+                    mag_v1 = np.array(v1p["mag"])
+                    ph_v1 = np.radians(v1p["phase"])
                     E1_phi = 10 ** (mag_v1 / 20) * np.exp(1j * ph_v1)
 
-                    mag_h2 = np.array(h2p['mag'])
-                    ph_h2 = np.radians(h2p['phase'])
+                    mag_h2 = np.array(h2p["mag"])
+                    ph_h2 = np.radians(h2p["phase"])
                     E2_theta = 10 ** (mag_h2 / 20) * np.exp(1j * ph_h2)
 
-                    mag_v2 = np.array(v2p['mag'])
-                    ph_v2 = np.radians(v2p['phase'])
+                    mag_v2 = np.array(v2p["mag"])
+                    ph_v2 = np.radians(v2p["phase"])
                     E2_phi = 10 ** (mag_v2 / 20) * np.exp(1j * ph_v2)
 
-                    theta = np.array(h1p['theta'])
+                    theta = np.array(h1p["theta"])
                     sin_theta = np.sin(np.radians(theta))
 
                     inner = E1_theta * np.conj(E2_theta) + E1_phi * np.conj(E2_phi)
@@ -455,7 +559,7 @@ class CallbacksMixin:
 
                 if ecc_results:
                     freqs, vals = zip(*sorted(ecc_results))
-                    plt.plot(freqs, vals, marker='o', linestyle='-', label=f"{placement} - B{b}")
+                    plt.plot(freqs, vals, marker="o", linestyle="-", label=f"{placement} - B{b}")
 
         plt.title("Envelope Correlation Coefficient vs Frequency")
         plt.xlabel("Frequency (MHz)")
@@ -469,14 +573,14 @@ class CallbacksMixin:
         """Handle standard VPOL/HPOL file imports."""
         first_file = filedialog.askopenfilename(
             title="Select the First Data File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
         if not first_file:
             return
 
         second_file = filedialog.askopenfilename(
             title="Select the Second Data File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
         )
         if first_file and second_file:
             first_polarization = determine_polarization(first_file)
@@ -506,7 +610,9 @@ class CallbacksMixin:
     def _import_vswr_files(self):
         """Handle VSWR file imports."""
         if self.cb_groupdelay_sff_var.get() and self.min_max_vswr_var.get():
-            messagebox.showerror("Error", "Cannot have both Group Delay/SFF and Min/Max VSWR selected.")
+            messagebox.showerror(
+                "Error", "Cannot have both Group Delay/SFF and Min/Max VSWR selected."
+            )
             return
 
         # Scenario 1: Group Delay = False, Min/Max VSWR = False
@@ -519,19 +625,30 @@ class CallbacksMixin:
             for _ in range(num_files):
                 file_path = filedialog.askopenfilename(
                     title="Select the VSWR/Return Loss File(s)",
-                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
                 )
                 if not file_path:
                     return
                 file_paths.append(file_path)
 
-            process_vswr_files(file_paths,
-                              self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop,
-                              self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop)
+            process_vswr_files(
+                file_paths,
+                self.saved_limit1_freq1,
+                self.saved_limit1_freq2,
+                self.saved_limit1_start,
+                self.saved_limit1_stop,
+                self.saved_limit2_freq1,
+                self.saved_limit2_freq2,
+                self.saved_limit2_start,
+                self.saved_limit2_stop,
+            )
 
         # Scenario 2: Group Delay = True, Min/Max VSWR = False
         elif self.cb_groupdelay_sff_var.get() and not self.min_max_vswr_var.get():
-            num_files = askinteger("Input", "How many files do you want to import? (e.g. 8 for Theta=0 deg to 315 deg in 45 deg steps)")
+            num_files = askinteger(
+                "Input",
+                "How many files do you want to import? (e.g. 8 for Theta=0 deg to 315 deg in 45 deg steps)",
+            )
             if not num_files:
                 return
 
@@ -539,22 +656,35 @@ class CallbacksMixin:
             for _ in range(num_files):
                 file_path = filedialog.askopenfilename(
                     title="Select the 2-Port S-Parameter File(s)",
-                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
                 )
                 if not file_path:
                     return
                 file_paths.append(file_path)
 
-            min_freq = askstring("Input", "Enter minimum frequency (GHz) or leave blank for default:")
-            max_freq = askstring("Input", "Enter maximum frequency (GHz) or leave blank for default:")
+            min_freq = askstring(
+                "Input", "Enter minimum frequency (GHz) or leave blank for default:"
+            )
+            max_freq = askstring(
+                "Input", "Enter maximum frequency (GHz) or leave blank for default:"
+            )
 
             min_freq = float(min_freq) if min_freq else None
             max_freq = float(max_freq) if max_freq else None
 
-            process_groupdelay_files(file_paths,
-                                    self.saved_limit1_freq1, self.saved_limit1_freq2, self.saved_limit1_start, self.saved_limit1_stop,
-                                    self.saved_limit2_freq1, self.saved_limit2_freq2, self.saved_limit2_start, self.saved_limit2_stop,
-                                    min_freq, max_freq)
+            process_groupdelay_files(
+                file_paths,
+                self.saved_limit1_freq1,
+                self.saved_limit1_freq2,
+                self.saved_limit1_start,
+                self.saved_limit1_stop,
+                self.saved_limit2_freq1,
+                self.saved_limit2_freq2,
+                self.saved_limit2_start,
+                self.saved_limit2_stop,
+                min_freq,
+                max_freq,
+            )
 
         # Scenario 3: Group Delay = False, Min/Max VSWR = True
         elif not self.cb_groupdelay_sff_var.get() and self.min_max_vswr_var.get():
@@ -568,22 +698,28 @@ class CallbacksMixin:
 
             bands = []
             for i in range(num_bands):
-                freq_range_input = askstring("Input", f"Enter frequency range for Band {i+1} as 'min,max' (in MHz):", parent=self.root)
+                freq_range_input = askstring(
+                    "Input",
+                    f"Enter frequency range for Band {i+1} as 'min,max' (in MHz):",
+                    parent=self.root,
+                )
                 if not freq_range_input:
                     messagebox.showerror("Error", "No frequency range entered.")
                     return
                 try:
-                    freq_min, freq_max = map(float, freq_range_input.split(','))
+                    freq_min, freq_max = map(float, freq_range_input.split(","))
                     bands.append((freq_min, freq_max))
                 except ValueError:
-                    messagebox.showerror("Error", "Invalid frequency range. Please enter values in 'min,max' format.")
+                    messagebox.showerror(
+                        "Error", "Invalid frequency range. Please enter values in 'min,max' format."
+                    )
                     return
 
             file_paths = []
             for _ in range(num_files):
                 file_path = filedialog.askopenfilename(
                     title="Select the VSWR 1-Port File(s)",
-                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+                    filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
                 )
                 if not file_path:
                     return
@@ -598,10 +734,10 @@ class CallbacksMixin:
 
     def log_message(self, message):
         """Log a message to the GUI log text area."""
-        self.log_text.configure(state='normal')
-        self.log_text.insert('end', message + '\n')
-        self.log_text.configure(state='disabled')
-        self.log_text.see('end')
+        self.log_text.configure(state="normal")
+        self.log_text.insert("end", message + "\n")
+        self.log_text.configure(state="disabled")
+        self.log_text.see("end")
 
     # ────────────────────────────────────────────────────────────────────────
     # DATA PROCESSING
@@ -613,24 +749,62 @@ class CallbacksMixin:
         try:
             if self.scan_type.get() == "passive":
                 # Read passive files
-                parsed_hpol_data, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = read_passive_file(self.hpol_file_path)
+                (
+                    parsed_hpol_data,
+                    start_phi_h,
+                    stop_phi_h,
+                    inc_phi_h,
+                    start_theta_h,
+                    stop_theta_h,
+                    inc_theta_h,
+                ) = read_passive_file(self.hpol_file_path)
                 hpol_data = parsed_hpol_data
 
-                parsed_vpol_data, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = read_passive_file(self.vpol_file_path)
+                (
+                    parsed_vpol_data,
+                    start_phi_v,
+                    stop_phi_v,
+                    inc_phi_v,
+                    start_theta_v,
+                    stop_theta_v,
+                    inc_theta_v,
+                ) = read_passive_file(self.vpol_file_path)
                 vpol_data = parsed_vpol_data
 
                 # Check if angle data matches
-                if not angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-                                   start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v):
+                if not angles_match(
+                    start_phi_h,
+                    stop_phi_h,
+                    inc_phi_h,
+                    start_theta_h,
+                    stop_theta_h,
+                    inc_theta_h,
+                    start_phi_v,
+                    stop_phi_v,
+                    inc_phi_v,
+                    start_theta_v,
+                    stop_theta_v,
+                    inc_theta_v,
+                ):
                     raise Exception("Angle data mismatch between HPol and VPol files")
 
                 # Calculate variables for all frequencies
                 passive_variables = calculate_passive_variables(
-                    hpol_data, vpol_data, float(self.cable_loss.get()),
-                    start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-                    self.freq_list, float(self.selected_frequency.get())
+                    hpol_data,
+                    vpol_data,
+                    float(self.cable_loss.get()),
+                    start_phi_h,
+                    stop_phi_h,
+                    inc_phi_h,
+                    start_theta_h,
+                    stop_theta_h,
+                    inc_theta_h,
+                    self.freq_list,
+                    float(self.selected_frequency.get()),
                 )
-                theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
+                theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = (
+                    passive_variables
+                )
 
                 # Store as instance variables for AI access
                 self.theta_list = theta_angles_deg
@@ -642,12 +816,19 @@ class CallbacksMixin:
                 # Apply NF2FF if needed
                 if float(self.selected_frequency.get()) < 500:
                     measurement_distance = 1.0
-                    window_function = 'none'
+                    window_function = "none"
                     hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
-                        hpol_data, vpol_data, float(self.selected_frequency.get()),
-                        start_phi_h, stop_phi_h, inc_phi_h,
-                        start_theta_h, stop_theta_h, inc_theta_h,
-                        measurement_distance, window_function
+                        hpol_data,
+                        vpol_data,
+                        float(self.selected_frequency.get()),
+                        start_phi_h,
+                        stop_phi_h,
+                        inc_phi_h,
+                        start_theta_h,
+                        stop_theta_h,
+                        inc_theta_h,
+                        measurement_distance,
+                        window_function,
                     )
                     self.hpol_far_field = hpol_far_field
                     self.vpol_far_field = vpol_far_field
@@ -661,25 +842,70 @@ class CallbacksMixin:
                 # Process active data without plotting
                 data = read_active_file(self.TRP_file_path)
 
-                (frequency, start_phi, start_theta, stop_phi, stop_theta, inc_phi, inc_theta,
-                 calc_trp, theta_angles_deg_raw, phi_angles_deg_raw, h_power_dBm, v_power_dBm
-                 ) = (data["Frequency"], data["Start Phi"], data["Start Theta"], data["Stop Phi"],
-                      data["Stop Theta"], data["Inc Phi"], data["Inc Theta"], data["Calculated TRP(dBm)"],
-                      data["Theta_Angles_Deg"], data["Phi_Angles_Deg"], data["H_Power_dBm"], data["V_Power_dBm"])
+                (
+                    frequency,
+                    start_phi,
+                    start_theta,
+                    stop_phi,
+                    stop_theta,
+                    inc_phi,
+                    inc_theta,
+                    calc_trp,
+                    theta_angles_deg_raw,
+                    phi_angles_deg_raw,
+                    h_power_dBm,
+                    v_power_dBm,
+                ) = (
+                    data["Frequency"],
+                    data["Start Phi"],
+                    data["Start Theta"],
+                    data["Stop Phi"],
+                    data["Stop Theta"],
+                    data["Inc Phi"],
+                    data["Inc Theta"],
+                    data["Calculated TRP(dBm)"],
+                    data["Theta_Angles_Deg"],
+                    data["Phi_Angles_Deg"],
+                    data["H_Power_dBm"],
+                    data["V_Power_dBm"],
+                )
 
                 # Calculate Variables for TRP/Active Measurement
                 active_variables = calculate_active_variables(
-                    start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm
+                    start_phi,
+                    stop_phi,
+                    start_theta,
+                    stop_theta,
+                    inc_phi,
+                    inc_theta,
+                    h_power_dBm,
+                    v_power_dBm,
                 )
 
-                (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
-                 total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
-                 phi_angles_deg_plot, phi_angles_rad_plot,
-                 total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
-                 total_power_dBm_min, total_power_dBm_nom,
-                 h_power_dBm_min, h_power_dBm_nom,
-                 v_power_dBm_min, v_power_dBm_nom,
-                 TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+                (
+                    data_points,
+                    theta_angles_deg,
+                    phi_angles_deg,
+                    theta_angles_rad,
+                    phi_angles_rad,
+                    total_power_dBm_2d,
+                    h_power_dBm_2d,
+                    v_power_dBm_2d,
+                    phi_angles_deg_plot,
+                    phi_angles_rad_plot,
+                    total_power_dBm_2d_plot,
+                    h_power_dBm_2d_plot,
+                    v_power_dBm_2d_plot,
+                    total_power_dBm_min,
+                    total_power_dBm_nom,
+                    h_power_dBm_min,
+                    h_power_dBm_nom,
+                    v_power_dBm_min,
+                    v_power_dBm_nom,
+                    TRP_dBm,
+                    h_TRP_dBm,
+                    v_TRP_dBm,
+                ) = active_variables
 
                 # Store as instance variables for AI access
                 self.data_points = data_points
@@ -712,7 +938,7 @@ class CallbacksMixin:
         """Main data processing method - processes and displays all plots."""
         try:
             # Close any existing matplotlib figures to prevent memory leaks
-            plt.close('all')
+            plt.close("all")
 
             if self.scan_type.get() == "active":
                 self._process_active_data()
@@ -727,52 +953,119 @@ class CallbacksMixin:
         data = read_active_file(self.TRP_file_path)
 
         self.log_message("Processing active data...")
-        (frequency, start_phi, start_theta, stop_phi, stop_theta, inc_phi, inc_theta,
-         calc_trp, theta_angles_deg, phi_angles_deg, h_power_dBm, v_power_dBm
-         ) = (data["Frequency"], data["Start Phi"], data["Start Theta"], data["Stop Phi"],
-              data["Stop Theta"], data["Inc Phi"], data["Inc Theta"], data["Calculated TRP(dBm)"],
-              data["Theta_Angles_Deg"], data["Phi_Angles_Deg"], data["H_Power_dBm"], data["V_Power_dBm"])
+        (
+            frequency,
+            start_phi,
+            start_theta,
+            stop_phi,
+            stop_theta,
+            inc_phi,
+            inc_theta,
+            calc_trp,
+            theta_angles_deg,
+            phi_angles_deg,
+            h_power_dBm,
+            v_power_dBm,
+        ) = (
+            data["Frequency"],
+            data["Start Phi"],
+            data["Start Theta"],
+            data["Stop Phi"],
+            data["Stop Theta"],
+            data["Inc Phi"],
+            data["Inc Theta"],
+            data["Calculated TRP(dBm)"],
+            data["Theta_Angles_Deg"],
+            data["Phi_Angles_Deg"],
+            data["H_Power_dBm"],
+            data["V_Power_dBm"],
+        )
 
         # Calculate Variables for TRP/Active Measurement Plotting
-        active_variables = calculate_active_variables(start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm)
+        active_variables = calculate_active_variables(
+            start_phi,
+            stop_phi,
+            start_theta,
+            stop_theta,
+            inc_phi,
+            inc_theta,
+            h_power_dBm,
+            v_power_dBm,
+        )
 
-        (data_points, theta_angles_deg, phi_angles_deg, theta_angles_rad, phi_angles_rad,
-         total_power_dBm_2d, h_power_dBm_2d, v_power_dBm_2d,
-         phi_angles_deg_plot, phi_angles_rad_plot,
-         total_power_dBm_2d_plot, h_power_dBm_2d_plot, v_power_dBm_2d_plot,
-         total_power_dBm_min, total_power_dBm_nom,
-         h_power_dBm_min, h_power_dBm_nom,
-         v_power_dBm_min, v_power_dBm_nom,
-         TRP_dBm, h_TRP_dBm, v_TRP_dBm) = active_variables
+        (
+            data_points,
+            theta_angles_deg,
+            phi_angles_deg,
+            theta_angles_rad,
+            phi_angles_rad,
+            total_power_dBm_2d,
+            h_power_dBm_2d,
+            v_power_dBm_2d,
+            phi_angles_deg_plot,
+            phi_angles_rad_plot,
+            total_power_dBm_2d_plot,
+            h_power_dBm_2d_plot,
+            v_power_dBm_2d_plot,
+            total_power_dBm_min,
+            total_power_dBm_nom,
+            h_power_dBm_min,
+            h_power_dBm_nom,
+            v_power_dBm_min,
+            v_power_dBm_nom,
+            TRP_dBm,
+            h_TRP_dBm,
+            v_TRP_dBm,
+        ) = active_variables
 
         # Plot 2D data
-        plot_active_2d_data(data_points, theta_angles_rad, phi_angles_rad_plot, total_power_dBm_2d_plot, frequency)
+        plot_active_2d_data(
+            data_points, theta_angles_rad, phi_angles_rad_plot, total_power_dBm_2d_plot, frequency
+        )
 
         # Plot 3D data - Total power
         plot_active_3d_data(
-            theta_angles_deg, phi_angles_deg, total_power_dBm_2d,
-            phi_angles_deg_plot, total_power_dBm_2d_plot, frequency,
-            power_type='total', interpolate=self.interpolate_3d_plots,
+            theta_angles_deg,
+            phi_angles_deg,
+            total_power_dBm_2d,
+            phi_angles_deg_plot,
+            total_power_dBm_2d_plot,
+            frequency,
+            power_type="total",
+            interpolate=self.interpolate_3d_plots,
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get()
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
         )
 
         # H-pol
         plot_active_3d_data(
-            theta_angles_deg, phi_angles_deg, h_power_dBm_2d,
-            phi_angles_deg_plot, h_power_dBm_2d_plot, frequency,
-            power_type='hpol', interpolate=self.interpolate_3d_plots,
+            theta_angles_deg,
+            phi_angles_deg,
+            h_power_dBm_2d,
+            phi_angles_deg_plot,
+            h_power_dBm_2d_plot,
+            frequency,
+            power_type="hpol",
+            interpolate=self.interpolate_3d_plots,
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get()
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
         )
 
         # V-pol
         plot_active_3d_data(
-            theta_angles_deg, phi_angles_deg, v_power_dBm_2d,
-            phi_angles_deg_plot, v_power_dBm_2d_plot, frequency,
-            power_type='vpol', interpolate=self.interpolate_3d_plots,
+            theta_angles_deg,
+            phi_angles_deg,
+            v_power_dBm_2d,
+            phi_angles_deg_plot,
+            v_power_dBm_2d_plot,
+            frequency,
+            power_type="vpol",
+            interpolate=self.interpolate_3d_plots,
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get()
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
         )
 
         self.log_message("Active data processed successfully.")
@@ -781,24 +1074,60 @@ class CallbacksMixin:
         """Process and display passive measurement data."""
         self.log_message("Processing passive data...")
 
-        parsed_hpol_data, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = read_passive_file(self.hpol_file_path)
+        (
+            parsed_hpol_data,
+            start_phi_h,
+            stop_phi_h,
+            inc_phi_h,
+            start_theta_h,
+            stop_theta_h,
+            inc_theta_h,
+        ) = read_passive_file(self.hpol_file_path)
         hpol_data = parsed_hpol_data
 
-        parsed_vpol_data, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = read_passive_file(self.vpol_file_path)
+        (
+            parsed_vpol_data,
+            start_phi_v,
+            stop_phi_v,
+            inc_phi_v,
+            start_theta_v,
+            stop_theta_v,
+            inc_theta_v,
+        ) = read_passive_file(self.vpol_file_path)
         vpol_data = parsed_vpol_data
 
         # Check if angle data matches
-        if not angles_match(start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-                           start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v):
+        if not angles_match(
+            start_phi_h,
+            stop_phi_h,
+            inc_phi_h,
+            start_theta_h,
+            stop_theta_h,
+            inc_theta_h,
+            start_phi_v,
+            stop_phi_v,
+            inc_phi_v,
+            start_theta_v,
+            stop_theta_v,
+            inc_theta_v,
+        ):
             messagebox.showerror("Error", "Angle data mismatch between HPol and VPol files.")
             self.log_message("Error: Angle data mismatch between HPol and VPol files.")
             return
 
         # Calculate passive variables
         passive_variables = calculate_passive_variables(
-            hpol_data, vpol_data, float(self.cable_loss.get()),
-            start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h,
-            self.freq_list, float(self.selected_frequency.get())
+            hpol_data,
+            vpol_data,
+            float(self.cable_loss.get()),
+            start_phi_h,
+            stop_phi_h,
+            inc_phi_h,
+            start_theta_h,
+            stop_theta_h,
+            inc_theta_h,
+            self.freq_list,
+            float(self.selected_frequency.get()),
         )
         theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB = passive_variables
 
@@ -812,13 +1141,20 @@ class CallbacksMixin:
         # Apply NF2FF transformation if needed
         if float(self.selected_frequency.get()) < 500:
             measurement_distance = 1.0
-            window_function = 'none'
+            window_function = "none"
             self.log_message("Applying NF2FF Transformation...")
             hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
-                hpol_data, vpol_data, float(self.selected_frequency.get()),
-                start_phi_h, stop_phi_h, inc_phi_h,
-                start_theta_h, stop_theta_h, inc_theta_h,
-                measurement_distance, window_function
+                hpol_data,
+                vpol_data,
+                float(self.selected_frequency.get()),
+                start_phi_h,
+                stop_phi_h,
+                inc_phi_h,
+                start_theta_h,
+                stop_theta_h,
+                inc_theta_h,
+                measurement_distance,
+                window_function,
             )
         else:
             hpol_far_field = h_gain_dB
@@ -837,7 +1173,7 @@ class CallbacksMixin:
                 float(self.selected_frequency.get()),
                 target_axis=self.shadow_direction,
                 cone_half_angle_deg=45,
-                tissue_thickness_cm=3.5
+                tissue_thickness_cm=3.5,
             )
 
             # Efficiency calculation
@@ -860,41 +1196,62 @@ class CallbacksMixin:
 
         # Plot 2D and 3D passive data
         plot_2d_passive_data(
-            theta_angles_deg, phi_angles_deg, hpol_far_field, vpol_far_field, Total_Gain_dB,
-            self.freq_list, float(self.selected_frequency.get()), self.datasheet_plots_var.get()
+            theta_angles_deg,
+            phi_angles_deg,
+            hpol_far_field,
+            vpol_far_field,
+            Total_Gain_dB,
+            self.freq_list,
+            float(self.selected_frequency.get()),
+            self.datasheet_plots_var.get(),
         )
 
         # Plot Total Gain in 3D
         plot_passive_3d_component(
-            theta_angles_deg, phi_angles_deg,
-            hpol_far_field, vpol_far_field, Total_Gain_dB,
-            self.freq_list, float(self.selected_frequency.get()),
+            theta_angles_deg,
+            phi_angles_deg,
+            hpol_far_field,
+            vpol_far_field,
+            Total_Gain_dB,
+            self.freq_list,
+            float(self.selected_frequency.get()),
             gain_type="total",
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get(),
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
             save_path=None,
             shadowing_enabled=self.shadowing_enabled,
-            shadow_direction=self.shadow_direction
+            shadow_direction=self.shadow_direction,
         )
 
         # Plot H-pol in 3D
         plot_passive_3d_component(
-            theta_angles_deg, phi_angles_deg,
-            hpol_far_field, vpol_far_field, Total_Gain_dB,
-            self.freq_list, float(self.selected_frequency.get()),
+            theta_angles_deg,
+            phi_angles_deg,
+            hpol_far_field,
+            vpol_far_field,
+            Total_Gain_dB,
+            self.freq_list,
+            float(self.selected_frequency.get()),
             gain_type="hpol",
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get(),
-            save_path=None
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
+            save_path=None,
         )
 
         # Plot V-pol in 3D
         plot_passive_3d_component(
-            theta_angles_deg, phi_angles_deg,
-            hpol_far_field, vpol_far_field, Total_Gain_dB,
-            self.freq_list, float(self.selected_frequency.get()),
+            theta_angles_deg,
+            phi_angles_deg,
+            hpol_far_field,
+            vpol_far_field,
+            Total_Gain_dB,
+            self.freq_list,
+            float(self.selected_frequency.get()),
             gain_type="vpol",
             axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(), zmax=self.axis_max.get(),
-            save_path=None
+            zmin=self.axis_min.get(),
+            zmax=self.axis_max.get(),
+            save_path=None,
         )

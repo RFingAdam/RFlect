@@ -8,7 +8,7 @@ import os
 import sys
 import json
 import tkinter as tk
-from file_utils import parse_2port_data
+from ..file_utils import parse_2port_data
 import pandas as pd
 import numpy as np
 
@@ -21,10 +21,10 @@ class DualOutput:
         self.stream = stream
 
     def write(self, string):
-        self.widget.configure(state='normal')
-        self.widget.insert('end', string)
-        self.widget.configure(state='disabled')
-        self.widget.see('end')
+        self.widget.configure(state="normal")
+        self.widget.insert("end", string)
+        self.widget.configure(state="disabled")
+        self.widget.see("end")
         if self.stream:  # Only write to the stream if it's valid
             self.stream.write(string)
             self.stream.flush()
@@ -39,23 +39,23 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS  # type: ignore
     except Exception:
-        base_path = os.path.join(os.path.dirname(__file__), '..', '..')
+        base_path = os.path.join(os.path.dirname(__file__), "..", "..")
 
     return os.path.abspath(os.path.join(base_path, relative_path))
 
 
 def get_user_data_dir():
     """Get user-specific data directory for storing settings, API keys, recent files."""
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         # Windows: Use AppData\Local\RFlect
-        app_data = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
-        user_dir = os.path.join(app_data, 'RFlect')
-    elif sys.platform == 'darwin':
+        app_data = os.getenv("LOCALAPPDATA", os.path.expanduser("~"))
+        user_dir = os.path.join(app_data, "RFlect")
+    elif sys.platform == "darwin":
         # macOS: Use ~/Library/Application Support/RFlect
-        user_dir = os.path.expanduser('~/Library/Application Support/RFlect')
+        user_dir = os.path.expanduser("~/Library/Application Support/RFlect")
     else:
         # Linux: Use ~/.config/RFlect
-        user_dir = os.path.expanduser('~/.config/RFlect')
+        user_dir = os.path.expanduser("~/.config/RFlect")
 
     # Create directory if it doesn't exist
     os.makedirs(user_dir, exist_ok=True)
@@ -66,7 +66,7 @@ def get_current_version():
     """Get the current version from settings.json."""
     settings_path = resource_path("settings.json")
     try:
-        with open(settings_path, "r", encoding='utf-8') as file:
+        with open(settings_path, "r", encoding="utf-8") as file:
             settings = json.load(file)
             return settings.get("CURRENT_VERSION", "Unknown")
     except Exception:
@@ -97,26 +97,28 @@ def calculate_min_max_parameters(file_paths, bands, param_name):
             data = parse_2port_data(file_path)
 
             # Ensure '! Stimulus(Hz)' exists
-            if '! Stimulus(Hz)' not in data.columns:
+            if "! Stimulus(Hz)" not in data.columns:
                 raise ValueError(f"File '{file_path}' does not have a '! Stimulus(Hz)' column.")
 
-            freqs_mhz = data['! Stimulus(Hz)'] / 1e6
+            freqs_mhz = data["! Stimulus(Hz)"] / 1e6
 
             # Determine the parameter column based on param_name
             if param_name.upper() == "VSWR":
-                candidates = [c for c in data.columns if 'SWR' in c.upper()]
+                candidates = [c for c in data.columns if "SWR" in c.upper()]
                 if not candidates:
                     raise ValueError(f"No SWR columns found in '{file_path}' for VSWR calculation.")
             else:
                 candidates = [c for c in data.columns if param_name.upper() in c.upper()]
                 if not candidates:
-                    raise ValueError(f"No columns containing '{param_name}' found in '{file_path}'.")
+                    raise ValueError(
+                        f"No columns containing '{param_name}' found in '{file_path}'."
+                    )
 
             # Use the first matching column
             desired_col = candidates[0]
 
             # Extract values and filter by frequency range
-            values = pd.to_numeric(data[desired_col], errors='coerce').dropna()
+            values = pd.to_numeric(data[desired_col], errors="coerce").dropna()
             within_range = (freqs_mhz >= freq_min) & (freqs_mhz <= freq_max)
 
             # Calculate min/max for the parameter
@@ -154,9 +156,7 @@ def display_parameter_table(results, param_name, parent):
 
         # Data rows for each file in the band
         for file, min_val, max_val in band_data:
-            tk.Label(parent, text=os.path.basename(file)).grid(
-                row=row, column=0, padx=10, pady=5
-            )
+            tk.Label(parent, text=os.path.basename(file)).grid(row=row, column=0, padx=10, pady=5)
             tk.Label(parent, text=f"{min_val:.2f}" if min_val is not None else "N/A").grid(
                 row=row, column=1, padx=10, pady=5
             )

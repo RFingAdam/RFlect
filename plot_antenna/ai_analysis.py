@@ -48,12 +48,7 @@ class AntennaAnalyzer:
         >>> stats = analyzer.get_gain_statistics(frequency=2400)
     """
 
-    def __init__(
-        self,
-        measurement_data: Dict[str, Any],
-        scan_type: str,
-        frequencies: List[float]
-    ):
+    def __init__(self, measurement_data: Dict[str, Any], scan_type: str, frequencies: List[float]):
         """
         Initialize analyzer with measurement data.
 
@@ -91,52 +86,64 @@ class AntennaAnalyzer:
         stats = {
             "frequency_requested": frequency,
             "frequency_actual": actual_freq,
-            "scan_type": self.scan_type
+            "scan_type": self.scan_type,
         }
 
         # Passive scan: Gain in dBi
         if self.scan_type == "passive":
-            if 'total_gain' in self.data and self.data['total_gain'] is not None:
+            if "total_gain" in self.data and self.data["total_gain"] is not None:
                 # Handle 2D array indexed by frequency
-                if self.data['total_gain'].ndim == 2:
-                    gain_data = self.data['total_gain'][:, freq_idx]
+                if self.data["total_gain"].ndim == 2:
+                    gain_data = self.data["total_gain"][:, freq_idx]
                 else:
-                    gain_data = self.data['total_gain']
+                    gain_data = self.data["total_gain"]
 
-                stats.update({
-                    "max_gain_dBi": float(np.max(gain_data)),
-                    "min_gain_dBi": float(np.min(gain_data)),
-                    "avg_gain_dBi": float(np.mean(gain_data)),
-                    "std_dev_dB": float(np.std(gain_data))
-                })
+                stats.update(
+                    {
+                        "max_gain_dBi": float(np.max(gain_data)),
+                        "min_gain_dBi": float(np.min(gain_data)),
+                        "avg_gain_dBi": float(np.mean(gain_data)),
+                        "std_dev_dB": float(np.std(gain_data)),
+                    }
+                )
 
                 # Add polarization-specific stats if available
-                if 'h_gain' in self.data and self.data['h_gain'] is not None:
-                    h_data = self.data['h_gain'][:, freq_idx] if self.data['h_gain'].ndim == 2 else self.data['h_gain']
+                if "h_gain" in self.data and self.data["h_gain"] is not None:
+                    h_data = (
+                        self.data["h_gain"][:, freq_idx]
+                        if self.data["h_gain"].ndim == 2
+                        else self.data["h_gain"]
+                    )
                     stats["max_hpol_gain_dBi"] = float(np.max(h_data))
 
-                if 'v_gain' in self.data and self.data['v_gain'] is not None:
-                    v_data = self.data['v_gain'][:, freq_idx] if self.data['v_gain'].ndim == 2 else self.data['v_gain']
+                if "v_gain" in self.data and self.data["v_gain"] is not None:
+                    v_data = (
+                        self.data["v_gain"][:, freq_idx]
+                        if self.data["v_gain"].ndim == 2
+                        else self.data["v_gain"]
+                    )
                     stats["max_vpol_gain_dBi"] = float(np.max(v_data))
 
         # Active scan: Power in dBm
         elif self.scan_type == "active":
-            if 'total_power' in self.data and self.data['total_power'] is not None:
-                power_data = self.data['total_power']
-                stats.update({
-                    "max_power_dBm": float(np.max(power_data)),
-                    "min_power_dBm": float(np.min(power_data)),
-                    "avg_power_dBm": float(np.mean(power_data)),
-                    "std_dev_dB": float(np.std(power_data))
-                })
+            if "total_power" in self.data and self.data["total_power"] is not None:
+                power_data = self.data["total_power"]
+                stats.update(
+                    {
+                        "max_power_dBm": float(np.max(power_data)),
+                        "min_power_dBm": float(np.min(power_data)),
+                        "avg_power_dBm": float(np.mean(power_data)),
+                        "std_dev_dB": float(np.std(power_data)),
+                    }
+                )
 
                 # Add TRP if available
-                if 'TRP_dBm' in self.data:
-                    stats["TRP_dBm"] = float(self.data['TRP_dBm'])
-                if 'h_TRP_dBm' in self.data:
-                    stats["h_TRP_dBm"] = float(self.data['h_TRP_dBm'])
-                if 'v_TRP_dBm' in self.data:
-                    stats["v_TRP_dBm"] = float(self.data['v_TRP_dBm'])
+                if "TRP_dBm" in self.data:
+                    stats["TRP_dBm"] = float(self.data["TRP_dBm"])
+                if "h_TRP_dBm" in self.data:
+                    stats["h_TRP_dBm"] = float(self.data["h_TRP_dBm"])
+                if "v_TRP_dBm" in self.data:
+                    stats["v_TRP_dBm"] = float(self.data["v_TRP_dBm"])
 
         return stats
 
@@ -170,13 +177,10 @@ class AntennaAnalyzer:
         freq_idx = np.argmin(np.abs(freq_array - frequency))
         actual_freq = self.frequencies[freq_idx]
 
-        analysis = {
-            "frequency": actual_freq,
-            "scan_type": self.scan_type
-        }
+        analysis = {"frequency": actual_freq, "scan_type": self.scan_type}
 
-        if self.scan_type == "passive" and 'total_gain' in self.data:
-            gain_data = self.data['total_gain']
+        if self.scan_type == "passive" and "total_gain" in self.data:
+            gain_data = self.data["total_gain"]
             if gain_data.ndim == 2:
                 gain_data = gain_data[:, freq_idx]
 
@@ -236,15 +240,12 @@ class AntennaAnalyzer:
         freq_idx = np.argmin(np.abs(freq_array - frequency))
         actual_freq = self.frequencies[freq_idx]
 
-        comparison = {
-            "frequency": actual_freq,
-            "scan_type": self.scan_type
-        }
+        comparison = {"frequency": actual_freq, "scan_type": self.scan_type}
 
         if self.scan_type == "passive":
-            if 'h_gain' in self.data and 'v_gain' in self.data:
-                h_data = self.data['h_gain']
-                v_data = self.data['v_gain']
+            if "h_gain" in self.data and "v_gain" in self.data:
+                h_data = self.data["h_gain"]
+                v_data = self.data["v_gain"]
 
                 if h_data.ndim == 2:
                     h_data = h_data[:, freq_idx]
@@ -261,8 +262,8 @@ class AntennaAnalyzer:
                 comparison["max_xpd_dB"] = float(np.max(np.abs(xpd)))
 
                 # Polarization balance
-                balance = comparison["max_hpol_gain_dBi"] - comparison["max_vpol_gain_dBi"]
-                comparison["polarization_balance_dB"] = float(balance)
+                balance = float(comparison["max_hpol_gain_dBi"]) - float(comparison["max_vpol_gain_dBi"])  # type: ignore[arg-type]
+                comparison["polarization_balance_dB"] = balance
 
                 if abs(balance) < 3:
                     comparison["polarization_note"] = "Well-balanced polarization"
@@ -286,10 +287,7 @@ class AntennaAnalyzer:
         - Resonance frequency detection
         - Frequency stability analysis
         """
-        analysis = {
-            "frequencies_MHz": self.frequencies,
-            "num_frequencies": len(self.frequencies)
-        }
+        analysis = {"frequencies_MHz": self.frequencies, "num_frequencies": len(self.frequencies)}
 
         # Placeholder for future implementation
         analysis["status"] = "Not implemented - planned for v4.1"
@@ -297,13 +295,14 @@ class AntennaAnalyzer:
             "Calculate gain vs frequency trend",
             "Find 3dB bandwidth",
             "Detect resonance frequency",
-            "Analyze frequency stability"
+            "Analyze frequency stability",
         ]
 
         return analysis
 
 
 # Utility functions for AI prompts
+
 
 def get_antenna_domain_knowledge() -> str:
     """
@@ -386,17 +385,17 @@ REPORT_TEMPLATE_STATUS = {
         "Executive summary generation",
         "Gain statistics reporting",
         "Pattern classification",
-        "Basic recommendations"
+        "Basic recommendations",
     ],
     "incomplete_features": [
         "Custom branding integration",
         "Multi-frequency comparison tables",
         "Automated figure captioning",
-        "Compliance checklist (FCC, CE, etc.)"
+        "Compliance checklist (FCC, CE, etc.)",
     ],
     "known_issues": [
         "Some AI recommendations too generic",
         "Template formatting inconsistent across sections",
-        "Missing integration with plotting.py for automated figure insertion"
-    ]
+        "Missing integration with plotting.py for automated figure insertion",
+    ],
 }
