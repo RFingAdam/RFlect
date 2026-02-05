@@ -5,7 +5,12 @@ Initializes and runs the main application window.
 """
 
 import tkinter as tk
-from .gui import AntennaPlotGUI
+
+# Handle both package import and direct script execution
+try:
+    from .gui import AntennaPlotGUI
+except ImportError:
+    from gui import AntennaPlotGUI
 
 
 def main():
