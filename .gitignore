@@ -17,6 +17,8 @@ htmlcov/
 build/
 dist/
 debug/
+*.egg-info/
+.eggs/
 
 # Virtual environments
 venv_clean/
