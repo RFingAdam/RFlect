@@ -1,12 +1,26 @@
 {
   "python.analysis.extraPaths": [
-    "${workspaceFolder}"
+    "${workspaceFolder}",
+    "${workspaceFolder}/plot_antenna"
   ],
-  "python.analysis.autoImportCompletions": true,
-  "python.analysis.diagnosticMode": "workspace",
   "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.stubPath": "",
-  "python.languageServer": "Pylance",
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportMissingTypeStubs": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownParameterType": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none",
+    "reportOptionalSubscript": "none",
+    "reportPrivateImportUsage": "none",
+    "reportWildcardImportFromLibrary": "none",
+    "reportUndefinedVariable": "warning"
+  },
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": [
     "tests"
@@ -19,12 +33,14 @@
   "python.linting.flake8Enabled": true,
   "python.linting.flake8Args": [
     "--max-line-length=100",
-    "--ignore=E501,W293,W291,F405,F403"
+    "--extend-ignore=E501,W293,W291,F403,F405"
   ],
-  "[python]": {
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    }
-  }
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage": true,
+    "plot_antenna/_archive": true
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv_clean/Scripts/python.exe"
 }
