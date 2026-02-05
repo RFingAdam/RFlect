@@ -71,3 +71,4 @@ AI_CHAT_WORKFLOW.md
 .mypy_cache/
 .dmypy.json
 dmypy.json
+venv_build/
