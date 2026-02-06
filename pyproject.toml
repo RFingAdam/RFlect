@@ -56,8 +56,8 @@ ai = [
     "ollama>=0.4.0",
 ]
 exe = [
-    "pyinstaller>=6.10.0",
-    "pyinstaller-hooks-contrib>=2024.8",
+    "pyinstaller>=6.18.0",
+    "pyinstaller-hooks-contrib>=2026.0",
 ]
 
 [project.urls]
