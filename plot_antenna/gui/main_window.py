@@ -25,13 +25,36 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 from ..config import (
-    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR,
-    ERROR_COLOR, WARNING_COLOR, SUCCESS_COLOR, HOVER_COLOR,
-    SURFACE_COLOR, SURFACE_LIGHT_COLOR, BORDER_COLOR, DIVIDER_COLOR,
-    LOG_BG_COLOR, HEADER_BAR_COLOR, HEADER_ACCENT_COLOR, DISABLED_FG_COLOR,
-    FOCUS_BORDER_COLOR, HEADER_BAR_FONT, HEADER_VERSION_FONT,
-    SECTION_HEADER_FONT, LABEL_FONT_MODERN, BUTTON_FONT, LOG_FONT, STATUS_FONT,
-    BTN_PADX, BTN_PADY, SECTION_PAD, WIDGET_GAP, PAD_SM, PAD_MD, PAD_LG,
+    DARK_BG_COLOR,
+    LIGHT_TEXT_COLOR,
+    ACCENT_BLUE_COLOR,
+    ERROR_COLOR,
+    WARNING_COLOR,
+    SUCCESS_COLOR,
+    HOVER_COLOR,
+    SURFACE_COLOR,
+    SURFACE_LIGHT_COLOR,
+    BORDER_COLOR,
+    DIVIDER_COLOR,
+    LOG_BG_COLOR,
+    HEADER_BAR_COLOR,
+    HEADER_ACCENT_COLOR,
+    DISABLED_FG_COLOR,
+    FOCUS_BORDER_COLOR,
+    HEADER_BAR_FONT,
+    HEADER_VERSION_FONT,
+    SECTION_HEADER_FONT,
+    LABEL_FONT_MODERN,
+    BUTTON_FONT,
+    LOG_FONT,
+    STATUS_FONT,
+    BTN_PADX,
+    BTN_PADY,
+    SECTION_PAD,
+    WIDGET_GAP,
+    PAD_SM,
+    PAD_MD,
+    PAD_LG,
 )
 from ..calculations import extract_passive_frequencies
 
@@ -389,9 +412,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.controls_frame = ttk.LabelFrame(
             self.root, text="  Measurement Type", padding=SECTION_PAD
         )
-        self.controls_frame.grid(
-            row=1, column=0, sticky="ew", padx=PAD_LG, pady=(PAD_MD, PAD_SM)
-        )
+        self.controls_frame.grid(row=1, column=0, sticky="ew", padx=PAD_LG, pady=(PAD_MD, PAD_SM))
 
         radio_frame = tk.Frame(self.controls_frame, bg=DARK_BG_COLOR)
         radio_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -409,18 +430,27 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.label_scan_type.pack(side=tk.LEFT, padx=(0, PAD_SM))
 
         ttk.Radiobutton(
-            radio_frame, text="Active", variable=self.scan_type,
-            value="active", command=self.update_visibility,
+            radio_frame,
+            text="Active",
+            variable=self.scan_type,
+            value="active",
+            command=self.update_visibility,
         ).pack(side=tk.LEFT, padx=PAD_SM)
 
         ttk.Radiobutton(
-            radio_frame, text="Passive", variable=self.scan_type,
-            value="passive", command=self.update_visibility,
+            radio_frame,
+            text="Passive",
+            variable=self.scan_type,
+            value="passive",
+            command=self.update_visibility,
         ).pack(side=tk.LEFT, padx=PAD_SM)
 
         ttk.Radiobutton(
-            radio_frame, text="VNA (.csv)", variable=self.scan_type,
-            value="vswr", command=self.update_visibility,
+            radio_frame,
+            text="VNA (.csv)",
+            variable=self.scan_type,
+            value="vswr",
+            command=self.update_visibility,
         ).pack(side=tk.LEFT, padx=PAD_SM)
 
         # Import button (right side)
@@ -440,12 +470,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.btn_import.pack(side=tk.RIGHT, padx=PAD_SM)
 
         # ── ROW 2: PARAMETERS SECTION ──────────────────────────────────────
-        self.params_frame = ttk.LabelFrame(
-            self.root, text="  Parameters", padding=SECTION_PAD
-        )
-        self.params_frame.grid(
-            row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
-        )
+        self.params_frame = ttk.LabelFrame(self.root, text="  Parameters", padding=SECTION_PAD)
+        self.params_frame.grid(row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM)
 
         self.available_frequencies = []
         self.selected_frequency = tk.StringVar()
@@ -462,18 +488,14 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
 
         self.label_cable_loss = ttk.Label(self.params_frame, text="Cable Loss (dB):")
         self.cable_loss = tk.StringVar(self.root, value="0.0")
-        self.cable_loss_input = ttk.Entry(
-            self.params_frame, textvariable=self.cable_loss, width=10
-        )
+        self.cable_loss_input = ttk.Entry(self.params_frame, textvariable=self.cable_loss, width=10)
         self.label_cable_loss.grid(row=1, column=0, sticky="w", padx=(0, PAD_SM), pady=2)
         self.cable_loss_input.grid(row=1, column=1, sticky="w", padx=PAD_SM, pady=2)
         self.params_frame.columnconfigure(2, weight=1)
 
         # ── ROW 3: ACTION BUTTONS BAR ──────────────────────────────────────
         self.actions_frame = tk.Frame(self.root, bg=DARK_BG_COLOR)
-        self.actions_frame.grid(
-            row=3, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
-        )
+        self.actions_frame.grid(row=3, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM)
 
         self.btn_view_results = tk.Button(
             self.actions_frame,
@@ -703,9 +725,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         )
         self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        self.progress_bar = ttk.Progressbar(
-            status_frame, mode="indeterminate", length=120
-        )
+        self.progress_bar = ttk.Progressbar(status_frame, mode="indeterminate", length=120)
 
     def _bind_shortcuts(self):
         """Bind keyboard shortcuts."""
@@ -739,10 +759,14 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
                     settings = json.load(f)
                 # VSWR limits
                 for key in (
-                    "saved_limit1_freq1", "saved_limit1_freq2",
-                    "saved_limit1_start", "saved_limit1_stop",
-                    "saved_limit2_freq1", "saved_limit2_freq2",
-                    "saved_limit2_start", "saved_limit2_stop",
+                    "saved_limit1_freq1",
+                    "saved_limit1_freq2",
+                    "saved_limit1_start",
+                    "saved_limit1_stop",
+                    "saved_limit2_freq1",
+                    "saved_limit2_freq2",
+                    "saved_limit2_start",
+                    "saved_limit2_stop",
                 ):
                     if key in settings:
                         setattr(self, key, float(settings[key]))
@@ -754,10 +778,14 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         try:
             settings = {}
             for key in (
-                "saved_limit1_freq1", "saved_limit1_freq2",
-                "saved_limit1_start", "saved_limit1_stop",
-                "saved_limit2_freq1", "saved_limit2_freq2",
-                "saved_limit2_start", "saved_limit2_stop",
+                "saved_limit1_freq1",
+                "saved_limit1_freq2",
+                "saved_limit1_start",
+                "saved_limit1_stop",
+                "saved_limit2_freq1",
+                "saved_limit2_freq2",
+                "saved_limit2_start",
+                "saved_limit2_stop",
             ):
                 if hasattr(self, key):
                     settings[key] = getattr(self, key)
@@ -924,31 +952,21 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
             self.params_frame.grid_remove()
             self.btn_view_results.config(state=tk.NORMAL)
             self.btn_save_to_file.config(state=tk.DISABLED)
-            self.btn_settings.config(state=tk.DISABLED)
+            self.btn_settings.config(state=tk.NORMAL)
 
         elif scan_type_value == "passive":
-            self.params_frame.grid(
-                row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
-            )
+            self.params_frame.grid(row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM)
             if self.passive_scan_type.get() == "G&D":
                 self.label_frequency.grid_remove()
                 self.frequency_dropdown.grid_remove()
                 self.btn_save_to_file.config(state=tk.DISABLED)
             else:
-                self.label_frequency.grid(
-                    row=0, column=0, sticky="w", padx=(0, PAD_SM), pady=2
-                )
-                self.frequency_dropdown.grid(
-                    row=0, column=1, sticky="w", padx=PAD_SM, pady=2
-                )
+                self.label_frequency.grid(row=0, column=0, sticky="w", padx=(0, PAD_SM), pady=2)
+                self.frequency_dropdown.grid(row=0, column=1, sticky="w", padx=PAD_SM, pady=2)
                 self.btn_save_to_file.config(state=tk.NORMAL)
 
-            self.label_cable_loss.grid(
-                row=1, column=0, sticky="w", padx=(0, PAD_SM), pady=2
-            )
-            self.cable_loss_input.grid(
-                row=1, column=1, sticky="w", padx=PAD_SM, pady=2
-            )
+            self.label_cable_loss.grid(row=1, column=0, sticky="w", padx=(0, PAD_SM), pady=2)
+            self.cable_loss_input.grid(row=1, column=1, sticky="w", padx=PAD_SM, pady=2)
             self.btn_view_results.config(state=tk.NORMAL)
             self.btn_settings.config(state=tk.NORMAL)
 
