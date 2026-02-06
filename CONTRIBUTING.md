@@ -357,10 +357,22 @@ RFlect/
 │   │   ├── tools_mixin.py
 │   │   └── callbacks_mixin.py
 │   └── __init__.py
+├── rflect-mcp/            # MCP server for programmatic access
+│   ├── server.py          # FastMCP server entry point
+│   ├── tools/
+│   │   ├── import_tools.py    # File import tools
+│   │   ├── analysis_tools.py  # Analysis tools
+│   │   ├── report_tools.py    # Report generation tools
+│   │   └── bulk_tools.py      # Batch processing tools
+│   ├── templates/
+│   │   └── default.yaml       # Report template
+│   └── README.md
 ├── tests/                  # Test suite
 │   ├── conftest.py        # Pytest fixtures
 │   ├── test_calculations.py
+│   ├── test_ai_analysis.py
 │   ├── test_file_utils.py
+│   ├── test_mcp_tools.py
 │   └── integration/       # Integration tests
 ├── .github/
 │   └── workflows/         # CI/CD workflows
@@ -377,19 +389,19 @@ RFlect/
 ## Areas Needing Contribution
 
 ### High Priority
-- 🔴 Complete pattern analysis functions (HPBW, F/B ratio)
-- 🔴 Implement batch frequency analysis
 - 🔴 Add more test coverage (especially integration tests)
-- 🔴 Complete AI report templating system
+- 🔴 Sidelobe detection and reporting in pattern analysis
+- 🔴 Automated figure insertion in DOCX reports
+- 🔴 System Fidelity Factor calculation (#31)
 
 ### Medium Priority
 - 🟡 Add support for additional file formats
 - 🟡 Improve error messages and user feedback
 - 🟡 Add more antenna benchmarks to AI knowledge base
 - 🟡 Create tutorial documentation
+- 🟡 Multi-frequency comparison tables in reports
 
 ### Future Features
-- 🟢 MCP server implementation (v4.1+)
 - 🟢 Vision API integration for plot analysis (v4.2+)
 - 🟢 MIMO antenna analysis
 - 🟢 macOS/Linux .app/.deb packaging

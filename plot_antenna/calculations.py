@@ -354,7 +354,7 @@ def get_window(window_type, shape):
 # Helper function to process gain data for plotting.
 def process_data(selected_data, selected_phi_angles_deg, selected_theta_angles_deg):
     """
-    Helper function to process data (gain or power) for plotting using interp2d.
+    Helper function to process data (gain or power) for plotting using FFT-based plane wave decomposition.
     """
     # Convert angles to radians
     theta = np.deg2rad(selected_theta_angles_deg)

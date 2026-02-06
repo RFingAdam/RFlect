@@ -42,10 +42,10 @@
   - Optional dependencies for dev tools and PyInstaller builds
 - **Testing Infrastructure**
   - Comprehensive test suite with pytest
-  - 40+ unit tests for RF calculations
-  - File parsing tests with fixtures
-  - Integration test structure
-  - Coverage target: 60% overall, 80% for core modules
+  - Unit tests for RF calculations (diversity gain, MIMO capacity, TRP, process data)
+  - AI analysis tests (gain stats, pattern analysis, polarization comparison)
+  - MCP tools tests (dataclass creation, no-data error handling)
+  - File parsing tests with import verification
 - **CI/CD Automation**
   - GitHub Actions workflow for automated testing
     - Multi-OS (Ubuntu, Windows, macOS)
@@ -64,18 +64,36 @@
 ### 🤖 AI Architecture Improvements
 - **Extracted AI Analysis Logic**
   - Created `ai_analysis.py` module with `AntennaAnalyzer` class
-  - GUI-independent, reusable for future MCP server
+  - GUI-independent, reusable for MCP server and programmatic access
   - Pure analysis functions that don't depend on GUI state
   - Added antenna engineering domain knowledge for AI prompts
+- **Pattern Analysis Functions**
+  - HPBW (Half-Power Beamwidth) calculation for E-plane and H-plane
+  - Front-to-back ratio with proper direction identification
+  - Batch frequency analysis: resonance detection, 3dB bandwidth, gain stability
+  - Pattern classification (omnidirectional, sectoral, directional)
 - **AI Feature Status Documentation**
   - Created `AI_STATUS.md` documenting feature completeness
   - Clearly marked AI features as experimental (~80-90% complete)
   - Documented what works and what needs improvement
-  - Roadmap for AI feature completion (v4.1+)
 - **Optional AI Features**
   - AI features require opt-in (OpenAI API key)
   - Core RFlect functionality works without AI
   - Clear status indicators in UI
+
+### 🔌 MCP Server (Programmatic Access)
+- **RFlect MCP Server** (`rflect-mcp/`)
+  - FastMCP-based server for Claude Code, Cline, and other AI assistants
+  - Import tools: load measurement files programmatically
+  - Analysis tools: gain statistics, pattern analysis, polarization comparison
+  - Report tools: generate DOCX reports with AI summaries and smart filtering
+  - YAML-based report template engine (`rflect-mcp/templates/default.yaml`)
+- **Bulk Processing MCP Tools**
+  - `bulk_process_passive()`: Batch process HPOL/VPOL pairs in a folder
+  - `bulk_process_active()`: Batch process TRP files in a folder
+  - `validate_file_pair()`: Validate HPOL/VPOL file pairing
+  - `convert_to_cst()`: Convert measurement files to CST .ffs format
+  - `list_measurement_files()`: Scan folders for recognized file types
 
 ### 📚 Documentation
 - **Developer Guidelines**
@@ -107,10 +125,10 @@
 
 ### 🎯 Future Roadmap
 - **v4.1** (Planned Q2 2026)
-  - Complete pattern analysis functions (HPBW, F/B ratio)
-  - Implement batch frequency analysis
-  - Complete AI report templating system
-  - MCP server for programmatic access
+  - Sidelobe detection and reporting
+  - System Fidelity Factor calculation (#31)
+  - Automated figure insertion in reports
+  - Multi-frequency comparison tables
 - **v4.2** (Planned Q3 2026)
   - Vision API integration (AI analyzes plots visually)
   - Simulation vs measurement comparison

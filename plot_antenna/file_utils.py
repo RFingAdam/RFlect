@@ -1104,7 +1104,7 @@ def batch_process_active_scans(
     """
     import os
     from .plotting import plot_active_2d_data, plot_active_3d_data
-    from calculations import calculate_active_variables
+    from .calculations import calculate_active_variables
 
     # Find all TRP files in the folder
     files = os.listdir(folder_path)

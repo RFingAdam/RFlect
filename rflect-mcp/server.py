@@ -28,6 +28,7 @@ from mcp.server.fastmcp import FastMCP
 from tools.import_tools import register_import_tools
 from tools.analysis_tools import register_analysis_tools
 from tools.report_tools import register_report_tools
+from tools.bulk_tools import register_bulk_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -36,6 +37,7 @@ mcp = FastMCP("rflect")
 register_import_tools(mcp)
 register_analysis_tools(mcp)
 register_report_tools(mcp)
+register_bulk_tools(mcp)
 
 
 @mcp.resource("rflect://status")
@@ -62,19 +64,19 @@ ANALYSIS TOOLS:
 - analyze_pattern(frequency, polarization) - Pattern analysis (HPBW, F/B, nulls)
 - get_gain_statistics(frequency) - Min/max/avg gain
 - compare_polarizations(frequency) - HPOL vs VPOL comparison
+- get_all_analysis(frequency) - Combined gain + pattern + polarization analysis
 
 REPORT TOOLS:
 - generate_report(output_path, options) - Generate DOCX report
+- preview_report(options) - Preview report contents without generating
 - get_report_options() - Show available report configuration options
 
-FILTERING OPTIONS (for generate_report):
-- frequencies: List of specific frequencies to include (default: all)
-- polarizations: ["total", "hpol", "vpol"] (default: ["total"])
-- plots_2d: Include 2D pattern plots (default: true)
-- plots_3d: Include 3D pattern plots (default: false - they're large)
-- include_raw_data: Include data tables (default: false)
-- ai_analysis: Let AI analyze and comment (default: true)
-- ai_summary: Generate executive summary (default: true)
+BULK PROCESSING TOOLS:
+- list_measurement_files(folder_path) - Scan folder for measurement files
+- bulk_process_passive(folder_path, frequencies, cable_loss) - Batch process HPOL/VPOL pairs
+- bulk_process_active(folder_path) - Batch process TRP files
+- validate_file_pair(hpol_path, vpol_path) - Validate HPOL/VPOL file pairing
+- convert_to_cst(hpol_path, vpol_path, vswr_path, frequency) - Convert to CST .ffs format
 """
 
 

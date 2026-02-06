@@ -71,3 +71,32 @@ class TestVNAFileParsingTODO:
     """Placeholder for comprehensive VNA file parsing tests"""
 
     pass
+
+
+class TestAllImports:
+    """Test that all file_utils public functions can be imported"""
+
+    def test_check_matching_files_importable(self):
+        from plot_antenna.file_utils import check_matching_files
+
+        assert callable(check_matching_files)
+
+    def test_batch_process_passive_importable(self):
+        from plot_antenna.file_utils import batch_process_passive_scans
+
+        assert callable(batch_process_passive_scans)
+
+    def test_batch_process_active_importable(self):
+        from plot_antenna.file_utils import batch_process_active_scans
+
+        assert callable(batch_process_active_scans)
+
+    def test_convert_hpolvpol_importable(self):
+        from plot_antenna.file_utils import convert_HpolVpol_files
+
+        assert callable(convert_HpolVpol_files)
+
+    def test_validate_hpol_vpol_importable(self):
+        from plot_antenna.file_utils import validate_hpol_vpol_files
+
+        assert callable(validate_hpol_vpol_files)
