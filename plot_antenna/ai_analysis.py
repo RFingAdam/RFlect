@@ -2,24 +2,15 @@
 AI Analysis Module for RFlect
 
 This module provides reusable antenna analysis functions for AI-powered features.
-Designed to be GUI-independent and suitable for both GUI and future MCP server use.
+Designed to be GUI-independent and suitable for both GUI and MCP server use.
 
-Status: EXPERIMENTAL / NOT PRODUCTION-READY
+Status: EXPERIMENTAL
 - Core analysis logic is functional
-- System prompts need refinement for antenna domain knowledge
-- Report templating system is ~90% complete
-- Needs more testing with real-world antenna data
-
-TODO (Future v4.1+):
-- Add batch frequency analysis across all loaded frequencies
-- Improve pattern classification (omnidirectional, directional, sectoral)
-- Add antenna benchmarking (compare to typical dipole, patch, horn)
-- Add design recommendations based on pattern analysis
-- Complete report templating system
-- Add MCP server integration
+- Pattern analysis includes HPBW and F/B ratio calculations
+- Batch frequency analysis implemented
+- MCP server integration complete
 """
 
-import json
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -147,6 +138,101 @@ class AntennaAnalyzer:
 
         return stats
 
+    def _get_gain_grid(self, gain_data_1d: np.ndarray) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        """
+        Reshape 1D gain data into a 2D grid using phi/theta angle arrays.
+
+        Returns:
+            Tuple of (gain_2d, unique_theta, unique_phi) or None if insufficient data.
+            gain_2d shape is (num_theta, num_phi).
+        """
+        phi = self.data.get("phi")
+        theta = self.data.get("theta")
+        if phi is None or theta is None:
+            return None
+
+        phi = np.asarray(phi)
+        theta = np.asarray(theta)
+
+        unique_theta = np.unique(theta)
+        unique_phi = np.unique(phi)
+        n_theta = len(unique_theta)
+        n_phi = len(unique_phi)
+
+        if n_theta * n_phi != len(gain_data_1d):
+            # Data doesn't form a complete grid — can't reshape
+            return None
+
+        try:
+            gain_2d = gain_data_1d.reshape((n_theta, n_phi))
+            return gain_2d, unique_theta, unique_phi
+        except ValueError:
+            return None
+
+    def _calculate_hpbw(self, cut_angles: np.ndarray, cut_gain: np.ndarray) -> Optional[float]:
+        """
+        Calculate Half-Power Beamwidth from a 1D gain cut.
+
+        Args:
+            cut_angles: Angle values in degrees along the cut
+            cut_gain: Gain values in dBi along the cut
+
+        Returns:
+            HPBW in degrees, or None if can't determine.
+        """
+        if len(cut_gain) < 3:
+            return None
+
+        peak_gain = np.max(cut_gain)
+        threshold = peak_gain - 3.0  # -3 dB from peak
+
+        # Find indices where gain is above threshold
+        above = cut_gain >= threshold
+        if not np.any(above):
+            return None
+
+        # Find the contiguous region around the peak
+        peak_idx = np.argmax(cut_gain)
+        above_indices = np.where(above)[0]
+
+        # Find left and right bounds closest to peak
+        left_indices = above_indices[above_indices <= peak_idx]
+        right_indices = above_indices[above_indices >= peak_idx]
+
+        if len(left_indices) == 0 or len(right_indices) == 0:
+            return None
+
+        left_bound = left_indices[0]
+        right_bound = right_indices[-1]
+
+        # Interpolate to find more precise -3dB crossings
+        # Left crossing
+        if left_bound > 0:
+            g_above = cut_gain[left_bound]
+            g_below = cut_gain[left_bound - 1]
+            if g_above != g_below:
+                frac = (threshold - g_below) / (g_above - g_below)
+                left_angle = cut_angles[left_bound - 1] + frac * (cut_angles[left_bound] - cut_angles[left_bound - 1])
+            else:
+                left_angle = cut_angles[left_bound]
+        else:
+            left_angle = cut_angles[left_bound]
+
+        # Right crossing
+        if right_bound < len(cut_gain) - 1:
+            g_above = cut_gain[right_bound]
+            g_below = cut_gain[right_bound + 1]
+            if g_above != g_below:
+                frac = (threshold - g_below) / (g_above - g_below)
+                right_angle = cut_angles[right_bound + 1] - frac * (cut_angles[right_bound + 1] - cut_angles[right_bound])
+            else:
+                right_angle = cut_angles[right_bound]
+        else:
+            right_angle = cut_angles[right_bound]
+
+        hpbw = abs(right_angle - left_angle)
+        return float(hpbw) if hpbw > 0 else None
+
     def analyze_pattern(self, frequency: Optional[float] = None) -> Dict[str, Any]:
         """
         Analyze radiation pattern characteristics.
@@ -162,12 +248,6 @@ class AntennaAnalyzer:
 
         Returns:
             Dictionary containing pattern analysis results
-
-        TODO:
-        - Improve null detection algorithm
-        - Add pattern symmetry analysis
-        - Add sidelobe level detection
-        - Classify antenna type from pattern
         """
         if frequency is None and self.frequencies:
             frequency = self.frequencies[0]
@@ -184,8 +264,7 @@ class AntennaAnalyzer:
             if gain_data.ndim == 2:
                 gain_data = gain_data[:, freq_idx]
 
-            # Find peak gain location
-            max_idx = np.argmax(gain_data)
+            # Peak gain
             analysis["peak_gain_dBi"] = float(np.max(gain_data))
 
             # Find nulls (gain below -10 dB from peak)
@@ -195,13 +274,7 @@ class AntennaAnalyzer:
             analysis["num_nulls"] = len(null_indices)
             analysis["deepest_null_dB"] = float(np.min(gain_data)) if len(gain_data) > 0 else None
 
-            # TODO: Calculate HPBW (Half Power Beamwidth)
-            # Requires finding -3dB points from peak in E-plane and H-plane
-
-            # TODO: Calculate front-to-back ratio
-            # Requires identifying front and back directions
-
-            # Pattern type classification (basic)
+            # Pattern type classification
             gain_range = np.max(gain_data) - np.min(gain_data)
             if gain_range < 6:
                 analysis["pattern_type"] = "omnidirectional"
@@ -209,6 +282,32 @@ class AntennaAnalyzer:
                 analysis["pattern_type"] = "sectoral"
             else:
                 analysis["pattern_type"] = "directional"
+
+            # HPBW and F/B ratio require 2D grid data
+            grid = self._get_gain_grid(gain_data)
+            if grid is not None:
+                gain_2d, unique_theta, unique_phi = grid
+                peak_2d_idx = np.unravel_index(np.argmax(gain_2d), gain_2d.shape)
+                peak_theta_idx, peak_phi_idx = peak_2d_idx
+
+                analysis["main_beam_theta"] = float(unique_theta[peak_theta_idx])
+                analysis["main_beam_phi"] = float(unique_phi[peak_phi_idx])
+
+                # HPBW E-plane: vary theta at peak phi
+                e_plane_cut = gain_2d[:, peak_phi_idx]
+                hpbw_e = self._calculate_hpbw(unique_theta, e_plane_cut)
+                analysis["hpbw_e_plane"] = hpbw_e
+
+                # HPBW H-plane: vary phi at peak theta
+                h_plane_cut = gain_2d[peak_theta_idx, :]
+                hpbw_h = self._calculate_hpbw(unique_phi, h_plane_cut)
+                analysis["hpbw_h_plane"] = hpbw_h
+
+                # Front-to-back ratio
+                opposite_phi = (unique_phi[peak_phi_idx] + 180.0) % 360.0
+                back_phi_idx = np.argmin(np.abs(unique_phi - opposite_phi))
+                back_gain = gain_2d[peak_theta_idx, back_phi_idx]
+                analysis["front_to_back_dB"] = float(peak_gain - back_gain)
 
         return analysis
 
@@ -226,11 +325,6 @@ class AntennaAnalyzer:
 
         Returns:
             Dictionary containing polarization comparison results
-
-        TODO:
-        - Add axial ratio calculation
-        - Add tilt angle calculation
-        - Add polarization sense (LHCP vs RHCP)
         """
         if frequency is None and self.frequencies:
             frequency = self.frequencies[0]
@@ -279,24 +373,54 @@ class AntennaAnalyzer:
         Analyze gain trends across all measured frequencies.
 
         Returns:
-            Dictionary containing frequency-dependent analysis
-
-        TODO: Implement this function for v4.1
-        - Frequency response (gain vs frequency)
-        - 3dB bandwidth calculation
-        - Resonance frequency detection
-        - Frequency stability analysis
+            Dictionary containing:
+            - peak_gain_per_freq: Peak gain at each frequency
+            - resonance_frequency_MHz: Frequency with highest peak gain
+            - bandwidth_3dB_MHz: 3dB bandwidth (if determinable)
+            - gain_variation_dB: Total gain variation across band
+            - avg_peak_gain_dBi: Average peak gain
+            - gain_std_dev_dB: Standard deviation of peak gain
         """
-        analysis = {"frequencies_MHz": self.frequencies, "num_frequencies": len(self.frequencies)}
+        analysis = {
+            "frequencies_MHz": self.frequencies,
+            "num_frequencies": len(self.frequencies),
+        }
 
-        # Placeholder for future implementation
-        analysis["status"] = "Not implemented - planned for v4.1"
-        analysis["TODO"] = [
-            "Calculate gain vs frequency trend",
-            "Find 3dB bandwidth",
-            "Detect resonance frequency",
-            "Analyze frequency stability",
-        ]
+        if len(self.frequencies) == 0:
+            return analysis
+
+        # Get peak gain at each frequency
+        peak_gains = []
+        for freq in self.frequencies:
+            stats = self.get_gain_statistics(frequency=freq)
+            gain = stats.get("max_gain_dBi", stats.get("max_power_dBm", None))
+            peak_gains.append(gain)
+        analysis["peak_gain_per_freq"] = peak_gains
+
+        # Filter to valid (non-None) entries
+        valid = [(g, f) for g, f in zip(peak_gains, self.frequencies) if g is not None]
+        if not valid:
+            return analysis
+
+        valid_gains = [g for g, _ in valid]
+
+        # Find resonance frequency (max peak gain)
+        best_gain, best_freq = max(valid, key=lambda x: x[0])
+        analysis["resonance_frequency_MHz"] = best_freq
+        analysis["peak_gain_at_resonance_dBi"] = best_gain
+
+        # 3dB bandwidth
+        threshold = best_gain - 3
+        in_band = [f for g, f in valid if g >= threshold]
+        if len(in_band) >= 2:
+            analysis["bandwidth_3dB_MHz"] = max(in_band) - min(in_band)
+        else:
+            analysis["bandwidth_3dB_MHz"] = None
+
+        # Frequency stability metrics
+        analysis["gain_variation_dB"] = max(valid_gains) - min(valid_gains)
+        analysis["avg_peak_gain_dBi"] = float(np.mean(valid_gains))
+        analysis["gain_std_dev_dB"] = float(np.std(valid_gains))
 
         return analysis
 
@@ -310,8 +434,6 @@ def get_antenna_domain_knowledge() -> str:
 
     Returns:
         String containing antenna benchmarks and design guidelines
-
-    TODO: Expand with more antenna types and applications
     """
     knowledge = """
 Antenna Engineering Reference:
@@ -359,8 +481,6 @@ def create_analysis_system_prompt(scan_type: str) -> str:
 
     Returns:
         System prompt string for AI
-
-    TODO: Refine prompts based on user feedback
     """
     base_prompt = f"""You are an RF antenna engineering expert analyzing {scan_type} antenna measurements.
 
@@ -385,6 +505,9 @@ REPORT_TEMPLATE_STATUS = {
         "Executive summary generation",
         "Gain statistics reporting",
         "Pattern classification",
+        "HPBW calculation",
+        "Front-to-back ratio",
+        "Batch frequency analysis",
         "Basic recommendations",
     ],
     "incomplete_features": [

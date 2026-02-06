@@ -25,7 +25,7 @@ Add to your Claude Code MCP settings (`~/.claude/settings.json`):
   "mcpServers": {
     "rflect": {
       "command": "python",
-      "args": ["F:/Personal/_Projects/_live/RFlect/RFlect/rflect-mcp/server.py"]
+      "args": ["path/to/rflect-mcp/server.py"]
     }
   }
 }
@@ -63,6 +63,16 @@ Configure similarly with the path to `server.py`.
 | `generate_report(output_path, options)` | Generate DOCX report |
 | `preview_report(options)` | Preview what report would contain |
 | `get_report_options()` | Show available filtering options |
+
+### Bulk Processing Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_measurement_files(folder_path)` | Scan folder for measurement files |
+| `bulk_process_passive(folder_path, frequencies)` | Batch process HPOL/VPOL pairs |
+| `bulk_process_active(folder_path)` | Batch process TRP files |
+| `validate_file_pair(hpol_path, vpol_path)` | Validate HPOL/VPOL file pairing |
+| `convert_to_cst(hpol_path, vpol_path, vswr_path, frequency)` | Convert to CST .ffs format |
 
 ## Report Filtering
 

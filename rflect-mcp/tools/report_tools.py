@@ -50,6 +50,9 @@ class ReportOptions:
     include_cover_page: bool = True
     include_table_of_contents: bool = True
 
+    # Template
+    template_path: Optional[str] = None  # Path to YAML template (None = default)
+
     # Branding (loaded from config)
     company_name: Optional[str] = None
     logo_path: Optional[str] = None
@@ -286,6 +289,60 @@ EXAMPLE - Full Report:
         return preview
 
 
+def _load_template(template_path: Optional[str] = None) -> Optional[Dict]:
+    """Load a YAML report template.
+
+    Args:
+        template_path: Path to template YAML. None uses default template.
+
+    Returns:
+        Parsed template dict, or None if loading fails.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return None
+
+    if template_path is None:
+        # Use default template from templates/ directory
+        template_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "templates", "default.yaml"
+        )
+
+    if not os.path.isfile(template_path):
+        return None
+
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except Exception:
+        return None
+
+
+def _template_section_enabled(section: Dict, opts: ReportOptions) -> bool:
+    """Check whether a template section should be included based on options."""
+    if not section.get("enabled", True):
+        return False
+
+    section_id = section.get("id", "")
+
+    # Map section IDs to ReportOptions flags
+    flag_map = {
+        "cover_page": opts.include_cover_page,
+        "table_of_contents": opts.include_table_of_contents,
+        "executive_summary": opts.ai_executive_summary,
+        "gain_summary": opts.include_gain_tables,
+        "recommendations": opts.ai_recommendations,
+        "appendix_data": opts.include_raw_data_tables,
+    }
+
+    if section_id in flag_map:
+        return flag_map[section_id]
+
+    return True
+
+
 def _prepare_report_data(measurements: Dict, opts: ReportOptions) -> Dict:
     """Prepare data for report generation based on options."""
     data = {
@@ -311,13 +368,178 @@ def _prepare_report_data(measurements: Dict, opts: ReportOptions) -> Dict:
 
 
 def _generate_report_content(data: Dict, opts: ReportOptions) -> Dict:
-    """Generate report content including AI analysis."""
+    """Generate report content including AI analysis.
+
+    If a YAML template is available, uses it to determine section order and
+    content.  Falls back to hardcoded sections when no template is loaded.
+    """
+    template = _load_template(opts.template_path)
+
     content = {
         'title': 'Antenna Test Report',
         'date': datetime.now().strftime('%Y-%m-%d'),
         'sections': []
     }
 
+    if template:
+        content['title'] = template.get('metadata', {}).get('title', content['title'])
+        return _generate_from_template(content, data, opts, template)
+
+    return _generate_hardcoded_content(content, data, opts)
+
+
+def _generate_from_template(
+    content: Dict, data: Dict, opts: ReportOptions, template: Dict
+) -> Dict:
+    """Build report sections by iterating over the YAML template."""
+    sections = template.get('sections', [])
+
+    # Map of section IDs to content generators
+    section_handlers = {
+        'executive_summary': lambda: _generate_ai_summary(data, opts),
+        'gain_summary': lambda: _build_gain_sections(data, opts),
+        'radiation_patterns': lambda: _build_pattern_sections(data, opts),
+        'pattern_analysis': lambda: _build_analysis_sections(data, opts),
+        'polarization_analysis': lambda: _build_polarization_sections(data, opts),
+        'recommendations': lambda: _generate_ai_section(
+            data, opts,
+            template.get('sections', [{}])[-1].get('ai_prompt', '')
+        ),
+    }
+
+    for section in sections:
+        if not _template_section_enabled(section, opts):
+            continue
+
+        section_id = section.get('id', '')
+        title = section.get('title', section_id)
+
+        # Handle AI-generated sections
+        if section.get('ai_generated') and section_id in section_handlers:
+            text = section_handlers[section_id]()
+            if isinstance(text, list):
+                content['sections'].extend(text)
+            else:
+                content['sections'].append({
+                    'title': title,
+                    'content': text,
+                    'type': 'text'
+                })
+            continue
+
+        # Handle data sections with per-frequency expansion
+        if section_id in section_handlers:
+            result = section_handlers[section_id]()
+            if isinstance(result, list):
+                content['sections'].extend(result)
+            else:
+                content['sections'].append({
+                    'title': title,
+                    'content': result,
+                    'type': 'text'
+                })
+            continue
+
+        # Handle subsections (e.g., radiation_patterns has 2d, 3d, polar)
+        if 'subsections' in section:
+            for sub in section['subsections']:
+                if sub.get('enabled', True):
+                    content['sections'].append({
+                        'title': f"{title} - {sub.get('title', '')}",
+                        'content': f"[{sub.get('title', 'Section')} placeholder]",
+                        'type': 'text'
+                    })
+
+    return content
+
+
+def _build_gain_sections(data: Dict, opts: ReportOptions) -> list:
+    """Build gain statistics sections for each frequency."""
+    sections = []
+    for freq in data['frequencies'][:opts.max_frequencies_in_table]:
+        stats = get_gain_statistics(freq)
+        sections.append({
+            'title': f'Gain Statistics - {freq} MHz',
+            'content': stats,
+            'type': 'text'
+        })
+    return sections
+
+
+def _build_pattern_sections(data: Dict, opts: ReportOptions) -> list:
+    """Build pattern cut sections for each frequency."""
+    sections = []
+    for freq in data['frequencies'][:opts.max_frequencies_in_table]:
+        analysis = analyze_pattern(freq)
+        sections.append({
+            'title': f'Radiation Pattern - {freq} MHz',
+            'content': analysis,
+            'type': 'text'
+        })
+    return sections
+
+
+def _build_analysis_sections(data: Dict, opts: ReportOptions) -> list:
+    """Build pattern analysis sections for each frequency."""
+    sections = []
+    for freq in data['frequencies'][:opts.max_frequencies_in_table]:
+        analysis = analyze_pattern(freq)
+        sections.append({
+            'title': f'Pattern Analysis - {freq} MHz',
+            'content': analysis,
+            'type': 'text'
+        })
+    return sections
+
+
+def _build_polarization_sections(data: Dict, opts: ReportOptions) -> list:
+    """Build polarization comparison sections for each frequency."""
+    sections = []
+    for freq in data['frequencies'][:opts.max_frequencies_in_table]:
+        comparison = compare_polarizations(freq)
+        sections.append({
+            'title': f'Polarization Analysis - {freq} MHz',
+            'content': comparison,
+            'type': 'text'
+        })
+    return sections
+
+
+def _generate_ai_section(data: Dict, opts: ReportOptions, prompt: str) -> str:
+    """Generate an AI section using a custom prompt from the template."""
+    if not prompt:
+        return "[No AI prompt provided in template]"
+
+    try:
+        from plot_antenna.api_keys import get_api_key
+        from openai import OpenAI
+
+        api_key = get_api_key()
+        if not api_key:
+            return "[AI section requires OpenAI API key]"
+
+        # Gather context data
+        all_analysis = []
+        for freq in data['frequencies'][:3]:
+            all_analysis.append(get_all_analysis(freq))
+
+        client = OpenAI(api_key=api_key)
+        full_prompt = f"{prompt}\n\nMeasurement Data:\n{chr(10).join(all_analysis)}"
+
+        response = client.chat.completions.create(
+            model=opts.ai_model,
+            messages=[{"role": "user", "content": full_prompt}],
+            max_tokens=500
+        )
+
+        return response.choices[0].message.content or "[AI section unavailable]"
+
+    except Exception as e:
+        return f"[AI section generation failed: {str(e)}]"
+
+
+def _generate_hardcoded_content(content: Dict, data: Dict, opts: ReportOptions) -> Dict:
+    """Fallback: generate report with hardcoded section order (no template)."""
     # Executive Summary (AI)
     if opts.ai_executive_summary:
         summary_text = _generate_ai_summary(data, opts)
@@ -329,22 +551,10 @@ def _generate_report_content(data: Dict, opts: ReportOptions) -> Dict:
 
     # Gain Statistics per frequency
     if opts.include_gain_tables:
-        for freq in data['frequencies'][:opts.max_frequencies_in_table]:
-            stats = get_gain_statistics(freq)
-            content['sections'].append({
-                'title': f'Gain Statistics - {freq} MHz',
-                'content': stats,
-                'type': 'text'
-            })
+        content['sections'].extend(_build_gain_sections(data, opts))
 
     # Pattern Analysis
-    for freq in data['frequencies'][:opts.max_frequencies_in_table]:
-        analysis = analyze_pattern(freq)
-        content['sections'].append({
-            'title': f'Pattern Analysis - {freq} MHz',
-            'content': analysis,
-            'type': 'text'
-        })
+    content['sections'].extend(_build_analysis_sections(data, opts))
 
     return content
 
@@ -383,7 +593,7 @@ Write the executive summary:"""
             max_tokens=500
         )
 
-        return response.choices[0].message.content
+        return response.choices[0].message.content or "[AI summary unavailable]"
 
     except Exception as e:
         return f"[AI Summary generation failed: {str(e)}]"

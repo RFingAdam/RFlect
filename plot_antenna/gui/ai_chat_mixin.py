@@ -48,6 +48,7 @@ from ..plotting import (
     plot_active_2d_data,
     plot_active_3d_data,
 )
+from ..ai_analysis import AntennaAnalyzer
 
 if TYPE_CHECKING:
     from .base_protocol import AntennaPlotGUIProtocol
@@ -442,6 +443,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             "get_gain_statistics": self._ai_get_gain_statistics,
             "analyze_pattern": self._ai_analyze_pattern,
             "compare_polarizations": self._ai_compare_polarizations,
+            "analyze_all_frequencies": self._ai_analyze_all_frequencies,
         }
 
         # Build enhanced system message
@@ -454,9 +456,10 @@ Current Measurement Data:
 You can call these functions to help answer user questions:
 1. generate_2d_plot(frequency) - Display 2D polar plots showing azimuth/elevation cuts with H-pol, V-pol, and total gain. Returns expert analysis.
 2. generate_3d_plot(frequency, component) - Display interactive 3D radiation pattern in a window the user can rotate. Returns expert analysis.
-3. get_gain_statistics(frequency) - Calculate min/max/average gain values at a frequency
-4. analyze_pattern(frequency) - Analyze pattern characteristics (nulls, beamwidth, symmetry, pattern type)
-5. compare_polarizations(frequency) - Compare HPOL vs VPOL performance with cross-pol discrimination
+3. get_gain_statistics(frequency) - Calculate min/max/average gain values at a frequency, including per-polarization breakdown
+4. analyze_pattern(frequency) - Analyze pattern characteristics: HPBW (E-plane/H-plane), front-to-back ratio, null detection, pattern type classification, beam direction
+5. compare_polarizations(frequency) - Compare HPOL vs VPOL: cross-polarization discrimination (XPD), polarization balance, dominant polarization
+6. analyze_all_frequencies() - Analyze gain/power trends across ALL frequencies: resonance frequency, 3dB bandwidth, gain variation, per-frequency peak gains
 
 **Analysis Guidelines:**
 - When plot functions return analysis data, interpret and explain the results with PhD-level technical depth
@@ -540,7 +543,7 @@ You can call these functions to help answer user questions:
             },
             {
                 "name": "analyze_pattern",
-                "description": "Analyze the radiation pattern characteristics including pattern type (omni/directional), null locations, beamwidth, and symmetry.",
+                "description": "Analyze the radiation pattern characteristics including pattern type, HPBW (half-power beamwidth) for E-plane and H-plane, front-to-back ratio, null detection, and beam direction.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -553,7 +556,7 @@ You can call these functions to help answer user questions:
             },
             {
                 "name": "compare_polarizations",
-                "description": "Compare HPOL and VPOL performance including gain differences, cross-pol ratio, and polarization purity.",
+                "description": "Compare HPOL and VPOL performance including cross-polarization discrimination (XPD), polarization balance, and dominant polarization.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -562,6 +565,14 @@ You can call these functions to help answer user questions:
                             "description": "Frequency in MHz to compare",
                         }
                     },
+                },
+            },
+            {
+                "name": "analyze_all_frequencies",
+                "description": "Analyze gain/power trends across ALL measured frequencies. Returns resonance frequency, 3dB bandwidth, gain variation, and per-frequency peak gains.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
                 },
             },
         ]
@@ -701,7 +712,7 @@ You can call these functions to help answer user questions:
             {
                 "type": "function",
                 "name": "analyze_pattern",
-                "description": "Analyze the radiation pattern characteristics including pattern type, null locations, beamwidth, and symmetry.",
+                "description": "Analyze the radiation pattern characteristics including pattern type, HPBW (half-power beamwidth) for E-plane and H-plane, front-to-back ratio, null detection, and beam direction.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -718,7 +729,7 @@ You can call these functions to help answer user questions:
             {
                 "type": "function",
                 "name": "compare_polarizations",
-                "description": "Compare HPOL and VPOL performance including gain differences, cross-pol ratio, and polarization purity.",
+                "description": "Compare HPOL and VPOL performance including cross-polarization discrimination (XPD), polarization balance, and dominant polarization.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -728,6 +739,18 @@ You can call these functions to help answer user questions:
                         }
                     },
                     "required": ["frequency"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+            {
+                "type": "function",
+                "name": "analyze_all_frequencies",
+                "description": "Analyze gain/power trends across ALL measured frequencies. Returns resonance frequency, 3dB bandwidth, gain variation, and per-frequency peak gains.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
                     "additionalProperties": False,
                 },
                 "strict": True,
@@ -859,6 +882,38 @@ You can call these functions to help answer user questions:
     # ────────────────────────────────────────────────────────────────────────
     # AI FUNCTION IMPLEMENTATIONS
     # ────────────────────────────────────────────────────────────────────────
+
+    def _build_analyzer(self):
+        """Build an AntennaAnalyzer from current GUI state."""
+        scan_type = self.scan_type.get()
+        data = {}
+
+        if scan_type == "passive":
+            theta = getattr(self, "theta_list", None)
+            phi = getattr(self, "phi_list", None)
+            # GUI stores 2D arrays (points x freqs); AntennaAnalyzer expects 1D angles
+            if theta is not None and hasattr(theta, "ndim") and theta.ndim == 2:
+                theta = theta[:, 0]
+            if phi is not None and hasattr(phi, "ndim") and phi.ndim == 2:
+                phi = phi[:, 0]
+            data["phi"] = phi
+            data["theta"] = theta
+            data["total_gain"] = getattr(self, "total_gain_dB", None)
+            data["h_gain"] = getattr(self, "h_gain_dB", None)
+            data["v_gain"] = getattr(self, "v_gain_dB", None)
+        elif scan_type == "active":
+            data["phi"] = getattr(self, "phi_angles_deg", None)
+            data["theta"] = getattr(self, "theta_angles_deg", None)
+            data["total_power"] = getattr(self, "total_power_dBm_2d", None)
+            if hasattr(self, "TRP_dBm"):
+                data["TRP_dBm"] = getattr(self, "TRP_dBm", 0)
+            if hasattr(self, "h_TRP_dBm"):
+                data["h_TRP_dBm"] = getattr(self, "h_TRP_dBm", 0)
+            if hasattr(self, "v_TRP_dBm"):
+                data["v_TRP_dBm"] = getattr(self, "v_TRP_dBm", 0)
+
+        frequencies = list(self.freq_list) if hasattr(self, "freq_list") and self.freq_list else []
+        return AntennaAnalyzer(data, scan_type=scan_type, frequencies=frequencies)
 
     def _ai_generate_2d_plot(self, frequency=None, plot_type="polar"):
         """Generate and display 2D radiation pattern plot."""
@@ -1365,7 +1420,7 @@ You can call these functions to help answer user questions:
             return json.dumps({"error": f"Failed to generate 3D plot: {str(e)}"})
 
     def _ai_get_gain_statistics(self, frequency=None):
-        """Calculate gain statistics from loaded data."""
+        """Calculate gain statistics using AntennaAnalyzer."""
         try:
             if frequency is None and hasattr(self, "selected_frequency"):
                 try:
@@ -1373,56 +1428,25 @@ You can call these functions to help answer user questions:
                 except (ValueError, AttributeError, TypeError):
                     return json.dumps({"error": "No frequency specified"})
 
-            # Check if we have loaded data
             if not hasattr(self, "freq_list") or not self.freq_list:
                 return json.dumps({"error": "No measurement data loaded"})
 
-            # Find closest frequency
-            freq_array = np.array(self.freq_list)
-            freq_idx = np.argmin(np.abs(freq_array - frequency))
-            actual_freq = self.freq_list[freq_idx]
-
-            stats = {
-                "frequency_requested": frequency,
-                "frequency_actual": actual_freq,
-                "scan_type": self.scan_type.get(),
-            }
-
-            # Get gain/power data based on scan type
-            if self.scan_type.get() == "passive" and hasattr(self, "total_gain_dB"):
-                gain_data = getattr(self, "total_gain_dB")[:, freq_idx]
-                stats.update(
-                    {
-                        "max_gain_dBi": float(np.max(gain_data)),
-                        "min_gain_dBi": float(np.min(gain_data)),
-                        "avg_gain_dBi": float(np.mean(gain_data)),
-                        "std_dev_dB": float(np.std(gain_data)),
-                    }
-                )
-            elif self.scan_type.get() == "active" and hasattr(self, "total_power_dBm_2d"):
-                power_data = getattr(self, "total_power_dBm_2d")
-                stats.update(
-                    {
-                        "max_power_dBm": float(np.max(power_data)),
-                        "min_power_dBm": float(np.min(power_data)),
-                        "avg_power_dBm": float(np.mean(power_data)),
-                        "std_dev_dB": float(np.std(power_data)),
-                        "TRP_dBm": float(getattr(self, "TRP_dBm", 0)),
-                        "h_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
-                        "v_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
-                    }
-                )
-            else:
-                stats["note"] = (
-                    "Gain data not available in current format. Please ensure data is loaded and processed."
-                )
-
+            analyzer = self._build_analyzer()
+            stats = analyzer.get_gain_statistics(frequency=frequency)
             return json.dumps(stats)
         except Exception as e:
             return json.dumps({"error": str(e)})
 
     def _ai_analyze_pattern(self, frequency=None):
-        """Analyze radiation pattern characteristics."""
+        """Analyze radiation pattern characteristics using AntennaAnalyzer.
+
+        For passive scans, delegates to AntennaAnalyzer which provides:
+        - HPBW (E-plane and H-plane)
+        - Front-to-back ratio
+        - Pattern classification (omnidirectional/sectoral/directional)
+        - Null detection
+        - Main beam direction
+        """
         try:
             if frequency is None and hasattr(self, "selected_frequency"):
                 try:
@@ -1430,104 +1454,75 @@ You can call these functions to help answer user questions:
                 except (ValueError, AttributeError, TypeError):
                     return json.dumps({"error": "No frequency specified"})
 
-            # Check if we have loaded data
             if not hasattr(self, "freq_list") or not self.freq_list:
                 return json.dumps({"error": "No measurement data loaded"})
 
-            # Find closest frequency
-            freq_array = np.array(self.freq_list)
-            freq_idx = np.argmin(np.abs(freq_array - frequency))
-            actual_freq = self.freq_list[freq_idx]
+            scan_type = self.scan_type.get()
 
-            analysis = {"frequency": actual_freq, "scan_type": self.scan_type.get()}
+            if scan_type == "passive":
+                analyzer = self._build_analyzer()
+                analysis = analyzer.analyze_pattern(frequency=frequency)
 
-            # Analyze based on scan type
-            if self.scan_type.get() == "passive":
-                # Get gain data at this frequency
-                total_gain = getattr(self, "total_gain_dB")[:, freq_idx]
-                theta_list = getattr(self, "theta_list")
-                phi_list = getattr(self, "phi_list")
+                # Add peak location from GUI 2D angle arrays
+                freq_array = np.array(self.freq_list)
+                freq_idx = np.argmin(np.abs(freq_array - frequency))
+                theta_list = getattr(self, "theta_list", None)
+                phi_list = getattr(self, "phi_list", None)
+                total_gain = getattr(self, "total_gain_dB", None)
 
-                # Find peak gain and its location
-                max_gain_idx = np.argmax(total_gain)
-                max_gain = float(total_gain[max_gain_idx])
-                max_theta = float(theta_list[max_gain_idx])
-                max_phi = float(phi_list[max_gain_idx])
+                if total_gain is not None and theta_list is not None and phi_list is not None:
+                    gain_at_freq = total_gain[:, freq_idx]
+                    max_idx = np.argmax(gain_at_freq)
+                    try:
+                        analysis["max_gain_theta_deg"] = float(
+                            theta_list[max_idx, freq_idx] if theta_list.ndim == 2 else theta_list[max_idx]
+                        )
+                        analysis["max_gain_phi_deg"] = float(
+                            phi_list[max_idx, freq_idx] if phi_list.ndim == 2 else phi_list[max_idx]
+                        )
+                    except (IndexError, TypeError):
+                        pass
 
-                # Find minimum gain
-                min_gain = float(np.min(total_gain))
+                return json.dumps(analysis)
 
-                # Calculate average gain
-                avg_gain = float(np.mean(total_gain))
-
-                # Find nulls (gain drops below -10 dBi)
-                null_threshold = -10.0
-                null_indices = np.where(total_gain < null_threshold)[0]
-                null_count = len(null_indices)
-
-                # Estimate beamwidth (find where gain drops 3dB from peak)
-                half_power = max_gain - 3.0
-                half_power_indices = np.where(total_gain >= half_power)[0]
-                beamwidth_estimate = len(half_power_indices) * (360.0 / len(total_gain))
-
-                # Determine pattern type
-                gain_variance = float(np.std(total_gain))
-                if gain_variance < 2.0:
-                    pattern_type = "omnidirectional (low directivity)"
-                elif gain_variance > 5.0:
-                    pattern_type = "highly directional (high gain variation)"
-                else:
-                    pattern_type = "moderately directional"
-
-                analysis.update(
-                    {
-                        "pattern_type": pattern_type,
-                        "max_gain_dBi": max_gain,
-                        "max_gain_theta_deg": max_theta,
-                        "max_gain_phi_deg": max_phi,
-                        "min_gain_dBi": min_gain,
-                        "avg_gain_dBi": avg_gain,
-                        "gain_std_dev": gain_variance,
-                        "null_count": int(null_count),
-                        "estimated_3dB_beamwidth_deg": float(beamwidth_estimate),
-                        "front_to_back_ratio_dB": float(max_gain - min_gain),
-                    }
-                )
-
-            elif self.scan_type.get() == "active":
-                # Analyze active scan data
+            elif scan_type == "active":
                 total_power = getattr(self, "total_power_dBm_2d")
                 theta_angles_deg = getattr(self, "theta_angles_deg")
                 phi_angles_deg = getattr(self, "phi_angles_deg")
+
+                freq_array = np.array(self.freq_list)
+                freq_idx = np.argmin(np.abs(freq_array - frequency))
+                actual_freq = float(self.freq_list[freq_idx])
 
                 max_power = float(np.max(total_power))
                 min_power = float(np.min(total_power))
                 avg_power = float(np.mean(total_power))
 
-                # Find peak location
                 max_idx = np.unravel_index(np.argmax(total_power), total_power.shape)
                 max_theta = float(theta_angles_deg[max_idx[0]])
                 max_phi = float(phi_angles_deg[max_idx[1]])
 
-                analysis.update(
-                    {
-                        "pattern_type": "active radiated power distribution",
-                        "max_power_dBm": max_power,
-                        "max_power_theta_deg": max_theta,
-                        "max_power_phi_deg": max_phi,
-                        "min_power_dBm": min_power,
-                        "avg_power_dBm": avg_power,
-                        "power_range_dB": float(max_power - min_power),
-                    }
-                )
+                analysis = {
+                    "frequency": actual_freq,
+                    "scan_type": "active",
+                    "pattern_type": "active radiated power distribution",
+                    "max_power_dBm": max_power,
+                    "max_power_theta_deg": max_theta,
+                    "max_power_phi_deg": max_phi,
+                    "min_power_dBm": min_power,
+                    "avg_power_dBm": avg_power,
+                    "power_range_dB": float(max_power - min_power),
+                }
+                return json.dumps(analysis)
 
-            return json.dumps(analysis)
+            else:
+                return json.dumps({"error": f"Unknown scan type: {scan_type}"})
 
         except Exception as e:
             return json.dumps({"error": f"Pattern analysis failed: {str(e)}"})
 
     def _ai_compare_polarizations(self, frequency=None):
-        """Compare HPOL and VPOL performance."""
+        """Compare HPOL and VPOL performance using AntennaAnalyzer for passive scans."""
         try:
             if frequency is None and hasattr(self, "selected_frequency"):
                 try:
@@ -1537,7 +1532,7 @@ You can call these functions to help answer user questions:
 
             scan_type = self.scan_type.get()
 
-            # Handle active scan with H/V power data
+            # Active scan polarization comparison (not handled by AntennaAnalyzer)
             if scan_type == "active":
                 if not (hasattr(self, "h_power_dBm_2d") and hasattr(self, "v_power_dBm_2d")):
                     return json.dumps(
@@ -1549,130 +1544,104 @@ You can call these functions to help answer user questions:
                 actual_freq = getattr(self, "active_frequency", frequency)
 
                 h_max = float(np.max(h_power))
-                h_min = float(np.min(h_power))
-                h_avg = float(np.mean(h_power))
-
                 v_max = float(np.max(v_power))
-                v_min = float(np.min(v_power))
-                v_avg = float(np.mean(v_power))
-
-                # Calculate cross-polarization ratio
                 xpd = np.abs(h_power - v_power)
-                avg_xpd = float(np.mean(xpd))
 
-                # Determine dominant polarization
                 if h_max > v_max:
                     dominant_pol = "HPOL (Horizontal)"
-                    pol_advantage_dB = h_max - v_max
+                    pol_advantage = h_max - v_max
                 elif v_max > h_max:
                     dominant_pol = "VPOL (Vertical)"
-                    pol_advantage_dB = v_max - h_max
+                    pol_advantage = v_max - h_max
                 else:
                     dominant_pol = "Balanced"
-                    pol_advantage_dB = 0.0
+                    pol_advantage = 0.0
 
-                return json.dumps(
-                    {
-                        "frequency": actual_freq,
-                        "scan_type": "active",
-                        "hpol_max_power_dBm": h_max,
-                        "hpol_min_power_dBm": h_min,
-                        "hpol_avg_power_dBm": h_avg,
-                        "hpol_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
-                        "vpol_max_power_dBm": v_max,
-                        "vpol_min_power_dBm": v_min,
-                        "vpol_avg_power_dBm": v_avg,
-                        "vpol_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
-                        "cross_pol_avg_dB": avg_xpd,
-                        "dominant_polarization": dominant_pol,
-                        "polarization_advantage_dB": float(pol_advantage_dB),
-                    }
-                )
+                return json.dumps({
+                    "frequency": actual_freq,
+                    "scan_type": "active",
+                    "hpol_max_power_dBm": h_max,
+                    "hpol_avg_power_dBm": float(np.mean(h_power)),
+                    "vpol_max_power_dBm": v_max,
+                    "vpol_avg_power_dBm": float(np.mean(v_power)),
+                    "hpol_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
+                    "vpol_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
+                    "cross_pol_avg_dB": float(np.mean(xpd)),
+                    "dominant_polarization": dominant_pol,
+                    "polarization_advantage_dB": float(pol_advantage),
+                })
 
-            # Handle passive scan
+            # Passive scan: delegate to AntennaAnalyzer
             if scan_type != "passive":
                 return json.dumps(
-                    {
-                        "error": "Polarization comparison only available for passive or active scans with HPOL/VPOL data"
-                    }
+                    {"error": "Polarization comparison only available for passive or active scans"}
                 )
 
             if not (hasattr(self, "h_gain_dB") and hasattr(self, "v_gain_dB")):
                 return json.dumps({"error": "HPOL and VPOL gain data not loaded"})
 
-            # Find closest frequency
+            if not hasattr(self, "freq_list") or not self.freq_list:
+                return json.dumps({"error": "No measurement data loaded"})
+
+            analyzer = self._build_analyzer()
+            comparison = analyzer.compare_polarizations(frequency=frequency)
+
+            # Add peak location details from GUI 2D angle arrays
             freq_array = np.array(self.freq_list)
             freq_idx = np.argmin(np.abs(freq_array - frequency))
-            actual_freq = float(self.freq_list[freq_idx])
-
-            # Get gain data for both polarizations
             h_gain = getattr(self, "h_gain_dB")[:, freq_idx]
             v_gain = getattr(self, "v_gain_dB")[:, freq_idx]
-            theta_list = getattr(self, "theta_list")
-            phi_list = getattr(self, "phi_list")
+            theta_list = getattr(self, "theta_list", None)
+            phi_list = getattr(self, "phi_list", None)
 
-            # Calculate statistics for each polarization
-            h_max = float(np.max(h_gain))
-            h_min = float(np.min(h_gain))
-            h_avg = float(np.mean(h_gain))
+            if theta_list is not None and phi_list is not None:
+                h_max_idx = np.argmax(h_gain)
+                v_max_idx = np.argmax(v_gain)
+                try:
+                    t = theta_list
+                    p = phi_list
+                    comparison["hpol_peak_theta_deg"] = float(
+                        t[h_max_idx, freq_idx] if t.ndim == 2 else t[h_max_idx]
+                    )
+                    comparison["hpol_peak_phi_deg"] = float(
+                        p[h_max_idx, freq_idx] if p.ndim == 2 else p[h_max_idx]
+                    )
+                    comparison["vpol_peak_theta_deg"] = float(
+                        t[v_max_idx, freq_idx] if t.ndim == 2 else t[v_max_idx]
+                    )
+                    comparison["vpol_peak_phi_deg"] = float(
+                        p[v_max_idx, freq_idx] if p.ndim == 2 else p[v_max_idx]
+                    )
+                except (IndexError, TypeError):
+                    pass
 
-            v_max = float(np.max(v_gain))
-            v_min = float(np.min(v_gain))
-            v_avg = float(np.mean(v_gain))
-
-            # Find peak locations
-            h_max_idx = np.argmax(h_gain)
-            v_max_idx = np.argmax(v_gain)
-
-            h_max_theta = float(theta_list[h_max_idx])
-            h_max_phi = float(phi_list[h_max_idx])
-            v_max_theta = float(theta_list[v_max_idx])
-            v_max_phi = float(phi_list[v_max_idx])
-
-            # Calculate cross-polarization discrimination (XPD)
-            xpd = np.abs(h_gain - v_gain)
-            avg_xpd = float(np.mean(xpd))
-            max_xpd = float(np.max(xpd))
-            min_xpd = float(np.min(xpd))
-
-            # Determine dominant polarization
-            if h_max > v_max:
-                dominant_pol = "HPOL (Horizontal/Phi)"
-                pol_advantage_dB = h_max - v_max
-            elif v_max > h_max:
-                dominant_pol = "VPOL (Vertical/Theta)"
-                pol_advantage_dB = v_max - h_max
+            # Add dominant polarization label
+            h_max_val = comparison.get("max_hpol_gain_dBi", 0)
+            v_max_val = comparison.get("max_vpol_gain_dBi", 0)
+            if h_max_val > v_max_val:
+                comparison["dominant_polarization"] = "HPOL (Horizontal/Phi)"
+            elif v_max_val > h_max_val:
+                comparison["dominant_polarization"] = "VPOL (Vertical/Theta)"
             else:
-                dominant_pol = "Balanced (equal peak gains)"
-                pol_advantage_dB = 0.0
-
-            # Polarization purity metric (lower XPD means more mixing)
-            if avg_xpd > 10.0:
-                purity_assessment = "High polarization purity (good isolation)"
-            elif avg_xpd > 5.0:
-                purity_assessment = "Moderate polarization purity"
-            else:
-                purity_assessment = "Low polarization purity (significant mixing)"
-
-            comparison = {
-                "frequency": actual_freq,
-                "hpol_max_gain_dBi": h_max,
-                "hpol_max_theta_deg": h_max_theta,
-                "hpol_max_phi_deg": h_max_phi,
-                "hpol_avg_gain_dBi": h_avg,
-                "vpol_max_gain_dBi": v_max,
-                "vpol_max_theta_deg": v_max_theta,
-                "vpol_max_phi_deg": v_max_phi,
-                "vpol_avg_gain_dBi": v_avg,
-                "cross_pol_discrimination_avg_dB": avg_xpd,
-                "cross_pol_discrimination_max_dB": max_xpd,
-                "cross_pol_discrimination_min_dB": min_xpd,
-                "dominant_polarization": dominant_pol,
-                "polarization_advantage_dB": float(pol_advantage_dB),
-                "polarization_purity": purity_assessment,
-            }
+                comparison["dominant_polarization"] = "Balanced"
 
             return json.dumps(comparison)
 
         except Exception as e:
             return json.dumps({"error": f"Polarization comparison failed: {str(e)}"})
+
+    def _ai_analyze_all_frequencies(self):
+        """Analyze gain/power trends across all measured frequencies using AntennaAnalyzer.
+
+        Returns resonance frequency, 3dB bandwidth, gain variation,
+        and per-frequency peak gains.
+        """
+        try:
+            if not hasattr(self, "freq_list") or not self.freq_list:
+                return json.dumps({"error": "No measurement data loaded"})
+
+            analyzer = self._build_analyzer()
+            result = analyzer.analyze_all_frequencies()
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({"error": f"Frequency analysis failed: {str(e)}"})

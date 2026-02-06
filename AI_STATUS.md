@@ -60,48 +60,45 @@ RFlect includes experimental AI-powered features using OpenAI's API for intellig
 
 ### 1. Pattern Analysis Functions
 
-**Issues**:
-- Null detection algorithm is simplistic (just looks for -10dB points)
-- HPBW (Half Power Beamwidth) calculation not implemented
-- Front-to-back ratio calculation not implemented
-- Pattern classification is basic (only 3 categories)
+**Status**: Mostly Implemented (v4.0.0)
+
+**Working**:
+- HPBW (Half Power Beamwidth) calculation: E-plane and H-plane with interpolation
+- Front-to-back ratio calculation with proper direction identification
+- Pattern classification (omnidirectional, sectoral, directional)
+- Null detection and deepest null reporting
+- Main beam direction (theta, phi)
+
+**Remaining Limitations**:
 - No sidelobe level detection
 - No symmetry analysis
-
-**TODO for v4.1**:
-- Implement proper HPBW calculation (E-plane and H-plane)
-- Add F/B ratio calculation with proper front/back identification
-- Improve pattern classification (add omnidirectional, sectoral, horn, patch patterns)
-- Add sidelobe detection and reporting
+- Pattern classification has 3 categories (no horn, patch subtypes)
 
 ### 2. Batch Frequency Analysis
 
-**Status**: Not Implemented
+**Status**: Implemented (v4.0.0)
 
-**Missing**:
-- Gain vs frequency trend analysis
+**Working**:
+- `analyze_all_frequencies()` function complete
+- Peak gain vs frequency trend
 - 3dB bandwidth calculation
 - Resonance frequency detection
-- Frequency stability assessment
-
-**TODO for v4.1**:
-- Implement `analyze_all_frequencies()` function
-- Add frequency response plotting
-- Add bandwidth metrics
+- Gain variation and stability metrics
 
 ### 3. Report Templating
 
-**Issues**:
-- Template formatting inconsistent across sections
-- Some AI recommendations are too generic (not antenna-specific enough)
-- Missing automated figure insertion from plotting.py
-- Custom branding (logo, company name) partially working
+**Status**: ~90% Complete
 
-**TODO for v4.1**:
-- Refine AI prompts to be more antenna-specific
-- Add automated figure insertion with captions
-- Complete branding integration
-- Add multi-frequency comparison tables
+**Working**:
+- YAML template engine integrated (rflect-mcp/templates/default.yaml)
+- Template-driven section ordering and content generation
+- AI prompts per section from template
+- Fallback to hardcoded sections when no template loaded
+
+**Remaining**:
+- Automated figure insertion from plotting.py
+- Custom branding (logo, company name) partially working
+- Multi-frequency comparison tables
 
 ### 4. Vision API Integration
 
@@ -126,10 +123,10 @@ RFlect includes experimental AI-powered features using OpenAI's API for intellig
    - Workaround: Error handling in place, retries work
    - Priority: Low (handled gracefully)
 
-3. **Pattern Analysis Incomplete**
-   - Problem: Many analysis functions return placeholder results
-   - Fix: Implement full pattern analysis algorithms
-   - Priority: High for v4.1
+3. **Pattern Analysis Mostly Complete**
+   - HPBW and F/B ratio now implemented
+   - Remaining: sidelobe detection, symmetry analysis
+   - Priority: Medium for v4.1
 
 4. **No Offline Mode**
    - Problem: AI features require internet + API key
@@ -153,27 +150,32 @@ plot_antenna/
 
 **Benefits of Refactoring**:
 - AI logic now separate from GUI (reusable)
-- Can be used by future MCP server
+- Used by MCP server for programmatic access
 - Easier to test and improve
 - Clear separation of concerns
 
-### Future (v4.1+): MCP Server
+### Current (v4.0.0): MCP Server
 
 ```
 rflect-mcp/
 ├── server.py                    # FastMCP server
 ├── tools/
-│   ├── import_data.py          # import_antenna_data(file_path)
+│   ├── import_tools.py         # import_antenna_file(), import_antenna_folder()
 │   ├── analysis_tools.py       # Uses ai_analysis.AntennaAnalyzer
-│   └── report_tools.py         # generate_report()
+│   ├── report_tools.py         # generate_report() with YAML template engine
+│   └── bulk_tools.py           # Batch processing & CST conversion
+├── templates/
+│   └── default.yaml            # Report template definition
+├── requirements.txt
 └── README.md
 ```
 
-**Vision**: Enable AI agents (Claude Code, Cline) to:
+**Capabilities**: AI agents (Claude Code, Cline) can:
 - Import antenna data programmatically
-- Run analysis via MCP tools
-- Generate reports automatically
-- Integrate with VNA MCP for end-to-end workflows
+- Run analysis via MCP tools (gain stats, pattern, polarization)
+- Generate DOCX reports with AI summaries
+- Batch process entire measurement folders
+- Validate and convert file formats (CST .ffs)
 
 ---
 
@@ -206,12 +208,19 @@ Configured via: Help → AI Settings
 
 ## Roadmap
 
-### v4.1 (Planned - Q2 2026)
-- ✅ Complete pattern analysis functions (HPBW, F/B ratio)
-- ✅ Implement batch frequency analysis
-- ✅ Refine AI prompts with antenna domain knowledge
-- ✅ Complete report templating system
+### v4.0.0 (Current - February 2026)
+- ✅ Pattern analysis functions (HPBW, F/B ratio)
+- ✅ Batch frequency analysis (analyze_all_frequencies)
+- ✅ Antenna domain knowledge in AI prompts
+- ✅ YAML-based report template engine
 - ✅ MCP server for programmatic access
+- ✅ Bulk processing MCP tools
+
+### v4.1 (Planned - Q2 2026)
+- Sidelobe detection and reporting
+- Automated figure insertion in reports
+- Complete branding integration
+- Multi-frequency comparison tables
 
 ### v4.2 (Planned - Q3 2026)
 - Vision API integration (AI analyzes plots visually)
@@ -266,8 +275,9 @@ print(f"XPD: {comparison['avg_xpd_dB']:.1f} dB")
 
 1. Add function to `AntennaAnalyzer` class in `ai_analysis.py`
 2. Update `ai_chat_mixin.py` to expose function to AI
-3. Add tests to `tests/test_ai_analysis.py` (create this file)
-4. Update this document with status
+3. Add tests to `tests/test_ai_analysis.py`
+4. Add MCP wrapper in `rflect-mcp/tools/analysis_tools.py`
+5. Update this document with status
 
 ### Contributing
 

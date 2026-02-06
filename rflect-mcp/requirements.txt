@@ -9,5 +9,8 @@ mcp>=1.0.0
 # Report generation
 python-docx>=1.2.0
 
+# Template engine
+pyyaml>=6.0
+
 # AI (optional - for AI summaries)
 openai>=1.38.0

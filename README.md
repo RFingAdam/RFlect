@@ -234,9 +234,15 @@ For comparison of multiple scans, configure 3D plotting via Settings:
 - AI features require a valid OpenAI API key (configure via Help → Manage OpenAI API Key)
 - Status bar at the bottom of the window provides real-time operation feedback
 
+## MCP Server (Programmatic Access)
+
+RFlect includes an MCP (Model Context Protocol) server that enables AI assistants like Claude Code and Cline to programmatically analyze antenna measurements and generate reports.
+
+See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and usage details.
+
 ## System Requirements
 - Windows, macOS, or Linux
-- Python 3.12+ (for source installation)
+- Python 3.11+ (for source installation)
 - SciPy 1.14.0+ (uses RegularGridInterpolator)
 - NumPy with trapezoid function support
 
