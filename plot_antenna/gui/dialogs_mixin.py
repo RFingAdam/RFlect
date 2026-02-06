@@ -21,6 +21,7 @@ from ..config import (
     DARK_BG_COLOR,
     LIGHT_TEXT_COLOR,
     ACCENT_BLUE_COLOR,
+    BUTTON_COLOR,
     AI_MODEL,
     AI_RESPONSE_STYLE,
     AI_MAX_TOKENS,
@@ -84,6 +85,7 @@ class DialogsMixin:
     saved_limit2_start: float
     saved_limit2_stop: float
     saved_min_max_vswr: bool
+    cb_groupdelay_sff: bool
     CURRENT_VERSION: str
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
@@ -448,10 +450,10 @@ Your key is stored securely in your user data folder and never shared."""
     # ────────────────────────────────────────────────────────────────────────
 
     def manage_ai_settings(self):
-        """Show AI configuration settings dialog with GPT-5.2 Responses API options."""
+        """Show AI configuration settings dialog with multi-provider support."""
         settings_window = tk.Toplevel(self.root)
         settings_window.title("AI Settings")
-        settings_window.geometry("650x700")
+        settings_window.geometry("650x750")
         settings_window.resizable(False, False)
         settings_window.configure(bg=DARK_BG_COLOR)
 
@@ -484,7 +486,7 @@ Your key is stored securely in your user data folder and never shared."""
         # Description
         desc_label = tk.Label(
             scrollable_frame,
-            text="Configure AI model and behavior for report generation and chat features.\nGPT-5.2 models use the new Responses API with advanced reasoning controls.",
+            text="Configure AI provider, model, and behavior for report generation and chat.",
             font=("Arial", 9),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
@@ -499,6 +501,75 @@ Your key is stored securely in your user data folder and never shared."""
         row_num = 0
 
         # ─────────────────────────────────────────────────────────────────
+        # AI PROVIDER SELECTION
+        # ─────────────────────────────────────────────────────────────────
+        tk.Label(
+            main_frame,
+            text="AI Provider:",
+            font=("Arial", 10, "bold"),
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+        ).grid(row=row_num, column=0, sticky=tk.W, pady=(0, 5))
+        row_num += 1
+
+        try:
+            from ..config import AI_PROVIDER
+        except ImportError:
+            AI_PROVIDER = "openai"
+
+        provider_var = tk.StringVar(value=AI_PROVIDER)
+        provider_dropdown = ttk.Combobox(
+            main_frame,
+            textvariable=provider_var,
+            values=["openai", "anthropic", "ollama"],
+            state="readonly",
+            width=45,
+            font=("Arial", 9),
+        )
+        provider_dropdown.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
+        row_num += 1
+
+        provider_desc_texts = {
+            "openai": "OpenAI GPT models (cloud API, requires API key)",
+            "anthropic": "Anthropic Claude models (cloud API, requires API key)",
+            "ollama": "Ollama local models (runs locally, no API key needed)",
+        }
+        provider_desc_var = tk.StringVar(value=provider_desc_texts.get(AI_PROVIDER, ""))
+        tk.Label(
+            main_frame,
+            textvariable=provider_desc_var,
+            font=("Arial", 8, "italic"),
+            bg=DARK_BG_COLOR,
+            fg="#A0A0A0",
+            wraplength=550,
+        ).grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
+        row_num += 1
+
+        # Ollama URL field (only visible when Ollama selected)
+        ollama_url_frame = tk.Frame(main_frame, bg=DARK_BG_COLOR)
+        ollama_url_label = tk.Label(
+            ollama_url_frame, text="Ollama URL:", font=("Arial", 9),
+            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+        )
+        ollama_url_label.pack(side=tk.LEFT, padx=(0, 5))
+
+        try:
+            from ..config import AI_OLLAMA_URL
+        except ImportError:
+            AI_OLLAMA_URL = "http://localhost:11434"
+
+        ollama_url_var = tk.StringVar(value=AI_OLLAMA_URL)
+        ollama_url_entry = tk.Entry(
+            ollama_url_frame, textvariable=ollama_url_var, width=35, font=("Arial", 9),
+        )
+        ollama_url_entry.pack(side=tk.LEFT)
+        # Place in grid but only show for Ollama
+        ollama_url_frame.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 10))
+        if AI_PROVIDER != "ollama":
+            ollama_url_frame.grid_remove()
+        row_num += 1
+
+        # ─────────────────────────────────────────────────────────────────
         # AI MODEL SELECTION
         # ─────────────────────────────────────────────────────────────────
         tk.Label(
@@ -510,22 +581,38 @@ Your key is stored securely in your user data folder and never shared."""
         ).grid(row=row_num, column=0, sticky=tk.W, pady=(0, 5))
         row_num += 1
 
-        # List of available models with descriptions (function-calling compatible)
-        models = [
+        # Models per provider
+        openai_models = [
             ("gpt-4o-mini", "GPT-4o Mini - Fast, affordable, functions + vision (RECOMMENDED)"),
             ("gpt-4o", "GPT-4o - Premium quality, functions + vision"),
-            ("gpt-5-nano", "GPT-5 Nano - Fastest GPT-5, low cost, functions + vision"),
-            ("gpt-5-mini", "GPT-5 Mini - Balanced speed/quality, functions + vision"),
-            ("gpt-5.2", "GPT-5.2 - Flagship model, best quality, functions + vision"),
+            ("gpt-5-nano", "GPT-5 Nano - Fastest GPT-5, low cost"),
+            ("gpt-5-mini", "GPT-5 Mini - Balanced speed/quality"),
+            ("gpt-5.2", "GPT-5.2 - Flagship model, best quality"),
         ]
-        # NOTE: O-series models (o1, o3) excluded - no function calling support
+        anthropic_models = [
+            ("claude-sonnet-4-20250514", "Claude Sonnet 4 - Fast, balanced (RECOMMENDED)"),
+            ("claude-opus-4-20250514", "Claude Opus 4 - Highest quality"),
+            ("claude-haiku-3-5-20241022", "Claude Haiku 3.5 - Fastest, lowest cost"),
+        ]
+        ollama_models = [
+            ("llama3.1", "Llama 3.1 - General purpose, good tool support (RECOMMENDED)"),
+            ("qwen2.5", "Qwen 2.5 - Strong multilingual, good reasoning"),
+            ("llava", "LLaVA - Vision-capable for plot analysis"),
+            ("gemma3", "Gemma 3 - Vision + text, efficient"),
+        ]
+
+        provider_models = {
+            "openai": openai_models,
+            "anthropic": anthropic_models,
+            "ollama": ollama_models,
+        }
 
         model_var = tk.StringVar(value=AI_MODEL)
 
         model_dropdown = ttk.Combobox(
             main_frame,
             textvariable=model_var,
-            values=[m[0] for m in models],
+            values=[m[0] for m in openai_models],
             state="readonly",
             width=45,
             font=("Arial", 9),
@@ -534,7 +621,10 @@ Your key is stored securely in your user data folder and never shared."""
         row_num += 1
 
         # Model description label
-        model_desc_var = tk.StringVar(value=next((m[1] for m in models if m[0] == AI_MODEL), ""))
+        all_models = openai_models + anthropic_models + ollama_models
+        model_desc_var = tk.StringVar(
+            value=next((m[1] for m in all_models if m[0] == AI_MODEL), "")
+        )
         model_desc_label = tk.Label(
             main_frame,
             textvariable=model_desc_var,
@@ -546,9 +636,25 @@ Your key is stored securely in your user data folder and never shared."""
         model_desc_label.grid(row=row_num, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
         row_num += 1
 
+        def _update_for_provider(*args):
+            prov = provider_var.get()
+            provider_desc_var.set(provider_desc_texts.get(prov, ""))
+            models = provider_models.get(prov, openai_models)
+            model_dropdown["values"] = [m[0] for m in models]
+            # Set default model for the selected provider
+            if models:
+                model_var.set(models[0][0])
+            # Show/hide Ollama URL
+            if prov == "ollama":
+                ollama_url_frame.grid()
+            else:
+                ollama_url_frame.grid_remove()
+
+        provider_var.trace("w", _update_for_provider)
+
         def update_model_desc(*args):
             selected = model_var.get()
-            desc = next((m[1] for m in models if m[0] == selected), "")
+            desc = next((m[1] for m in all_models if m[0] == selected), "")
             model_desc_var.set(desc)
             # Enable/disable GPT-5 options based on model selection
             is_gpt5 = selected.startswith("gpt-5")
@@ -558,6 +664,10 @@ Your key is stored securely in your user data folder and never shared."""
             reasoning_summary_cb.config(state=tk.NORMAL if is_gpt5 else tk.DISABLED)
 
         model_var.trace("w", update_model_desc)
+
+        # Initialize model list for current provider
+        cur_models = provider_models.get(AI_PROVIDER, openai_models)
+        model_dropdown["values"] = [m[0] for m in cur_models]
 
         # ─────────────────────────────────────────────────────────────────
         # RESPONSE STYLE (GPT-4 & GPT-5)
@@ -786,8 +896,10 @@ Settings are saved to config_local.py and take effect immediately."""
             config_content = f"""# Auto-generated AI Settings
 # Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-# Model Selection
+# Provider Selection
+AI_PROVIDER = "{provider_var.get()}"
 AI_MODEL = "{model_var.get()}"
+AI_OLLAMA_URL = "{ollama_url_var.get()}"
 
 # Response Configuration
 AI_RESPONSE_STYLE = "{style_var.get()}"
@@ -819,7 +931,9 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
                 # Also remove any standalone AI_ settings that might be floating
                 ai_settings = [
+                    "AI_PROVIDER",
                     "AI_MODEL",
+                    "AI_OLLAMA_URL",
                     "AI_RESPONSE_STYLE",
                     "AI_MAX_TOKENS",
                     "AI_REASONING_EFFORT",
@@ -842,6 +956,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 messagebox.showinfo(
                     "Settings Saved",
                     f"AI settings saved successfully!\n\n"
+                    f"Provider: {provider_var.get()}\n"
                     f"Model: {model_var.get()}\n"
                     f"Style: {style_var.get()}\n"
                     f"Max Tokens: {tokens_var.get()}\n\n"
@@ -1058,114 +1173,96 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=8, column=0, columnspan=4, pady=20)
 
         elif scan_type_value == "vswr":
-            # Show settings specific to VNA
-            label = tk.Label(settings_window, text="VSWR/Return Loss Plot Settings")
-            label.grid(row=0, column=0, columnspan=2, pady=10)
+            # Show settings specific to VNA with organized LabelFrame sections
+            title = tk.Label(
+                settings_window, text="VSWR/Return Loss Settings",
+                font=("Arial", 12, "bold"),
+            )
+            title.grid(row=0, column=0, columnspan=2, pady=10)
 
             def save_vswr_settings():
-                # Save the entered values with checks
                 self.saved_limit1_freq1 = self.limit1_freq1.get()
                 self.saved_limit1_freq2 = self.limit1_freq2.get()
                 self.saved_limit1_start = self.limit1_val1.get()
                 self.saved_limit1_stop = self.limit1_val2.get()
-
                 self.saved_limit2_freq1 = self.limit2_freq1.get()
                 self.saved_limit2_freq2 = self.limit2_freq2.get()
                 self.saved_limit2_start = self.limit2_val1.get()
                 self.saved_limit2_stop = self.limit2_val2.get()
-
                 self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
-                self.saved_min_max_vswr = self.min_max_vswr_var.get()  # Save checkbox state
-                # Close the settings window after saving
+                self.saved_min_max_vswr = self.min_max_vswr_var.get()
                 settings_window.destroy()
 
             def default_vswr_settings():
-                # Set the entry values to default
-                DEFAULT_LIMIT1_FREQ1 = 0.0
-                DEFAULT_LIMIT1_FREQ2 = 0.0
-                DEFAULT_LIMIT1_START = 0.0
-                DEFAULT_LIMIT1_STOP = 0.0
-
-                DEFAULT_LIMIT2_FREQ1 = 0.0
-                DEFAULT_LIMIT2_FREQ2 = 0.0
-                DEFAULT_LIMIT2_START = 0.0
-                DEFAULT_LIMIT2_STOP = 0.0
-                self.limit1_freq1.set(DEFAULT_LIMIT1_FREQ1)
-                self.limit1_freq2.set(DEFAULT_LIMIT1_FREQ2)
-                self.limit1_val1.set(DEFAULT_LIMIT1_START)
-                self.limit1_val2.set(DEFAULT_LIMIT1_STOP)
-                self.limit2_freq1.set(DEFAULT_LIMIT2_FREQ1)
-                self.limit2_freq2.set(DEFAULT_LIMIT2_FREQ2)
-                self.limit2_val1.set(DEFAULT_LIMIT2_START)
-                self.limit2_val2.set(DEFAULT_LIMIT2_STOP)
-
-                # Update the saved settings variables to default values
-                self.saved_limit1_freq1 = DEFAULT_LIMIT1_FREQ1
-                self.saved_limit1_freq2 = DEFAULT_LIMIT1_FREQ2
-                self.saved_limit1_start = DEFAULT_LIMIT1_START
-                self.saved_limit1_stop = DEFAULT_LIMIT1_STOP
-                self.saved_limit2_freq1 = DEFAULT_LIMIT2_FREQ1
-                self.saved_limit2_freq2 = DEFAULT_LIMIT2_FREQ2
-                self.saved_limit2_start = DEFAULT_LIMIT2_START
-                self.saved_limit2_stop = DEFAULT_LIMIT2_STOP
-
+                for var in (self.limit1_freq1, self.limit1_freq2, self.limit1_val1,
+                            self.limit1_val2, self.limit2_freq1, self.limit2_freq2,
+                            self.limit2_val1, self.limit2_val2):
+                    var.set(0.0)
+                self.saved_limit1_freq1 = 0.0
+                self.saved_limit1_freq2 = 0.0
+                self.saved_limit1_start = 0.0
+                self.saved_limit1_stop = 0.0
+                self.saved_limit2_freq1 = 0.0
+                self.saved_limit2_freq2 = 0.0
+                self.saved_limit2_start = 0.0
+                self.saved_limit2_stop = 0.0
                 self.cb_groupdelay_sff_var.set(False)
                 self.saved_min_max_vswr = False
-                if hasattr(self, "saved_min_max_vswr"):
-                    self.min_max_vswr_var.set(self.saved_min_max_vswr)
+                self.min_max_vswr_var.set(False)
 
-            # Create the "Group Delay Setting" Checkbutton
-            self.cb_groupdelay_sff = tk.Checkbutton(
-                settings_window, text="Group Delay & SFF", variable=self.cb_groupdelay_sff_var
-            )
-            self.cb_groupdelay_sff.grid(row=1, column=0, sticky=tk.W)  # Show checkbox
-
-            # Create the Min/Max VSWR Checkbutton
-            self.cb_min_max_vswr = tk.Checkbutton(
-                settings_window, text="Tabled Min/Max VSWR", variable=self.min_max_vswr_var
-            )
-            self.cb_min_max_vswr.grid(
-                row=1, column=2, sticky=tk.W
-            )  # Adjust the row/column as necessary
-            # If there's a saved value, use it to initialize the checkbox
+            # Options section
+            opts_frame = tk.LabelFrame(settings_window, text="Options", padx=10, pady=5)
+            opts_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+            tk.Checkbutton(
+                opts_frame, text="Group Delay & SFF",
+                variable=self.cb_groupdelay_sff_var,
+            ).pack(anchor=tk.W)
+            tk.Checkbutton(
+                opts_frame, text="Tabled Min/Max VSWR",
+                variable=self.min_max_vswr_var,
+            ).pack(anchor=tk.W)
             if hasattr(self, "saved_min_max_vswr"):
                 self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
-            # Limit 1
-            tk.Label(settings_window, text="Limit 1 Frequency Start (GHz):").grid(row=2, column=0)
+            # Limit Line 1 section
+            limit1_frame = tk.LabelFrame(settings_window, text="Limit Line 1", padx=10, pady=5)
+            limit1_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+
             self.limit1_freq1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_freq1).grid(row=2, column=1)
-
-            tk.Label(settings_window, text="Limit 1 Value Start:").grid(row=2, column=2)
-            self.limit1_val1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_val1).grid(row=2, column=3)
-
-            tk.Label(settings_window, text="Limit 1 Frequency End (GHz):").grid(row=3, column=0)
             self.limit1_freq2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_freq2).grid(row=3, column=1)
-
-            tk.Label(settings_window, text="Limit 1 Value End:").grid(row=3, column=2)
+            self.limit1_val1 = tk.DoubleVar()
             self.limit1_val2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit1_val2).grid(row=3, column=3)
 
-            # Limit 2
-            tk.Label(settings_window, text="Limit 2 Frequency Start (GHz):").grid(row=4, column=0)
+            tk.Label(limit1_frame, text="Freq Start (GHz):").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq1, width=10).grid(row=0, column=1, padx=5, pady=2)
+            tk.Label(limit1_frame, text="Value Start:").grid(row=0, column=2, sticky="e", padx=5, pady=2)
+            tk.Entry(limit1_frame, textvariable=self.limit1_val1, width=10).grid(row=0, column=3, padx=5, pady=2)
+
+            tk.Label(limit1_frame, text="Freq End (GHz):").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq2, width=10).grid(row=1, column=1, padx=5, pady=2)
+            tk.Label(limit1_frame, text="Value End:").grid(row=1, column=2, sticky="e", padx=5, pady=2)
+            tk.Entry(limit1_frame, textvariable=self.limit1_val2, width=10).grid(row=1, column=3, padx=5, pady=2)
+
+            # Limit Line 2 section
+            limit2_frame = tk.LabelFrame(settings_window, text="Limit Line 2", padx=10, pady=5)
+            limit2_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+
             self.limit2_freq1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_freq1).grid(row=4, column=1)
-
-            tk.Label(settings_window, text="Limit 2 Value Start:").grid(row=4, column=2)
-            self.limit2_val1 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_val1).grid(row=4, column=3)
-
-            tk.Label(settings_window, text="Limit 2 Frequency End (GHz):").grid(row=5, column=0)
             self.limit2_freq2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_freq2).grid(row=5, column=1)
-
-            tk.Label(settings_window, text="Limit 2 Value End:").grid(row=5, column=2)
+            self.limit2_val1 = tk.DoubleVar()
             self.limit2_val2 = tk.DoubleVar()
-            tk.Entry(settings_window, textvariable=self.limit2_val2).grid(row=5, column=3)
 
-            # Update the input fields with saved values if they exist
+            tk.Label(limit2_frame, text="Freq Start (GHz):").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq1, width=10).grid(row=0, column=1, padx=5, pady=2)
+            tk.Label(limit2_frame, text="Value Start:").grid(row=0, column=2, sticky="e", padx=5, pady=2)
+            tk.Entry(limit2_frame, textvariable=self.limit2_val1, width=10).grid(row=0, column=3, padx=5, pady=2)
+
+            tk.Label(limit2_frame, text="Freq End (GHz):").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq2, width=10).grid(row=1, column=1, padx=5, pady=2)
+            tk.Label(limit2_frame, text="Value End:").grid(row=1, column=2, sticky="e", padx=5, pady=2)
+            tk.Entry(limit2_frame, textvariable=self.limit2_val2, width=10).grid(row=1, column=3, padx=5, pady=2)
+
+            # Restore saved values
             if hasattr(self, "saved_limit1_freq1"):
                 self.limit1_freq1.set(self.saved_limit1_freq1)
                 self.limit1_freq2.set(self.saved_limit1_freq2)
@@ -1176,20 +1273,14 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 self.limit2_val1.set(self.saved_limit2_start)
                 self.limit2_val2.set(self.saved_limit2_stop)
 
-            # Create the Save Settings & Default Settings button within VSWR Settings
-            save_button = tk.Button(
-                settings_window,
-                text="Save Settings",
-                command=save_vswr_settings,
-                bg=ACCENT_BLUE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-            )
-            save_button.grid(row=6, column=0, columnspan=2, pady=20)
-            default_button = tk.Button(
-                settings_window,
-                text="Default Settings",
-                command=default_vswr_settings,
-                bg=ACCENT_BLUE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-            )
-            default_button.grid(row=6, column=2, columnspan=2, pady=20)
+            # Buttons
+            btn_frame = tk.Frame(settings_window)
+            btn_frame.grid(row=4, column=0, columnspan=2, pady=15)
+            tk.Button(
+                btn_frame, text="Save", command=save_vswr_settings,
+                bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR, width=12,
+            ).pack(side=tk.LEFT, padx=5)
+            tk.Button(
+                btn_frame, text="Defaults", command=default_vswr_settings,
+                bg=BUTTON_COLOR, fg=LIGHT_TEXT_COLOR, width=12,
+            ).pack(side=tk.LEFT, padx=5)

@@ -1,6 +1,6 @@
 # RFlect AI Features - Status & Roadmap
 
-**Last Updated**: February 4, 2026
+**Last Updated**: February 5, 2026
 **Current Version**: v4.0.0
 **Status**: Experimental / Not Production-Ready
 
@@ -8,26 +8,27 @@
 
 ## Overview
 
-RFlect includes experimental AI-powered features using OpenAI's API for intelligent antenna analysis. These features are functional but not fully production-ready.
+RFlect includes experimental AI-powered features for intelligent antenna analysis. A unified provider abstraction (`llm_provider.py`) supports **OpenAI**, **Anthropic (Claude)**, and **Ollama (local models)**, giving users flexibility in choosing a backend.
 
-## What Works ✅
+## What Works
 
 ### 1. AI Chat Assistant
-**Status**: ~80% Complete
+**Status**: ~85% Complete
 
 **Working Features**:
 - Real-time conversational analysis of antenna measurements
 - Function calling to analyze loaded data
-- Context awareness (knows what data is loaded, current frequency)
+- Rich context awareness (loaded files, frequencies, data shape, key metrics)
+- Quick-action buttons (Gain Stats, Pattern, Polarization, All Freqs)
 - Multi-turn conversations with history
-- Support for multiple OpenAI models (GPT-4o-mini, GPT-4o, GPT-5, O3)
+- Multi-provider support: OpenAI, Anthropic, Ollama
 
 **Functions Available**:
-- `get_gain_statistics()` - Min/max/avg gain calculations ✅
-- `analyze_pattern()` - Pattern characteristics (nulls, beamwidth, F/B ratio) ⚠️ Partial
-- `compare_polarizations()` - HPOL vs VPOL comparison ✅
-- `generate_2d_plot()` - 2D pattern descriptions ✅
-- `generate_3d_plot()` - 3D pattern descriptions ✅
+- `get_gain_statistics()` - Min/max/avg gain calculations
+- `analyze_pattern()` - Pattern characteristics (nulls, beamwidth, F/B ratio)
+- `compare_polarizations()` - HPOL vs VPOL comparison
+- `generate_2d_plot()` - 2D pattern descriptions
+- `generate_3d_plot()` - 3D pattern descriptions
 
 ### 2. AI-Powered Report Generation
 **Status**: ~90% Complete
@@ -37,7 +38,8 @@ RFlect includes experimental AI-powered features using OpenAI's API for intellig
 - Automatic gain statistics insertion
 - Pattern type classification
 - Basic design recommendations
-- Dual-API support (Chat Completions API and Responses API)
+- Vision-capable plot analysis (provider-dependent)
+- Uses unified provider abstraction (same providers as chat)
 
 **What Needs Work**:
 - Custom branding integration (partially implemented)
@@ -45,116 +47,59 @@ RFlect includes experimental AI-powered features using OpenAI's API for intellig
 - Automated figure captioning (not integrated with plotting.py)
 - Compliance checklist generation (FCC, CE marks - not implemented)
 
-### 3. Secure API Key Management
-**Status**: ✅ Complete
+### 3. Multi-Provider Support (NEW in v4.0.0)
+**Status**: Complete
+
+| Provider | Tool Calling | Vision | Notes |
+|----------|-------------|--------|-------|
+| **OpenAI** | GPT-4 (Chat Completions) + GPT-5 (Responses API) | GPT-4o+ | Default provider |
+| **Anthropic** | Claude Messages API | All Claude models | Via `ANTHROPIC_API_KEY` env var |
+| **Ollama** | llama3.1+, qwen2.5+ | llava, llama3.2-vision | Local, no API key needed |
+
+### 4. Secure API Key Management
+**Status**: Complete
 
 **Working Features**:
 - OS keyring integration (Windows Credential Manager, macOS Keychain)
 - Fallback to encrypted file storage
 - Environment variable support
-- GUI-based key management
+- GUI-based key management (Tools → Manage API Keys)
 
 ---
 
-## What Doesn't Work Yet ⚠️
+## Known Limitations
 
-### 1. Pattern Analysis Functions
+1. **Pattern Analysis**
+   - HPBW and F/B ratio implemented
+   - No sidelobe level detection or symmetry analysis
+   - Pattern classification limited to 3 categories
 
-**Status**: Mostly Implemented (v4.0.0)
+2. **Function Calling Compatibility**
+   - Works with all major model families
+   - Older Ollama models may have limited tool support
 
-**Working**:
-- HPBW (Half Power Beamwidth) calculation: E-plane and H-plane with interpolation
-- Front-to-back ratio calculation with proper direction identification
-- Pattern classification (omnidirectional, sectoral, directional)
-- Null detection and deepest null reporting
-- Main beam direction (theta, phi)
-
-**Remaining Limitations**:
-- No sidelobe level detection
-- No symmetry analysis
-- Pattern classification has 3 categories (no horn, patch subtypes)
-
-### 2. Batch Frequency Analysis
-
-**Status**: Implemented (v4.0.0)
-
-**Working**:
-- `analyze_all_frequencies()` function complete
-- Peak gain vs frequency trend
-- 3dB bandwidth calculation
-- Resonance frequency detection
-- Gain variation and stability metrics
-
-### 3. Report Templating
-
-**Status**: ~90% Complete
-
-**Working**:
-- YAML template engine integrated (rflect-mcp/templates/default.yaml)
-- Template-driven section ordering and content generation
-- AI prompts per section from template
-- Fallback to hardcoded sections when no template loaded
-
-**Remaining**:
-- Automated figure insertion from plotting.py
-- Custom branding (logo, company name) partially working
-- Multi-frequency comparison tables
-
-### 4. Vision API Integration
-
-**Status**: Planned for Future (v4.2+)
-
-**Planned Features**:
-- AI "sees" radiation pattern plots and provides visual analysis
-- Anomaly detection from pattern visualization
-- Pattern comparison (simulation vs measurement)
-
----
-
-## Known Issues 🐛
-
-1. **AI Recommendations Too Generic**
-   - Problem: Sometimes AI gives generic advice not specific to antenna design
-   - Fix: Need to refine system prompts with more antenna domain knowledge
-   - Priority: Medium
-
-2. **Function Calling Sometimes Fails**
-   - Problem: OpenAI function calling occasionally returns malformed JSON
-   - Workaround: Error handling in place, retries work
-   - Priority: Low (handled gracefully)
-
-3. **Pattern Analysis Mostly Complete**
-   - HPBW and F/B ratio now implemented
-   - Remaining: sidelobe detection, symmetry analysis
-   - Priority: Medium for v4.1
-
-4. **No Offline Mode**
-   - Problem: AI features require internet + API key
-   - Fix: Consider adding local analysis mode with simpler heuristics
-   - Priority: Low (AI is optional feature)
+3. **Ollama Vision**
+   - Only vision-capable models (llava, llama3.2-vision, gemma3) support plot analysis
+   - Other Ollama models use text-only mode
 
 ---
 
 ## Architecture
 
-### Current (v4.0.0)
+### Core Modules
 
 ```
 plot_antenna/
-├── ai_analysis.py          # ✅ NEW: Pure analysis logic (GUI-independent)
+├── llm_provider.py         # Unified provider abstraction (OpenAI, Anthropic, Ollama)
+├── ai_analysis.py          # Pure analysis logic (GUI-independent)
 │   └── AntennaAnalyzer     # Reusable analysis class
 ├── gui/
-│   └── ai_chat_mixin.py    # AI chat GUI integration (uses AntennaAnalyzer)
-└── api_keys.py             # ✅ Secure key management
+│   └── ai_chat_mixin.py   # AI chat GUI integration
+├── save.py                 # Report generation (uses llm_provider)
+└── api_keys.py             # Secure key management
 ```
 
-**Benefits of Refactoring**:
-- AI logic now separate from GUI (reusable)
-- Used by MCP server for programmatic access
-- Easier to test and improve
-- Clear separation of concerns
-
-### Current (v4.0.0): MCP Server
+### MCP Server
 
 ```
 rflect-mcp/
@@ -183,38 +128,39 @@ rflect-mcp/
 
 ### Enabling AI Features
 
-AI features are **optional** and require:
-1. Valid OpenAI API key
-2. Internet connection
-3. User opt-in via GUI (Help → Manage OpenAI API Key)
+AI features are **optional** and require one of:
+1. **OpenAI**: API key configured via Tools → Manage API Keys
+2. **Anthropic**: `ANTHROPIC_API_KEY` environment variable set
+3. **Ollama**: Ollama running locally (no API key needed)
+
+Select provider via: Tools → AI Settings
 
 ### Disabling AI Features
 
-If no API key is configured:
-- AI Chat Assistant menu item is disabled
+If no provider is configured:
+- AI Chat Assistant menu item is hidden
 - "Generate Report with AI" falls back to template-only mode
 - Core RFlect functionality works normally
 
 ### Models Supported
 
-- **GPT-4o-mini** (recommended) - Fast, cost-effective
-- **GPT-4o** - More capable, higher cost
-- **GPT-5-nano/mini/5.2** - Latest models, highest capability
-- **O3** - Advanced reasoning for complex analysis
-
-Configured via: Help → AI Settings
+**OpenAI**: GPT-4o-mini (default), GPT-4o, GPT-5-nano, GPT-5-mini, GPT-5.2
+**Anthropic**: Claude Sonnet, Claude Opus
+**Ollama**: llama3.1, qwen2.5, mistral, llava (vision), and more
 
 ---
 
 ## Roadmap
 
 ### v4.0.0 (Current - February 2026)
-- ✅ Pattern analysis functions (HPBW, F/B ratio)
-- ✅ Batch frequency analysis (analyze_all_frequencies)
-- ✅ Antenna domain knowledge in AI prompts
-- ✅ YAML-based report template engine
-- ✅ MCP server for programmatic access
-- ✅ Bulk processing MCP tools
+- Pattern analysis functions (HPBW, F/B ratio)
+- Batch frequency analysis (analyze_all_frequencies)
+- Antenna domain knowledge in AI prompts
+- YAML-based report template engine
+- MCP server for programmatic access
+- Bulk processing MCP tools
+- **Multi-provider support (OpenAI, Anthropic, Ollama)**
+- **GUI polish: tooltips, progress bar, color-coded logs**
 
 ### v4.1 (Planned - Q2 2026)
 - Sidelobe detection and reporting
@@ -223,7 +169,7 @@ Configured via: Help → AI Settings
 - Multi-frequency comparison tables
 
 ### v4.2 (Planned - Q3 2026)
-- Vision API integration (AI analyzes plots visually)
+- Enhanced vision integration for all providers
 - Simulation vs measurement comparison
 - Automated design recommendations
 - AI-powered anomaly detection

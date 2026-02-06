@@ -51,6 +51,10 @@ dev = [
     "mypy>=1.8.0",
     "bump2version>=1.0.0",
 ]
+ai = [
+    "anthropic>=0.40.0",
+    "ollama>=0.4.0",
+]
 exe = [
     "pyinstaller>=6.10.0",
     "pyinstaller-hooks-contrib>=2024.8",

@@ -170,8 +170,8 @@ def load_api_key():
     if key:
         return key
 
-    print("[WARNING] No OpenAI API key found.")
-    print("   Configure via: Help -> Manage OpenAI API Key")
+    print("[WARNING] No AI API key found.")
+    print("   Configure via: Tools -> Manage API Keys")
     return None
 
 

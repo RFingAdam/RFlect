@@ -113,11 +113,11 @@ RFlect features a professional menu bar with organized access to all functionali
   - Generate Report
   - Generate Report with AI
   - AI Chat Assistant
+  - Manage API Keys
+  - AI Settings
 
 - **Help Menu**
   - About RFlect
-  - Manage OpenAI API Key
-  - AI Settings
   - Check for Updates
   - View on GitHub
   - Report an Issue
@@ -147,43 +147,47 @@ Calculate and visualize polarization parameters from HPOL/VPOL passive measureme
 - High-resolution interpolation (120×180 points) for smooth rendering
 
 ### AI-Powered Features
-> **⚠️ Status: Experimental** - AI features are functional but not production-ready (~80-90% complete). See [AI_STATUS.md](AI_STATUS.md) for details on what works and what needs improvement.
+> **Status: Experimental** - AI features are functional but still maturing (~80-90% complete). See [AI_STATUS.md](AI_STATUS.md) for details.
 
-RFlect integrates OpenAI's API for intelligent antenna analysis:
+RFlect supports multiple AI providers for intelligent antenna analysis:
+
+| Provider | Models | Notes |
+|----------|--------|-------|
+| **OpenAI** | GPT-4o-mini, GPT-4o, GPT-5 family | Default provider, requires API key |
+| **Anthropic** | Claude Sonnet, Claude Opus | Requires API key (`ANTHROPIC_API_KEY` env var) |
+| **Ollama** | Llama 3.1, Qwen 2.5, etc. | Local/free, no API key needed |
 
 **AI Chat Assistant** (Tools → AI Chat Assistant):
 - Real-time conversational analysis of your antenna measurements
+- Quick-action buttons for common queries (Gain Stats, Pattern, Polarization, All Freqs)
 - Function-calling implementation for on-demand analysis:
-  - `generate_2d_plot` - 2D radiation pattern descriptions with gain statistics
-  - `generate_3d_plot` - 3D spherical pattern descriptions with peak locations
   - `get_gain_statistics` - Min/max/avg gain, standard deviation, frequency analysis
   - `analyze_pattern` - Nulls, beamwidth, front-to-back ratio, pattern type classification
   - `compare_polarizations` - HPOL vs VPOL comparison with XPD analysis
-- Context-aware responses based on loaded data
+  - `generate_2d_plot` / `generate_3d_plot` - Radiation pattern descriptions
+- Rich file context awareness (loaded files, frequencies, data shape, key metrics)
 - Persistent chat history within session
-- Supports GPT-4o-mini, GPT-4o, GPT-5, and O3 models
 
-**AI Settings** (Help → AI Settings):
+**AI Settings** (Tools → AI Settings):
 | Setting | Options |
 |---------|---------|
-| Model Selection | GPT-4o-mini (recommended), GPT-4o, GPT-5-nano, GPT-5-mini, GPT-5.2 |
+| AI Provider | OpenAI, Anthropic, Ollama |
+| Model Selection | Provider-specific model list |
 | Response Style | Concise (~80 words), Detailed (~200+ words) |
 | Max Tokens | 50-1000 tokens |
-| Reasoning Effort | none, low, medium, high, xhigh (GPT-5 models) |
-| Text Verbosity | auto, low, medium, high |
 
 **AI-Powered Report Generation**:
 - Intelligent executive summaries based on measurement analysis
-- Dual-API support: Chat Completions API (GPT-4) and Responses API (GPT-5)
+- Vision-capable plot analysis (OpenAI GPT-4o+, Anthropic Claude, Ollama llava)
 - Context-aware conclusions and recommendations
 
 **Secure API Key Storage**:
 - Keys stored in user's AppData folder (not in app directory)
 - Cross-platform support: Windows (%LOCALAPPDATA%\RFlect), macOS (~/Library/Application Support/RFlect), Linux (~/.config/RFlect)
-- GUI-based key management (Help → Manage OpenAI API Key)
+- GUI-based key management (Tools → Manage API Keys)
 - Multiple storage backends: OS Keyring, user data file, environment variables
 
-**Note**: AI features are **optional** and require a valid OpenAI API key. RFlect works fully without AI features enabled. See [AI_STATUS.md](AI_STATUS.md) for current status and roadmap.
+**Note**: AI features are **optional**. RFlect works fully without any AI provider configured. See [AI_STATUS.md](AI_STATUS.md) for current status and roadmap.
 
 ### Batch Processing
 Process multiple measurement files automatically:
@@ -231,7 +235,7 @@ For comparison of multiple scans, configure 3D plotting via Settings:
 ## Note to Users
 - Always ensure the data you're importing is consistent with the scan type you've selected
 - For best results, ensure that settings are appropriately adjusted before importing data
-- AI features require a valid OpenAI API key (configure via Help → Manage OpenAI API Key)
+- AI features require an API key or local Ollama installation (configure via Tools → Manage API Keys)
 - Status bar at the bottom of the window provides real-time operation feedback
 
 ## MCP Server (Programmatic Access)
