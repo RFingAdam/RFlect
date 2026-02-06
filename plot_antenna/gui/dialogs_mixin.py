@@ -997,16 +997,20 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
         # Enable mouse wheel scrolling
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            try:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                # Canvas was destroyed; clean up the global binding
+                canvas.unbind_all("<MouseWheel>")
 
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
-        # Cleanup mouse wheel binding when window closes
-        def on_close():
-            canvas.unbind_all("<MouseWheel>")
-            settings_window.destroy()
+        # Cleanup mouse wheel binding when window is destroyed (any close path)
+        def _on_destroy(event):
+            if event.widget is settings_window:
+                canvas.unbind_all("<MouseWheel>")
 
-        settings_window.protocol("WM_DELETE_WINDOW", on_close)
+        settings_window.bind("<Destroy>", _on_destroy)
 
     # ────────────────────────────────────────────────────────────────────────
     # SCAN TYPE SETTINGS DIALOG

@@ -38,13 +38,13 @@ class ToolTip:
         label = tk.Label(
             tw,
             text=self.text,
-            bg="#FFFFDD",
-            fg="#333333",
+            bg="#3A3A3A",
+            fg="#DDDDDD",
             relief=tk.SOLID,
             borderwidth=1,
-            font=("Arial", 9),
-            padx=6,
-            pady=3,
+            font=("Segoe UI", 9),
+            padx=8,
+            pady=4,
         )
         label.pack()
 

@@ -62,6 +62,35 @@ PAD_SM = 5
 PAD_MD = 10
 PAD_LG = 20
 
+# Extended Dark Palette
+SURFACE_COLOR = "#353535"
+SURFACE_LIGHT_COLOR = "#404040"
+BORDER_COLOR = "#505050"
+DIVIDER_COLOR = "#444444"
+LOG_BG_COLOR = "#1E1E1E"
+HEADER_BAR_COLOR = "#252525"
+HEADER_ACCENT_COLOR = "#E63946"
+DISABLED_FG_COLOR = "#888888"
+FOCUS_BORDER_COLOR = "#5A9CF5"
+
+# Modern Fonts
+FONT_FAMILY = "Segoe UI"
+HEADER_BAR_FONT = ("Segoe UI", 16, "bold")
+HEADER_VERSION_FONT = ("Segoe UI", 9)
+SECTION_HEADER_FONT = ("Segoe UI", 11, "bold")
+LABEL_FONT_MODERN = ("Segoe UI", 10)
+BUTTON_FONT = ("Segoe UI", 10)
+LOG_FONT = ("Consolas", 9)
+STATUS_FONT = ("Segoe UI", 9)
+
+# Button Geometry
+BTN_PADX = 16
+BTN_PADY = 6
+
+# Section Spacing
+SECTION_PAD = 12
+WIDGET_GAP = 8
+
 # ============================================================================
 # REPORT BRANDING CONFIGURATION (DEFAULT: Generic/Neutral)
 # ============================================================================

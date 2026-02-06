@@ -23,7 +23,10 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import requests
 
-from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR
+from ..config import (
+    ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR,
+    BUTTON_FONT, BTN_PADX, BTN_PADY, WIDGET_GAP, SURFACE_COLOR,
+)
 
 from ..file_utils import (
     read_passive_file,
@@ -925,16 +928,16 @@ class ToolsMixin:
             self.update_passive_frequency_list()
 
             # Hide buttons not related to this routine
-            self.btn_view_results.grid_remove()
-            self.btn_save_to_file.grid_remove()
-            self.btn_settings.grid_remove()
-            self.btn_import.grid_remove()
+            self.btn_view_results.pack_forget()
+            self.btn_save_to_file.pack_forget()
+            self.btn_settings.pack_forget()
+            self.btn_import.pack_forget()
             self.log_message("CST .ffs file created successfully.")
 
             # Create the new button if it doesn't exist, or just show it if it does
             if not hasattr(self, "convert_files_button"):
                 self.convert_files_button = tk.Button(
-                    self.root,
+                    self.actions_frame,
                     text="Convert Files",
                     command=lambda: convert_HpolVpol_files(
                         self.vswr_file_path,
@@ -947,10 +950,16 @@ class ToolsMixin:
                     ),
                     bg=ACCENT_BLUE_COLOR,
                     fg=LIGHT_TEXT_COLOR,
+                    font=BUTTON_FONT,
+                    relief="flat",
+                    bd=0,
+                    padx=BTN_PADX,
+                    pady=BTN_PADY,
+                    cursor="hand2",
                 )
-                self.convert_files_button.grid(column=0, row=5)
+                self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
             else:
-                self.convert_files_button.grid()
+                self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
 
     def open_active_chamber_cal(self):
         """Start Active Chamber Calibration routine."""
@@ -1014,17 +1023,17 @@ class ToolsMixin:
             self.update_passive_frequency_list()
 
             # Hide buttons not related to this routine
-            self.btn_view_results.grid_remove()
-            self.btn_save_to_file.grid_remove()
-            self.btn_settings.grid_remove()
-            self.btn_import.grid_remove()
+            self.btn_view_results.pack_forget()
+            self.btn_save_to_file.pack_forget()
+            self.btn_settings.pack_forget()
+            self.btn_import.pack_forget()
 
             self.log_message("Active Chamber Calibration File Created Successfully.")
 
             # Create the new button if it doesn't exist, or just show it if it does
-            if not hasattr(self, "generate_active_cal_button"):
+            if not hasattr(self, "convert_files_button"):
                 self.convert_files_button = tk.Button(
-                    self.root,
+                    self.actions_frame,
                     text="Generate Calibration File",
                     command=lambda: generate_active_cal_file(
                         self.power_measurement,
@@ -1037,10 +1046,16 @@ class ToolsMixin:
                     ),
                     bg=ACCENT_BLUE_COLOR,
                     fg=LIGHT_TEXT_COLOR,
+                    font=BUTTON_FONT,
+                    relief="flat",
+                    bd=0,
+                    padx=BTN_PADX,
+                    pady=BTN_PADY,
+                    cursor="hand2",
                 )
-                self.convert_files_button.grid(column=0, row=5)
+                self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
             else:
-                self.convert_files_button.grid()
+                self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
 
     # ────────────────────────────────────────────────────────────────────────
     # UPDATE CHECKING
@@ -1085,10 +1100,19 @@ class ToolsMixin:
     # ────────────────────────────────────────────────────────────────────────
 
     def on_enter(self, e):
-        """Mouse hover enter effect."""
-        e.widget.original_color = e.widget["background"]
-        e.widget["background"] = HOVER_COLOR
+        """Mouse hover enter effect — brighten button."""
+        if str(e.widget["state"]) == "disabled":
+            return
+        e.widget._original_bg = e.widget["background"]
+        bg = e.widget["background"]
+        if bg == ACCENT_BLUE_COLOR:
+            e.widget["background"] = "#5AA0F2"
+        elif bg == SURFACE_COLOR:
+            e.widget["background"] = HOVER_COLOR
+        else:
+            e.widget["background"] = HOVER_COLOR
 
     def on_leave(self, e):
-        """Mouse hover leave effect."""
-        e.widget["background"] = e.widget.original_color
+        """Mouse hover leave effect — restore original."""
+        if hasattr(e.widget, "_original_bg"):
+            e.widget["background"] = e.widget._original_bg

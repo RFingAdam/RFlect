@@ -25,17 +25,22 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 from ..config import (
-    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR, HEADER_FONT,
+    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR,
     ERROR_COLOR, WARNING_COLOR, SUCCESS_COLOR, HOVER_COLOR,
+    SURFACE_COLOR, SURFACE_LIGHT_COLOR, BORDER_COLOR, DIVIDER_COLOR,
+    LOG_BG_COLOR, HEADER_BAR_COLOR, HEADER_ACCENT_COLOR, DISABLED_FG_COLOR,
+    FOCUS_BORDER_COLOR, HEADER_BAR_FONT, HEADER_VERSION_FONT,
+    SECTION_HEADER_FONT, LABEL_FONT_MODERN, BUTTON_FONT, LOG_FONT, STATUS_FONT,
+    BTN_PADX, BTN_PADY, SECTION_PAD, WIDGET_GAP, PAD_SM, PAD_MD, PAD_LG,
 )
 from ..calculations import extract_passive_frequencies
 
-# Import centralized API key management
-from ..api_keys import load_api_key, get_api_key, is_api_key_configured
+# AI features hidden for v4.0.0 release
+# from ..api_keys import load_api_key, get_api_key, is_api_key_configured
 
 # Import mixins
 from .dialogs_mixin import DialogsMixin
-from .ai_chat_mixin import AIChatMixin
+from .ai_chat_mixin import AIChatMixin  # kept for mixin class — methods unused until re-enabled
 from .tools_mixin import ToolsMixin
 from .callbacks_mixin import CallbacksMixin
 
@@ -115,12 +120,9 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.max_recent_files = 5
         self.load_recent_files()
 
-        # Load API key using centralized module (handles keyring, .env, user file, etc.)
-        # The api_keys module auto-loads on import, but we call it explicitly here
-        # to ensure the key is available and to log the status
-        if not is_api_key_configured():
-            # Try loading again (may find .env file now that GUI is initializing)
-            load_api_key()
+        # AI API key loading disabled for v4.0.0 release
+        # if not is_api_key_configured():
+        #     load_api_key()
 
         # VSWR limit settings
         self.saved_limit1_freq1 = 0.0
@@ -146,6 +148,9 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
 
         # Load logo
         self._load_logo()
+
+        # Configure ttk dark theme before creating widgets
+        self._setup_ttk_theme()
 
         # Create GUI elements
         self._create_widgets()
@@ -173,23 +178,223 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.logo_image = tk.PhotoImage(file=logo_path)
         self.root.iconphoto(False, self.logo_image)
 
-    def _create_widgets(self):
-        """Create main GUI widgets."""
-        # Title
-        self.title_label = tk.Label(
-            self.root,
-            text="RFlect - Antenna Plot Tool",
-            bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR,
-            font=HEADER_FONT,
-        )
-        self.title_label.grid(row=0, column=0, pady=(10, 0), columnspan=6, sticky="n")
+    def _setup_ttk_theme(self):
+        """Configure a modern dark theme for all ttk widgets."""
+        style = ttk.Style()
+        style.theme_use("clam")
 
-        # Scan type label
-        self.label_scan_type = tk.Label(
-            self.root, text="Select Measurement Type:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        # --- TButton ---
+        style.configure(
+            "TButton",
+            background=ACCENT_BLUE_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            padding=(BTN_PADX, BTN_PADY),
+            relief="flat",
+            borderwidth=0,
         )
-        self.label_scan_type.grid(row=1, column=0, pady=10, columnspan=2)
+        style.map(
+            "TButton",
+            background=[("active", HOVER_COLOR), ("disabled", SURFACE_COLOR)],
+            foreground=[("disabled", DISABLED_FG_COLOR)],
+        )
+
+        # Secondary button variant
+        style.configure(
+            "Secondary.TButton",
+            background=SURFACE_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            padding=(BTN_PADX, BTN_PADY),
+            relief="flat",
+        )
+        style.map("Secondary.TButton", background=[("active", HOVER_COLOR)])
+
+        # --- TRadiobutton ---
+        style.configure(
+            "TRadiobutton",
+            background=DARK_BG_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            font=LABEL_FONT_MODERN,
+            indicatorcolor=SURFACE_LIGHT_COLOR,
+            indicatorrelief="flat",
+        )
+        style.map(
+            "TRadiobutton",
+            background=[("active", SURFACE_COLOR)],
+            indicatorcolor=[("selected", ACCENT_BLUE_COLOR)],
+        )
+
+        # --- TCheckbutton ---
+        style.configure(
+            "TCheckbutton",
+            background=DARK_BG_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            font=LABEL_FONT_MODERN,
+            indicatorcolor=SURFACE_LIGHT_COLOR,
+        )
+        style.map(
+            "TCheckbutton",
+            background=[("active", SURFACE_COLOR)],
+            indicatorcolor=[("selected", ACCENT_BLUE_COLOR)],
+        )
+
+        # --- TCombobox ---
+        style.configure(
+            "TCombobox",
+            fieldbackground=SURFACE_LIGHT_COLOR,
+            background=SURFACE_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            arrowcolor=LIGHT_TEXT_COLOR,
+            bordercolor=BORDER_COLOR,
+            lightcolor=BORDER_COLOR,
+            darkcolor=BORDER_COLOR,
+            selectbackground=ACCENT_BLUE_COLOR,
+            selectforeground=LIGHT_TEXT_COLOR,
+        )
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", SURFACE_LIGHT_COLOR)],
+            selectbackground=[("readonly", ACCENT_BLUE_COLOR)],
+        )
+        self.root.option_add("*TCombobox*Listbox.background", SURFACE_LIGHT_COLOR)
+        self.root.option_add("*TCombobox*Listbox.foreground", LIGHT_TEXT_COLOR)
+        self.root.option_add("*TCombobox*Listbox.selectBackground", ACCENT_BLUE_COLOR)
+        self.root.option_add("*TCombobox*Listbox.selectForeground", LIGHT_TEXT_COLOR)
+
+        # --- TProgressbar ---
+        style.configure(
+            "TProgressbar",
+            background=ACCENT_BLUE_COLOR,
+            troughcolor=SURFACE_COLOR,
+            bordercolor=BORDER_COLOR,
+            lightcolor=ACCENT_BLUE_COLOR,
+            darkcolor=ACCENT_BLUE_COLOR,
+            thickness=6,
+        )
+
+        # --- TLabelframe ---
+        style.configure(
+            "TLabelframe",
+            background=DARK_BG_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            bordercolor=BORDER_COLOR,
+            relief="flat",
+        )
+        style.configure(
+            "TLabelframe.Label",
+            background=DARK_BG_COLOR,
+            foreground=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
+        )
+
+        # --- TLabel ---
+        style.configure(
+            "TLabel",
+            background=DARK_BG_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            font=LABEL_FONT_MODERN,
+        )
+
+        # --- TEntry ---
+        style.configure(
+            "TEntry",
+            fieldbackground=SURFACE_LIGHT_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            insertcolor=LIGHT_TEXT_COLOR,
+            bordercolor=BORDER_COLOR,
+            lightcolor=BORDER_COLOR,
+            darkcolor=BORDER_COLOR,
+        )
+        style.map(
+            "TEntry",
+            bordercolor=[("focus", FOCUS_BORDER_COLOR)],
+            lightcolor=[("focus", FOCUS_BORDER_COLOR)],
+        )
+
+        # --- Vertical.TScrollbar ---
+        style.configure(
+            "Vertical.TScrollbar",
+            background=SURFACE_COLOR,
+            troughcolor=DARK_BG_COLOR,
+            arrowcolor=LIGHT_TEXT_COLOR,
+            bordercolor=DARK_BG_COLOR,
+        )
+        style.map("Vertical.TScrollbar", background=[("active", HOVER_COLOR)])
+
+        # --- TSeparator ---
+        style.configure("TSeparator", background=DIVIDER_COLOR)
+
+        # --- Menu styling ---
+        self.root.option_add("*Menu.background", SURFACE_COLOR)
+        self.root.option_add("*Menu.foreground", LIGHT_TEXT_COLOR)
+        self.root.option_add("*Menu.activeBackground", ACCENT_BLUE_COLOR)
+        self.root.option_add("*Menu.activeForeground", LIGHT_TEXT_COLOR)
+        self.root.option_add("*Menu.selectColor", ACCENT_BLUE_COLOR)
+
+    # ────────────────────────────────────────────────────────────────────────
+    # WIDGET CREATION
+    # ────────────────────────────────────────────────────────────────────────
+
+    def _create_widgets(self):
+        """Create main GUI widgets with modern paneled layout."""
+
+        # ── ROW 0: BRANDED HEADER BAR ──────────────────────────────────────
+        self.header_frame = tk.Frame(self.root, bg=HEADER_BAR_COLOR, height=56)
+        self.header_frame.grid(row=0, column=0, sticky="ew")
+        self.header_frame.grid_propagate(False)
+
+        # Logo in header
+        try:
+            from PIL import Image, ImageTk
+
+            logo_path = resource_path(os.path.join("assets", "smith_logo.png"))
+            if os.path.exists(logo_path):
+                logo_img = Image.open(logo_path)
+                logo_img = logo_img.resize((36, 36), Image.Resampling.LANCZOS)
+                self._header_logo = ImageTk.PhotoImage(logo_img)
+                logo_label = tk.Label(
+                    self.header_frame, image=self._header_logo, bg=HEADER_BAR_COLOR
+                )
+                logo_label.pack(side=tk.LEFT, padx=(PAD_LG, PAD_SM), pady=PAD_SM)
+        except (FileNotFoundError, ImportError, OSError):
+            pass
+
+        self.title_label = tk.Label(
+            self.header_frame,
+            text="RFlect",
+            bg=HEADER_BAR_COLOR,
+            fg=HEADER_ACCENT_COLOR,
+            font=HEADER_BAR_FONT,
+        )
+        self.title_label.pack(side=tk.LEFT, pady=PAD_SM)
+
+        tk.Label(
+            self.header_frame,
+            text="  Antenna Measurement Tool",
+            bg=HEADER_BAR_COLOR,
+            fg="#AAAAAA",
+            font=LABEL_FONT_MODERN,
+        ).pack(side=tk.LEFT, pady=PAD_SM)
+
+        tk.Label(
+            self.header_frame,
+            text=self.CURRENT_VERSION,
+            bg=HEADER_BAR_COLOR,
+            fg="#777777",
+            font=HEADER_VERSION_FONT,
+        ).pack(side=tk.RIGHT, padx=PAD_LG, pady=PAD_SM)
+
+        # ── ROW 1: MEASUREMENT TYPE SECTION ────────────────────────────────
+        self.controls_frame = ttk.LabelFrame(
+            self.root, text="  Measurement Type", padding=SECTION_PAD
+        )
+        self.controls_frame.grid(
+            row=1, column=0, sticky="ew", padx=PAD_LG, pady=(PAD_MD, PAD_SM)
+        )
+
+        radio_frame = tk.Frame(self.controls_frame, bg=DARK_BG_COLOR)
+        radio_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Initialize scan settings
         self.scan_type = tk.StringVar()
@@ -200,114 +405,120 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.cb_groupdelay_sff_var = tk.BooleanVar(value=False)
         self.ecc_analysis_enabled = False
 
-        # Radio buttons for scan type
-        active_rb = tk.Radiobutton(
-            self.root,
-            text="Active",
-            variable=self.scan_type,
-            value="active",
-            background=BUTTON_COLOR,
-            foreground=LIGHT_TEXT_COLOR,
-            selectcolor=DARK_BG_COLOR,
-            activebackground=ACCENT_BLUE_COLOR,
-            activeforeground=LIGHT_TEXT_COLOR,
-            command=self.update_visibility,
-        )
-        active_rb.grid(row=2, column=0, pady=5)
+        self.label_scan_type = ttk.Label(radio_frame, text="Type:")
+        self.label_scan_type.pack(side=tk.LEFT, padx=(0, PAD_SM))
 
-        passive_rb = tk.Radiobutton(
-            self.root,
-            text="Passive",
-            variable=self.scan_type,
-            value="passive",
-            background=BUTTON_COLOR,
-            foreground=LIGHT_TEXT_COLOR,
-            selectcolor=DARK_BG_COLOR,
-            activebackground=ACCENT_BLUE_COLOR,
-            activeforeground=LIGHT_TEXT_COLOR,
-            command=self.update_visibility,
-        )
-        passive_rb.grid(row=2, column=1, pady=5)
+        ttk.Radiobutton(
+            radio_frame, text="Active", variable=self.scan_type,
+            value="active", command=self.update_visibility,
+        ).pack(side=tk.LEFT, padx=PAD_SM)
 
-        return_loss = tk.Radiobutton(
-            self.root,
-            text="VNA (.csv)",
-            variable=self.scan_type,
-            value="vswr",
-            background=BUTTON_COLOR,
-            foreground=LIGHT_TEXT_COLOR,
-            selectcolor=DARK_BG_COLOR,
-            activebackground=ACCENT_BLUE_COLOR,
-            activeforeground=LIGHT_TEXT_COLOR,
-            command=self.update_visibility,
-        )
-        return_loss.grid(row=2, column=2, pady=5)
+        ttk.Radiobutton(
+            radio_frame, text="Passive", variable=self.scan_type,
+            value="passive", command=self.update_visibility,
+        ).pack(side=tk.LEFT, padx=PAD_SM)
 
-        # Import button
+        ttk.Radiobutton(
+            radio_frame, text="VNA (.csv)", variable=self.scan_type,
+            value="vswr", command=self.update_visibility,
+        ).pack(side=tk.LEFT, padx=PAD_SM)
+
+        # Import button (right side)
         self.btn_import = tk.Button(
-            self.root,
-            text="Import File(s)",
+            self.controls_frame,
+            text="\U0001F4C2  Import File(s)",
             command=self.import_files,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            relief="flat",
+            bd=0,
+            padx=BTN_PADX,
+            pady=BTN_PADY,
+            cursor="hand2",
         )
-        self.btn_import.grid(row=2, column=3, columnspan=2, pady=10, padx=15)
+        self.btn_import.pack(side=tk.RIGHT, padx=PAD_SM)
 
-        # Cable Loss input
-        self.label_cable_loss = tk.Label(
-            self.root, text="Cable Loss:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        # ── ROW 2: PARAMETERS SECTION ──────────────────────────────────────
+        self.params_frame = ttk.LabelFrame(
+            self.root, text="  Parameters", padding=SECTION_PAD
         )
-        self.cable_loss = tk.StringVar(self.root, value="0.0")
-        self.cable_loss_input = tk.Entry(
-            self.root, textvariable=self.cable_loss, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        self.params_frame.grid(
+            row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
         )
-        self.label_cable_loss.grid(row=4, column=0, pady=5)
-        self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
 
-        # Frequency selection
         self.available_frequencies = []
         self.selected_frequency = tk.StringVar()
-        self.label_frequency = tk.Label(
-            self.root, text="Select Frequency:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-        )
-        self.label_frequency.grid(row=3, column=0, pady=5)
+        self.label_frequency = ttk.Label(self.params_frame, text="Frequency:")
+        self.label_frequency.grid(row=0, column=0, sticky="w", padx=(0, PAD_SM), pady=2)
         self.frequency_dropdown = ttk.Combobox(
-            self.root,
+            self.params_frame,
             textvariable=self.selected_frequency,
             values=self.available_frequencies,
             state="readonly",
+            width=20,
         )
-        self.frequency_dropdown.grid(row=3, column=1, pady=5)
+        self.frequency_dropdown.grid(row=0, column=1, sticky="w", padx=PAD_SM, pady=2)
 
-        # View Results button
+        self.label_cable_loss = ttk.Label(self.params_frame, text="Cable Loss (dB):")
+        self.cable_loss = tk.StringVar(self.root, value="0.0")
+        self.cable_loss_input = ttk.Entry(
+            self.params_frame, textvariable=self.cable_loss, width=10
+        )
+        self.label_cable_loss.grid(row=1, column=0, sticky="w", padx=(0, PAD_SM), pady=2)
+        self.cable_loss_input.grid(row=1, column=1, sticky="w", padx=PAD_SM, pady=2)
+        self.params_frame.columnconfigure(2, weight=1)
+
+        # ── ROW 3: ACTION BUTTONS BAR ──────────────────────────────────────
+        self.actions_frame = tk.Frame(self.root, bg=DARK_BG_COLOR)
+        self.actions_frame.grid(
+            row=3, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
+        )
+
         self.btn_view_results = tk.Button(
-            self.root,
-            text="View Results",
+            self.actions_frame,
+            text="\u25B6  View Results",
             command=self.process_data,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            relief="flat",
+            bd=0,
+            padx=BTN_PADX,
+            pady=BTN_PADY,
+            cursor="hand2",
         )
-        self.btn_view_results.grid(row=5, column=0, pady=10, padx=10)
+        self.btn_view_results.pack(side=tk.LEFT, padx=(0, WIDGET_GAP))
 
-        # Save Results button
         self.btn_save_to_file = tk.Button(
-            self.root,
-            text="Save Results to File",
+            self.actions_frame,
+            text="\U0001F4BE  Save Results",
             command=lambda: self.save_results_to_file(),
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            relief="flat",
+            bd=0,
+            padx=BTN_PADX,
+            pady=BTN_PADY,
+            cursor="hand2",
         )
-        self.btn_save_to_file.grid(row=5, column=1, pady=10, padx=10)
+        self.btn_save_to_file.pack(side=tk.LEFT, padx=WIDGET_GAP)
 
-        # Settings button
         self.btn_settings = tk.Button(
-            self.root,
-            text="Settings",
+            self.actions_frame,
+            text="\u2699  Settings",
             command=self.show_settings,
-            bg=ACCENT_BLUE_COLOR,
+            bg=SURFACE_COLOR,
             fg=LIGHT_TEXT_COLOR,
+            font=BUTTON_FONT,
+            relief="flat",
+            bd=0,
+            padx=BTN_PADX,
+            pady=BTN_PADY,
+            cursor="hand2",
         )
-        self.btn_settings.grid(row=5, column=3, pady=10, padx=10)
+        self.btn_settings.pack(side=tk.RIGHT, padx=(WIDGET_GAP, 0))
 
         # 3D plotting settings
         self.axis_scale_mode = tk.StringVar(value="auto")
@@ -385,18 +596,18 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         tools_menu.add_separator()
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
 
-        # AI tools
-        tools_menu.add_separator()
-        tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
-        tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
-        if is_api_key_configured():
-            tools_menu.add_command(
-                label="Generate Report with AI", command=self.generate_ai_report_from_directory
-            )
-            tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
-        else:
-            print("[INFO] No AI API key configured. AI features disabled.")
-            print("       Configure via: Tools -> Manage API Keys")
+        # AI tools (hidden for v4.0.0 release — experimental, not yet ready)
+        # tools_menu.add_separator()
+        # tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
+        # tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
+        # if is_api_key_configured():
+        #     tools_menu.add_command(
+        #         label="Generate Report with AI", command=self.generate_ai_report_from_directory
+        #     )
+        #     tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
+        # else:
+        #     print("[INFO] No AI API key configured. AI features disabled.")
+        #     print("       Configure via: Tools -> Manage API Keys")
 
         menubar.add_cascade(label="Tools", menu=tools_menu)
 
@@ -420,20 +631,47 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.root.config(menu=menubar)
 
     def _create_log_area(self):
-        """Create log text area."""
-        log_frame = tk.Frame(self.root)
-        log_frame.grid(row=6, column=0, columnspan=4, sticky="nsew")
+        """Create log text area with header."""
+        log_outer = tk.Frame(self.root, bg=DARK_BG_COLOR)
+        log_outer.grid(row=4, column=0, sticky="nsew", padx=PAD_LG, pady=(PAD_SM, 0))
+
+        # Log header bar
+        log_header = tk.Frame(log_outer, bg=SURFACE_COLOR, height=28)
+        log_header.pack(fill=tk.X)
+        log_header.pack_propagate(False)
+        tk.Label(
+            log_header,
+            text="  Output Log",
+            bg=SURFACE_COLOR,
+            fg="#AAAAAA",
+            font=STATUS_FONT,
+            anchor="w",
+        ).pack(side=tk.LEFT, padx=PAD_SM, pady=2)
+
+        # Log text area
+        log_frame = tk.Frame(log_outer, bg=LOG_BG_COLOR)
+        log_frame.pack(fill=tk.BOTH, expand=True)
 
         self.log_text = ScrolledText.ScrolledText(
-            log_frame, wrap=tk.WORD, height=10, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            log_frame,
+            wrap=tk.WORD,
+            height=10,
+            bg=LOG_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            font=LOG_FONT,
+            relief=tk.FLAT,
+            borderwidth=0,
+            padx=8,
+            pady=4,
+            insertbackground=LIGHT_TEXT_COLOR,
         )
         self.log_text.grid(row=0, column=0, sticky="nsew")
+        log_frame.grid_rowconfigure(0, weight=1)
+        log_frame.grid_columnconfigure(0, weight=1)
 
-        self.root.grid_rowconfigure(6, weight=1)
+        # Row/column weights
+        self.root.grid_rowconfigure(4, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        self.root.grid_columnconfigure(1, weight=1)
-        self.root.grid_columnconfigure(2, weight=1)
-        self.root.grid_columnconfigure(3, weight=1)
 
         # Configure log text tags for color-coded messages
         self.log_text.tag_config("log_info", foreground=LIGHT_TEXT_COLOR)
@@ -446,19 +684,22 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         sys.stderr = DualOutput(self.log_text, sys.stderr)
 
     def _create_status_bar(self):
-        """Create status bar with progress indicator."""
-        status_frame = tk.Frame(self.root, bg=DARK_BG_COLOR)
-        status_frame.grid(row=7, column=0, columnspan=4, sticky="ew")
+        """Create modern status bar with separator."""
+        ttk.Separator(self.root, orient="horizontal").grid(row=5, column=0, sticky="ew")
+
+        status_frame = tk.Frame(self.root, bg=HEADER_BAR_COLOR)
+        status_frame.grid(row=6, column=0, sticky="ew")
 
         self.status_bar = tk.Label(
             status_frame,
-            text="Ready",
-            bd=1,
-            relief=tk.SUNKEN,
+            text="\u2713  Ready",
+            bd=0,
+            relief=tk.FLAT,
             anchor=tk.W,
-            bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR,
-            font=("Arial", 9),
+            bg=HEADER_BAR_COLOR,
+            fg="#AAAAAA",
+            font=STATUS_FONT,
+            padx=PAD_SM,
         )
         self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
@@ -659,48 +900,60 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
     def update_visibility(self):
         """Update widget visibility based on current scan type.
 
-        Labels/inputs use grid_remove() when not applicable.
+        The params_frame is shown/hidden as a whole for active/vswr modes.
+        Within params_frame, individual widgets toggle for passive sub-modes.
         Action buttons use state=DISABLED to stay visible but inactive.
         """
-        # Remove converter button if present
+        # Remove converter button if present (pack-based in actions_frame)
         if hasattr(self, "convert_files_button"):
-            self.convert_files_button.grid_remove()
+            self.convert_files_button.pack_forget()
+
+        # Re-pack standard buttons if they were removed by converter tools
+        if not self.btn_view_results.winfo_manager():
+            self.btn_view_results.pack(side=tk.LEFT, padx=(0, WIDGET_GAP))
+        if not self.btn_save_to_file.winfo_manager():
+            self.btn_save_to_file.pack(side=tk.LEFT, padx=WIDGET_GAP)
+        if not self.btn_settings.winfo_manager():
+            self.btn_settings.pack(side=tk.RIGHT, padx=(WIDGET_GAP, 0))
+        if not self.btn_import.winfo_manager():
+            self.btn_import.pack(side=tk.RIGHT, padx=PAD_SM)
 
         scan_type_value = self.scan_type.get()
 
         if scan_type_value == "active":
-            self.label_cable_loss.grid_remove()
-            self.cable_loss_input.grid_remove()
-            self.label_frequency.grid_remove()
-            self.frequency_dropdown.grid_remove()
+            self.params_frame.grid_remove()
             self.btn_view_results.config(state=tk.NORMAL)
-            self.btn_view_results.grid(row=5, column=0, pady=10)
             self.btn_save_to_file.config(state=tk.DISABLED)
             self.btn_settings.config(state=tk.DISABLED)
 
         elif scan_type_value == "passive":
+            self.params_frame.grid(
+                row=2, column=0, sticky="ew", padx=PAD_LG, pady=PAD_SM
+            )
             if self.passive_scan_type.get() == "G&D":
                 self.label_frequency.grid_remove()
                 self.frequency_dropdown.grid_remove()
                 self.btn_save_to_file.config(state=tk.DISABLED)
             else:
-                self.label_frequency.grid(row=3, column=0, pady=5)
-                self.frequency_dropdown.grid(row=3, column=1, pady=5)
+                self.label_frequency.grid(
+                    row=0, column=0, sticky="w", padx=(0, PAD_SM), pady=2
+                )
+                self.frequency_dropdown.grid(
+                    row=0, column=1, sticky="w", padx=PAD_SM, pady=2
+                )
                 self.btn_save_to_file.config(state=tk.NORMAL)
-                self.btn_save_to_file.grid(row=5, column=1, pady=10)
 
-            self.label_cable_loss.grid(row=4, column=0, pady=5)
-            self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
+            self.label_cable_loss.grid(
+                row=1, column=0, sticky="w", padx=(0, PAD_SM), pady=2
+            )
+            self.cable_loss_input.grid(
+                row=1, column=1, sticky="w", padx=PAD_SM, pady=2
+            )
             self.btn_view_results.config(state=tk.NORMAL)
-            self.btn_view_results.grid(row=5, column=0, pady=10)
             self.btn_settings.config(state=tk.NORMAL)
-            self.btn_settings.grid()
 
         elif scan_type_value == "vswr":
-            self.label_cable_loss.grid_remove()
-            self.cable_loss_input.grid_remove()
-            self.label_frequency.grid_remove()
-            self.frequency_dropdown.grid_remove()
+            self.params_frame.grid_remove()
             self.btn_view_results.config(state=tk.DISABLED)
             self.btn_save_to_file.config(state=tk.DISABLED)
 
