@@ -16,6 +16,7 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # type: ignore[import-untyped
 import datetime
 import os
 import base64
+
 # Import centralized API key management
 from .api_keys import get_api_key
 
@@ -24,6 +25,7 @@ def _create_report_provider():
     """Create an LLM provider for report generation based on config."""
     try:
         from .llm_provider import create_provider
+
         provider_name = config.AI_PROVIDER if hasattr(config, "AI_PROVIDER") else "openai"
 
         if provider_name == "openai":
@@ -36,16 +38,23 @@ def _create_report_provider():
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
                 return None
-            model = config.AI_ANTHROPIC_MODEL if hasattr(config, "AI_ANTHROPIC_MODEL") else "claude-sonnet-4-20250514"
+            model = (
+                config.AI_ANTHROPIC_MODEL
+                if hasattr(config, "AI_ANTHROPIC_MODEL")
+                else "claude-sonnet-4-20250514"
+            )
             return create_provider("anthropic", api_key=api_key, model=model)
         elif provider_name == "ollama":
             model = config.AI_OLLAMA_MODEL if hasattr(config, "AI_OLLAMA_MODEL") else "llama3.1"
-            base_url = config.AI_OLLAMA_URL if hasattr(config, "AI_OLLAMA_URL") else "http://localhost:11434"
+            base_url = (
+                config.AI_OLLAMA_URL
+                if hasattr(config, "AI_OLLAMA_URL")
+                else "http://localhost:11434"
+            )
             return create_provider("ollama", model=model, base_url=base_url)
     except Exception as e:
         print(f"[WARNING] Could not create AI provider: {e}")
     return None
-
 
 
 # Helper function to encode an image as a base64 string for OpenAI API
@@ -283,10 +292,16 @@ class RFAnalyzer:
             if self._provider.supports_vision():
                 msg = LLMMessage(role="user", content=prompt, images=image_b64_list)
             else:
-                msg = LLMMessage(role="user", content=prompt + "\n\n[Batch image analysis not available - model does not support vision]")
+                msg = LLMMessage(
+                    role="user",
+                    content=prompt
+                    + "\n\n[Batch image analysis not available - model does not support vision]",
+                )
 
             response = self._provider.chat(
-                [msg], max_tokens=max_tokens, temperature=temperature,
+                [msg],
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
 
             analysis = response.content.strip() if response.content else ""
@@ -656,10 +671,16 @@ Analyze all images together and provide:
                 msg = LLMMessage(role="user", content=prompt_text, images=[base64_image])
             else:
                 # Fallback for non-vision models: text-only prompt
-                msg = LLMMessage(role="user", content=prompt_text + "\n\n[Image analysis not available - model does not support vision]")
+                msg = LLMMessage(
+                    role="user",
+                    content=prompt_text
+                    + "\n\n[Image analysis not available - model does not support vision]",
+                )
 
             response = self._provider.chat(
-                [msg], max_tokens=max_tokens, temperature=temperature,
+                [msg],
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
 
             reply = response.content.strip() if response.content else ""

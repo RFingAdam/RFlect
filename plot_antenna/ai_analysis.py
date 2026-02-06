@@ -138,7 +138,9 @@ class AntennaAnalyzer:
 
         return stats
 
-    def _get_gain_grid(self, gain_data_1d: np.ndarray) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    def _get_gain_grid(
+        self, gain_data_1d: np.ndarray
+    ) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Reshape 1D gain data into a 2D grid using phi/theta angle arrays.
 
@@ -212,7 +214,9 @@ class AntennaAnalyzer:
             g_below = cut_gain[left_bound - 1]
             if g_above != g_below:
                 frac = (threshold - g_below) / (g_above - g_below)
-                left_angle = cut_angles[left_bound - 1] + frac * (cut_angles[left_bound] - cut_angles[left_bound - 1])
+                left_angle = cut_angles[left_bound - 1] + frac * (
+                    cut_angles[left_bound] - cut_angles[left_bound - 1]
+                )
             else:
                 left_angle = cut_angles[left_bound]
         else:
@@ -224,7 +228,9 @@ class AntennaAnalyzer:
             g_below = cut_gain[right_bound + 1]
             if g_above != g_below:
                 frac = (threshold - g_below) / (g_above - g_below)
-                right_angle = cut_angles[right_bound + 1] - frac * (cut_angles[right_bound + 1] - cut_angles[right_bound])
+                right_angle = cut_angles[right_bound + 1] - frac * (
+                    cut_angles[right_bound + 1] - cut_angles[right_bound]
+                )
             else:
                 right_angle = cut_angles[right_bound]
         else:

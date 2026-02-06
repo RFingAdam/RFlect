@@ -13,7 +13,7 @@ import tkinter as tk
 # 2. Package mode (pip install -e . or pytest)
 # 3. Direct script execution (python plot_antenna/main.py)
 
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # PyInstaller bundles modules with full package paths
     from plot_antenna.gui import AntennaPlotGUI
 elif __name__ == "__main__" and __package__ is None:

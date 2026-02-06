@@ -322,10 +322,12 @@ class CallbacksMixin:
             if self.TRP_file_path:
                 self.add_recent_file(self.TRP_file_path)
                 self.update_status(f"Loaded TRP file: {os.path.basename(self.TRP_file_path)}")
-                self._measurement_context["files_loaded"].append({
-                    "path": os.path.basename(self.TRP_file_path),
-                    "type": "TRP",
-                })
+                self._measurement_context["files_loaded"].append(
+                    {
+                        "path": os.path.basename(self.TRP_file_path),
+                        "type": "TRP",
+                    }
+                )
                 self._measurement_context["scan_type"] = "active"
 
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "G&D":
@@ -622,10 +624,12 @@ class CallbacksMixin:
             self.add_recent_file(self.hpol_file_path)
             self.add_recent_file(self.vpol_file_path)
             self.update_status("Loaded HPOL and VPOL files")
-            self._measurement_context["files_loaded"].extend([
-                {"path": os.path.basename(self.hpol_file_path), "type": "HPOL"},
-                {"path": os.path.basename(self.vpol_file_path), "type": "VPOL"},
-            ])
+            self._measurement_context["files_loaded"].extend(
+                [
+                    {"path": os.path.basename(self.hpol_file_path), "type": "HPOL"},
+                    {"path": os.path.basename(self.vpol_file_path), "type": "VPOL"},
+                ]
+            )
             self._measurement_context["scan_type"] = "passive"
 
             match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
@@ -1009,7 +1013,12 @@ class CallbacksMixin:
     def _set_buttons_busy(self, busy):
         """Disable/enable action buttons during processing."""
         state = tk.DISABLED if busy else tk.NORMAL
-        for btn in (self.btn_import, self.btn_view_results, self.btn_save_to_file, self.btn_settings):
+        for btn in (
+            self.btn_import,
+            self.btn_view_results,
+            self.btn_save_to_file,
+            self.btn_settings,
+        ):
             try:
                 btn.config(state=state)
             except Exception:
@@ -1225,7 +1234,11 @@ class CallbacksMixin:
 
         # Apply NF2FF transformation if needed (with caching)
         if float(self.selected_frequency.get()) < 500:
-            cache_key = (float(self.selected_frequency.get()), self.hpol_file_path, self.vpol_file_path)
+            cache_key = (
+                float(self.selected_frequency.get()),
+                self.hpol_file_path,
+                self.vpol_file_path,
+            )
             if cache_key in self._nf2ff_cache:
                 hpol_far_field, vpol_far_field = self._nf2ff_cache[cache_key]
                 self.log_message("Using cached NF2FF results.", level="info")
@@ -1257,7 +1270,9 @@ class CallbacksMixin:
         # Update measurement context for AI awareness
         self._measurement_context["processing_complete"] = True
         self._measurement_context["cable_loss_applied"] = float(self.cable_loss.get())
-        freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        freq_idx = (
+            self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        )
         if Total_Gain_dB is not None:
             gain = Total_Gain_dB[:, freq_idx] if Total_Gain_dB.ndim == 2 else Total_Gain_dB
             self._measurement_context["key_metrics"] = {
@@ -1267,7 +1282,8 @@ class CallbacksMixin:
             }
             self._measurement_context["data_shape"] = (
                 f"{Total_Gain_dB.shape[0]} points x {Total_Gain_dB.shape[1]} frequencies"
-                if Total_Gain_dB.ndim == 2 else f"{len(Total_Gain_dB)} points"
+                if Total_Gain_dB.ndim == 2
+                else f"{len(Total_Gain_dB)} points"
             )
 
         # Apply human shadowing if enabled

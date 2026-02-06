@@ -24,8 +24,14 @@ import numpy as np
 import requests
 
 from ..config import (
-    ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, HOVER_COLOR,
-    BUTTON_FONT, BTN_PADX, BTN_PADY, WIDGET_GAP, SURFACE_COLOR,
+    ACCENT_BLUE_COLOR,
+    LIGHT_TEXT_COLOR,
+    HOVER_COLOR,
+    BUTTON_FONT,
+    BTN_PADX,
+    BTN_PADY,
+    WIDGET_GAP,
+    SURFACE_COLOR,
 )
 
 from ..file_utils import (

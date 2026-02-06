@@ -19,9 +19,11 @@ from typing import Any, Dict, List, Optional
 # Unified Data Types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ToolCall:
     """A tool/function call requested by the LLM."""
+
     id: str
     name: str
     arguments: Dict[str, Any]
@@ -30,6 +32,7 @@ class ToolCall:
 @dataclass
 class LLMMessage:
     """Unified message format for all providers."""
+
     role: str  # "system", "user", "assistant", "tool"
     content: str = ""
     images: List[str] = field(default_factory=list)  # base64-encoded strings
@@ -41,6 +44,7 @@ class LLMMessage:
 @dataclass
 class ToolDefinition:
     """Unified tool/function definition."""
+
     name: str
     description: str
     parameters: Dict[str, Any]  # JSON Schema
@@ -49,6 +53,7 @@ class ToolDefinition:
 @dataclass
 class LLMResponse:
     """Unified response from any provider."""
+
     content: str
     tool_calls: List[ToolCall] = field(default_factory=list)
     stop_reason: str = "end_turn"  # "end_turn", "tool_use", "max_tokens"
@@ -58,6 +63,7 @@ class LLMResponse:
 # ---------------------------------------------------------------------------
 # Base Provider
 # ---------------------------------------------------------------------------
+
 
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
@@ -94,6 +100,7 @@ class BaseLLMProvider(ABC):
 # OpenAI Provider
 # ---------------------------------------------------------------------------
 
+
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI Chat Completions API (GPT-4) and Responses API (GPT-5)."""
 
@@ -129,32 +136,38 @@ class OpenAIProvider(BaseLLMProvider):
         api_messages = []
         for msg in messages:
             if msg.role == "tool":
-                api_messages.append({
-                    "role": "function",
-                    "name": msg.tool_name or "",
-                    "content": msg.content,
-                })
+                api_messages.append(
+                    {
+                        "role": "function",
+                        "name": msg.tool_name or "",
+                        "content": msg.content,
+                    }
+                )
             elif msg.tool_calls:
                 # Assistant message with function_call
                 tc = msg.tool_calls[0]
-                api_messages.append({
-                    "role": "assistant",
-                    "content": None,
-                    "function_call": {
-                        "name": tc.name,
-                        "arguments": json.dumps(tc.arguments),
-                    },
-                })
+                api_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {
+                            "name": tc.name,
+                            "arguments": json.dumps(tc.arguments),
+                        },
+                    }
+                )
             elif msg.images:
                 # Vision message
                 content_parts = []
                 if msg.content:
                     content_parts.append({"type": "text", "text": msg.content})
                 for img_b64 in msg.images:
-                    content_parts.append({
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{img_b64}"},
-                    })
+                    content_parts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                        }
+                    )
                 api_messages.append({"role": msg.role, "content": content_parts})
             else:
                 api_messages.append({"role": msg.role, "content": msg.content})
@@ -189,11 +202,13 @@ class OpenAIProvider(BaseLLMProvider):
                 args = {}
             return LLMResponse(
                 content=msg.content or "",
-                tool_calls=[ToolCall(
-                    id=f"call_{msg.function_call.name}",
-                    name=msg.function_call.name,
-                    arguments=args,
-                )],
+                tool_calls=[
+                    ToolCall(
+                        id=f"call_{msg.function_call.name}",
+                        name=msg.function_call.name,
+                        arguments=args,
+                    )
+                ],
                 stop_reason="tool_use",
                 raw=response,
             )
@@ -209,28 +224,34 @@ class OpenAIProvider(BaseLLMProvider):
         input_messages = []
         for msg in messages:
             if msg.role == "tool":
-                input_messages.append({
-                    "type": "function_call_output",
-                    "call_id": msg.tool_call_id or "",
-                    "output": msg.content,
-                })
+                input_messages.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": msg.tool_call_id or "",
+                        "output": msg.content,
+                    }
+                )
             elif msg.tool_calls:
                 tc = msg.tool_calls[0]
-                input_messages.append({
-                    "type": "function_call",
-                    "call_id": tc.id,
-                    "name": tc.name,
-                    "arguments": json.dumps(tc.arguments),
-                })
+                input_messages.append(
+                    {
+                        "type": "function_call",
+                        "call_id": tc.id,
+                        "name": tc.name,
+                        "arguments": json.dumps(tc.arguments),
+                    }
+                )
             elif msg.images:
                 content_parts = []
                 if msg.content:
                     content_parts.append({"type": "input_text", "text": msg.content})
                 for img_b64 in msg.images:
-                    content_parts.append({
-                        "type": "input_image",
-                        "image_url": f"data:image/png;base64,{img_b64}",
-                    })
+                    content_parts.append(
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/png;base64,{img_b64}",
+                        }
+                    )
                 input_messages.append({"role": msg.role, "content": content_parts})
             else:
                 input_messages.append({"role": msg.role, "content": msg.content})
@@ -303,6 +324,7 @@ class OpenAIProvider(BaseLLMProvider):
 # Anthropic Provider
 # ---------------------------------------------------------------------------
 
+
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic Messages API (Claude models)."""
 
@@ -332,37 +354,45 @@ class AnthropicProvider(BaseLLMProvider):
                 system_text += msg.content + "\n"
             elif msg.role == "tool":
                 # Tool results go as user messages with tool_result blocks
-                api_messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": msg.tool_call_id or "",
-                        "content": msg.content,
-                    }],
-                })
+                api_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": msg.tool_call_id or "",
+                                "content": msg.content,
+                            }
+                        ],
+                    }
+                )
             elif msg.tool_calls:
                 # Assistant message with tool_use blocks
                 content_blocks = []
                 for tc in msg.tool_calls:
-                    content_blocks.append({
-                        "type": "tool_use",
-                        "id": tc.id,
-                        "name": tc.name,
-                        "input": tc.arguments,
-                    })
+                    content_blocks.append(
+                        {
+                            "type": "tool_use",
+                            "id": tc.id,
+                            "name": tc.name,
+                            "input": tc.arguments,
+                        }
+                    )
                 api_messages.append({"role": "assistant", "content": content_blocks})
             elif msg.images:
                 # Vision message with image blocks
                 content_blocks = []
                 for img_b64 in msg.images:
-                    content_blocks.append({
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": img_b64,
-                        },
-                    })
+                    content_blocks.append(
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/png",
+                                "data": img_b64,
+                            },
+                        }
+                    )
                 if msg.content:
                     content_blocks.append({"type": "text", "text": msg.content})
                 api_messages.append({"role": msg.role, "content": content_blocks})
@@ -398,11 +428,13 @@ class AnthropicProvider(BaseLLMProvider):
             if block.type == "text":
                 text_content += block.text
             elif block.type == "tool_use":
-                tool_calls.append(ToolCall(
-                    id=block.id,
-                    name=block.name,
-                    arguments=block.input if isinstance(block.input, dict) else {},
-                ))
+                tool_calls.append(
+                    ToolCall(
+                        id=block.id,
+                        name=block.name,
+                        arguments=block.input if isinstance(block.input, dict) else {},
+                    )
+                )
 
         stop = "tool_use" if response.stop_reason == "tool_use" else "end_turn"
 
@@ -417,6 +449,7 @@ class AnthropicProvider(BaseLLMProvider):
 # ---------------------------------------------------------------------------
 # Ollama Provider
 # ---------------------------------------------------------------------------
+
 
 class OllamaProvider(BaseLLMProvider):
     """Ollama local LLM provider."""
@@ -477,11 +510,15 @@ class OllamaProvider(BaseLLMProvider):
 
         if response.message.tool_calls:
             for tc in response.message.tool_calls:
-                tool_calls.append(ToolCall(
-                    id=f"ollama_{tc.function.name}",
-                    name=tc.function.name,
-                    arguments=tc.function.arguments if isinstance(tc.function.arguments, dict) else {},
-                ))
+                tool_calls.append(
+                    ToolCall(
+                        id=f"ollama_{tc.function.name}",
+                        name=tc.function.name,
+                        arguments=(
+                            tc.function.arguments if isinstance(tc.function.arguments, dict) else {}
+                        ),
+                    )
+                )
 
         stop = "tool_use" if tool_calls else "end_turn"
 
@@ -496,6 +533,7 @@ class OllamaProvider(BaseLLMProvider):
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def create_provider(provider_name: str, **kwargs) -> BaseLLMProvider:
     """Create a provider instance by name.

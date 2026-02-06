@@ -548,8 +548,11 @@ Your key is stored securely in your user data folder and never shared."""
         # Ollama URL field (only visible when Ollama selected)
         ollama_url_frame = tk.Frame(main_frame, bg=DARK_BG_COLOR)
         ollama_url_label = tk.Label(
-            ollama_url_frame, text="Ollama URL:", font=("Arial", 9),
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+            ollama_url_frame,
+            text="Ollama URL:",
+            font=("Arial", 9),
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
         )
         ollama_url_label.pack(side=tk.LEFT, padx=(0, 5))
 
@@ -560,7 +563,10 @@ Your key is stored securely in your user data folder and never shared."""
 
         ollama_url_var = tk.StringVar(value=AI_OLLAMA_URL)
         ollama_url_entry = tk.Entry(
-            ollama_url_frame, textvariable=ollama_url_var, width=35, font=("Arial", 9),
+            ollama_url_frame,
+            textvariable=ollama_url_var,
+            width=35,
+            font=("Arial", 9),
         )
         ollama_url_entry.pack(side=tk.LEFT)
         # Place in grid but only show for Ollama
@@ -1179,7 +1185,8 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         elif scan_type_value == "vswr":
             # Show settings specific to VNA with organized LabelFrame sections
             title = tk.Label(
-                settings_window, text="VSWR/Return Loss Settings",
+                settings_window,
+                text="VSWR/Return Loss Settings",
                 font=("Arial", 12, "bold"),
             )
             title.grid(row=0, column=0, columnspan=2, pady=10)
@@ -1198,9 +1205,16 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 settings_window.destroy()
 
             def default_vswr_settings():
-                for var in (self.limit1_freq1, self.limit1_freq2, self.limit1_val1,
-                            self.limit1_val2, self.limit2_freq1, self.limit2_freq2,
-                            self.limit2_val1, self.limit2_val2):
+                for var in (
+                    self.limit1_freq1,
+                    self.limit1_freq2,
+                    self.limit1_val1,
+                    self.limit1_val2,
+                    self.limit2_freq1,
+                    self.limit2_freq2,
+                    self.limit2_val1,
+                    self.limit2_val2,
+                ):
                     var.set(0.0)
                 self.saved_limit1_freq1 = 0.0
                 self.saved_limit1_freq2 = 0.0
@@ -1218,11 +1232,13 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             opts_frame = tk.LabelFrame(settings_window, text="Options", padx=10, pady=5)
             opts_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
             tk.Checkbutton(
-                opts_frame, text="Group Delay & SFF",
+                opts_frame,
+                text="Group Delay & SFF",
                 variable=self.cb_groupdelay_sff_var,
             ).pack(anchor=tk.W)
             tk.Checkbutton(
-                opts_frame, text="Tabled Min/Max VSWR",
+                opts_frame,
+                text="Tabled Min/Max VSWR",
                 variable=self.min_max_vswr_var,
             ).pack(anchor=tk.W)
             if hasattr(self, "saved_min_max_vswr"):
@@ -1237,15 +1253,31 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             self.limit1_val1 = tk.DoubleVar()
             self.limit1_val2 = tk.DoubleVar()
 
-            tk.Label(limit1_frame, text="Freq Start (GHz):").grid(row=0, column=0, sticky="e", padx=5, pady=2)
-            tk.Entry(limit1_frame, textvariable=self.limit1_freq1, width=10).grid(row=0, column=1, padx=5, pady=2)
-            tk.Label(limit1_frame, text="Value Start:").grid(row=0, column=2, sticky="e", padx=5, pady=2)
-            tk.Entry(limit1_frame, textvariable=self.limit1_val1, width=10).grid(row=0, column=3, padx=5, pady=2)
+            tk.Label(limit1_frame, text="Freq Start (GHz):").grid(
+                row=0, column=0, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq1, width=10).grid(
+                row=0, column=1, padx=5, pady=2
+            )
+            tk.Label(limit1_frame, text="Value Start:").grid(
+                row=0, column=2, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit1_frame, textvariable=self.limit1_val1, width=10).grid(
+                row=0, column=3, padx=5, pady=2
+            )
 
-            tk.Label(limit1_frame, text="Freq End (GHz):").grid(row=1, column=0, sticky="e", padx=5, pady=2)
-            tk.Entry(limit1_frame, textvariable=self.limit1_freq2, width=10).grid(row=1, column=1, padx=5, pady=2)
-            tk.Label(limit1_frame, text="Value End:").grid(row=1, column=2, sticky="e", padx=5, pady=2)
-            tk.Entry(limit1_frame, textvariable=self.limit1_val2, width=10).grid(row=1, column=3, padx=5, pady=2)
+            tk.Label(limit1_frame, text="Freq End (GHz):").grid(
+                row=1, column=0, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq2, width=10).grid(
+                row=1, column=1, padx=5, pady=2
+            )
+            tk.Label(limit1_frame, text="Value End:").grid(
+                row=1, column=2, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit1_frame, textvariable=self.limit1_val2, width=10).grid(
+                row=1, column=3, padx=5, pady=2
+            )
 
             # Limit Line 2 section
             limit2_frame = tk.LabelFrame(settings_window, text="Limit Line 2", padx=10, pady=5)
@@ -1256,15 +1288,31 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             self.limit2_val1 = tk.DoubleVar()
             self.limit2_val2 = tk.DoubleVar()
 
-            tk.Label(limit2_frame, text="Freq Start (GHz):").grid(row=0, column=0, sticky="e", padx=5, pady=2)
-            tk.Entry(limit2_frame, textvariable=self.limit2_freq1, width=10).grid(row=0, column=1, padx=5, pady=2)
-            tk.Label(limit2_frame, text="Value Start:").grid(row=0, column=2, sticky="e", padx=5, pady=2)
-            tk.Entry(limit2_frame, textvariable=self.limit2_val1, width=10).grid(row=0, column=3, padx=5, pady=2)
+            tk.Label(limit2_frame, text="Freq Start (GHz):").grid(
+                row=0, column=0, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq1, width=10).grid(
+                row=0, column=1, padx=5, pady=2
+            )
+            tk.Label(limit2_frame, text="Value Start:").grid(
+                row=0, column=2, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit2_frame, textvariable=self.limit2_val1, width=10).grid(
+                row=0, column=3, padx=5, pady=2
+            )
 
-            tk.Label(limit2_frame, text="Freq End (GHz):").grid(row=1, column=0, sticky="e", padx=5, pady=2)
-            tk.Entry(limit2_frame, textvariable=self.limit2_freq2, width=10).grid(row=1, column=1, padx=5, pady=2)
-            tk.Label(limit2_frame, text="Value End:").grid(row=1, column=2, sticky="e", padx=5, pady=2)
-            tk.Entry(limit2_frame, textvariable=self.limit2_val2, width=10).grid(row=1, column=3, padx=5, pady=2)
+            tk.Label(limit2_frame, text="Freq End (GHz):").grid(
+                row=1, column=0, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq2, width=10).grid(
+                row=1, column=1, padx=5, pady=2
+            )
+            tk.Label(limit2_frame, text="Value End:").grid(
+                row=1, column=2, sticky="e", padx=5, pady=2
+            )
+            tk.Entry(limit2_frame, textvariable=self.limit2_val2, width=10).grid(
+                row=1, column=3, padx=5, pady=2
+            )
 
             # Restore saved values
             if hasattr(self, "saved_limit1_freq1"):
@@ -1281,10 +1329,18 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             btn_frame = tk.Frame(settings_window)
             btn_frame.grid(row=4, column=0, columnspan=2, pady=15)
             tk.Button(
-                btn_frame, text="Save", command=save_vswr_settings,
-                bg=ACCENT_BLUE_COLOR, fg=LIGHT_TEXT_COLOR, width=12,
+                btn_frame,
+                text="Save",
+                command=save_vswr_settings,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=12,
             ).pack(side=tk.LEFT, padx=5)
             tk.Button(
-                btn_frame, text="Defaults", command=default_vswr_settings,
-                bg=BUTTON_COLOR, fg=LIGHT_TEXT_COLOR, width=12,
+                btn_frame,
+                text="Defaults",
+                command=default_vswr_settings,
+                bg=BUTTON_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=12,
             ).pack(side=tk.LEFT, padx=5)

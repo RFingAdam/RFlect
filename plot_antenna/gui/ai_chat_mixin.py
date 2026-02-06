@@ -20,8 +20,12 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 
 from ..config import (
-    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR,
-    AI_MODEL, AI_MAX_TOKENS,
+    DARK_BG_COLOR,
+    LIGHT_TEXT_COLOR,
+    ACCENT_BLUE_COLOR,
+    BUTTON_COLOR,
+    AI_MODEL,
+    AI_MAX_TOKENS,
 )
 
 # Import AI settings with fallbacks
@@ -331,8 +335,11 @@ Ask me anything about your measurements, patterns, or RF analysis!
 
         for label, prompt in quick_actions:
             btn = tk.Button(
-                action_frame, text=label, font=("Arial", 8),
-                bg=BUTTON_COLOR, fg=LIGHT_TEXT_COLOR,
+                action_frame,
+                text=label,
+                font=("Arial", 8),
+                bg=BUTTON_COLOR,
+                fg=LIGHT_TEXT_COLOR,
                 command=lambda p=prompt: _quick_send(p),
             )
             btn.pack(side=tk.LEFT, padx=3, pady=3)
@@ -341,14 +348,19 @@ Ask me anything about your measurements, patterns, or RF analysis!
             chat_text.config(state=tk.NORMAL)
             chat_text.delete("1.0", tk.END)
             fresh_ctx = self._build_chat_context()
-            fresh_msg = f"Welcome to AI Chat Assistant!\n\n{fresh_ctx}\n\nChat cleared. Ask me anything!\n"
+            fresh_msg = (
+                f"Welcome to AI Chat Assistant!\n\n{fresh_ctx}\n\nChat cleared. Ask me anything!\n"
+            )
             chat_text.insert(tk.END, fresh_msg + "\n" + "=" * 80 + "\n\n")
             chat_text.config(state=tk.DISABLED)
             chat_history.clear()
 
         clear_btn = tk.Button(
-            action_frame, text="Clear", font=("Arial", 8),
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+            action_frame,
+            text="Clear",
+            font=("Arial", 8),
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
             command=_clear_chat,
         )
         clear_btn.pack(side=tk.RIGHT, padx=3, pady=3)
@@ -409,8 +421,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             freqs = list(self.freq_list)
         if freqs:
             parts.append(
-                f"Frequencies: {len(freqs)} points, "
-                f"{min(freqs):.1f} - {max(freqs):.1f} MHz"
+                f"Frequencies: {len(freqs)} points, " f"{min(freqs):.1f} - {max(freqs):.1f} MHz"
             )
 
         # Selected frequency
@@ -522,7 +533,10 @@ Ask me anything about your measurements, patterns, or RF analysis!
                 parameters={
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to analyze"},
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to analyze",
+                        },
                     },
                 },
             ),
@@ -532,7 +546,10 @@ Ask me anything about your measurements, patterns, or RF analysis!
                 parameters={
                     "type": "object",
                     "properties": {
-                        "frequency": {"type": "number", "description": "Frequency in MHz to compare"},
+                        "frequency": {
+                            "type": "number",
+                            "description": "Frequency in MHz to compare",
+                        },
                     },
                 },
             ),
@@ -579,8 +596,10 @@ You can call these functions to help answer user questions:
 
             # Initial API call
             response = provider.chat(
-                messages, tools=tools,
-                max_tokens=max_tokens_value, temperature=temperature_value,
+                messages,
+                tools=tools,
+                max_tokens=max_tokens_value,
+                temperature=temperature_value,
             )
 
             print(f"[AI Debug] Provider: {provider.provider_name()}, Stop: {response.stop_reason}")
@@ -603,15 +622,21 @@ You can call these functions to help answer user questions:
 
                     # Append assistant tool call + tool result
                     messages.append(LLMMessage(role="assistant", tool_calls=[tc]))
-                    messages.append(LLMMessage(
-                        role="tool", content=str(func_result),
-                        tool_call_id=tc.id, tool_name=tc.name,
-                    ))
+                    messages.append(
+                        LLMMessage(
+                            role="tool",
+                            content=str(func_result),
+                            tool_call_id=tc.id,
+                            tool_name=tc.name,
+                        )
+                    )
 
                 # Follow-up call with tool results
                 response = provider.chat(
-                    messages, tools=tools,
-                    max_tokens=max_tokens_value, temperature=temperature_value,
+                    messages,
+                    tools=tools,
+                    max_tokens=max_tokens_value,
+                    temperature=temperature_value,
                 )
 
             if response.content and response.content.strip():
@@ -629,14 +654,18 @@ You can call these functions to help answer user questions:
         if provider_name == "openai":
             api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")
             if not api_key:
-                raise ValueError("OpenAI API key not found. Configure in Tools -> Manage OpenAI API Key.")
+                raise ValueError(
+                    "OpenAI API key not found. Configure in Tools -> Manage OpenAI API Key."
+                )
             model = AI_MODEL if "AI_MODEL" in globals() else "gpt-4o-mini"
             return create_provider("openai", api_key=api_key, model=model)
 
         elif provider_name == "anthropic":
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable.")
+                raise ValueError(
+                    "Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable."
+                )
             try:
                 from ..config import AI_ANTHROPIC_MODEL
             except ImportError:
@@ -1250,7 +1279,9 @@ You can call these functions to help answer user questions:
                     max_idx = np.argmax(gain_at_freq)
                     try:
                         analysis["max_gain_theta_deg"] = float(
-                            theta_list[max_idx, freq_idx] if theta_list.ndim == 2 else theta_list[max_idx]
+                            theta_list[max_idx, freq_idx]
+                            if theta_list.ndim == 2
+                            else theta_list[max_idx]
                         )
                         analysis["max_gain_phi_deg"] = float(
                             phi_list[max_idx, freq_idx] if phi_list.ndim == 2 else phi_list[max_idx]
@@ -1332,19 +1363,21 @@ You can call these functions to help answer user questions:
                     dominant_pol = "Balanced"
                     pol_advantage = 0.0
 
-                return json.dumps({
-                    "frequency": actual_freq,
-                    "scan_type": "active",
-                    "hpol_max_power_dBm": h_max,
-                    "hpol_avg_power_dBm": float(np.mean(h_power)),
-                    "vpol_max_power_dBm": v_max,
-                    "vpol_avg_power_dBm": float(np.mean(v_power)),
-                    "hpol_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
-                    "vpol_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
-                    "cross_pol_avg_dB": float(np.mean(xpd)),
-                    "dominant_polarization": dominant_pol,
-                    "polarization_advantage_dB": float(pol_advantage),
-                })
+                return json.dumps(
+                    {
+                        "frequency": actual_freq,
+                        "scan_type": "active",
+                        "hpol_max_power_dBm": h_max,
+                        "hpol_avg_power_dBm": float(np.mean(h_power)),
+                        "vpol_max_power_dBm": v_max,
+                        "vpol_avg_power_dBm": float(np.mean(v_power)),
+                        "hpol_TRP_dBm": float(getattr(self, "h_TRP_dBm", 0)),
+                        "vpol_TRP_dBm": float(getattr(self, "v_TRP_dBm", 0)),
+                        "cross_pol_avg_dB": float(np.mean(xpd)),
+                        "dominant_polarization": dominant_pol,
+                        "polarization_advantage_dB": float(pol_advantage),
+                    }
+                )
 
             # Passive scan: delegate to AntennaAnalyzer
             if scan_type != "passive":
