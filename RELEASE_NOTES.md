@@ -4,13 +4,21 @@
 
 **This is a major release with complete architecture refactoring, multi-provider AI support, and GUI polish.**
 
-### 🎨 GUI & Usability Polish
+### 🎨 Modern GUI Overhaul
+- **Complete Visual Redesign**
+  - Custom dark ttk theme based on `clam` with styled widgets across the entire application
+  - Branded header bar with Smith chart logo, red "RFlect" title, subtitle, and version badge
+  - Paneled single-column layout with `ttk.LabelFrame` sections for Measurement Type and Parameters
+  - Action buttons bar with flat, icon-prefixed buttons and hover effects
+  - Monospace output log panel with dark background and section header
+  - Thin status bar with separator, check-mark indicator, and progress bar
+  - Dark-themed menus, combobox dropdowns, tooltips, and scrollbars
+  - Modern font stack (Segoe UI for UI, Consolas for log output)
 - **Window & Layout**
   - Increased default window size to 850x600 with 700x500 minimum
-  - Even column weight distribution for better responsiveness
+  - Single-column responsive layout with proper weight distribution
   - Renamed "Additional Tools" menu to "Tools"
-  - Moved AI tools (Manage API Keys, AI Settings) to Tools menu
-- **Tooltips**: Hover hints on all main buttons (Import, View Results, Save, Settings)
+- **Tooltips**: Dark-themed hover hints on all main buttons (Import, View Results, Save, Settings)
 - **Progress Feedback**: Indeterminate progress bar in status bar during data processing
 - **Color-Coded Logs**: Info (white), Success (green), Warning (amber), Error (red) in the log area
 - **Button State Management**: Buttons use disabled/enabled states instead of disappearing during scan type changes
@@ -19,9 +27,11 @@
 - **NF2FF Caching**: Results cached by (frequency, file pair) — avoids redundant computation
 - **Figure Tracking**: Individual figure close on reset instead of `plt.close("all")`
 - **Settings Persistence**: VSWR limit settings saved to `user_settings.json` and restored on launch
-- **New Config Constants**: Status/feedback colors, font size variants (SM/MD/LG/XL), spacing constants (PAD_SM/MD/LG)
+- **New Config Constants**: Extended dark palette, modern fonts, button geometry, section spacing
 
-### 🤖 Multi-Provider AI Support
+### 🤖 Multi-Provider AI Support (Experimental — Hidden in v4.0.0)
+> **Note:** AI features are fully implemented but hidden from the GUI menu in this release. They will be exposed in v4.1 after further testing and secure key management review.
+
 - **Unified LLM Provider Abstraction** (`llm_provider.py`)
   - New module providing a common interface for OpenAI, Anthropic, and Ollama
   - Unified data types: `LLMMessage`, `ToolDefinition`, `ToolCall`, `LLMResponse`
@@ -144,13 +154,18 @@
   - Architecture explanations
   - Contribution guidelines and priorities
 
+### 🐛 Bug Fixes
+- **Fixed mousewheel crash in scrollable dialogs**: Global `<MouseWheel>` binding persisted after dialog closed via Save/Cancel buttons, causing `TclError` on destroyed canvas. Now uses `<Destroy>` event cleanup and guarded callback.
+- **Fixed PyInstaller compatibility**: Upgraded PyInstaller from 6.10.0 to 6.18.0 to resolve `PyiFrozenImporter` AttributeError with setuptools 80+.
+- **Reduced .exe size**: Added excludes for unused packages (torch, transformers, jupyter, sklearn, etc.), reducing build from ~3.1 GB to ~135 MB.
+
 ### 🔧 Technical Improvements
 - **Package Structure**
   - Proper Python package with `__init__.py`
   - Version available programmatically: `import plot_antenna; print(plot_antenna.__version__)`
   - Better import organization
 - **Build System**
-  - PyInstaller configured for .exe builds
+  - PyInstaller 6.18.0+ configured for .exe builds with optimized excludes
   - Automated in CI/CD pipeline
   - Version-tagged releases
 
@@ -159,15 +174,17 @@
 
 ### 🎯 Future Roadmap
 - **v4.1** (Planned Q2 2026)
+  - Enable AI features in GUI (API key management, AI Chat, AI Report Generation)
+  - Secure API key storage review (encrypted keyring)
   - Sidelobe detection and reporting
   - System Fidelity Factor calculation (#31)
   - Automated figure insertion in reports
-  - Multi-frequency comparison tables
   - Comprehensive test suite expansion
 - **v4.2** (Planned Q3 2026)
   - Enhanced vision integration for all providers
   - Simulation vs measurement comparison
   - AI-powered anomaly detection
+  - Multi-frequency comparison tables
 
 ### 📦 Installation
 Download `RFlect_v4.0.0.exe` from [GitHub Releases](https://github.com/RFingAdam/RFlect/releases)

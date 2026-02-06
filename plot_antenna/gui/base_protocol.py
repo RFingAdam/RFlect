@@ -27,6 +27,13 @@ class AntennaPlotGUIProtocol(Protocol):
     root: tk.Tk
     log_text: tk.Text
     status_bar: tk.Label
+    progress_bar: Any  # ttk.Progressbar
+
+    # Container frames
+    header_frame: tk.Frame
+    controls_frame: Any  # ttk.LabelFrame
+    params_frame: Any  # ttk.LabelFrame
+    actions_frame: tk.Frame
 
     # Buttons
     btn_import: tk.Button
@@ -36,12 +43,12 @@ class AntennaPlotGUIProtocol(Protocol):
 
     # Labels
     title_label: tk.Label
-    label_scan_type: tk.Label
-    label_cable_loss: tk.Label
-    label_frequency: tk.Label
+    label_scan_type: Any  # ttk.Label
+    label_cable_loss: Any  # ttk.Label
+    label_frequency: Any  # ttk.Label
 
     # Entry widgets
-    cable_loss_input: tk.Entry
+    cable_loss_input: Any  # ttk.Entry
     frequency_dropdown: ttk.Combobox
 
     # ────────────────────────────────────────────────────────────────────────
