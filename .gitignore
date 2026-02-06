@@ -49,6 +49,7 @@ openai.env
 
 # User-specific files
 recent_files.json
+user_settings.json
 
 # Archive directory
 plot_antenna/_archive/

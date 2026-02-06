@@ -24,7 +24,10 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
-from ..config import DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR, HEADER_FONT
+from ..config import (
+    DARK_BG_COLOR, LIGHT_TEXT_COLOR, ACCENT_BLUE_COLOR, BUTTON_COLOR, HEADER_FONT,
+    ERROR_COLOR, WARNING_COLOR, SUCCESS_COLOR, HOVER_COLOR,
+)
 from ..calculations import extract_passive_frequencies
 
 # Import centralized API key management
@@ -69,7 +72,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
     def __init__(self, root):
         self.root = root
         self.root.title("RFlect")
-        self.root.geometry("600x450")
+        self.root.geometry("850x600")
+        self.root.minsize(700, 500)
 
         self.frequency_var = tk.StringVar(self.root)
         self.freq_list = []
@@ -78,6 +82,23 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.hpol_file_path = None
         self.TRP_file_path = None
         self.vpol_file_path = None
+
+        # Processing state
+        self._processing_lock = False
+        self._active_figures = []
+        self._nf2ff_cache = {}
+
+        # Measurement context for AI awareness
+        self._measurement_context = {
+            "files_loaded": [],
+            "scan_type": None,
+            "frequencies": [],
+            "data_shape": None,
+            "cable_loss_applied": 0.0,
+            "nf2ff_applied": False,
+            "processing_complete": False,
+            "key_metrics": {},
+        }
 
         # VSWR settings
         self.saved_min_max_vswr = False
@@ -110,6 +131,9 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.saved_limit2_freq2 = 0.0
         self.saved_limit2_start = 0.0
         self.saved_limit2_stop = 0.0
+
+        # Load persisted user settings (overrides defaults above)
+        self._load_user_settings()
 
         # Scan type settings
         self.plot_type_var = tk.StringVar()
@@ -305,6 +329,14 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
             btn.bind("<Enter>", self.on_enter)
             btn.bind("<Leave>", self.on_leave)
 
+        # Add tooltips
+        from .tooltip import ToolTip
+
+        ToolTip(self.btn_import, "Import HPOL/VPOL or TRP measurement files (Ctrl+O)")
+        ToolTip(self.btn_view_results, "Process loaded data and display plots")
+        ToolTip(self.btn_save_to_file, "Save processed results and plots to disk")
+        ToolTip(self.btn_settings, "Configure plot settings for current scan type")
+
         # Initialize visibility
         self.update_visibility()
 
@@ -353,25 +385,24 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         tools_menu.add_separator()
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
 
-        # AI tools (if API key available)
+        # AI tools
+        tools_menu.add_separator()
+        tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
+        tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
         if is_api_key_configured():
             tools_menu.add_command(
                 label="Generate Report with AI", command=self.generate_ai_report_from_directory
             )
-            tools_menu.add_separator()
             tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
         else:
-            print("[INFO] OpenAI API key not configured. AI features disabled.")
-            print("       Configure via: Help -> Manage OpenAI API Key")
+            print("[INFO] No AI API key configured. AI features disabled.")
+            print("       Configure via: Tools -> Manage API Keys")
 
-        menubar.add_cascade(label="Additional Tools", menu=tools_menu)
+        menubar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help Menu
         help_menu = Menu(menubar, tearoff=0)
         help_menu.add_command(label="About RFlect", command=self.show_about_dialog)
-        help_menu.add_separator()
-        help_menu.add_command(label="Manage OpenAI API Key...", command=self.manage_api_key)
-        help_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
         help_menu.add_separator()
         help_menu.add_command(label="Check for Updates", command=self.check_for_updates)
         help_menu.add_separator()
@@ -400,15 +431,27 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
 
         self.root.grid_rowconfigure(6, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
+        self.root.grid_columnconfigure(2, weight=1)
+        self.root.grid_columnconfigure(3, weight=1)
+
+        # Configure log text tags for color-coded messages
+        self.log_text.tag_config("log_info", foreground=LIGHT_TEXT_COLOR)
+        self.log_text.tag_config("log_success", foreground=SUCCESS_COLOR)
+        self.log_text.tag_config("log_warning", foreground=WARNING_COLOR)
+        self.log_text.tag_config("log_error", foreground=ERROR_COLOR)
 
         # Redirect stdout and stderr
         sys.stdout = DualOutput(self.log_text, sys.stdout)
         sys.stderr = DualOutput(self.log_text, sys.stderr)
 
     def _create_status_bar(self):
-        """Create status bar."""
+        """Create status bar with progress indicator."""
+        status_frame = tk.Frame(self.root, bg=DARK_BG_COLOR)
+        status_frame.grid(row=7, column=0, columnspan=4, sticky="ew")
+
         self.status_bar = tk.Label(
-            self.root,
+            status_frame,
             text="Ready",
             bd=1,
             relief=tk.SUNKEN,
@@ -417,7 +460,11 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
             fg=LIGHT_TEXT_COLOR,
             font=("Arial", 9),
         )
-        self.status_bar.grid(row=7, column=0, columnspan=4, sticky="ew")
+        self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.progress_bar = ttk.Progressbar(
+            status_frame, mode="indeterminate", length=120
+        )
 
     def _bind_shortcuts(self):
         """Bind keyboard shortcuts."""
@@ -431,12 +478,54 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
     def on_closing(self):
         """Properly cleanup resources before closing the application."""
         try:
+            self._save_user_settings()
+        except Exception:
+            pass
+        try:
             plt.close("all")
         except Exception as e:
             print(f"Error closing matplotlib figures: {e}")
         finally:
             self.root.quit()
             self.root.destroy()
+
+    def _load_user_settings(self):
+        """Load persisted user settings (cable loss, VSWR limits)."""
+        try:
+            settings_path = os.path.join(get_user_data_dir(), "user_settings.json")
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+                # VSWR limits
+                for key in (
+                    "saved_limit1_freq1", "saved_limit1_freq2",
+                    "saved_limit1_start", "saved_limit1_stop",
+                    "saved_limit2_freq1", "saved_limit2_freq2",
+                    "saved_limit2_start", "saved_limit2_stop",
+                ):
+                    if key in settings:
+                        setattr(self, key, float(settings[key]))
+        except Exception:
+            pass  # silently fall back to defaults
+
+    def _save_user_settings(self):
+        """Persist user settings to disk."""
+        try:
+            settings = {}
+            for key in (
+                "saved_limit1_freq1", "saved_limit1_freq2",
+                "saved_limit1_start", "saved_limit1_stop",
+                "saved_limit2_freq1", "saved_limit2_freq2",
+                "saved_limit2_start", "saved_limit2_stop",
+            ):
+                if hasattr(self, key):
+                    settings[key] = getattr(self, key)
+            settings_path = os.path.join(get_user_data_dir(), "user_settings.json")
+            os.makedirs(os.path.dirname(settings_path), exist_ok=True)
+            with open(settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+        except Exception:
+            pass
 
     def update_status(self, message):
         """Update the status bar with a new message."""
@@ -538,8 +627,23 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
                     "- Vertical Polarization (Passive)",
                 )
 
+        except FileNotFoundError:
+            messagebox.showerror(
+                "File Not Found",
+                "The selected file could not be found.\nIt may have been moved or deleted.",
+            )
+        except PermissionError:
+            messagebox.showerror(
+                "Permission Denied",
+                "Cannot read the selected file.\nCheck file permissions.",
+            )
+        except ValueError as e:
+            messagebox.showerror(
+                "Invalid File",
+                f"The file format could not be recognized:\n{str(e)}",
+            )
         except Exception as e:
-            messagebox.showerror("Error", f"Could not open file:\n{str(e)}")
+            messagebox.showerror("Error", f"Could not open file:\n{type(e).__name__}: {str(e)}")
 
     def clear_recent_files(self):
         """Clear the recent files list."""
@@ -553,44 +657,52 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
     # ────────────────────────────────────────────────────────────────────────
 
     def update_visibility(self):
-        """Update widget visibility based on current scan type."""
-        # Remove converter buttons if present
+        """Update widget visibility based on current scan type.
+
+        Labels/inputs use grid_remove() when not applicable.
+        Action buttons use state=DISABLED to stay visible but inactive.
+        """
+        # Remove converter button if present
         if hasattr(self, "convert_files_button"):
-            self.convert_files_button.grid_remove()
-        if hasattr(self, "generate_active_cal_button"):
             self.convert_files_button.grid_remove()
 
         scan_type_value = self.scan_type.get()
 
         if scan_type_value == "active":
-            self.label_cable_loss.grid_forget()
-            self.cable_loss_input.grid_forget()
-            self.label_frequency.grid_forget()
-            self.frequency_dropdown.grid_forget()
+            self.label_cable_loss.grid_remove()
+            self.cable_loss_input.grid_remove()
+            self.label_frequency.grid_remove()
+            self.frequency_dropdown.grid_remove()
+            self.btn_view_results.config(state=tk.NORMAL)
             self.btn_view_results.grid(row=5, column=0, pady=10)
+            self.btn_save_to_file.config(state=tk.DISABLED)
+            self.btn_settings.config(state=tk.DISABLED)
 
         elif scan_type_value == "passive":
             if self.passive_scan_type.get() == "G&D":
-                self.label_frequency.grid_forget()
-                self.frequency_dropdown.grid_forget()
-                self.btn_save_to_file.grid_forget()
+                self.label_frequency.grid_remove()
+                self.frequency_dropdown.grid_remove()
+                self.btn_save_to_file.config(state=tk.DISABLED)
             else:
                 self.label_frequency.grid(row=3, column=0, pady=5)
                 self.frequency_dropdown.grid(row=3, column=1, pady=5)
+                self.btn_save_to_file.config(state=tk.NORMAL)
                 self.btn_save_to_file.grid(row=5, column=1, pady=10)
 
             self.label_cable_loss.grid(row=4, column=0, pady=5)
             self.cable_loss_input.grid(row=4, column=1, pady=5, padx=5)
+            self.btn_view_results.config(state=tk.NORMAL)
             self.btn_view_results.grid(row=5, column=0, pady=10)
+            self.btn_settings.config(state=tk.NORMAL)
             self.btn_settings.grid()
 
         elif scan_type_value == "vswr":
-            self.label_cable_loss.grid_forget()
-            self.cable_loss_input.grid_forget()
-            self.label_frequency.grid_forget()
-            self.frequency_dropdown.grid_forget()
-            self.btn_view_results.grid_forget()
-            self.btn_save_to_file.grid_forget()
+            self.label_cable_loss.grid_remove()
+            self.cable_loss_input.grid_remove()
+            self.label_frequency.grid_remove()
+            self.frequency_dropdown.grid_remove()
+            self.btn_view_results.config(state=tk.DISABLED)
+            self.btn_save_to_file.config(state=tk.DISABLED)
 
     def update_passive_frequency_list(self):
         """Update the frequency dropdown from HPOL file."""
@@ -600,6 +712,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
             self.frequency_dropdown["values"] = self.freq_list
             self.selected_frequency.set(str(self.freq_list[0]))
             self.frequency_dropdown["state"] = "readonly"
+            self._measurement_context["frequencies"] = list(self.freq_list)
         else:
             self.frequency_dropdown["values"] = []
             self.selected_frequency.set("")

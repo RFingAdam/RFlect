@@ -43,9 +43,24 @@ BUTTON_COLOR = "#3A3A3A"
 HOVER_COLOR = "#4A4A4A"
 ACCENT_GREEN_COLOR = "#4CAF50"
 
+# Status/Feedback Colors
+ERROR_COLOR = "#F44336"
+WARNING_COLOR = "#FFC107"
+SUCCESS_COLOR = "#4CAF50"
+INFO_COLOR = "#4A90E2"
+
 # GUI Fonts
 HEADER_FONT = ("Arial", 14, "bold")
 LABEL_FONT = ("Arial", 12)
+FONT_SM = ("Arial", 9)
+FONT_MD = ("Arial", 11)
+FONT_LG = ("Arial", 13)
+FONT_XL = ("Arial", 16, "bold")
+
+# Spacing Constants
+PAD_SM = 5
+PAD_MD = 10
+PAD_LG = 20
 
 # ============================================================================
 # REPORT BRANDING CONFIGURATION (DEFAULT: Generic/Neutral)
@@ -76,6 +91,23 @@ TITLE_FONT_SIZE = 28  # Title page font size in points
 SUBTITLE_FONT_SIZE = 14  # Subtitle font size in points
 HEADING1_FONT_SIZE = 18  # Section heading font size
 HEADING2_FONT_SIZE = 14  # Subsection heading font size
+
+# ============================================================================
+# AI PROVIDER CONFIGURATION
+# ============================================================================
+
+# AI Provider: "openai", "anthropic", or "ollama"
+AI_PROVIDER = "openai"
+
+# Provider-specific model defaults
+AI_OPENAI_MODEL = "gpt-4o-mini"
+AI_ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+AI_OLLAMA_MODEL = "llama3.1"
+AI_OLLAMA_URL = "http://localhost:11434"
+
+# Vision model override (for plot analysis)
+# Set to a vision-capable model if your default model doesn't support vision
+AI_VISION_MODEL = None  # None = use same as AI_MODEL. e.g. "llava" for Ollama
 
 # ============================================================================
 # AI ANALYSIS CONFIGURATION (OpenAI)

@@ -113,6 +113,17 @@ class CallbacksMixin:
     saved_limit2_start: float
     saved_limit2_stop: float
 
+    # GUI attributes (defined by main_window.py, declared here for type checking)
+    btn_import: tk.Button
+    btn_view_results: tk.Button
+    btn_save_to_file: tk.Button
+    btn_settings: tk.Button
+    progress_bar: Any
+    _processing_lock: bool
+    _active_figures: List[Any]
+    _nf2ff_cache: dict
+    _measurement_context: dict
+
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
 
@@ -127,7 +138,13 @@ class CallbacksMixin:
 
     def reset_data(self):
         """Reset all data variables and close matplotlib figures."""
-        plt.close("all")
+        for fig in self._active_figures:
+            try:
+                plt.close(fig)
+            except Exception:
+                pass
+        self._active_figures.clear()
+        self._nf2ff_cache.clear()
         self.data = None
         self.hpol_file_path = None
         self.vpol_file_path = None
@@ -305,6 +322,11 @@ class CallbacksMixin:
             if self.TRP_file_path:
                 self.add_recent_file(self.TRP_file_path)
                 self.update_status(f"Loaded TRP file: {os.path.basename(self.TRP_file_path)}")
+                self._measurement_context["files_loaded"].append({
+                    "path": os.path.basename(self.TRP_file_path),
+                    "type": "TRP",
+                })
+                self._measurement_context["scan_type"] = "active"
 
         elif self.scan_type.get() == "passive" and self.passive_scan_type.get() == "G&D":
             self._import_gd_files()
@@ -600,6 +622,11 @@ class CallbacksMixin:
             self.add_recent_file(self.hpol_file_path)
             self.add_recent_file(self.vpol_file_path)
             self.update_status("Loaded HPOL and VPOL files")
+            self._measurement_context["files_loaded"].extend([
+                {"path": os.path.basename(self.hpol_file_path), "type": "HPOL"},
+                {"path": os.path.basename(self.vpol_file_path), "type": "VPOL"},
+            ])
+            self._measurement_context["scan_type"] = "passive"
 
             match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
             if not match:
@@ -732,10 +759,16 @@ class CallbacksMixin:
     # LOGGING
     # ────────────────────────────────────────────────────────────────────────
 
-    def log_message(self, message):
-        """Log a message to the GUI log text area."""
+    def log_message(self, message, level="info"):
+        """Log a message to the GUI log text area with optional color coding.
+
+        Args:
+            message: Text to display in the log
+            level: One of "info", "success", "warning", "error"
+        """
         self.log_text.configure(state="normal")
-        self.log_text.insert("end", message + "\n")
+        tag = f"log_{level}"
+        self.log_text.insert("end", message + "\n", tag)
         self.log_text.configure(state="disabled")
         self.log_text.see("end")
 
@@ -935,10 +968,33 @@ class CallbacksMixin:
             return False
 
     def process_data(self):
-        """Main data processing method - processes and displays all plots."""
+        """Main data processing method - processes and displays all plots.
+
+        Uses deferred execution so the UI can show progress feedback before
+        the (synchronous) processing begins. Matplotlib requires main-thread
+        execution, so we schedule via root.after() instead of threading.
+        """
+        if self._processing_lock:
+            return
+        self._processing_lock = True
+        self._set_buttons_busy(True)
+        self.update_status("Processing...")
+        self.progress_bar.pack(side=tk.RIGHT, padx=5)
+        self.progress_bar.start(15)
+
+        # Defer actual work so the UI updates first
+        self.root.after(50, self._do_process)
+
+    def _do_process(self):
+        """Execute data processing (called from main thread after UI update)."""
         try:
-            # Close any existing matplotlib figures to prevent memory leaks
-            plt.close("all")
+            # Close tracked figures or fall back to close all
+            for fig in self._active_figures:
+                try:
+                    plt.close(fig)
+                except Exception:
+                    pass
+            self._active_figures.clear()
 
             if self.scan_type.get() == "active":
                 self._process_active_data()
@@ -946,7 +1002,27 @@ class CallbacksMixin:
                 self._process_passive_data()
 
         except Exception as e:
-            self.log_message(f"Error: {e}")
+            self.log_message(f"Error: {e}", level="error")
+        finally:
+            self._on_processing_done()
+
+    def _set_buttons_busy(self, busy):
+        """Disable/enable action buttons during processing."""
+        state = tk.DISABLED if busy else tk.NORMAL
+        for btn in (self.btn_import, self.btn_view_results, self.btn_save_to_file, self.btn_settings):
+            try:
+                btn.config(state=state)
+            except Exception:
+                pass
+
+    def _on_processing_done(self):
+        """Re-enable UI after processing completes."""
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+        self._processing_lock = False
+        self._set_buttons_busy(False)
+        self.update_status("Ready")
+        self.update_visibility()
 
     def _process_active_data(self):
         """Process and display active measurement data."""
@@ -1068,7 +1144,16 @@ class CallbacksMixin:
             zmax=self.axis_max.get(),
         )
 
-        self.log_message("Active data processed successfully.")
+        self.log_message("Active data processed successfully.", level="success")
+
+        # Update measurement context for AI awareness
+        self._measurement_context["processing_complete"] = True
+        self._measurement_context["key_metrics"] = {
+            "Peak Power": f"{np.max(total_power_dBm_2d):.1f} dBm",
+            "Min Power": f"{np.min(total_power_dBm_2d):.1f} dBm",
+            "TRP": f"{TRP_dBm:.1f} dBm",
+        }
+        self._measurement_context["data_shape"] = f"{data_points} points"
 
     def _process_passive_data(self):
         """Process and display passive measurement data."""
@@ -1138,28 +1223,52 @@ class CallbacksMixin:
         self.h_gain_dB = h_gain_dB
         self.total_gain_dB = Total_Gain_dB
 
-        # Apply NF2FF transformation if needed
+        # Apply NF2FF transformation if needed (with caching)
         if float(self.selected_frequency.get()) < 500:
-            measurement_distance = 1.0
-            window_function = "none"
-            self.log_message("Applying NF2FF Transformation...")
-            hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
-                hpol_data,
-                vpol_data,
-                float(self.selected_frequency.get()),
-                start_phi_h,
-                stop_phi_h,
-                inc_phi_h,
-                start_theta_h,
-                stop_theta_h,
-                inc_theta_h,
-                measurement_distance,
-                window_function,
-            )
+            cache_key = (float(self.selected_frequency.get()), self.hpol_file_path, self.vpol_file_path)
+            if cache_key in self._nf2ff_cache:
+                hpol_far_field, vpol_far_field = self._nf2ff_cache[cache_key]
+                self.log_message("Using cached NF2FF results.", level="info")
+                self._measurement_context["nf2ff_applied"] = True
+            else:
+                measurement_distance = 1.0
+                window_function = "none"
+                self.log_message("Applying NF2FF Transformation...")
+                hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
+                    hpol_data,
+                    vpol_data,
+                    float(self.selected_frequency.get()),
+                    start_phi_h,
+                    stop_phi_h,
+                    inc_phi_h,
+                    start_theta_h,
+                    stop_theta_h,
+                    inc_theta_h,
+                    measurement_distance,
+                    window_function,
+                )
+                self._nf2ff_cache[cache_key] = (hpol_far_field, vpol_far_field)
+                self._measurement_context["nf2ff_applied"] = True
         else:
             hpol_far_field = h_gain_dB
             vpol_far_field = v_gain_dB
-        self.log_message("Passive data processed successfully.")
+        self.log_message("Passive data processed successfully.", level="success")
+
+        # Update measurement context for AI awareness
+        self._measurement_context["processing_complete"] = True
+        self._measurement_context["cable_loss_applied"] = float(self.cable_loss.get())
+        freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        if Total_Gain_dB is not None:
+            gain = Total_Gain_dB[:, freq_idx] if Total_Gain_dB.ndim == 2 else Total_Gain_dB
+            self._measurement_context["key_metrics"] = {
+                "Peak Gain": f"{np.max(gain):.1f} dBi",
+                "Min Gain": f"{np.min(gain):.1f} dBi",
+                "Avg Gain": f"{np.mean(gain):.1f} dBi",
+            }
+            self._measurement_context["data_shape"] = (
+                f"{Total_Gain_dB.shape[0]} points x {Total_Gain_dB.shape[1]} frequencies"
+                if Total_Gain_dB.ndim == 2 else f"{len(Total_Gain_dB)} points"
+            )
 
         # Apply human shadowing if enabled
         if self.shadowing_enabled:

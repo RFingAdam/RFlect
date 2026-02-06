@@ -16,19 +16,36 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # type: ignore[import-untyped
 import datetime
 import os
 import base64
-import requests
-from openai import OpenAI
-
 # Import centralized API key management
-from .api_keys import load_api_key, get_api_key, is_api_key_configured
+from .api_keys import get_api_key
 
-# Load API key using centralized module (handles .env, keyring, user file, etc.)
-api_key = get_api_key()
 
-if api_key:
-    client = OpenAI(api_key=api_key)
-else:
-    client = None  # type: ignore[assignment]  # Handle the case when the API key is not provided
+def _create_report_provider():
+    """Create an LLM provider for report generation based on config."""
+    try:
+        from .llm_provider import create_provider
+        provider_name = config.AI_PROVIDER if hasattr(config, "AI_PROVIDER") else "openai"
+
+        if provider_name == "openai":
+            api_key = get_api_key()
+            if not api_key:
+                return None
+            model = config.AI_MODEL if hasattr(config, "AI_MODEL") else "gpt-4o-mini"
+            return create_provider("openai", api_key=api_key, model=model)
+        elif provider_name == "anthropic":
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                return None
+            model = config.AI_ANTHROPIC_MODEL if hasattr(config, "AI_ANTHROPIC_MODEL") else "claude-sonnet-4-20250514"
+            return create_provider("anthropic", api_key=api_key, model=model)
+        elif provider_name == "ollama":
+            model = config.AI_OLLAMA_MODEL if hasattr(config, "AI_OLLAMA_MODEL") else "llama3.1"
+            base_url = config.AI_OLLAMA_URL if hasattr(config, "AI_OLLAMA_URL") else "http://localhost:11434"
+            return create_provider("ollama", model=model, base_url=base_url)
+    except Exception as e:
+        print(f"[WARNING] Could not create AI provider: {e}")
+    return None
+
 
 
 # Helper function to encode an image as a base64 string for OpenAI API
@@ -193,7 +210,8 @@ class RFAnalyzer:
           }
         """
         self.messages = []
-        self.use_ai = use_ai and client is not None  # Enable AI only if the client is initialized
+        self._provider = _create_report_provider() if use_ai else None
+        self.use_ai = use_ai and self._provider is not None
         self.project_context = project_context or {}
         self.analysis_results = []  # Track all image analyses
         self.measurement_stats = {
@@ -238,22 +256,14 @@ class RFAnalyzer:
     def analyze_image_batch(self, image_paths, frequency, batch_type, measurement_type=None):
         """
         Analyze a batch of related images with a single AI call for token efficiency.
-
-        Parameters:
-        - image_paths: List of image paths to analyze together
-        - frequency: Frequency string (e.g., '2437.0MHz')
-        - batch_type: Type of batch ('3d_plots', '2d_cuts', etc.)
-        - measurement_type: Measurement category ('active', 'passive', 'polarization')
-
-        Returns:
-        - str: Combined analysis for the batch
+        Uses the unified provider abstraction.
         """
-        if not self.use_ai or not image_paths:
+        if not self.use_ai or not image_paths or not self._provider:
             return self._generate_batch_placeholder(
                 image_paths, frequency, batch_type, measurement_type
             )
 
-        # Limit to first 4 images for batch analysis (API limits on image count)
+        # Limit to first 4 images for batch analysis
         images_to_analyze = image_paths[:4]
 
         # Build batch-specific prompt
@@ -262,25 +272,39 @@ class RFAnalyzer:
         )
 
         try:
-            ai_model = config.AI_MODEL if hasattr(config, "AI_MODEL") else "gpt-4o-mini"
-            is_gpt5_model = ai_model.startswith("gpt-5")
+            from .llm_provider import LLMMessage
 
-            if is_gpt5_model:
-                analysis = self._send_batch_to_responses_api(images_to_analyze, ai_model, prompt)
+            max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 300
+            temperature = config.AI_TEMPERATURE if hasattr(config, "AI_TEMPERATURE") else 0.2
+
+            # Encode all images
+            image_b64_list = [encode_image(p) for p in images_to_analyze]
+
+            if self._provider.supports_vision():
+                msg = LLMMessage(role="user", content=prompt, images=image_b64_list)
             else:
-                analysis = self._send_batch_to_chat_api(images_to_analyze, ai_model, prompt)
+                msg = LLMMessage(role="user", content=prompt + "\n\n[Batch image analysis not available - model does not support vision]")
 
-            # Store result and extract metrics
-            self.analysis_results.append(
-                {
-                    "image_name": f"Batch: {frequency} {batch_type}",
-                    "measurement_type": measurement_type,
-                    "analysis": analysis,
-                }
+            response = self._provider.chat(
+                [msg], max_tokens=max_tokens, temperature=temperature,
             )
-            self._extract_metrics(analysis, images_to_analyze[0])
 
-            return analysis
+            analysis = response.content.strip() if response.content else ""
+
+            if analysis:
+                self.analysis_results.append(
+                    {
+                        "image_name": f"Batch: {frequency} {batch_type}",
+                        "measurement_type": measurement_type,
+                        "analysis": analysis,
+                    }
+                )
+                self._extract_metrics(analysis, images_to_analyze[0])
+                return analysis
+
+            return self._generate_batch_placeholder(
+                image_paths, frequency, batch_type, measurement_type
+            )
 
         except Exception as e:
             print(f"Batch analysis error: {e}")
@@ -344,67 +368,7 @@ Analyze all images together and provide:
 
         return base_prompt + specific_guidance + output_format
 
-    def _send_batch_to_chat_api(self, image_paths, ai_model, prompt):
-        """Send multiple images to Chat Completions API."""
-        # Build content array with multiple images
-        content = [{"type": "text", "text": prompt}]
-
-        for img_path in image_paths:
-            base64_image = encode_image(img_path)
-            content.append(
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{base64_image}",
-                        "detail": "low",  # Use low detail for batch to save tokens
-                    },
-                }
-            )
-
-        max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 300
-
-        response = client.chat.completions.create(  # type: ignore[union-attr]
-            model=ai_model,
-            messages=[{"role": "user", "content": content}],  # type: ignore[list-item]
-            max_tokens=max_tokens,
-        )
-
-        return response.choices[0].message.content  # type: ignore[union-attr]
-
-    def _send_batch_to_responses_api(self, image_paths, ai_model, prompt):
-        """Send multiple images to GPT-5 Responses API."""
-        # Build content array with multiple images
-        content = [{"type": "input_text", "text": prompt}]
-
-        for img_path in image_paths:
-            base64_image = encode_image(img_path)
-            content.append(
-                {
-                    "type": "input_image",
-                    "image_url": f"data:image/png;base64,{base64_image}",
-                    "detail": "low",
-                }
-            )
-
-        max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 300
-
-        # Configure reasoning/verbosity for GPT-5
-        reasoning_effort = (
-            config.AI_REASONING_EFFORT if hasattr(config, "AI_REASONING_EFFORT") else "low"
-        )
-        text_verbosity = (
-            config.AI_TEXT_VERBOSITY if hasattr(config, "AI_TEXT_VERBOSITY") else "auto"
-        )
-
-        response = client.responses.create(  # type: ignore[attr-defined]
-            model=ai_model,
-            input=content,  # type: ignore[arg-type]
-            max_output_tokens=max_tokens,
-            reasoning={"effort": reasoning_effort},  # type: ignore[arg-type]
-            text={"format": {"type": "text", "verbosity": text_verbosity}},  # type: ignore[arg-type]
-        )
-
-        return response.output_text  # type: ignore[attr-defined]
+    # Legacy batch methods removed — batch analysis now uses unified provider in analyze_image_batch()
 
     def _generate_batch_placeholder(self, image_paths, frequency, batch_type, measurement_type):
         """Generate placeholder text for batch analysis when AI is disabled."""
@@ -673,32 +637,41 @@ Analyze all images together and provide:
         self, image_path, project_context=None, measurement_type=None, is_paired=False
     ):
         """
-        Send image to OpenAI with enhanced context and prompting.
-        Supports both Chat Completions API (GPT-4 family) and Responses API (GPT-5 family).
-
-        Parameters:
-        - image_path: Path to the image file
-        - project_context: Dictionary with project details (antenna type, freq range, requirements, etc.)
-        - measurement_type: Type of measurement (passive, active, polarization, etc.)
-        - is_paired: Whether this represents combined 1of2/2of2 views
+        Send image to AI provider for analysis.
+        Uses the unified provider abstraction to support OpenAI, Anthropic, and Ollama.
         """
+        if not self._provider:
+            return self.generate_placeholder_caption(image_path, measurement_type)
+
         base64_image = encode_image(image_path)
+        prompt_text = self._build_prompt(project_context, measurement_type, is_paired)
 
-        # Load AI model configuration from config
-        ai_model = config.AI_MODEL if hasattr(config, "AI_MODEL") else "gpt-4o-mini"
+        max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 150
+        temperature = config.AI_TEMPERATURE if hasattr(config, "AI_TEMPERATURE") else 0.2
 
-        # Determine which API to use based on model name
-        is_gpt5_model = ai_model.startswith("gpt-5")
+        try:
+            from .llm_provider import LLMMessage
 
-        # Use appropriate API
-        if is_gpt5_model:
-            return self._send_to_responses_api(
-                base64_image, ai_model, project_context, measurement_type, is_paired
+            if self._provider.supports_vision():
+                msg = LLMMessage(role="user", content=prompt_text, images=[base64_image])
+            else:
+                # Fallback for non-vision models: text-only prompt
+                msg = LLMMessage(role="user", content=prompt_text + "\n\n[Image analysis not available - model does not support vision]")
+
+            response = self._provider.chat(
+                [msg], max_tokens=max_tokens, temperature=temperature,
             )
-        else:
-            return self._send_to_chat_completions_api(
-                base64_image, ai_model, project_context, measurement_type, is_paired
-            )
+
+            reply = response.content.strip() if response.content else ""
+            if reply:
+                self.messages.append({"role": "assistant", "content": reply})
+                return reply
+
+            return self.generate_placeholder_caption(image_path, measurement_type)
+
+        except Exception as e:
+            print(f"[WARNING] AI analysis error: {str(e)[:100]}")
+            return "**AI Analysis Unavailable** - Error during analysis. Report will use placeholder captions."
 
     def _build_prompt(self, project_context, measurement_type, is_paired=False):
         """Build the analysis prompt based on context and measurement type."""
@@ -904,188 +877,6 @@ Analyze the provided antenna measurement plot and provide a comprehensive techni
 """
 
         return base_prompt + analysis_prompt + output_requirements
-
-    def _send_to_chat_completions_api(
-        self, base64_image, ai_model, project_context, measurement_type, is_paired=False
-    ):
-        """
-        Send to Chat Completions API (GPT-4 family: gpt-4o, gpt-4o-mini, etc.)
-        """
-        # Use the module-level api_key that was loaded at startup
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-
-        prompt_text = self._build_prompt(project_context, measurement_type, is_paired)
-
-        ai_max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 150
-        ai_temperature = config.AI_TEMPERATURE if hasattr(config, "AI_TEMPERATURE") else 0.2
-        ai_top_p = config.AI_TOP_P if hasattr(config, "AI_TOP_P") else 0.8
-        ai_timeout = config.AI_TIMEOUT_SECONDS if hasattr(config, "AI_TIMEOUT_SECONDS") else 30
-
-        payload = {
-            "model": ai_model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_text},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                        },
-                    ],
-                }
-            ],
-            "max_tokens": ai_max_tokens,
-            "temperature": ai_temperature,
-            "top_p": ai_top_p,
-        }
-
-        try:
-            response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=ai_timeout,
-            )
-            result = response.json()
-
-            if "choices" in result and len(result["choices"]) > 0:
-                reply = result["choices"][0]["message"]["content"]
-                self.messages.append({"role": "assistant", "content": reply})
-                return reply
-            else:
-                return self._handle_api_error(result, "Chat Completions")
-
-        except requests.exceptions.Timeout:
-            print("[WARNING] OpenAI API timeout - Request took too long")
-            return "**AI Analysis Unavailable** - Request timeout. Try again or use regular report generation."
-
-        except requests.exceptions.ConnectionError as e:
-            print(f"[WARNING] OpenAI API connection error: {str(e)[:100]}")
-            return "**AI Analysis Unavailable** - Network connection error. Check internet connection or try again later."
-
-        except requests.exceptions.RequestException as e:
-            print(f"[WARNING] OpenAI API request failed: {str(e)[:100]}")
-            return (
-                "**AI Analysis Unavailable** - Network error. Report will use placeholder captions."
-            )
-
-        except Exception as e:
-            print(f"[WARNING] Unexpected error during AI analysis: {str(e)[:100]}")
-            return "**AI Analysis Unavailable** - Unexpected error. Report will use placeholder captions."
-
-    def _send_to_responses_api(
-        self, base64_image, ai_model, project_context, measurement_type, is_paired=False
-    ):
-        """
-        Send to Responses API (GPT-5.2 family: gpt-5.2, gpt-5-mini, gpt-5-nano, etc.)
-        Uses the OpenAI Python SDK's responses.create() method.
-        Implements advanced GPT-5.2 features: reasoning effort, text verbosity, reasoning summaries.
-        """
-        prompt_text = self._build_prompt(project_context, measurement_type, is_paired)
-
-        ai_timeout = config.AI_TIMEOUT_SECONDS if hasattr(config, "AI_TIMEOUT_SECONDS") else 30
-        ai_max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 150
-
-        # Get advanced GPT-5.2 parameters from config (with fallbacks)
-        reasoning_effort = (
-            config.AI_REASONING_EFFORT if hasattr(config, "AI_REASONING_EFFORT") else "low"
-        )
-        text_verbosity = (
-            config.AI_TEXT_VERBOSITY if hasattr(config, "AI_TEXT_VERBOSITY") else "auto"
-        )
-        generate_summary = (
-            config.AI_GENERATE_REASONING_SUMMARY
-            if hasattr(config, "AI_GENERATE_REASONING_SUMMARY")
-            else False
-        )
-
-        # Auto-map verbosity based on AI_MAX_TOKENS if set to "auto"
-        if text_verbosity == "auto":
-            if ai_max_tokens <= 100:
-                text_verbosity = "low"
-            elif ai_max_tokens <= 250:
-                text_verbosity = "medium"
-            else:
-                text_verbosity = "high"
-
-        try:
-            # Build reasoning config
-            reasoning_config = {"effort": reasoning_effort}
-            if generate_summary:
-                reasoning_config["summary"] = "auto"
-
-            # Use OpenAI SDK's responses.create() method for GPT-5.2
-            # The SDK handles the API endpoint and authentication
-            # NOTE: This uses the hypothetical GPT-5.2 Responses API structure.
-            # Type errors are expected until OpenAI releases this API in their SDK.
-            input_payload = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": prompt_text},
-                        {
-                            "type": "input_image",
-                            "image_url": f"data:image/jpeg;base64,{base64_image}",
-                        },
-                    ],
-                }
-            ]
-            response = client.responses.create(  # type: ignore[attr-defined]
-                model=ai_model,
-                input=input_payload,  # type: ignore[arg-type]
-                reasoning=reasoning_config,  # type: ignore[arg-type]
-                text={"verbosity": text_verbosity},  # type: ignore[arg-type]
-            )
-
-            # GPT-5.2 Responses API returns output_text as a convenience property
-            if hasattr(response, "output_text") and response.output_text:
-                reply = response.output_text
-                self.messages.append({"role": "assistant", "content": reply})
-                return reply
-
-            # Fallback: Parse the output array manually
-            if hasattr(response, "output") and response.output:
-                for item in response.output:
-                    if getattr(item, "type", None) == "message":
-                        for content_item in getattr(item, "content", []):
-                            if getattr(content_item, "type", None) == "output_text":
-                                reply = getattr(content_item, "text", "")
-                                self.messages.append({"role": "assistant", "content": reply})
-                                return reply
-
-            # If we got here, the response structure was unexpected
-            print(f"[WARNING] Unexpected GPT-5.2 response structure: {response}")
-            return "**AI Analysis Unavailable** - Unexpected response format from GPT-5.2 API."
-
-        except Exception as e:
-            error_str = str(e)
-
-            # Handle common error types
-            if "timeout" in error_str.lower():
-                print("[WARNING] OpenAI Responses API timeout - Request took too long")
-                return "**AI Analysis Unavailable** - Request timeout. Try again or use regular report generation."
-
-            if "connection" in error_str.lower() or "network" in error_str.lower():
-                print(f"[WARNING] OpenAI Responses API connection error: {error_str[:100]}")
-                return "**AI Analysis Unavailable** - Network connection error. Check internet connection or try again later."
-
-            if "quota" in error_str.lower() or "insufficient_quota" in error_str.lower():
-                print(f"[WARNING] OpenAI quota exceeded: {error_str[:100]}")
-                return "**AI Analysis Unavailable** - OpenAI quota exceeded. Please add billing credits at platform.openai.com/account/billing"
-
-            if "api_key" in error_str.lower() or "authentication" in error_str.lower():
-                print(f"[WARNING] OpenAI API key error: {error_str[:100]}")
-                return "**AI Analysis Unavailable** - Invalid API key. Check your API key configuration."
-
-            if "model" in error_str.lower() and (
-                "not found" in error_str.lower() or "does not exist" in error_str.lower()
-            ):
-                print(f"[WARNING] Model not available: {error_str[:100]}")
-                return f"**AI Analysis Unavailable** - Model '{ai_model}' not available. Try 'gpt-4o-mini' for compatibility."
-
-            print(f"[WARNING] Unexpected error during GPT-5.2 analysis: {error_str[:100]}")
-            return "**AI Analysis Unavailable** - Unexpected error. Report will use placeholder captions."
 
     def _handle_api_error(self, result, api_name):
         """Handle API errors with helpful messages."""

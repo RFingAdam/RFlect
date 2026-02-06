@@ -1,8 +1,42 @@
 # RFlect - Release Notes
 
-## Version 4.0.0 (02/04/2026) - MAJOR RELEASE
+## Version 4.0.0 (02/05/2026) - MAJOR RELEASE
 
-**This is a major release with complete architecture refactoring and professional release infrastructure.**
+**This is a major release with complete architecture refactoring, multi-provider AI support, and GUI polish.**
+
+### 🎨 GUI & Usability Polish
+- **Window & Layout**
+  - Increased default window size to 850x600 with 700x500 minimum
+  - Even column weight distribution for better responsiveness
+  - Renamed "Additional Tools" menu to "Tools"
+  - Moved AI tools (Manage API Keys, AI Settings) to Tools menu
+- **Tooltips**: Hover hints on all main buttons (Import, View Results, Save, Settings)
+- **Progress Feedback**: Indeterminate progress bar in status bar during data processing
+- **Color-Coded Logs**: Info (white), Success (green), Warning (amber), Error (red) in the log area
+- **Button State Management**: Buttons use disabled/enabled states instead of disappearing during scan type changes
+- **Processing Lock**: Prevents double-clicks during data processing
+- **Better Error Messages**: Specific exception handling (FileNotFoundError, PermissionError, ValueError) with helpful messages
+- **NF2FF Caching**: Results cached by (frequency, file pair) — avoids redundant computation
+- **Figure Tracking**: Individual figure close on reset instead of `plt.close("all")`
+- **Settings Persistence**: VSWR limit settings saved to `user_settings.json` and restored on launch
+- **New Config Constants**: Status/feedback colors, font size variants (SM/MD/LG/XL), spacing constants (PAD_SM/MD/LG)
+
+### 🤖 Multi-Provider AI Support
+- **Unified LLM Provider Abstraction** (`llm_provider.py`)
+  - New module providing a common interface for OpenAI, Anthropic, and Ollama
+  - Unified data types: `LLMMessage`, `ToolDefinition`, `ToolCall`, `LLMResponse`
+  - Provider-agnostic tool calling loop — same code handles function calls across all backends
+  - Factory function `create_provider()` and `get_available_providers()` helper
+- **OpenAI Provider**: Chat Completions API (GPT-4) + Responses API (GPT-5) with vision support
+- **Anthropic Provider**: Messages API with tool use and vision support
+- **Ollama Provider**: Local LLM support (llama3.1, qwen2.5, llava for vision, etc.)
+- **AI Chat Enhancements**
+  - Quick-action buttons: Gain Stats, Pattern, Polarization, All Freqs
+  - Clear Chat button
+  - Rich measurement context passed to AI (loaded files, frequencies, data shape, key metrics)
+  - Provider-aware API key checks
+- **AI Settings Dialog**: Provider selection dropdown, provider-specific model lists, Ollama URL field
+- **Report Generation**: Refactored `save.py` to use unified provider abstraction — reports work with any configured provider
 
 ### 🏗️ Architecture Refactoring
 - **GUI Refactored to Mixin-Based Design**
@@ -129,8 +163,9 @@
   - System Fidelity Factor calculation (#31)
   - Automated figure insertion in reports
   - Multi-frequency comparison tables
+  - Comprehensive test suite expansion
 - **v4.2** (Planned Q3 2026)
-  - Vision API integration (AI analyzes plots visually)
+  - Enhanced vision integration for all providers
   - Simulation vs measurement comparison
   - AI-powered anomaly detection
 
