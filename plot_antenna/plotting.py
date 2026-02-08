@@ -317,7 +317,6 @@ def plot_polar_power_pattern(
         plt.savefig(plot_path, format="png")
         plt.close(fig)
     else:
-        plt.close("all")
         plt.show()
 
 
@@ -1065,7 +1064,6 @@ def plot_additional_polar_patterns(
             plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"))
             plt.close()
         else:
-            plt.close("all")
             plt.show()
 
     if save_path:
@@ -1096,30 +1094,31 @@ def plot_additional_polar_patterns(
         print("No data found for Azimuth Gain Pattern Theta = 90")
 
     # 2. Elevation Gain Pattern Phi = 180/0 (XZ-Plane: Phi=0° Plane)
-    index_phi_0 = np.where(np.isclose(plot_phi_rad, np.pi, atol=1e-6))[0]
-    index_phi_180 = np.where(np.isclose(plot_phi_rad, 0, atol=1e-6))[0]
+    index_phi_180 = np.where(np.isclose(plot_phi_rad, np.pi, atol=1e-6))[0]
+    index_phi_0 = np.where(np.isclose(plot_phi_rad, 0, atol=1e-6))[0]
 
-    if index_phi_0.size != 0 and index_phi_180.size != 0:
-        # Adjusting theta_values_phi_0 and theta_values_phi_180 to match the reference.
-        theta_values_phi_0 = np.radians(plot_theta_deg[index_phi_0])
-        gain_values_phi_0 = plot_Total_Gain_dB[index_phi_0]
-
-        theta_values_phi_180 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_180])
+    if index_phi_180.size != 0 and index_phi_0.size != 0:
+        # phi=180° data plotted on the right half (theta 0→π)
+        theta_values_phi_180 = np.radians(plot_theta_deg[index_phi_180])
         gain_values_phi_180 = plot_Total_Gain_dB[index_phi_180]
 
+        # phi=0° data mirrored to the left half (theta 2π→π)
+        theta_values_phi_0 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_0])
+        gain_values_phi_0 = plot_Total_Gain_dB[index_phi_0]
+
         # Flatten the 2D arrays to 1D arrays
-        theta_values_phi_0_flat = theta_values_phi_0.flatten()
         theta_values_phi_180_flat = theta_values_phi_180.flatten()
+        theta_values_phi_0_flat = theta_values_phi_0.flatten()
 
         # Ensure that gain arrays are also 1D and of matching shape
-        gain_values_phi_0_flat = np.repeat(gain_values_phi_0, theta_values_phi_0.shape[1])
         gain_values_phi_180_flat = np.repeat(gain_values_phi_180, theta_values_phi_180.shape[1])
+        gain_values_phi_0_flat = np.repeat(gain_values_phi_0, theta_values_phi_0.shape[1])
 
         # Concatenating the flattened arrays with np.nan to introduce a break in the plot
         theta_values = np.concatenate(
-            [theta_values_phi_0_flat, [np.nan], theta_values_phi_180_flat]
+            [theta_values_phi_180_flat, [np.nan], theta_values_phi_0_flat]
         )
-        gain_values = np.concatenate([gain_values_phi_0_flat, [np.nan], gain_values_phi_180_flat])
+        gain_values = np.concatenate([gain_values_phi_180_flat, [np.nan], gain_values_phi_0_flat])
 
         # Now, both theta_values and gain_values should be 1D arrays of the same shape.
         annotations = [
@@ -1137,30 +1136,31 @@ def plot_additional_polar_patterns(
         )
 
     # 3. Elevation Gain Pattern Phi = 270/90 (YZ-Plane: Phi=90° Plane)
-    index_phi_90 = np.where(np.isclose(plot_phi_rad, 3 * np.pi / 2, atol=1e-6))[0]
-    index_phi_270 = np.where(np.isclose(plot_phi_rad, np.pi / 2, atol=1e-6))[0]
+    index_phi_270 = np.where(np.isclose(plot_phi_rad, 3 * np.pi / 2, atol=1e-6))[0]
+    index_phi_90 = np.where(np.isclose(plot_phi_rad, np.pi / 2, atol=1e-6))[0]
 
-    if index_phi_90.size != 0 and index_phi_270.size != 0:
-        # Keeping the same as it aligns with the reference.
-        theta_values_phi_90 = np.radians(plot_theta_deg[index_phi_90])
-        gain_values_phi_90 = plot_Total_Gain_dB[index_phi_90]
-
-        theta_values_phi_270 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_270])
+    if index_phi_270.size != 0 and index_phi_90.size != 0:
+        # phi=270° data plotted on the right half (theta 0→π)
+        theta_values_phi_270 = np.radians(plot_theta_deg[index_phi_270])
         gain_values_phi_270 = plot_Total_Gain_dB[index_phi_270]
 
+        # phi=90° data mirrored to the left half (theta 2π→π)
+        theta_values_phi_90 = 2 * np.pi - np.radians(plot_theta_deg[index_phi_90])
+        gain_values_phi_90 = plot_Total_Gain_dB[index_phi_90]
+
         # Flatten the 2D arrays to 1D arrays
-        theta_values_phi_90_flat = theta_values_phi_90.flatten()
         theta_values_phi_270_flat = theta_values_phi_270.flatten()
+        theta_values_phi_90_flat = theta_values_phi_90.flatten()
 
         # Ensure that gain arrays are also 1D and of matching shape
-        gain_values_phi_90_flat = np.repeat(gain_values_phi_90, theta_values_phi_90.shape[1])
         gain_values_phi_270_flat = np.repeat(gain_values_phi_270, theta_values_phi_270.shape[1])
+        gain_values_phi_90_flat = np.repeat(gain_values_phi_90, theta_values_phi_90.shape[1])
 
         # Concatenating the flattened arrays with np.nan to introduce a break in the plot
         theta_values = np.concatenate(
-            [theta_values_phi_90_flat, [np.nan], theta_values_phi_270_flat]
+            [theta_values_phi_270_flat, [np.nan], theta_values_phi_90_flat]
         )
-        gain_values = np.concatenate([gain_values_phi_90_flat, [np.nan], gain_values_phi_270_flat])
+        gain_values = np.concatenate([gain_values_phi_270_flat, [np.nan], gain_values_phi_90_flat])
 
         # Now, both theta_values and gain_values should be 1D arrays of the same shape.
         annotations = [
@@ -1635,7 +1635,6 @@ def process_vswr_files(
         ax.legend()
         ax.grid(True)
         plt.tight_layout()
-        plt.close("all")
         plt.show()
 
 
@@ -1963,5 +1962,4 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
         )
         plt.close(fig)
     else:
-        plt.close("all")
         plt.show()

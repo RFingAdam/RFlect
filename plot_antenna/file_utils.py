@@ -764,7 +764,7 @@ def read_power_measurement(file_path):
                 frequency = float(line.split("=")[1].strip().replace("MHz", ""))
                 read_values = False  # Reset the flag
                 # print(f"Found frequency: {frequency} MHz")
-            elif "H-Pol" in line or "V-Pol" in line and frequency is not None:
+            elif ("H-Pol" in line or "V-Pol" in line) and frequency is not None:
                 read_values = True  # Next lines will contain the measurements
             elif read_values and frequency is not None and line.strip():
                 try:
@@ -823,7 +823,7 @@ def read_polarization_data(file_path):
             if "Test Frequency" in line:
                 frequency = float(line.split("=")[1].strip().replace("MHz", ""))
                 read_values = False
-            elif "H-Pol" in line or "V-Pol" in line and frequency is not None:
+            elif ("H-Pol" in line or "V-Pol" in line) and frequency is not None:
                 read_values = True
             elif read_values and frequency is not None and line.strip():
                 try:

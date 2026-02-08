@@ -70,16 +70,30 @@ def register_import_tools(mcp):
 
             # Read the file based on type
             if scan_type == "passive":
-                data = read_passive_file(file_path)
+                # read_passive_file returns (all_data, start_phi, stop_phi, inc_phi,
+                #                            start_theta, stop_theta, inc_theta)
+                result = read_passive_file(file_path)
+                parsed_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta = result
+                frequencies = [d['frequency'] for d in parsed_data if isinstance(d, dict) and 'frequency' in d]
+                data = {
+                    'parsed_data': parsed_data,
+                    'start_phi': start_phi,
+                    'stop_phi': stop_phi,
+                    'inc_phi': inc_phi,
+                    'start_theta': start_theta,
+                    'stop_theta': stop_theta,
+                    'inc_theta': inc_theta,
+                }
             else:
                 data = read_active_file(file_path)
-
-            # Extract frequencies
-            frequencies = []
-            if isinstance(data, dict) and 'frequency' in data:
-                frequencies = [data['frequency']]
-            elif isinstance(data, list):
-                frequencies = [d.get('frequency', 0) for d in data if isinstance(d, dict)]
+                # Active data is a dict with 'Frequency' key
+                frequencies = []
+                if isinstance(data, dict) and 'Frequency' in data:
+                    frequencies = [data['Frequency']]
+                elif isinstance(data, dict) and 'frequency' in data:
+                    frequencies = [data['frequency']]
+                elif isinstance(data, list):
+                    frequencies = [d.get('frequency', 0) for d in data if isinstance(d, dict)]
 
             # Store the measurement
             name = os.path.basename(file_path)

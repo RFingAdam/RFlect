@@ -899,7 +899,7 @@ class ToolsMixin:
 
     def save_results_to_file(self):
         """Save measurement results to file."""
-        from save import save_to_results_folder
+        from ..save import save_to_results_folder
 
         try:
             scan_type = self.scan_type.get()

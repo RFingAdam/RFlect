@@ -89,11 +89,17 @@ class AntennaAnalyzer:
                 else:
                     gain_data = self.data["total_gain"]
 
+                # Average gain must be computed in the linear domain
+                # to avoid the ~2 dB error from averaging dB values directly
+                gain_linear = 10.0 ** (gain_data / 10.0)
+                avg_gain_linear = float(np.mean(gain_linear))
+                avg_gain_dBi = 10.0 * np.log10(avg_gain_linear) if avg_gain_linear > 0 else float(np.mean(gain_data))
+
                 stats.update(
                     {
                         "max_gain_dBi": float(np.max(gain_data)),
                         "min_gain_dBi": float(np.min(gain_data)),
-                        "avg_gain_dBi": float(np.mean(gain_data)),
+                        "avg_gain_dBi": avg_gain_dBi,
                         "std_dev_dB": float(np.std(gain_data)),
                     }
                 )
@@ -119,11 +125,16 @@ class AntennaAnalyzer:
         elif self.scan_type == "active":
             if "total_power" in self.data and self.data["total_power"] is not None:
                 power_data = self.data["total_power"]
+                # Average power must be computed in the linear domain (mW)
+                power_linear = 10.0 ** (power_data / 10.0)
+                avg_power_linear = float(np.mean(power_linear))
+                avg_power_dBm = 10.0 * np.log10(avg_power_linear) if avg_power_linear > 0 else float(np.mean(power_data))
+
                 stats.update(
                     {
                         "max_power_dBm": float(np.max(power_data)),
                         "min_power_dBm": float(np.min(power_data)),
-                        "avg_power_dBm": float(np.mean(power_data)),
+                        "avg_power_dBm": avg_power_dBm,
                         "std_dev_dB": float(np.std(power_data)),
                     }
                 )
@@ -175,6 +186,9 @@ class AntennaAnalyzer:
         """
         Calculate Half-Power Beamwidth from a 1D gain cut.
 
+        Walks outward from the peak to find the contiguous -3dB region,
+        correctly handling wrapping around 0/360° boundaries.
+
         Args:
             cut_angles: Angle values in degrees along the cut
             cut_gain: Gain values in dBi along the cut
@@ -188,55 +202,64 @@ class AntennaAnalyzer:
         peak_gain = np.max(cut_gain)
         threshold = peak_gain - 3.0  # -3 dB from peak
 
-        # Find indices where gain is above threshold
-        above = cut_gain >= threshold
-        if not np.any(above):
-            return None
-
-        # Find the contiguous region around the peak
         peak_idx = np.argmax(cut_gain)
-        above_indices = np.where(above)[0]
+        n = len(cut_gain)
 
-        # Find left and right bounds closest to peak
-        left_indices = above_indices[above_indices <= peak_idx]
-        right_indices = above_indices[above_indices >= peak_idx]
+        # Walk left from peak to find first crossing below threshold
+        left_bound = peak_idx
+        for i in range(1, n):
+            idx = (peak_idx - i) % n
+            if cut_gain[idx] < threshold:
+                left_bound = (peak_idx - i + 1) % n
+                break
+        else:
+            # Entire cut is above threshold (omnidirectional)
+            return float(cut_angles[-1] - cut_angles[0])
 
-        if len(left_indices) == 0 or len(right_indices) == 0:
-            return None
+        # Walk right from peak to find first crossing below threshold
+        right_bound = peak_idx
+        for i in range(1, n):
+            idx = (peak_idx + i) % n
+            if cut_gain[idx] < threshold:
+                right_bound = (peak_idx + i - 1) % n
+                break
 
-        left_bound = left_indices[0]
-        right_bound = right_indices[-1]
-
-        # Interpolate to find more precise -3dB crossings
-        # Left crossing
-        if left_bound > 0:
-            g_above = cut_gain[left_bound]
-            g_below = cut_gain[left_bound - 1]
-            if g_above != g_below:
-                frac = (threshold - g_below) / (g_above - g_below)
-                left_angle = cut_angles[left_bound - 1] + frac * (
-                    cut_angles[left_bound] - cut_angles[left_bound - 1]
-                )
-            else:
-                left_angle = cut_angles[left_bound]
+        # Interpolate left crossing
+        left_below_idx = (left_bound - 1) % n
+        g_above = cut_gain[left_bound]
+        g_below = cut_gain[left_below_idx]
+        if g_above != g_below and left_bound != peak_idx:
+            frac = (threshold - g_below) / (g_above - g_below)
+            left_angle = cut_angles[left_below_idx] + frac * (
+                cut_angles[left_bound] - cut_angles[left_below_idx]
+            )
         else:
             left_angle = cut_angles[left_bound]
 
-        # Right crossing
-        if right_bound < len(cut_gain) - 1:
-            g_above = cut_gain[right_bound]
-            g_below = cut_gain[right_bound + 1]
-            if g_above != g_below:
-                frac = (threshold - g_below) / (g_above - g_below)
-                right_angle = cut_angles[right_bound + 1] - frac * (
-                    cut_angles[right_bound + 1] - cut_angles[right_bound]
-                )
-            else:
-                right_angle = cut_angles[right_bound]
+        # Interpolate right crossing
+        right_above_idx = (right_bound + 1) % n
+        g_above = cut_gain[right_bound]
+        g_below = cut_gain[right_above_idx]
+        if g_above != g_below and right_bound != peak_idx:
+            frac = (threshold - g_below) / (g_above - g_below)
+            right_angle = cut_angles[right_above_idx] - frac * (
+                cut_angles[right_above_idx] - cut_angles[right_bound]
+            )
         else:
             right_angle = cut_angles[right_bound]
 
-        hpbw = abs(right_angle - left_angle)
+        # Handle wrapping: if right_angle < left_angle, the beam wraps around
+        angle_span = cut_angles[-1] - cut_angles[0]
+        if angle_span > 0:
+            step = angle_span / (n - 1) if n > 1 else 0
+            full_range = angle_span + step  # e.g., 360 for 0..345 with 15° step
+        else:
+            full_range = 360.0
+
+        hpbw = right_angle - left_angle
+        if hpbw < 0:
+            hpbw += full_range
+
         return float(hpbw) if hpbw > 0 else None
 
     def _detect_sidelobes(

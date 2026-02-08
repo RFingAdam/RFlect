@@ -361,20 +361,44 @@ class CallbacksMixin:
 
             scenario_var = tk.StringVar(value="")
 
-            wifi_6e = tk.Radiobutton(
+            tk.Label(scenario_window, text="Select scenario:").grid(
+                row=0, column=0, sticky="w", padx=10, pady=(10, 5)
+            )
+
+            tk.Radiobutton(
                 scenario_window,
                 text="WiFi 6e (2.4, 5, 6 GHz)",
                 variable=scenario_var,
                 value="WiFi_6e",
-            )
-            wifi_6e.grid(row=3, column=0, sticky="w", padx=10, pady=5)
+            ).grid(row=1, column=0, sticky="w", padx=20, pady=2)
+
+            tk.Radiobutton(
+                scenario_window,
+                text="LoRa 863 MHz (863-870 MHz)",
+                variable=scenario_var,
+                value="LoRa_863",
+            ).grid(row=2, column=0, sticky="w", padx=20, pady=2)
+
+            tk.Radiobutton(
+                scenario_window,
+                text="LoRa 902 MHz (902-928 MHz)",
+                variable=scenario_var,
+                value="LoRa_902",
+            ).grid(row=3, column=0, sticky="w", padx=20, pady=2)
+
+            tk.Radiobutton(
+                scenario_window,
+                text="LoRa 863-928 MHz (dual band)",
+                variable=scenario_var,
+                value="LoRa_863_928",
+            ).grid(row=4, column=0, sticky="w", padx=20, pady=2)
 
             tk.Label(scenario_window, text="Number of files per band:").grid(
-                row=4, column=0, sticky="w", padx=10, pady=5
+                row=5, column=0, sticky="w", padx=10, pady=5
             )
             files_per_band_var = tk.IntVar(value=4)
             tk.Entry(scenario_window, textvariable=files_per_band_var, width=5).grid(
-                row=4, column=1, padx=5, pady=5
+                row=5, column=1, padx=5, pady=5
             )
 
             def on_scenario_ok():
@@ -406,7 +430,7 @@ class CallbacksMixin:
                 bg=ACCENT_BLUE_COLOR,
                 fg=LIGHT_TEXT_COLOR,
             )
-            ok_button.grid(row=5, column=0, pady=20, padx=10)
+            ok_button.grid(row=6, column=0, pady=20, padx=10)
 
             self.root.wait_window(scenario_window)
 
