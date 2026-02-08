@@ -32,6 +32,7 @@ MCP_DIR = os.path.join(PROJECT_ROOT, "rflect-mcp")
 sys.path.insert(0, MCP_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
+mcp_pkg = pytest.importorskip("mcp", reason="mcp package not installed")
 from mcp.server.fastmcp import FastMCP
 
 # --------------------------------------------------------------------------- #
@@ -46,6 +47,12 @@ PASSIVE_LORA_VPOL = os.path.join(TEST_FILES_DIR, "PassiveTest_LoRa AP_VPol.txt")
 PASSIVE_LORA2_HPOL = os.path.join(TEST_FILES_DIR, "PassiveTest_LoRa2_HPol.txt")
 PASSIVE_LORA2_VPOL = os.path.join(TEST_FILES_DIR, "PassiveTest_LoRa2_VPol.txt")
 ACTIVE_BLE_TRP = os.path.join(TEST_FILES_DIR, "Active Test_BLE TRP.txt")
+
+# Skip all tests if test data directory is missing (e.g. CI environment)
+pytestmark = pytest.mark.skipif(
+    not os.path.isdir(TEST_FILES_DIR),
+    reason=f"Test data directory not found: {TEST_FILES_DIR}",
+)
 
 
 # --------------------------------------------------------------------------- #
