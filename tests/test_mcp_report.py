@@ -81,8 +81,8 @@ def mock_active_measurement():
             "h_power": h_power_2d.flatten(),
             "v_power": v_power_2d.flatten(),
             "TRP_dBm": 5.0,
-            "H_TRP_dBm": 3.0,
-            "V_TRP_dBm": 3.0,
+            "h_TRP_dBm": 3.0,
+            "v_TRP_dBm": 3.0,
             "theta": theta_deg,
             "phi": phi_deg,
             "data_points": n_theta * n_phi,
@@ -195,6 +195,200 @@ class TestFmtReport:
 
 
 # ---------------------------------------------------------------------------
+# Tests: Classification Helpers
+# ---------------------------------------------------------------------------
+
+class TestClassifyGainQuality:
+
+    def test_below_isotropic(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(-2.0)
+        assert rating == "poor"
+        assert "below isotropic" in desc
+
+    def test_chip_antenna_range(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(1.5)
+        assert rating == "low"
+        assert "chip antenna" in desc
+
+    def test_pcb_trace_range(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(3.0)
+        assert rating == "moderate"
+        assert "PCB trace" in desc
+
+    def test_patch_range(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(6.5)
+        assert rating == "good"
+        assert "patch" in desc
+
+    def test_high_gain(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(15.0)
+        assert rating == "very high"
+
+    def test_none_input(self):
+        from tools.report_tools import _classify_gain_quality
+        rating, desc = _classify_gain_quality(None)
+        assert rating == "unknown"
+
+
+class TestClassifyEfficiency:
+
+    def test_excellent(self):
+        from tools.report_tools import _classify_efficiency
+        assert "excellent" in _classify_efficiency(95)
+
+    def test_good(self):
+        from tools.report_tools import _classify_efficiency
+        assert "good" in _classify_efficiency(80)
+
+    def test_fair(self):
+        from tools.report_tools import _classify_efficiency
+        assert "fair" in _classify_efficiency(60)
+
+    def test_poor(self):
+        from tools.report_tools import _classify_efficiency
+        assert "poor" in _classify_efficiency(30)
+
+    def test_none_input(self):
+        from tools.report_tools import _classify_efficiency
+        assert "unknown" in _classify_efficiency(None)
+
+
+class TestGetTestConfiguration:
+
+    def test_passive_config(self, mock_passive_measurement):
+        from tools.report_tools import _get_test_configuration
+        config = _get_test_configuration(mock_passive_measurement)
+        assert config["scan_type"] == "passive"
+        assert config["num_frequencies"] == 3
+        assert "theta_range" in config
+        assert "phi_range" in config
+
+    def test_active_config(self, mock_active_measurement):
+        from tools.report_tools import _get_test_configuration
+        config = _get_test_configuration(mock_active_measurement)
+        assert config["scan_type"] == "active"
+        assert "TRP_dBm" in config
+        assert config["TRP_dBm"] == 5.0
+
+
+# ---------------------------------------------------------------------------
+# Tests: Executive Summary
+# ---------------------------------------------------------------------------
+
+class TestBuildExecutiveSummary:
+
+    def test_passive_summary(self, mock_passive_measurement):
+        from tools.report_tools import _build_executive_summary, ReportOptions
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+        try:
+            paragraphs = _build_executive_summary(
+                {"TestPassive": mock_passive_measurement}, ReportOptions())
+            assert len(paragraphs) >= 1
+            # Scope paragraph should mention "passive"
+            assert "passive" in paragraphs[0].lower()
+            # Should have actual gain values in highlights
+            full_text = " ".join(paragraphs)
+            assert "dBi" in full_text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_active_summary(self, mock_active_measurement):
+        from tools.report_tools import _build_executive_summary, ReportOptions
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        with _measurements_lock:
+            _loaded_measurements["TestActive"] = mock_active_measurement
+        try:
+            paragraphs = _build_executive_summary(
+                {"TestActive": mock_active_measurement}, ReportOptions())
+            assert len(paragraphs) >= 1
+            assert "active" in paragraphs[0].lower() or "TRP" in paragraphs[0]
+            full_text = " ".join(paragraphs)
+            assert "TRP" in full_text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestActive", None)
+
+
+# ---------------------------------------------------------------------------
+# Tests: Pattern Prose
+# ---------------------------------------------------------------------------
+
+class TestBuildPatternProse:
+
+    def test_pattern_prose_is_sentences(self, mock_passive_measurement):
+        from tools.report_tools import _build_pattern_prose
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+        from plot_antenna.ai_analysis import AntennaAnalyzer
+
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+
+        try:
+            analyzer = AntennaAnalyzer(
+                measurement_data=mock_passive_measurement.data,
+                scan_type="passive",
+                frequencies=[2400.0, 2450.0, 2500.0],
+            )
+            prose = _build_pattern_prose(analyzer, 2450.0, "TestPassive")
+            # Should be sentences, not key:value pairs
+            assert ":" not in prose.split(".")[0] or "MHz" in prose.split(".")[0]
+            assert "dBi" in prose
+            assert "TestPassive" in prose
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+
+# ---------------------------------------------------------------------------
+# Tests: Data-Driven Conclusions
+# ---------------------------------------------------------------------------
+
+class TestBuildDataDrivenConclusions:
+
+    def test_passive_conclusions_reference_data(self, mock_passive_measurement):
+        from tools.report_tools import _build_data_driven_conclusions, ReportOptions
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+        try:
+            bullets = _build_data_driven_conclusions(
+                {"TestPassive": mock_passive_measurement}, ReportOptions())
+            assert len(bullets) >= 1
+            # Should contain actual numbers
+            full_text = " ".join(bullets)
+            assert "dBi" in full_text or "dB" in full_text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_active_conclusions_reference_trp(self, mock_active_measurement):
+        from tools.report_tools import _build_data_driven_conclusions, ReportOptions
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        with _measurements_lock:
+            _loaded_measurements["TestActive"] = mock_active_measurement
+        try:
+            bullets = _build_data_driven_conclusions(
+                {"TestActive": mock_active_measurement}, ReportOptions())
+            full_text = " ".join(bullets)
+            assert "TRP" in full_text or "dBm" in full_text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestActive", None)
+
+
+# ---------------------------------------------------------------------------
 # Tests: _create_llm_provider
 # ---------------------------------------------------------------------------
 
@@ -300,7 +494,7 @@ class TestSafeFilename:
 
 
 # ---------------------------------------------------------------------------
-# Tests: _add_gain_stats_table
+# Tests: _add_gain_stats_table (legacy)
 # ---------------------------------------------------------------------------
 
 class TestGainStatsTable:
@@ -350,6 +544,147 @@ class TestGainStatsTable:
         last_row = table.rows[-1]
         assert "TRP" in last_row.cells[0].text
         assert "5.50" in last_row.cells[1].text
+
+
+# ---------------------------------------------------------------------------
+# Tests: Consolidated Performance Table
+# ---------------------------------------------------------------------------
+
+class TestConsolidatedPerformanceTable:
+
+    def test_passive_consolidated_table(self, mock_passive_measurement):
+        from docx import Document
+        from docx.shared import RGBColor
+        from tools.report_tools import _build_consolidated_performance_table
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+        from plot_antenna.ai_analysis import AntennaAnalyzer
+
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+        try:
+            analyzer = AntennaAnalyzer(
+                measurement_data=mock_passive_measurement.data,
+                scan_type="passive",
+                frequencies=[2400.0, 2450.0, 2500.0],
+            )
+            doc = Document()
+            _build_consolidated_performance_table(
+                doc, analyzer, "TestPassive",
+                [2400.0, 2450.0, 2500.0],
+                RGBColor(50, 50, 50), "passive")
+
+            # ONE table with 4 rows (header + 3 freqs)
+            assert len(doc.tables) == 1
+            table = doc.tables[0]
+            assert len(table.rows) == 4
+            # Check header has efficiency column
+            header_texts = [table.rows[0].cells[j].text for j in range(len(table.rows[0].cells))]
+            assert "Eff (%)" in header_texts
+            assert "Peak (dBi)" in header_texts
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_active_consolidated_table(self, mock_active_measurement):
+        from docx import Document
+        from docx.shared import RGBColor
+        from tools.report_tools import _build_consolidated_performance_table
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+        from plot_antenna.ai_analysis import AntennaAnalyzer
+
+        with _measurements_lock:
+            _loaded_measurements["TestActive"] = mock_active_measurement
+        try:
+            analyzer = AntennaAnalyzer(
+                measurement_data=mock_active_measurement.data,
+                scan_type="active",
+                frequencies=[2450.0],
+            )
+            doc = Document()
+            _build_consolidated_performance_table(
+                doc, analyzer, "TestActive",
+                [2450.0],
+                RGBColor(50, 50, 50), "active")
+
+            assert len(doc.tables) == 1
+            table = doc.tables[0]
+            assert len(table.rows) == 2  # header + 1 freq
+            header_texts = [table.rows[0].cells[j].text for j in range(len(table.rows[0].cells))]
+            assert "TRP (dBm)" in header_texts
+            assert "H-TRP (dBm)" in header_texts
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestActive", None)
+
+
+# ---------------------------------------------------------------------------
+# Tests: Polarization Table
+# ---------------------------------------------------------------------------
+
+class TestPolarizationTable:
+
+    def test_polarization_table_structure(self, mock_passive_measurement):
+        from docx import Document
+        from docx.shared import RGBColor
+        from tools.report_tools import _build_polarization_table
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+        from plot_antenna.ai_analysis import AntennaAnalyzer
+
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+        try:
+            analyzer = AntennaAnalyzer(
+                measurement_data=mock_passive_measurement.data,
+                scan_type="passive",
+                frequencies=[2400.0, 2450.0, 2500.0],
+            )
+            doc = Document()
+            _build_polarization_table(
+                doc, analyzer, [2400.0, 2450.0, 2500.0], RGBColor(50, 50, 50))
+
+            assert len(doc.tables) == 1
+            table = doc.tables[0]
+            assert len(table.rows) == 4  # header + 3 freqs
+            header_texts = [table.rows[0].cells[j].text for j in range(len(table.rows[0].cells))]
+            assert "HPOL Peak (dBi)" in header_texts
+            assert "Dominant" in header_texts
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+
+# ---------------------------------------------------------------------------
+# Tests: TRP Section
+# ---------------------------------------------------------------------------
+
+class TestTRPSection:
+
+    def test_trp_section_with_balance(self, mock_active_measurement):
+        from docx import Document
+        from docx.shared import RGBColor
+        from tools.report_tools import _build_trp_section
+
+        doc = Document()
+
+        def heading(d, t, level=1):
+            d.add_heading(t, level)
+
+        _build_trp_section(
+            doc, mock_active_measurement, RGBColor(50, 50, 50), heading)
+
+        assert len(doc.tables) == 1
+        # Should have TRP values in table
+        table = doc.tables[0]
+        found_trp = False
+        for row in table.rows:
+            if "Total TRP" in row.cells[0].text:
+                found_trp = True
+                assert "5.00" in row.cells[1].text
+        assert found_trp
+
+        # Should have assessment prose
+        text = "\n".join(p.text for p in doc.paragraphs)
+        assert "TRP" in text or "Radiated Power" in text
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +764,7 @@ class TestBuildBrandedDocx:
                 _loaded_measurements.pop("TestPassive", None)
 
     def test_docx_with_gain_tables(self, mock_passive_measurement, temp_dir):
-        """Verify gain tables are present when enabled."""
+        """Verify consolidated gain tables are present when enabled."""
         from tools.report_tools import (
             _build_branded_docx, _prepare_report_data, ReportOptions,
         )
@@ -459,16 +794,14 @@ class TestBuildBrandedDocx:
             from docx import Document
             doc = Document(output)
 
-            # Should have at least one table (gain stats)
+            # Should have tables (consolidated + comparison + polarization)
             assert len(doc.tables) >= 1
-            # First table should have "Parameter" header
-            assert doc.tables[0].rows[0].cells[0].text == "Parameter"
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
 
-    def test_fallback_conclusions(self, mock_passive_measurement, temp_dir, default_opts):
-        """Verify fallback conclusions are written when AI is off."""
+    def test_data_driven_conclusions(self, mock_passive_measurement, temp_dir, default_opts):
+        """Verify data-driven conclusions reference actual values."""
         from tools.report_tools import _build_branded_docx, _prepare_report_data
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -489,7 +822,111 @@ class TestBuildBrandedDocx:
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
-            assert "Review all performance metrics" in text
+            # Should contain actual data references, not generic boilerplate
+            assert "dBi" in text or "dB" in text
+            assert "Conclusions and Recommendations" in text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_docx_has_executive_summary_with_data(
+            self, mock_passive_measurement, temp_dir, default_opts):
+        """Verify executive summary contains actual gain/frequency data."""
+        from tools.report_tools import _build_branded_docx, _prepare_report_data
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {"TestPassive": mock_passive_measurement}
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+
+        try:
+            report_data = _prepare_report_data(measurements, default_opts)
+            output = os.path.join(temp_dir, "exec_summary_report.docx")
+
+            _build_branded_docx(
+                output, report_data, {},
+                default_opts, None, None, measurements,
+            )
+
+            from docx import Document
+            doc = Document(output)
+            text = "\n".join(p.text for p in doc.paragraphs)
+
+            # Executive summary should have actual values
+            assert "Executive Summary" in text
+            assert "passive" in text.lower()
+            assert "dBi" in text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_docx_has_test_config_methodology(
+            self, mock_passive_measurement, temp_dir, default_opts):
+        """Verify test configuration includes angular resolution details."""
+        from tools.report_tools import _build_branded_docx, _prepare_report_data
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {"TestPassive": mock_passive_measurement}
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+
+        try:
+            report_data = _prepare_report_data(measurements, default_opts)
+            output = os.path.join(temp_dir, "config_report.docx")
+
+            _build_branded_docx(
+                output, report_data, {},
+                default_opts, None, None, measurements,
+            )
+
+            from docx import Document
+            doc = Document(output)
+            text = "\n".join(p.text for p in doc.paragraphs)
+
+            assert "Test Configuration" in text
+            # Should contain angular resolution info
+            assert "Theta" in text or "theta" in text
+            assert "Phi" in text or "phi" in text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_docx_pattern_analysis_is_prose(
+            self, mock_passive_measurement, temp_dir):
+        """Verify pattern analysis is prose sentences, not raw key:value."""
+        from tools.report_tools import (
+            _build_branded_docx, _prepare_report_data, ReportOptions,
+        )
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {"TestPassive": mock_passive_measurement}
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+
+        try:
+            opts = ReportOptions(
+                ai_executive_summary=False,
+                ai_section_analysis=False,
+                ai_recommendations=False,
+                include_2d_plots=False,
+                include_3d_plots=False,
+                include_gain_tables=False,
+            )
+            report_data = _prepare_report_data(measurements, opts)
+            output = os.path.join(temp_dir, "pattern_report.docx")
+
+            _build_branded_docx(
+                output, report_data, {},
+                opts, None, None, measurements,
+            )
+
+            from docx import Document
+            doc = Document(output)
+            text = "\n".join(p.text for p in doc.paragraphs)
+
+            assert "Pattern Analysis" in text
+            # Pattern section should be prose with "exhibits"
+            assert "exhibits" in text.lower()
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
@@ -578,7 +1015,7 @@ class TestEndToEnd:
                 _loaded_measurements.pop("BLE_Test", None)
 
     def test_full_pipeline_active(self, mock_active_measurement, temp_dir):
-        """End-to-end: active data with gain tables."""
+        """End-to-end: active data with gain tables and TRP section."""
         from tools.report_tools import (
             _build_branded_docx, _prepare_report_data, ReportOptions,
         )
@@ -620,13 +1057,70 @@ class TestEndToEnd:
                         found_trp = True
                         break
             assert found_trp
+
+            # Verify TRP Analysis section exists
+            text = "\n".join(p.text for p in doc.paragraphs)
+            assert "TRP Analysis" in text
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TRP_Test", None)
 
+    def test_full_pipeline_mixed(self, mock_passive_measurement,
+                                  mock_active_measurement, temp_dir):
+        """End-to-end: mixed passive + active data."""
+        from tools.report_tools import (
+            _build_branded_docx, _prepare_report_data, ReportOptions,
+        )
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {
+            "Passive_BLE": mock_passive_measurement,
+            "Active_TRP": mock_active_measurement,
+        }
+        with _measurements_lock:
+            _loaded_measurements["Passive_BLE"] = mock_passive_measurement
+            _loaded_measurements["Active_TRP"] = mock_active_measurement
+
+        try:
+            opts = ReportOptions(
+                ai_executive_summary=False,
+                ai_section_analysis=False,
+                ai_recommendations=False,
+                include_gain_tables=True,
+                include_2d_plots=False,
+                include_3d_plots=False,
+            )
+            report_data = _prepare_report_data(measurements, opts)
+            output = os.path.join(temp_dir, "mixed_report.docx")
+
+            _build_branded_docx(
+                output, report_data, {},
+                opts, None, None, measurements,
+            )
+
+            assert os.path.exists(output)
+
+            from docx import Document
+            doc = Document(output)
+            text = "\n".join(p.text for p in doc.paragraphs)
+
+            # Both measurements present
+            assert "Passive_BLE" in text
+            assert "Active_TRP" in text
+            # TRP section for active
+            assert "TRP Analysis" in text
+            # Pattern analysis for passive
+            assert "Pattern Analysis" in text
+            # Polarization for passive
+            assert "Polarization" in text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("Passive_BLE", None)
+                _loaded_measurements.pop("Active_TRP", None)
+
 
 # ---------------------------------------------------------------------------
-# Tests: _add_freq_comparison_table
+# Tests: _add_freq_comparison_table (legacy interface)
 # ---------------------------------------------------------------------------
 
 class TestFreqComparisonTable:
