@@ -3,11 +3,9 @@
 import os
 import re
 import time
-from functools import wraps
+from functools import wraps, lru_cache
 from io import StringIO
 from collections import defaultdict
-from functools import wraps
-from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -73,10 +71,6 @@ def extract_frequency(path):
     if not m:
         raise ValueError(f"No frequency tag in {path}")
     return float(m.group(1)) * 1e9
-
-
-# add lru_cache to your imports
-from functools import wraps, lru_cache
 
 
 @lru_cache(maxsize=256)  # Maximum number of cached files to 256 to limit memory usage
