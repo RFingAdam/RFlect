@@ -396,3 +396,167 @@ class TestUtilityFunctions:
             assert scan_type in prompt
             # Should also embed domain knowledge
             assert "dBi" in prompt
+
+
+# ---------------------------------------------------------------------------
+# TestXPDAtCopolPeak
+# ---------------------------------------------------------------------------
+
+class TestXPDAtCopolPeak:
+    """Test proper XPD calculation at co-pol peak direction."""
+
+    def test_h_dominant_xpd_at_peak(self):
+        """When H-pol is dominant, XPD at peak should be h_gain[peak] - v_gain[peak]."""
+        num_points = 5
+        h_gain = np.array([10.0, 8.0, 6.0, 4.0, 2.0])
+        v_gain = np.array([5.0, 5.0, 5.0, 5.0, 5.0])
+        data = {
+            "phi": np.linspace(0, 360, num_points),
+            "theta": np.linspace(0, 180, 3),
+            "h_gain": h_gain,
+            "v_gain": v_gain,
+        }
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.compare_polarizations(frequency=2400.0)
+
+        # H-pol peaks at index 0 (10.0 dBi), V-pol at index 0 is 5.0 dBi
+        assert result["dominant_pol"] == "H"
+        assert result["xpd_at_copol_peak_dB"] == pytest.approx(5.0)
+
+    def test_v_dominant_xpd_at_peak(self):
+        """When V-pol is dominant, XPD at peak should be v_gain[peak] - h_gain[peak]."""
+        num_points = 5
+        h_gain = np.array([2.0, 3.0, 4.0, 3.0, 2.0])
+        v_gain = np.array([5.0, 7.0, 12.0, 7.0, 5.0])
+        data = {
+            "phi": np.linspace(0, 360, num_points),
+            "theta": np.linspace(0, 180, 3),
+            "h_gain": h_gain,
+            "v_gain": v_gain,
+        }
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.compare_polarizations(frequency=2400.0)
+
+        # V-pol peaks at index 2 (12.0), H at index 2 is 4.0
+        assert result["dominant_pol"] == "V"
+        assert result["xpd_at_copol_peak_dB"] == pytest.approx(8.0)
+
+
+# ---------------------------------------------------------------------------
+# TestSidelobeDetection
+# ---------------------------------------------------------------------------
+
+class TestSidelobeDetection:
+    """Test _detect_sidelobes for finding sidelobes in gain cuts."""
+
+    def test_known_sidelobes(self):
+        """Detect sidelobes in a pattern with known peak structure."""
+        angles = np.linspace(0, 180, 19)
+        # Main lobe at index 9 (10 dBi), sidelobes at indices 3 and 15
+        gain = np.array([
+            -5, -2, 2, 5, 3,       # sidelobe peak at index 3 (5 dBi)
+            0, -3, -1, 5, 10,      # main lobe peak at index 9 (10 dBi)
+            5, -1, -3, 0, 3,
+            5, 2, -2, -5           # sidelobe peak at index 15 (5 dBi)
+        ])
+        data = {"phi": angles, "theta": angles, "total_gain": gain}
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+
+        sidelobes = analyzer._detect_sidelobes(angles, gain)
+
+        assert len(sidelobes) > 0
+        # All sidelobes should have negative SLL (below main lobe)
+        for sl in sidelobes:
+            assert sl["sll_dB"] < 0
+        # First sidelobe should be the highest secondary peak
+        assert sidelobes[0]["gain_dBi"] < 10.0
+
+    def test_empty_for_short_arrays(self):
+        """Arrays with fewer than 5 points should return empty."""
+        angles = np.array([0, 90, 180])
+        gain = np.array([5, 10, 3])
+        data = {"phi": angles, "theta": angles, "total_gain": gain}
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+
+        assert analyzer._detect_sidelobes(angles, gain) == []
+
+    def test_monotonic_no_sidelobes(self):
+        """A monotonically increasing pattern has only one local max (endpoint)."""
+        angles = np.linspace(0, 180, 10)
+        gain = np.linspace(0, 10, 10)
+        data = {"phi": angles, "theta": angles, "total_gain": gain}
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+
+        # Only one peak at the end — no sidelobes
+        assert analyzer._detect_sidelobes(angles, gain) == []
+
+
+# ---------------------------------------------------------------------------
+# TestGridPatternAnalysis (HPBW, efficiency, sidelobes on 2D grid)
+# ---------------------------------------------------------------------------
+
+def _make_grid_passive_data():
+    """Create passive data on a complete theta x phi grid with a directive beam.
+
+    Grid: 19 theta x 37 phi = 703 points.
+    Smooth pattern: 10 dBi peak at theta=90, phi=180.
+    """
+    n_theta, n_phi = 19, 37
+    theta_vals = np.linspace(0, 180, n_theta)
+    phi_vals = np.linspace(0, 360, n_phi)
+
+    theta_grid, phi_grid = np.meshgrid(theta_vals, phi_vals, indexing="ij")
+    theta_flat = theta_grid.flatten()
+    phi_flat = phi_grid.flatten()
+
+    # Smooth directive pattern: 10 dBi peak, falls off ~0.1 dB/deg
+    gain = np.zeros(n_theta * n_phi)
+    for i in range(len(gain)):
+        t_diff = abs(theta_flat[i] - 90)
+        p_diff = min(abs(phi_flat[i] - 180), 360 - abs(phi_flat[i] - 180))
+        gain[i] = 10.0 - 0.1 * t_diff - 0.1 * p_diff
+    gain = np.clip(gain, -10, 10)
+
+    return {
+        "phi": phi_flat,
+        "theta": theta_flat,
+        "total_gain": gain,
+    }
+
+
+class TestGridPatternAnalysis:
+    """Test analyze_pattern with 2D grid data for HPBW and efficiency."""
+
+    def test_hpbw_and_beam_direction(self):
+        """Grid data should produce HPBW and correct main beam direction."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.analyze_pattern(frequency=2400.0)
+
+        assert result["peak_gain_dBi"] == pytest.approx(10.0)
+        assert result["main_beam_theta"] == pytest.approx(90.0)
+        assert result["main_beam_phi"] == pytest.approx(180.0)
+        assert result["hpbw_e_plane"] is not None
+        assert result["hpbw_h_plane"] is not None
+        # HPBW should be around 60 deg for this pattern
+        assert 30 < result["hpbw_e_plane"] < 90
+        assert 30 < result["hpbw_h_plane"] < 90
+
+    def test_efficiency_estimation_present(self):
+        """When HPBW is available, efficiency estimation should be included."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.analyze_pattern(frequency=2400.0)
+
+        assert "estimated_directivity_dBi" in result
+        assert "estimated_efficiency_pct" in result
+        assert 0 < result["estimated_efficiency_pct"] <= 100
+
+    def test_front_to_back_ratio(self):
+        """Grid data should produce positive front-to-back ratio."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.analyze_pattern(frequency=2400.0)
+
+        assert "front_to_back_dB" in result
+        assert result["front_to_back_dB"] > 0

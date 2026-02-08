@@ -239,6 +239,55 @@ class AntennaAnalyzer:
         hpbw = abs(right_angle - left_angle)
         return float(hpbw) if hpbw > 0 else None
 
+    def _detect_sidelobes(
+        self, cut_angles: np.ndarray, cut_gain: np.ndarray, num_sidelobes: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        Detect sidelobes in a 1D gain cut.
+
+        Args:
+            cut_angles: Angle values in degrees along the cut
+            cut_gain: Gain values in dBi along the cut
+            num_sidelobes: Maximum number of sidelobes to return
+
+        Returns:
+            List of dicts with keys: angle_deg, gain_dBi, sll_dB (relative to main lobe)
+        """
+        if len(cut_gain) < 5:
+            return []
+
+        # Find local maxima: points higher than both neighbors
+        local_max = []
+        for i in range(1, len(cut_gain) - 1):
+            if cut_gain[i] > cut_gain[i - 1] and cut_gain[i] > cut_gain[i + 1]:
+                local_max.append(i)
+
+        # Check endpoints
+        if cut_gain[0] > cut_gain[1]:
+            local_max.insert(0, 0)
+        if cut_gain[-1] > cut_gain[-2]:
+            local_max.append(len(cut_gain) - 1)
+
+        if len(local_max) < 2:
+            return []
+
+        # Sort by gain value (descending)
+        local_max.sort(key=lambda i: cut_gain[i], reverse=True)
+
+        main_gain = float(cut_gain[local_max[0]])
+        sidelobes = []
+        for idx in local_max[1 : num_sidelobes + 1]:
+            sll = float(cut_gain[idx]) - main_gain
+            sidelobes.append(
+                {
+                    "angle_deg": float(cut_angles[idx]),
+                    "gain_dBi": float(cut_gain[idx]),
+                    "sll_dB": sll,
+                }
+            )
+
+        return sidelobes
+
     def analyze_pattern(self, frequency: Optional[float] = None) -> Dict[str, Any]:
         """
         Analyze radiation pattern characteristics.
@@ -315,6 +364,30 @@ class AntennaAnalyzer:
                 back_gain = gain_2d[peak_theta_idx, back_phi_idx]
                 analysis["front_to_back_dB"] = float(peak_gain - back_gain)
 
+                # Sidelobe detection on principal plane cuts
+                e_sidelobes = self._detect_sidelobes(unique_theta, e_plane_cut)
+                if e_sidelobes:
+                    analysis["e_plane_sidelobes"] = e_sidelobes
+                    analysis["first_sll_e_plane_dB"] = e_sidelobes[0]["sll_dB"]
+
+                h_sidelobes = self._detect_sidelobes(unique_phi, h_plane_cut)
+                if h_sidelobes:
+                    analysis["h_plane_sidelobes"] = h_sidelobes
+                    analysis["first_sll_h_plane_dB"] = h_sidelobes[0]["sll_dB"]
+
+                # Directivity and efficiency estimation (Kraus approximation)
+                if hpbw_e is not None and hpbw_h is not None and hpbw_e > 0 and hpbw_h > 0:
+                    directivity_linear = 41253.0 / (hpbw_e * hpbw_h)
+                    directivity_dBi = float(10.0 * np.log10(directivity_linear))
+                    analysis["estimated_directivity_dBi"] = round(directivity_dBi, 2)
+
+                    # Efficiency: η = G/D (in dB: G_dBi - D_dBi)
+                    eta_dB = peak_gain - directivity_dBi
+                    eta_linear = 10.0 ** (eta_dB / 10.0)
+                    eta_pct = min(max(eta_linear * 100.0, 0.0), 100.0)
+                    analysis["estimated_efficiency_pct"] = round(eta_pct, 1)
+                    analysis["estimated_efficiency_dB"] = round(float(eta_dB), 2)
+
         return analysis
 
     def compare_polarizations(self, frequency: Optional[float] = None) -> Dict[str, Any]:
@@ -360,6 +433,19 @@ class AntennaAnalyzer:
                 xpd = h_data - v_data  # In dB, this is ratio
                 comparison["avg_xpd_dB"] = float(np.mean(np.abs(xpd)))
                 comparison["max_xpd_dB"] = float(np.max(np.abs(xpd)))
+
+                # Proper XPD at co-pol peak direction
+                h_peak_val = float(np.max(h_data))
+                v_peak_val = float(np.max(v_data))
+                if h_peak_val >= v_peak_val:
+                    copol_peak_idx = int(np.argmax(h_data))
+                    xpd_at_peak = float(h_data[copol_peak_idx] - v_data[copol_peak_idx])
+                    comparison["dominant_pol"] = "H"
+                else:
+                    copol_peak_idx = int(np.argmax(v_data))
+                    xpd_at_peak = float(v_data[copol_peak_idx] - h_data[copol_peak_idx])
+                    comparison["dominant_pol"] = "V"
+                comparison["xpd_at_copol_peak_dB"] = xpd_at_peak
 
                 # Polarization balance
                 balance = float(comparison["max_hpol_gain_dBi"]) - float(comparison["max_vpol_gain_dBi"])  # type: ignore[arg-type]

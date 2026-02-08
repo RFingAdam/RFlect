@@ -50,6 +50,7 @@ from ..calculations import (
 )
 from ..plotting import plot_polarization_2d, plot_polarization_3d
 from ..save import generate_report, RFAnalyzer
+from ..ai_analysis import AntennaAnalyzer
 
 if TYPE_CHECKING:
     from .base_protocol import AntennaPlotGUIProtocol
@@ -100,6 +101,46 @@ class ToolsMixin:
                 if file.endswith(".png"):
                     image_paths.append(os.path.join(root, file))
         return image_paths
+
+    def _build_report_analyzer(self):
+        """Build an AntennaAnalyzer from current GUI state for report tables.
+
+        Returns None if no measurement data is loaded.
+        """
+        scan_type = self.scan_type.get() if hasattr(self, "scan_type") else None
+        if not scan_type:
+            return None
+
+        data = {}
+        if scan_type == "passive":
+            theta = getattr(self, "theta_list", None)
+            phi = getattr(self, "phi_list", None)
+            if theta is None or phi is None:
+                return None
+            # GUI stores 2D arrays (points x freqs); AntennaAnalyzer expects 1D angles
+            if hasattr(theta, "ndim") and theta.ndim == 2:
+                theta = theta[:, 0]
+            if hasattr(phi, "ndim") and phi.ndim == 2:
+                phi = phi[:, 0]
+            data["phi"] = phi
+            data["theta"] = theta
+            data["total_gain"] = getattr(self, "total_gain_dB", None)
+            data["h_gain"] = getattr(self, "h_gain_dB", None)
+            data["v_gain"] = getattr(self, "v_gain_dB", None)
+        elif scan_type == "active":
+            data["phi"] = getattr(self, "phi_angles_deg", None)
+            data["theta"] = getattr(self, "theta_angles_deg", None)
+            data["total_power"] = getattr(self, "total_power_dBm_2d", None)
+            if hasattr(self, "TRP_dBm"):
+                data["TRP_dBm"] = getattr(self, "TRP_dBm", 0)
+        else:
+            return None
+
+        frequencies = list(self.freq_list) if hasattr(self, "freq_list") and self.freq_list else []
+        if not frequencies:
+            return None
+
+        return AntennaAnalyzer(data, scan_type=scan_type, frequencies=frequencies)
 
     # ────────────────────────────────────────────────────────────────────────
     # REPORT GENERATION
@@ -218,6 +259,9 @@ class ToolsMixin:
         # Initialize the RFAnalyzer without AI
         analyzer = RFAnalyzer(use_ai=False, project_context=project_context)
 
+        # Build AntennaAnalyzer for gain/pattern tables (None if no data loaded)
+        ant_analyzer = self._build_report_analyzer()
+
         save_path = filedialog.askdirectory(title="Select Directory to Save Report")
         if save_path:
             generate_report(
@@ -227,6 +271,7 @@ class ToolsMixin:
                 analyzer,
                 metadata=metadata,
                 include_summary=result["summary"],
+                antenna_analyzer=ant_analyzer,
             )
             messagebox.showinfo("Success", f"Report '{result['title']}' generated successfully!")
         else:
@@ -371,6 +416,9 @@ class ToolsMixin:
         # Initialize the RFAnalyzer WITH AI enabled
         analyzer = RFAnalyzer(use_ai=True, project_context=project_context)
 
+        # Build AntennaAnalyzer for gain/pattern tables (None if no data loaded)
+        ant_analyzer = self._build_report_analyzer()
+
         save_path = filedialog.askdirectory(title="Select Directory to Save AI Report")
         if save_path:
             self.log_message("Starting AI-enhanced report generation...")
@@ -383,6 +431,7 @@ class ToolsMixin:
                 analyzer,
                 metadata=metadata,
                 include_summary=result["summary"],
+                antenna_analyzer=ant_analyzer,
             )
 
             messagebox.showinfo(

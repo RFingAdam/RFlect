@@ -957,6 +957,129 @@ Analyze the provided antenna measurement plot and provide a comprehensive techni
             return f"**Analysis unavailable**: {error_msg}"
 
 
+def _fmt(val, fmt=".2f", suffix=""):
+    """Format a value for table display, handling None gracefully."""
+    if val is None:
+        return "N/A"
+    try:
+        return f"{float(val):{fmt}}{suffix}"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+def _add_gain_stats_table(doc, stats, add_branded_heading, brand_dark):
+    """Add a formatted gain statistics table to the document.
+
+    Args:
+        doc: python-docx Document
+        stats: Dictionary from AntennaAnalyzer.get_gain_statistics()
+        add_branded_heading: Callable for branded headings
+        brand_dark: RGBColor for dark text
+    """
+    scan_type = stats.get("scan_type", "passive")
+
+    if scan_type == "passive":
+        row_data = [
+            ("Parameter", "Value"),
+            ("Frequency", f"{_fmt(stats.get('frequency_actual'), '.1f')} MHz"),
+            ("Peak Gain", f"{_fmt(stats.get('max_gain_dBi'))} dBi"),
+            ("Minimum Gain", f"{_fmt(stats.get('min_gain_dBi'))} dBi"),
+            ("Average Gain", f"{_fmt(stats.get('avg_gain_dBi'))} dBi"),
+            ("Std Deviation", f"{_fmt(stats.get('std_dev_dB'))} dB"),
+        ]
+        if stats.get("max_hpol_gain_dBi") is not None:
+            row_data.append(("H-pol Peak Gain", f"{_fmt(stats.get('max_hpol_gain_dBi'))} dBi"))
+        if stats.get("max_vpol_gain_dBi") is not None:
+            row_data.append(("V-pol Peak Gain", f"{_fmt(stats.get('max_vpol_gain_dBi'))} dBi"))
+    else:  # active
+        row_data = [
+            ("Parameter", "Value"),
+            ("Peak Power", f"{_fmt(stats.get('max_power_dBm'))} dBm"),
+            ("Minimum Power", f"{_fmt(stats.get('min_power_dBm'))} dBm"),
+            ("Average Power", f"{_fmt(stats.get('avg_power_dBm'))} dBm"),
+            ("Std Deviation", f"{_fmt(stats.get('std_dev_dB'))} dB"),
+        ]
+        if stats.get("TRP_dBm") is not None:
+            row_data.append(("TRP", f"{_fmt(stats.get('TRP_dBm'))} dBm"))
+
+    table = doc.add_table(rows=len(row_data), cols=2)
+    table.style = "Light Shading Accent 1"
+
+    for i, (label, value) in enumerate(row_data):
+        table.rows[i].cells[0].text = label
+        table.rows[i].cells[1].text = value
+        if i == 0:
+            for cell in table.rows[i].cells:
+                for para in cell.paragraphs:
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = brand_dark
+
+    doc.add_paragraph()  # spacing
+
+
+def _add_freq_comparison_table(doc, antenna_analyzer, add_branded_heading, brand_dark):
+    """Add a multi-frequency comparison table to the document.
+
+    Runs analyze_pattern() at each frequency and presents results in a table.
+
+    Args:
+        doc: python-docx Document
+        antenna_analyzer: AntennaAnalyzer instance
+        add_branded_heading: Callable for branded headings
+        brand_dark: RGBColor for dark text
+    """
+    freqs = antenna_analyzer.frequencies
+    if not freqs or len(freqs) < 2:
+        return
+
+    add_branded_heading(doc, "Multi-Frequency Comparison", level=2)
+
+    # Header row
+    headers = ["Freq (MHz)", "Peak Gain (dBi)", "Pattern Type", "HPBW-E (°)", "HPBW-H (°)", "F/B (dB)"]
+    table = doc.add_table(rows=1 + len(freqs), cols=len(headers))
+    table.style = "Light Shading Accent 1"
+
+    # Set header row
+    for j, h in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        cell.text = h
+        for para in cell.paragraphs:
+            for run in para.runs:
+                run.bold = True
+                run.font.color.rgb = brand_dark
+
+    # Data rows
+    for i, freq in enumerate(freqs):
+        pattern = antenna_analyzer.analyze_pattern(frequency=freq)
+        row = table.rows[i + 1]
+        row.cells[0].text = _fmt(freq, ".1f")
+        row.cells[1].text = _fmt(pattern.get("peak_gain_dBi"))
+        row.cells[2].text = str(pattern.get("pattern_type", "N/A"))
+        row.cells[3].text = _fmt(pattern.get("hpbw_e_plane"), ".1f")
+        row.cells[4].text = _fmt(pattern.get("hpbw_h_plane"), ".1f")
+        row.cells[5].text = _fmt(pattern.get("front_to_back_dB"), ".1f")
+
+    # Add overall analysis summary below the table
+    overall = antenna_analyzer.analyze_all_frequencies()
+    if overall.get("resonance_frequency_MHz"):
+        summary_parts = [
+            f"Resonance frequency: {_fmt(overall['resonance_frequency_MHz'], '.1f')} MHz",
+            f"Peak gain at resonance: {_fmt(overall.get('peak_gain_at_resonance_dBi'))} dBi",
+            f"Gain variation across band: {_fmt(overall.get('gain_variation_dB'))} dB",
+        ]
+        if overall.get("bandwidth_3dB_MHz") is not None:
+            summary_parts.append(f"3 dB bandwidth: {_fmt(overall['bandwidth_3dB_MHz'], '.1f')} MHz")
+
+        summary_para = doc.add_paragraph(" | ".join(summary_parts))
+        summary_para.paragraph_format.space_before = Pt(6)
+        for run in summary_para.runs:
+            run.font.size = Pt(9)
+            run.italic = True
+
+    doc.add_paragraph()  # spacing
+
+
 def generate_report(
     doc_title,
     images,
@@ -966,6 +1089,7 @@ def generate_report(
     metadata=None,
     include_toc=True,
     include_summary=True,
+    antenna_analyzer=None,
 ):
     """
     Generate a comprehensive Word document report with antenna measurement results.
@@ -980,6 +1104,7 @@ def generate_report(
     - metadata: Dictionary with report metadata (author, date, project info, etc.)
     - include_toc: Boolean to include table of contents
     - include_summary: Boolean to include executive summary
+    - antenna_analyzer: Optional AntennaAnalyzer instance for gain/pattern tables
     """
 
     # Load branding configuration from config.py
@@ -1170,6 +1295,26 @@ def generate_report(
         summary_para = doc.add_paragraph(summary_text)
         summary_para.paragraph_format.space_before = Pt(6)
         doc.add_page_break()
+
+    # Antenna Analysis Tables (from AntennaAnalyzer if provided)
+    if antenna_analyzer is not None:
+        try:
+            add_branded_heading(doc, "Measurement Analysis", level=1)
+
+            # Gain statistics table (at first frequency)
+            first_freq = antenna_analyzer.frequencies[0] if antenna_analyzer.frequencies else None
+            if first_freq is not None:
+                stats = antenna_analyzer.get_gain_statistics(frequency=first_freq)
+                add_branded_heading(doc, "Gain Statistics", level=2)
+                _add_gain_stats_table(doc, stats, add_branded_heading, BRAND_DARK)
+
+            # Multi-frequency comparison table
+            if len(antenna_analyzer.frequencies) >= 2:
+                _add_freq_comparison_table(doc, antenna_analyzer, add_branded_heading, BRAND_DARK)
+
+            doc.add_page_break()
+        except Exception as e:
+            print(f"[WARNING] Could not generate analysis tables: {e}")
 
     # Measurement Results Section
     add_branded_heading(doc, "Measurement Results", level=1)
