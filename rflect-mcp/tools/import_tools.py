@@ -6,11 +6,13 @@ Handles importing antenna measurement files and folders.
 
 import os
 import glob
+import numpy as np
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
 
 # Import RFlect file utilities
 from plot_antenna.file_utils import read_passive_file, read_active_file
+from plot_antenna.calculations import calculate_passive_variables, calculate_active_variables
 
 
 @dataclass
@@ -161,6 +163,162 @@ def register_import_tools(mcp):
         summary += "Files:\n" + "\n".join(results)
 
         return summary
+
+    @mcp.tool()
+    def import_passive_pair(
+        hpol_file: str,
+        vpol_file: str,
+        cable_loss: float = 0.0,
+        name: str = "auto"
+    ) -> str:
+        """
+        Import a matched HPOL + VPOL passive measurement pair and compute combined gain.
+
+        This is the recommended way to import passive data for analysis.
+        It processes both files together using calculate_passive_variables()
+        to produce total gain, H-gain, and V-gain arrays ready for analysis.
+
+        Args:
+            hpol_file: Path to the H-polarization measurement file
+            vpol_file: Path to the V-polarization measurement file
+            cable_loss: Cable loss in dB to compensate (default: 0)
+            name: Measurement name (default: auto-generated from filename)
+
+        Returns:
+            Summary of imported pair including frequencies and data shape.
+        """
+        for p in (hpol_file, vpol_file):
+            if not os.path.exists(p):
+                return f"Error: File not found: {p}"
+
+        try:
+            h_result = read_passive_file(hpol_file)
+            hpol_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta = h_result
+
+            v_result = read_passive_file(vpol_file)
+            vpol_data = v_result[0]  # Only need parsed_data, angles should match
+
+            frequencies = [d['frequency'] for d in hpol_data if isinstance(d, dict) and 'frequency' in d]
+
+            if not frequencies:
+                return "Error: No frequencies found in the HPOL file."
+
+            # Process all frequencies into gain arrays
+            theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = calculate_passive_variables(
+                hpol_data, vpol_data, cable_loss,
+                start_phi, stop_phi, inc_phi,
+                start_theta, stop_theta, inc_theta,
+                frequencies, frequencies[0]
+            )
+
+            # Build analyzer-compatible data dict
+            analyzer_data = {
+                'total_gain': total_gain_dB,
+                'h_gain': h_gain_dB,
+                'v_gain': v_gain_dB,
+                'theta': theta_deg,
+                'phi': phi_deg,
+            }
+
+            if name == "auto":
+                # Extract common base name (e.g. "PassiveTest_BLE AP")
+                h_base = os.path.basename(hpol_file)
+                name = h_base.replace("_HPol", "").replace("_VPol", "").replace(".txt", "").strip()
+
+            _loaded_measurements[name] = LoadedMeasurement(
+                file_path=f"{hpol_file} + {vpol_file}",
+                scan_type="passive",
+                frequencies=frequencies,
+                data=analyzer_data,
+            )
+
+            n_spatial = total_gain_dB.shape[0]
+            n_freqs = total_gain_dB.shape[1] if total_gain_dB.ndim == 2 else 1
+
+            return (
+                f"Successfully imported passive pair: {name}\n"
+                f"HPOL: {os.path.basename(hpol_file)}\n"
+                f"VPOL: {os.path.basename(vpol_file)}\n"
+                f"Frequencies: {len(frequencies)} ({frequencies[0]:.1f} - {frequencies[-1]:.1f} MHz)\n"
+                f"Spatial points: {n_spatial}\n"
+                f"Gain array shape: {total_gain_dB.shape}\n"
+                f"Peak total gain: {float(np.max(total_gain_dB)):.2f} dBi\n"
+                f"Cable loss applied: {cable_loss} dB"
+            )
+
+        except Exception as e:
+            return f"Error importing passive pair: {str(e)}"
+
+    @mcp.tool()
+    def import_active_processed(file_path: str, name: str = "auto") -> str:
+        """
+        Import an active TRP measurement file and compute total power + TRP.
+
+        This is the recommended way to import active data for analysis.
+        It processes the file through calculate_active_variables() to produce
+        total power arrays and TRP values ready for analysis.
+
+        Args:
+            file_path: Path to the active TRP measurement file
+            name: Measurement name (default: auto-generated from filename)
+
+        Returns:
+            Summary including TRP value, power range, and data shape.
+        """
+        if not os.path.exists(file_path):
+            return f"Error: File not found: {file_path}"
+
+        try:
+            raw = read_active_file(file_path)
+
+            frequency = raw.get('Frequency', raw.get('frequency', 0))
+
+            result = calculate_active_variables(
+                raw['Start Phi'], raw['Stop Phi'],
+                raw['Start Theta'], raw['Stop Theta'],
+                raw['Inc Phi'], raw['Inc Theta'],
+                np.array(raw['H_Power_dBm']),
+                np.array(raw['V_Power_dBm']),
+            )
+
+            (data_points, theta_deg, phi_deg, theta_rad, phi_rad,
+             total_power_2d, h_power_2d, v_power_2d,
+             *_plot_vars, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = result
+
+            # Build analyzer-compatible data dict
+            analyzer_data = {
+                'total_power': total_power_2d.flatten(),
+                'h_power': h_power_2d.flatten(),
+                'v_power': v_power_2d.flatten(),
+                'TRP_dBm': float(TRP_dBm),
+                'H_TRP_dBm': float(h_TRP_dBm),
+                'V_TRP_dBm': float(v_TRP_dBm),
+                'theta': theta_deg,
+                'phi': phi_deg,
+            }
+
+            if name == "auto":
+                name = os.path.basename(file_path).replace(".txt", "").strip()
+
+            _loaded_measurements[name] = LoadedMeasurement(
+                file_path=file_path,
+                scan_type="active",
+                frequencies=[frequency],
+                data=analyzer_data,
+            )
+
+            return (
+                f"Successfully imported active file: {name}\n"
+                f"Frequency: {frequency} MHz\n"
+                f"Data points: {data_points}\n"
+                f"TRP: {TRP_dBm:.2f} dBm\n"
+                f"H-TRP: {h_TRP_dBm:.2f} dBm | V-TRP: {v_TRP_dBm:.2f} dBm\n"
+                f"Max total power: {float(np.max(total_power_2d)):.2f} dBm\n"
+                f"Min total power: {float(np.min(total_power_2d)):.2f} dBm"
+            )
+
+        except Exception as e:
+            return f"Error importing active file: {str(e)}"
 
     @mcp.tool()
     def list_loaded_data() -> str:
