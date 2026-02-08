@@ -36,33 +36,17 @@ jobs:
         VERSION=${{ steps.get_version.outputs.VERSION }}
         echo "{\"CURRENT_VERSION\": \"$VERSION\"}" > settings.json
 
-    - name: Create PyInstaller spec file
-      shell: bash
-      run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        # Copy and modify an existing spec file template
-        if [ -f "RFlect_v3.2.0.spec" ]; then
-          cp RFlect_v3.2.0.spec RFlect_${VERSION}.spec
-        else
-          # Use the most recent spec file as template
-          LATEST_SPEC=$(ls -t RFlect_*.spec | head -1)
-          cp $LATEST_SPEC RFlect_${VERSION}.spec
-        fi
-
     - name: Build executable with PyInstaller
-      run: |
-        $VERSION = "${{ steps.get_version.outputs.VERSION }}"
-        pyinstaller RFlect_$VERSION.spec
+      run: pyinstaller RFlect.spec
 
     - name: Verify executable exists
       shell: bash
       run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        if [ -f "dist/RFlect_${VERSION}.exe" ]; then
-          echo "✓ Executable built successfully"
-          ls -lh dist/RFlect_${VERSION}.exe
+        if [ -f "dist/RFlect.exe" ]; then
+          echo "Executable built successfully"
+          ls -lh dist/RFlect.exe
         else
-          echo "✗ Executable not found!"
+          echo "Executable not found"
           ls -la dist/
           exit 1
         fi
@@ -71,7 +55,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: RFlect-Windows-${{ steps.get_version.outputs.VERSION }}
-        path: dist/RFlect_${{ steps.get_version.outputs.VERSION }}.exe
+        path: dist/RFlect.exe
         retention-days: 90
 
   create-release:
@@ -101,6 +85,9 @@ jobs:
           echo "" >> release_body.md
           echo "See [RELEASE_NOTES.md](RELEASE_NOTES.md) for full changelog." >> release_body.md
         fi
+
+    - name: Rename exe for release
+      run: mv RFlect.exe RFlect_${{ steps.get_version.outputs.VERSION }}.exe
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1

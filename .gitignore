@@ -27,6 +27,7 @@ venv_clean/
 
 # PyInstaller spec files
 *.spec
+!RFlect.spec
 
 # Icon files
 *.ico
@@ -58,13 +59,11 @@ plot_antenna/_archive/
 # Temp. files
 AI_CHAT_WORKFLOW.md
 
-# VS Code workspace files
+# IDE config
+.vscode/
 *.code-workspace
-.vscode/.ropeproject
-
-# IDE caches
 .idea/
-.vscode/.ropeproject
+pyrightconfig.json
 
 # Ruff cache
 .ruff_cache/
