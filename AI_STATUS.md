@@ -1,7 +1,7 @@
 # RFlect AI Features - Status & Roadmap
 
 **Last Updated**: February 7, 2026
-**Current Version**: v4.3.0
+**Current Version**: v4.0.0
 **Status**: Beta / Enabled in GUI
 
 ---
@@ -56,7 +56,7 @@ RFlect includes experimental AI-powered features for intelligent antenna analysi
 | **Anthropic** | Claude Messages API | All Claude models | Via Tools → Manage API Keys |
 | **Ollama** | llama3.1+, qwen2.5+ | llava, llama3.2-vision | Local, no API key needed |
 
-### 4. Secure API Key Management (v4.1.0, updated v4.3.0)
+### 4. Secure API Key Management
 **Status**: Complete
 
 **Working Features**:
@@ -75,7 +75,7 @@ RFlect includes experimental AI-powered features for intelligent antenna analysi
 ## Known Limitations
 
 1. **Pattern Analysis**
-   - HPBW and F/B ratio implemented and verified (v4.3.0: boundary wrapping fix, IEEE-validated TRP)
+   - HPBW and F/B ratio implemented and verified (boundary wrapping fix, IEEE-validated TRP)
    - No sidelobe level detection or symmetry analysis
    - Pattern classification limited to 3 categories
 
@@ -158,40 +158,19 @@ If no provider is configured:
 
 ## Roadmap
 
-### v4.0.0 (Complete - February 2026)
-- Pattern analysis functions (HPBW, F/B ratio)
-- Batch frequency analysis (analyze_all_frequencies)
-- Antenna domain knowledge in AI prompts
-- YAML-based report template engine
-- MCP server for programmatic access
-- Bulk processing MCP tools
-- **Multi-provider support (OpenAI, Anthropic, Ollama)**
-- **GUI polish: tooltips, progress bar, color-coded logs**
-
-### v4.1.0 (Complete - February 2026)
-- Secure API key management (Fernet encryption, OS keyring)
-- Multi-provider key dialog (OpenAI, Anthropic, Ollama)
-- AI features re-enabled in GUI
-- MCP server documentation
-- 82 tests
-
-### v4.2.0 (Complete - February 2026)
-- AI analysis engine: AntennaAnalyzer class with HPBW, F/B ratio
-- Batch frequency analysis (analyze_all_frequencies)
-- Report tables with gain statistics
-- Multi-provider threading improvements
-- 150+ tests
-
-### v4.3.0 (Current - February 2026)
-- 11 RF engineering formula fixes (diversity gain, axial ratio, XPD, TRP, average gain, HPBW)
-- Machine-ID encryption replacing MAC-based key derivation
-- MCP pipeline: import_passive_pair, import_active_processed (20 tools total)
-- Full GUI dark theme on all dialogs, WCAG AA contrast compliance
+### v4.0.0 (Current - February 2026)
+- Complete architecture refactoring (mixin-based GUI)
+- Multi-provider AI support (OpenAI, Anthropic, Ollama)
+- Secure API key management (Fernet encryption, OS keyring, machine-ID binding)
+- AI analysis engine: AntennaAnalyzer with HPBW, F/B ratio, batch analysis
+- 11 RF engineering formula fixes (diversity gain, axial ratio, XPD, TRP, HPBW)
+- MCP server with 20 tools (import, analysis, report, bulk processing)
+- Full GUI dark theme, WCAG AA contrast, keyboard shortcuts
 - LLM timeout/retry hardening, provider-aware error messages
 - turbo colormap, DPI 300 for saved figures
 - 227 tests, 22% code coverage
 
-### v4.4+ (Planned)
+### v4.1+ (Planned)
 - Sidelobe detection and reporting
 - Automated figure insertion in reports
 - Complete branding integration

@@ -2,7 +2,7 @@
 
 **Antenna measurement visualization and analysis for RF engineers.**
 
-[![Version](https://img.shields.io/badge/version-4.3.0-blue)]()
+[![Version](https://img.shields.io/badge/version-4.0.0-blue)]()
 [![Python](https://img.shields.io/badge/python-3.11+-green)]()
 [![License](https://img.shields.io/badge/license-GPL--3.0-orange)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-227%20passing-brightgreen)]()

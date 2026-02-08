@@ -391,7 +391,7 @@ RFlect/
 
 ## Areas Needing Contribution
 
-### Completed (v4.3.0)
+### Completed (v4.0.0)
 - ~~HPBW and F/B ratio in pattern analysis~~ (implemented and verified with boundary wrapping fix)
 - ~~Test coverage expansion~~ (227 tests achieved, up from 82; 22% overall coverage)
 

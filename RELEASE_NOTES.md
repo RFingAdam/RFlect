@@ -1,8 +1,8 @@
 # RFlect - Release Notes
 
-## Version 4.3.0 (02/07/2026)
+## Version 4.0.0 (02/07/2026) - MAJOR RELEASE
 
-**11 RF engineering fixes, MCP pipeline fix, provider hardening, full GUI dark theme, 227 tests.**
+**Complete architecture refactoring, multi-provider AI support, 11 RF engineering fixes, secure API key management, MCP server with 20 tools, and 227 tests.**
 
 ### RF Engineering Fixes
 - **Diversity gain**: Vaughan-Andersen formula `DG = 10*sqrt(1 - ECC^2)` replacing incorrect log-based formula
@@ -17,33 +17,72 @@
 - **Frequency alignment**: Validates HPOL/VPOL frequency match at import
 - **UTF-8 encoding** on file readers (`determine_polarization`, `extract_passive_frequencies`)
 
-### GUI Improvements
+### Modern GUI Overhaul
+- Custom dark ttk theme based on `clam` with styled widgets across the entire application
+- Branded header bar with Smith chart logo, red "RFlect" title, subtitle, and version badge
 - Dark theme applied to ALL settings Toplevel dialogs (active, passive, VSWR)
-- API key test threading prevents GUI freeze during validation
-- VSWR input validation with `try/except TclError` and frequency range check
-- AI chat thinking indicator with tag-based removal
-- Quick action buttons disabled during AI processing
-- Bulk processing runs in background thread with progress window and indeterminate progressbar
-- Semantic version comparison for update checks (parses `v4.2.0` into tuple)
+- Action buttons bar with flat, icon-prefixed buttons and hover effects
+- Monospace output log panel with dark background
+- Color-coded logs: Info (white), Success (green), Warning (amber), Error (red)
+- Dark-themed menus, combobox dropdowns, tooltips, and scrollbars
+- Increased default window size to 850x600 with 700x500 minimum
+- WCAG AA contrast fix: `DISABLED_FG_COLOR #A0A0A0` (5.6:1 ratio on `#2E2E2E`)
 - Ctrl+R / F5 keyboard shortcuts for process data
 - Re-import confirmation dialog before overwriting loaded data
-- WCAG AA contrast fix: `DISABLED_FG_COLOR #A0A0A0` (5.6:1 ratio on `#2E2E2E`)
+- Bulk processing runs in background thread with progress window
+- Semantic version comparison for update checks
+- Processing lock prevents double-clicks during data processing
+- VSWR input validation with frequency range check
+- Settings persistence for VSWR limits via `user_settings.json`
 
-### Backend/Provider
+### Multi-Provider AI Support
+- **Unified LLM Provider Abstraction** (`llm_provider.py`)
+  - Common interface for OpenAI, Anthropic, and Ollama
+  - Unified data types: `LLMMessage`, `ToolDefinition`, `ToolCall`, `LLMResponse`
+  - Provider-agnostic tool calling loop
+  - Factory function `create_provider()` and `get_available_providers()`
+- **OpenAI Provider**: Chat Completions API (GPT-4) + Responses API (GPT-5) with vision
+- **Anthropic Provider**: Messages API with tool use and vision
+- **Ollama Provider**: Local LLM support (llama3.1, qwen2.5, llava for vision, etc.)
 - **LLM timeout/retry**: OpenAI/Anthropic `timeout=30s` `max_retries=3`, Ollama `timeout=60s`
-- **Machine-ID encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows) replacing MAC-based
-- API keys stored in `_key_cache` dict instead of `os.environ` (prevents env pollution)
-- MCP thread safety: `threading.Lock` on `_loaded_measurements` dict
-- `report_tools.py` uses `create_provider()` instead of hardcoded OpenAI import
-- `save.py`: `send_to_openai` renamed to `send_to_ai_provider` with provider-aware error messages
-- Ollama tool call IDs now use UUID for uniqueness
+- **AI Chat Assistant**: Quick-action buttons, multi-turn conversations, rich measurement context
+- **AI Settings Dialog**: Provider selection, model lists, Ollama URL field
+- **Report Generation**: Provider-aware error messages, works with any configured provider
 
-### MCP Server
-- New `import_passive_pair` tool processes HPOL/VPOL data during import
-- New `import_active_processed` tool processes active TRP data during import
-- End-to-end analysis pipeline: TRP = -6.61 dBm matches chamber reference exactly
+### Secure API Key Management
+- **Fernet AES-128 encryption** (HMAC-SHA256) with PBKDF2 key derivation (600K iterations)
+- **Machine-ID encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows)
+- OS keyring integration (Windows Credential Manager, macOS Keychain, Linux keyring)
+- Restrictive file permissions (`chmod 600` / Windows ACL)
+- Multi-provider tabbed dialog (OpenAI, Anthropic, Ollama)
+- Key validation via threaded "Test Connection" button
+- Keys stored in `_key_cache` dict instead of `os.environ`
+- Legacy base64 auto-migration from pre-4.0.0 storage
+
+### AI Analysis Engine
+- `AntennaAnalyzer` class: GUI-independent, reusable for MCP and programmatic access
+- HPBW (Half-Power Beamwidth) calculation for E-plane and H-plane
+- Front-to-back ratio with proper direction identification
+- Batch frequency analysis: resonance detection, 3dB bandwidth, gain stability
+- Pattern classification (omnidirectional, sectoral, directional)
+- Antenna engineering domain knowledge in AI prompts
+
+### Architecture Refactoring
+- **GUI Refactored to Mixin-Based Design**
+  - Migrated from monolithic `gui.py` (4,331 lines) to modular architecture:
+    `main_window.py`, `dialogs_mixin.py`, `ai_chat_mixin.py`, `tools_mixin.py`, `callbacks_mixin.py`
+- Consolidated duplicate code (`DualOutput`, utility functions, API key methods)
+- Fixed 8 bare `except:` clauses with specific exception types
+- Proper Python package with `__init__.py` and package metadata
+
+### MCP Server (20 Tools)
+- FastMCP-based server for Claude Code, Cline, and other AI assistants
+- Import tools: `import_antenna_file`, `import_antenna_folder`, `import_passive_pair`, `import_active_processed`
+- Analysis tools: gain statistics, pattern analysis, polarization comparison
+- Report tools: DOCX generation with AI summaries and YAML template engine
+- Bulk tools: batch process passive/active folders, CST conversion, file validation
 - Thread-safe measurement store with `threading.Lock`
-- 20 total tools (up from 18)
+- End-to-end analysis pipeline verified against chamber reference data
 
 ### Plotting/Parser
 - **turbo** colormap replaces **jet** for perceptual uniformity
@@ -51,268 +90,32 @@
 - `check_matching_files` uses keyword-based search instead of hardcoded line indices
 - Infinite loop prevention in passive parser
 - `_get_gain_grid` returns `None` on reshape mismatch instead of 1D data
+- NF2FF caching by (frequency, file pair)
+- Individual figure close on reset instead of `plt.close("all")`
+
+### Release Infrastructure
+- `requirements.txt` and `requirements-dev.txt` with versioned dependencies
+- `pyproject.toml` following PEP 621 with optional dependency groups (dev, ai, exe)
+- `.bumpversion.cfg` for automated version bumping
+- GitHub Actions CI: multi-OS (Ubuntu, Windows, macOS), multi-Python (3.11, 3.12), coverage, linting
+- GitHub Actions release workflow: Windows .exe build on version tags
 
 ### Testing
-- 227 tests, all passing (up from 82 in v4.1.0, 150 in v4.2.0)
-- New `test_mcp_integration.py`: 66 MCP integration tests covering all 20 tools
-- New `test_real_data_integration.py`: Real BLE and LoRa chamber data tests
+- 227 tests, all passing
+- `test_mcp_integration.py`: 66 MCP integration tests covering all 20 tools
+- `test_real_data_integration.py`: Real BLE and LoRa chamber data tests
+- `test_api_keys.py`, `test_llm_provider.py`, `test_ai_analysis.py`
 - 22% overall code coverage
 
----
+### Bug Fixes
+- Fixed mousewheel crash in scrollable dialogs (global binding persisted after dialog close)
+- Fixed PyInstaller compatibility (upgraded to 6.18.0 for setuptools 80+)
+- Reduced .exe size from ~3.1 GB to ~135 MB via targeted excludes
+- Lambda scoping bug in exception handlers (Python 3 deletes `e` after except block)
+- File parser IndexError protection for malformed TRP headers
 
-## Version 4.2.0 (02/06/2026)
-
-**AI analysis engine, report tables, threading, multi-provider polish.**
-
-### AI Analysis Engine
-- `AntennaAnalyzer` class with pattern analysis, HPBW, F/B ratio
-- Batch frequency analysis (`analyze_all_frequencies`)
-- Report tables with gain statistics
-
-### Multi-Provider Threading
-- Multi-provider threading improvements
-
-### Testing
-- 150+ tests, all passing
-
----
-
-## Version 4.1.0 (02/06/2026)
-
-**Secure AI features, multi-provider key management, and MCP documentation.**
-
-### Secure API Key Management
-- **Fernet Encryption**: API keys stored using AES-128-CBC + HMAC-SHA256 (replaces v4.0.0 base64 obfuscation)
-- **PBKDF2 Key Derivation**: 480,000 iterations with machine-unique salt
-- **Multi-Provider Support**: Manage keys for OpenAI and Anthropic from a single tabbed dialog
-- **OS Keyring Integration**: Windows Credential Manager / macOS Keychain / Linux keyring as primary storage
-- **Restrictive File Permissions**: `chmod 600` (Unix) / `icacls` owner-only (Windows) on encrypted key files
-- **Legacy Migration**: Automatic upgrade of v4.0.0 base64-encoded key files to Fernet encryption
-- **Key Validation**: "Test Connection" button verifies keys against live API
-- **Shutdown Cleanup**: API keys cleared from environment variables on app exit
-
-### AI Features Re-Enabled in GUI
-- **Manage API Keys** and **AI Settings** menu items restored under Tools menu
-- **Generate Report with AI** and **AI Chat Assistant** appear when any provider key is configured
-- **Multi-provider key dialog**: Tabbed interface (OpenAI / Anthropic / Ollama) with per-provider status, save, test, delete
-- **"Manage API Keys..." button** added to AI Settings dialog for quick access
-- **Provider consumers updated**: `ai_chat_mixin.py` and `save.py` now use centralized `get_api_key()` / `is_api_key_configured()` API
-
-### MCP Server Documentation
-- Expanded `rflect-mcp/README.md` with full Claude Code and Cline configuration examples
-- Quick-start workflow guide: Import -> Analyze -> Report
-- 18-tool reference table with parameters
-- **Help -> MCP Server Setup** menu item links to documentation
-
-### Testing
-- 82 tests (up from ~50), all passing
-- New test files: `test_api_keys.py` (20 tests), `test_llm_provider.py` (12 tests)
-- Coverage: 15% overall, 55% on `api_keys.py`, 40% on `llm_provider.py`
-
-### Dependencies
-- Added `cryptography>=43.0.0,<44.0.0` for Fernet encryption
-
----
-
-## Version 4.0.0 (02/05/2026) - MAJOR RELEASE
-
-**This is a major release with complete architecture refactoring, multi-provider AI support, and GUI polish.**
-
-### 🎨 Modern GUI Overhaul
-- **Complete Visual Redesign**
-  - Custom dark ttk theme based on `clam` with styled widgets across the entire application
-  - Branded header bar with Smith chart logo, red "RFlect" title, subtitle, and version badge
-  - Paneled single-column layout with `ttk.LabelFrame` sections for Measurement Type and Parameters
-  - Action buttons bar with flat, icon-prefixed buttons and hover effects
-  - Monospace output log panel with dark background and section header
-  - Thin status bar with separator, check-mark indicator, and progress bar
-  - Dark-themed menus, combobox dropdowns, tooltips, and scrollbars
-  - Modern font stack (Segoe UI for UI, Consolas for log output)
-- **Window & Layout**
-  - Increased default window size to 850x600 with 700x500 minimum
-  - Single-column responsive layout with proper weight distribution
-  - Renamed "Additional Tools" menu to "Tools"
-- **Tooltips**: Dark-themed hover hints on all main buttons (Import, View Results, Save, Settings)
-- **Progress Feedback**: Indeterminate progress bar in status bar during data processing
-- **Color-Coded Logs**: Info (white), Success (green), Warning (amber), Error (red) in the log area
-- **Button State Management**: Buttons use disabled/enabled states instead of disappearing during scan type changes
-- **Processing Lock**: Prevents double-clicks during data processing
-- **Better Error Messages**: Specific exception handling (FileNotFoundError, PermissionError, ValueError) with helpful messages
-- **NF2FF Caching**: Results cached by (frequency, file pair) — avoids redundant computation
-- **Figure Tracking**: Individual figure close on reset instead of `plt.close("all")`
-- **Settings Persistence**: VSWR limit settings saved to `user_settings.json` and restored on launch
-- **New Config Constants**: Extended dark palette, modern fonts, button geometry, section spacing
-
-### 🤖 Multi-Provider AI Support (Experimental — Hidden in v4.0.0)
-> **Note:** AI features are fully implemented but hidden from the GUI menu in this release. They will be exposed in v4.1 after further testing and secure key management review.
-
-- **Unified LLM Provider Abstraction** (`llm_provider.py`)
-  - New module providing a common interface for OpenAI, Anthropic, and Ollama
-  - Unified data types: `LLMMessage`, `ToolDefinition`, `ToolCall`, `LLMResponse`
-  - Provider-agnostic tool calling loop — same code handles function calls across all backends
-  - Factory function `create_provider()` and `get_available_providers()` helper
-- **OpenAI Provider**: Chat Completions API (GPT-4) + Responses API (GPT-5) with vision support
-- **Anthropic Provider**: Messages API with tool use and vision support
-- **Ollama Provider**: Local LLM support (llama3.1, qwen2.5, llava for vision, etc.)
-- **AI Chat Enhancements**
-  - Quick-action buttons: Gain Stats, Pattern, Polarization, All Freqs
-  - Clear Chat button
-  - Rich measurement context passed to AI (loaded files, frequencies, data shape, key metrics)
-  - Provider-aware API key checks
-- **AI Settings Dialog**: Provider selection dropdown, provider-specific model lists, Ollama URL field
-- **Report Generation**: Refactored `save.py` to use unified provider abstraction — reports work with any configured provider
-
-### 🏗️ Architecture Refactoring
-- **GUI Refactored to Mixin-Based Design**
-  - Migrated from monolithic `gui.py` (4,331 lines) to modular architecture
-  - GUI organized into focused mixins:
-    - `main_window.py` (585 lines) - Core AntennaPlotGUI class
-    - `dialogs_mixin.py` (1,162 lines) - Dialog methods
-    - `ai_chat_mixin.py` (1,492 lines) - AI Chat functionality
-    - `tools_mixin.py` (1,006 lines) - Bulk processing & analysis tools
-    - `callbacks_mixin.py` (900 lines) - File I/O & data processing
-  - Benefits: Improved maintainability, testability, and extensibility
-  - Archived legacy code to `_archive/` directory for reference
-
-### 🧹 Code Quality & Cleanup
-- **Eliminated Duplicate Code**
-  - Consolidated `DualOutput` class (was duplicated in 2 locations)
-  - Consolidated utility functions (`resource_path`, `get_user_data_dir`)
-  - Consolidated API key management methods
-  - Removed redundant `gui_components/` package
-- **Improved Error Handling**
-  - Fixed 8 bare `except:` clauses with specific exception types
-  - Added proper logging for error conditions
-  - Better error messages for user guidance
-- **Security Improvements**
-  - Standardized environment file naming (`.env`)
-  - Enhanced `.gitignore` patterns for credential protection
-  - Multi-layer API key storage: OS keyring → file → environment variables
-
-### 🚀 Release Infrastructure
-- **Dependency Management**
-  - Added `requirements.txt` with production dependencies
-  - Added `requirements-dev.txt` with testing and code quality tools
-  - All dependencies properly versioned and documented
-- **Modern Python Packaging**
-  - Created `pyproject.toml` following PEP 621 standards
-  - Entry point: `rflect` command for CLI usage
-  - Optional dependencies for dev tools and PyInstaller builds
-- **Testing Infrastructure**
-  - Comprehensive test suite with pytest
-  - Unit tests for RF calculations (diversity gain, MIMO capacity, TRP, process data)
-  - AI analysis tests (gain stats, pattern analysis, polarization comparison)
-  - MCP tools tests (dataclass creation, no-data error handling)
-  - File parsing tests with import verification
-- **CI/CD Automation**
-  - GitHub Actions workflow for automated testing
-    - Multi-OS (Ubuntu, Windows, macOS)
-    - Multi-Python (3.11, 3.12)
-    - Code coverage reporting to Codecov
-    - Linting with flake8 and black
-  - GitHub Actions workflow for automated releases
-    - Builds Windows .exe on version tags
-    - Creates GitHub releases with release notes
-    - Uploads artifacts for distribution
-- **Version Management**
-  - Added `.bumpversion.cfg` for automated version bumping
-  - Centralized version tracking across all files
-  - Created `plot_antenna/__init__.py` with package metadata
-
-### 🤖 AI Architecture Improvements
-- **Extracted AI Analysis Logic**
-  - Created `ai_analysis.py` module with `AntennaAnalyzer` class
-  - GUI-independent, reusable for MCP server and programmatic access
-  - Pure analysis functions that don't depend on GUI state
-  - Added antenna engineering domain knowledge for AI prompts
-- **Pattern Analysis Functions**
-  - HPBW (Half-Power Beamwidth) calculation for E-plane and H-plane
-  - Front-to-back ratio with proper direction identification
-  - Batch frequency analysis: resonance detection, 3dB bandwidth, gain stability
-  - Pattern classification (omnidirectional, sectoral, directional)
-- **AI Feature Status Documentation**
-  - Created `AI_STATUS.md` documenting feature completeness
-  - Clearly marked AI features as experimental (~80-90% complete)
-  - Documented what works and what needs improvement
-- **Optional AI Features**
-  - AI features require opt-in (OpenAI API key)
-  - Core RFlect functionality works without AI
-  - Clear status indicators in UI
-
-### 🔌 MCP Server (Programmatic Access)
-- **RFlect MCP Server** (`rflect-mcp/`)
-  - FastMCP-based server for Claude Code, Cline, and other AI assistants
-  - Import tools: load measurement files programmatically
-  - Analysis tools: gain statistics, pattern analysis, polarization comparison
-  - Report tools: generate DOCX reports with AI summaries and smart filtering
-  - YAML-based report template engine (`rflect-mcp/templates/default.yaml`)
-- **Bulk Processing MCP Tools**
-  - `bulk_process_passive()`: Batch process HPOL/VPOL pairs in a folder
-  - `bulk_process_active()`: Batch process TRP files in a folder
-  - `validate_file_pair()`: Validate HPOL/VPOL file pairing
-  - `convert_to_cst()`: Convert measurement files to CST .ffs format
-  - `list_measurement_files()`: Scan folders for recognized file types
-
-### 📚 Documentation
-- **Developer Guidelines**
-  - Created `CONTRIBUTING.md` with development setup
-  - Code style guidelines (Black, 100 char lines)
-  - Testing guidelines and coverage goals
-  - PR process and release workflow
-- **Updated README**
-  - Added installation methods (standalone .exe, from source)
-  - Clarified AI feature status (experimental)
-  - Added development instructions
-- **Project Organization**
-  - Clear file structure documentation
-  - Architecture explanations
-  - Contribution guidelines and priorities
-
-### 🐛 Bug Fixes
-- **Fixed mousewheel crash in scrollable dialogs**: Global `<MouseWheel>` binding persisted after dialog closed via Save/Cancel buttons, causing `TclError` on destroyed canvas. Now uses `<Destroy>` event cleanup and guarded callback.
-- **Fixed PyInstaller compatibility**: Upgraded PyInstaller from 6.10.0 to 6.18.0 to resolve `PyiFrozenImporter` AttributeError with setuptools 80+.
-- **Reduced .exe size**: Added excludes for unused packages (torch, transformers, jupyter, sklearn, etc.), reducing build from ~3.1 GB to ~135 MB.
-
-### 🔧 Technical Improvements
-- **Package Structure**
-  - Proper Python package with `__init__.py`
-  - Version available programmatically: `import plot_antenna; print(plot_antenna.__version__)`
-  - Better import organization
-- **Build System**
-  - PyInstaller 6.18.0+ configured for .exe builds with optimized excludes
-  - Automated in CI/CD pipeline
-  - Version-tagged releases
-
-### ⚠️ Breaking Changes
-**None** - All existing workflows remain compatible. This is a major version bump due to architectural refactoring, but all features are preserved.
-
-### 🎯 Future Roadmap
-- **v4.1** (Planned Q2 2026)
-  - Enable AI features in GUI (API key management, AI Chat, AI Report Generation)
-  - Secure API key storage review (encrypted keyring)
-  - Sidelobe detection and reporting
-  - System Fidelity Factor calculation (#31)
-  - Automated figure insertion in reports
-  - Comprehensive test suite expansion
-- **v4.2** (Planned Q3 2026)
-  - Enhanced vision integration for all providers
-  - Simulation vs measurement comparison
-  - AI-powered anomaly detection
-  - Multi-frequency comparison tables
-
-### 📦 Installation
-Download `RFlect_v4.0.0.exe` from [GitHub Releases](https://github.com/RFingAdam/RFlect/releases)
-
-**For Developers**:
-```bash
-git clone https://github.com/RFingAdam/RFlect.git
-cd RFlect
-pip install -r requirements.txt
-python -m plot_antenna.main
-```
-
-### 📝 Migration Notes
-- No user action required - update via installer
+### Migration Notes
+- No user action required — update via installer
 - Developers: Run `pip install -r requirements.txt` to update dependencies
 - API key storage location unchanged (AppData/RFlect)
 - All existing measurement files remain compatible
