@@ -1,11 +1,15 @@
 ; RFlect Inno Setup Script
 ; Builds a Windows installer from the PyInstaller-generated exe
+;
+; Usage:
+;   iscc installer.iss                          (uses default version)
+;   iscc /DRFLECT_VERSION=4.0.0 installer.iss   (override version)
 
 #define MyAppName "RFlect"
-#define MyAppVersion GetEnv('RFLECT_VERSION')
-#if MyAppVersion == ""
-  #define MyAppVersion "4.0.0"
+#ifndef RFLECT_VERSION
+  #define RFLECT_VERSION "4.0.0"
 #endif
+#define MyAppVersion RFLECT_VERSION
 #define MyAppPublisher "RFingAdam"
 #define MyAppURL "https://github.com/RFingAdam/RFlect"
 #define MyAppExeName "RFlect.exe"
