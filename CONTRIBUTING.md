@@ -220,7 +220,8 @@ def sample_data():
 
 ### Test Coverage Goals
 
-- **Overall**: ≥60% coverage
+- **Current**: 227 tests passing, 22% overall coverage
+- **Target Overall**: ≥60% coverage
 - **Core modules** (calculations, file_utils): ≥80% coverage
 - **GUI modules**: Best effort (GUI testing is harder)
 
@@ -367,12 +368,14 @@ RFlect/
 │   ├── templates/
 │   │   └── default.yaml       # Report template
 │   └── README.md
-├── tests/                  # Test suite
+├── tests/                  # Test suite (227 tests)
 │   ├── conftest.py        # Pytest fixtures
 │   ├── test_calculations.py
 │   ├── test_ai_analysis.py
 │   ├── test_file_utils.py
 │   ├── test_mcp_tools.py
+│   ├── test_mcp_integration.py  # 66 MCP integration tests (all 20 tools)
+│   ├── test_real_data_integration.py  # Real BLE/LoRa chamber data tests
 │   └── integration/       # Integration tests
 ├── .github/
 │   └── workflows/         # CI/CD workflows
@@ -388,8 +391,12 @@ RFlect/
 
 ## Areas Needing Contribution
 
+### Completed (v4.3.0)
+- ~~HPBW and F/B ratio in pattern analysis~~ (implemented and verified with boundary wrapping fix)
+- ~~Test coverage expansion~~ (227 tests achieved, up from 82; 22% overall coverage)
+
 ### High Priority
-- 🔴 Add more test coverage (especially integration tests)
+- 🔴 Increase test coverage toward 60% target (currently 22% with 227 tests)
 - 🔴 Sidelobe detection and reporting in pattern analysis
 - 🔴 Automated figure insertion in DOCX reports
 - 🔴 System Fidelity Factor calculation (#31)
@@ -402,7 +409,7 @@ RFlect/
 - 🟡 Multi-frequency comparison tables in reports
 
 ### Future Features
-- 🟢 Vision API integration for plot analysis (v4.2+)
+- 🟢 Vision API integration for plot analysis (v4.4+)
 - 🟢 MIMO antenna analysis
 - 🟢 macOS/Linux .app/.deb packaging
 

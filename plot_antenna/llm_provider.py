@@ -10,6 +10,7 @@ All providers are optional — import errors are caught gracefully.
 from __future__ import annotations
 
 import json
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -107,7 +108,7 @@ class OpenAIProvider(BaseLLMProvider):
     def __init__(self, api_key: str, model: str = "gpt-4o-mini", **kwargs):
         from openai import OpenAI
 
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key, timeout=30.0, max_retries=3)
         self.model = model
         self._kwargs = kwargs
 
@@ -343,7 +344,7 @@ class AnthropicProvider(BaseLLMProvider):
     def __init__(self, api_key: str, model: str = "claude-sonnet-4-20250514", **kwargs):
         import anthropic
 
-        self.client = anthropic.Anthropic(api_key=api_key)
+        self.client = anthropic.Anthropic(api_key=api_key, timeout=30.0, max_retries=3)
         self.model = model
         self._kwargs = kwargs
 
@@ -501,6 +502,8 @@ class OllamaProvider(BaseLLMProvider):
             "messages": api_messages,
         }
 
+        call_kwargs["options"] = {"timeout": 60}  # Ollama local, allow more time
+
         if tools:
             call_kwargs["tools"] = [
                 {
@@ -514,7 +517,10 @@ class OllamaProvider(BaseLLMProvider):
                 for t in tools
             ]
 
-        response = ollama.chat(**call_kwargs)
+        try:
+            response = ollama.chat(**call_kwargs)
+        except Exception as e:
+            raise ConnectionError(f"Ollama request failed: {e}") from e
 
         # Parse response
         text_content = response.message.content or ""
@@ -524,7 +530,7 @@ class OllamaProvider(BaseLLMProvider):
             for tc in response.message.tool_calls:
                 tool_calls.append(
                     ToolCall(
-                        id=f"ollama_{tc.function.name}",
+                        id=f"ollama_{uuid.uuid4().hex[:8]}",
                         name=tc.function.name,
                         arguments=(
                             tc.function.arguments if isinstance(tc.function.arguments, dict) else {}

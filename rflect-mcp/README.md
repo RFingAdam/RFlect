@@ -22,7 +22,7 @@ Add to your Claude Code configuration file (`~/.claude/settings.json`):
 
 **Important**: Use the absolute path to `server.py` on your system.
 
-Then restart Claude Code and you'll have access to 18 antenna analysis tools. See [Quick-Start Workflow](#quick-start-workflow) below.
+Then restart Claude Code and you'll have access to 20 antenna analysis tools. See [Quick-Start Workflow](#quick-start-workflow) below.
 
 ## Installation
 
@@ -76,18 +76,20 @@ Most MCP-compatible clients use similar JSON configuration. Consult your client'
 
 ## Available Tools
 
-The RFlect MCP server provides 18 tools across four categories:
+The RFlect MCP server provides 20 tools across four categories:
 
-### Import Tools (4 tools)
+### Import Tools (6 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `import_antenna_file` | Import single antenna measurement file | `file_path` (str), `scan_type` (passive/active) |
 | `import_antenna_folder` | Import all measurement files from a folder | `folder_path` (str), `pattern` (optional glob pattern) |
+| `import_passive_pair` | Import and process HPOL/VPOL passive pair with full calculation pipeline | `hpol_file` (str), `vpol_file` (str) |
+| `import_active_processed` | Import and process active TRP file with power calculations | `file_path` (str), `name` (optional str) |
 | `list_loaded_data` | List all currently loaded measurements with frequencies | None |
 | `clear_data` | Clear all loaded data from memory | None |
 
-**Typical usage**: Import data before analysis or report generation.
+**Typical usage**: Import data before analysis or report generation. For passive HPOL/VPOL data, `import_passive_pair` is recommended as it runs the full calculation pipeline during import.
 
 ### Analysis Tools (5 tools)
 
@@ -131,11 +133,17 @@ Here's a typical 3-step workflow for analyzing antenna data and generating a rep
 ### Step 1: Import Data Files
 
 ```python
-# Option A: Import a single file
+# Option A: Import HPOL/VPOL passive pair (recommended for passive data)
+import_passive_pair("C:/measurements/2.4GHz_HPOL.txt", "C:/measurements/2.4GHz_VPOL.txt")
+
+# Option B: Import a single file
 import_antenna_file("C:/measurements/2.4GHz_HPOL.txt", "passive")
 
-# Option B: Import entire folder (recommended)
+# Option C: Import entire folder
 import_antenna_folder("C:/measurements/wifi_antenna/")
+
+# Option D: Import active TRP file with processing
+import_active_processed("C:/measurements/TRP_2.4GHz.txt")
 
 # Verify what was loaded
 list_loaded_data()
@@ -286,11 +294,11 @@ Generated 5 reports:
 **Solution**: Run `import_antenna_file` or `import_antenna_folder` first. Verify with `list_loaded_data()`.
 
 ### "AI Summary requires API key"
-**Cause**: AI features enabled but no OpenAI API key configured.
+**Cause**: AI features enabled but no AI provider API key configured.
 
 **Solution**:
-- **Via RFlect GUI**: Launch RFlect GUI, go to Tools → Manage API Keys, and enter your OpenAI API key
-- **Via Environment Variable**: Set `OPENAI_API_KEY` in your environment
+- **Via RFlect GUI**: Launch RFlect GUI, go to Tools → Manage API Keys, and enter your API key for any supported provider (OpenAI, Anthropic, or Ollama)
+- **Via Environment Variable**: Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in your environment, or configure a local Ollama instance
 - **Alternative**: Disable AI features in report options: `"ai_executive_summary": false`
 
 ### Report too large / Out of memory
@@ -321,11 +329,16 @@ Generated 5 reports:
 
 ## Development
 
+### Thread Safety
+
+The MCP server uses `threading.Lock` to protect the `_loaded_measurements` dictionary. All import, analysis, and report tools acquire this lock before reading or writing measurement data. When adding new tools that access shared state, ensure proper lock usage.
+
 ### Adding New Tools
 
 1. Create function in appropriate `tools/*.py` file
 2. Register with `@mcp.tool()` decorator
-3. Document in this README
+3. Ensure thread safety when accessing `_loaded_measurements`
+4. Document in this README
 
 ### Testing
 

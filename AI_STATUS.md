@@ -1,7 +1,7 @@
 # RFlect AI Features - Status & Roadmap
 
-**Last Updated**: February 6, 2026
-**Current Version**: v4.1.0
+**Last Updated**: February 7, 2026
+**Current Version**: v4.3.0
 **Status**: Beta / Enabled in GUI
 
 ---
@@ -56,17 +56,18 @@ RFlect includes experimental AI-powered features for intelligent antenna analysi
 | **Anthropic** | Claude Messages API | All Claude models | Via Tools → Manage API Keys |
 | **Ollama** | llama3.1+, qwen2.5+ | llava, llama3.2-vision | Local, no API key needed |
 
-### 4. Secure API Key Management (v4.1.0)
+### 4. Secure API Key Management (v4.1.0, updated v4.3.0)
 **Status**: Complete
 
 **Working Features**:
 - **Fernet AES-128 encryption** with PBKDF2 key derivation (480K iterations)
+- **Machine-ID based encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows) replacing MAC-based derivation
 - OS keyring integration (Windows Credential Manager, macOS Keychain)
 - Restrictive file permissions (chmod 600 / Windows ACL)
 - Multi-provider tabbed dialog (OpenAI, Anthropic, Ollama)
-- Key validation via "Test Connection" button
+- Key validation via "Test Connection" button (threaded to prevent GUI freeze)
+- Keys stored in `_key_cache` dict instead of `os.environ` (prevents env pollution)
 - Legacy base64 auto-migration from v4.0.0
-- Environment variable cleanup on shutdown
 - GUI-based key management (Tools → Manage API Keys)
 
 ---
@@ -74,7 +75,7 @@ RFlect includes experimental AI-powered features for intelligent antenna analysi
 ## Known Limitations
 
 1. **Pattern Analysis**
-   - HPBW and F/B ratio implemented
+   - HPBW and F/B ratio implemented and verified (v4.3.0: boundary wrapping fix, IEEE-validated TRP)
    - No sidelobe level detection or symmetry analysis
    - Pattern classification limited to 3 categories
 
@@ -109,7 +110,8 @@ plot_antenna/
 rflect-mcp/
 ├── server.py                    # FastMCP server
 ├── tools/
-│   ├── import_tools.py         # import_antenna_file(), import_antenna_folder()
+│   ├── import_tools.py         # import_antenna_file(), import_antenna_folder(),
+│   │                           # import_passive_pair(), import_active_processed()
 │   ├── analysis_tools.py       # Uses ai_analysis.AntennaAnalyzer
 │   ├── report_tools.py         # generate_report() with YAML template engine
 │   └── bulk_tools.py           # Batch processing & CST conversion
@@ -156,7 +158,7 @@ If no provider is configured:
 
 ## Roadmap
 
-### v4.0.0 (Current - February 2026)
+### v4.0.0 (Complete - February 2026)
 - Pattern analysis functions (HPBW, F/B ratio)
 - Batch frequency analysis (analyze_all_frequencies)
 - Antenna domain knowledge in AI prompts
@@ -166,21 +168,38 @@ If no provider is configured:
 - **Multi-provider support (OpenAI, Anthropic, Ollama)**
 - **GUI polish: tooltips, progress bar, color-coded logs**
 
-### v4.1 (Planned - Q2 2026)
+### v4.1.0 (Complete - February 2026)
+- Secure API key management (Fernet encryption, OS keyring)
+- Multi-provider key dialog (OpenAI, Anthropic, Ollama)
+- AI features re-enabled in GUI
+- MCP server documentation
+- 82 tests
+
+### v4.2.0 (Complete - February 2026)
+- AI analysis engine: AntennaAnalyzer class with HPBW, F/B ratio
+- Batch frequency analysis (analyze_all_frequencies)
+- Report tables with gain statistics
+- Multi-provider threading improvements
+- 150+ tests
+
+### v4.3.0 (Current - February 2026)
+- 11 RF engineering formula fixes (diversity gain, axial ratio, XPD, TRP, average gain, HPBW)
+- Machine-ID encryption replacing MAC-based key derivation
+- MCP pipeline: import_passive_pair, import_active_processed (20 tools total)
+- Full GUI dark theme on all dialogs, WCAG AA contrast compliance
+- LLM timeout/retry hardening, provider-aware error messages
+- turbo colormap, DPI 300 for saved figures
+- 227 tests, 22% code coverage
+
+### v4.4+ (Planned)
 - Sidelobe detection and reporting
 - Automated figure insertion in reports
 - Complete branding integration
 - Multi-frequency comparison tables
-
-### v4.2 (Planned - Q3 2026)
 - Enhanced vision integration for all providers
 - Simulation vs measurement comparison
-- Automated design recommendations
 - AI-powered anomaly detection
-
-### v4.3 (Planned - Q4 2026)
 - Multi-antenna system analysis
-- Beam steering recommendations
 - MIMO antenna analysis
 - Integration with electromagnetic simulation tools
 

@@ -512,27 +512,37 @@ def _generate_ai_section(data: Dict, opts: ReportOptions, prompt: str) -> str:
 
     try:
         from plot_antenna.api_keys import get_api_key
-        from openai import OpenAI
+        from plot_antenna.llm_provider import create_provider, LLMMessage
+        from plot_antenna import config
 
-        api_key = get_api_key()
-        if not api_key:
-            return "[AI section requires OpenAI API key]"
+        ai_provider = getattr(config, "AI_PROVIDER", "openai")
+
+        if ai_provider in ("openai", "anthropic"):
+            api_key = get_api_key(ai_provider)
+            if not api_key:
+                return f"[AI section requires {ai_provider} API key]"
+
+        # Build provider config
+        if ai_provider == "openai":
+            provider_config = {"api_key": api_key, "model": getattr(config, "AI_OPENAI_MODEL", opts.ai_model)}
+        elif ai_provider == "anthropic":
+            provider_config = {"api_key": api_key, "model": getattr(config, "AI_ANTHROPIC_MODEL", "claude-sonnet-4-20250514")}
+        elif ai_provider == "ollama":
+            provider_config = {"model": getattr(config, "AI_OLLAMA_MODEL", "llama3.1"), "base_url": getattr(config, "AI_OLLAMA_URL", "http://localhost:11434")}
+        else:
+            provider_config = {"api_key": get_api_key("openai"), "model": opts.ai_model}
+
+        provider = create_provider(ai_provider, **provider_config)
 
         # Gather context data
         all_analysis = []
         for freq in data['frequencies'][:3]:
             all_analysis.append(get_all_analysis(freq))
 
-        client = OpenAI(api_key=api_key)
         full_prompt = f"{prompt}\n\nMeasurement Data:\n{chr(10).join(all_analysis)}"
 
-        response = client.chat.completions.create(
-            model=opts.ai_model,
-            messages=[{"role": "user", "content": full_prompt}],
-            max_tokens=500
-        )
-
-        return response.choices[0].message.content or "[AI section unavailable]"
+        response = provider.chat([LLMMessage(role="user", content=full_prompt)], max_tokens=500)
+        return response.content or "[AI section unavailable]"
 
     except Exception as e:
         return f"[AI section generation failed: {str(e)}]"
@@ -560,23 +570,35 @@ def _generate_hardcoded_content(content: Dict, data: Dict, opts: ReportOptions) 
 
 
 def _generate_ai_summary(data: Dict, opts: ReportOptions) -> str:
-    """Generate AI executive summary."""
-    # For now, return a placeholder
-    # In full implementation, this would call OpenAI API
+    """Generate AI executive summary using the unified provider."""
     try:
         from plot_antenna.api_keys import get_api_key
-        from openai import OpenAI
+        from plot_antenna.llm_provider import create_provider, LLMMessage
+        from plot_antenna import config
 
-        api_key = get_api_key()
-        if not api_key:
-            return "[AI Summary requires OpenAI API key]"
+        ai_provider = getattr(config, "AI_PROVIDER", "openai")
+
+        if ai_provider in ("openai", "anthropic"):
+            api_key = get_api_key(ai_provider)
+            if not api_key:
+                return f"[AI Summary requires {ai_provider} API key]"
+
+        # Build provider config
+        if ai_provider == "openai":
+            provider_config = {"api_key": api_key, "model": getattr(config, "AI_OPENAI_MODEL", opts.ai_model)}
+        elif ai_provider == "anthropic":
+            provider_config = {"api_key": api_key, "model": getattr(config, "AI_ANTHROPIC_MODEL", "claude-sonnet-4-20250514")}
+        elif ai_provider == "ollama":
+            provider_config = {"model": getattr(config, "AI_OLLAMA_MODEL", "llama3.1"), "base_url": getattr(config, "AI_OLLAMA_URL", "http://localhost:11434")}
+        else:
+            provider_config = {"api_key": get_api_key("openai"), "model": opts.ai_model}
+
+        provider = create_provider(ai_provider, **provider_config)
 
         # Get analysis data
         all_analysis = []
         for freq in data['frequencies'][:3]:  # Limit to first 3 for summary
             all_analysis.append(get_all_analysis(freq))
-
-        client = OpenAI(api_key=api_key)
 
         prompt = f"""You are an RF engineer analyzing antenna test data.
 Based on the following measurements, write a concise executive summary (2-3 paragraphs)
@@ -587,13 +609,8 @@ Measurements:
 
 Write the executive summary:"""
 
-        response = client.chat.completions.create(
-            model=opts.ai_model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=500
-        )
-
-        return response.choices[0].message.content or "[AI summary unavailable]"
+        response = provider.chat([LLMMessage(role="user", content=prompt)], max_tokens=500)
+        return response.content or "[AI summary unavailable]"
 
     except Exception as e:
         return f"[AI Summary generation failed: {str(e)}]"

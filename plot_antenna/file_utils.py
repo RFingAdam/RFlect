@@ -215,36 +215,51 @@ def parse_passive_file(content):
             "phase": phase,
         }
         all_data.append(freq_data)
-        content = content[start_index + data_points :]
+        # Ensure forward progress to prevent infinite loops
+        min_advance = max(start_index + 1, 1) if start_index is not None else 1
+        content = content[max(start_index + data_points, min_advance):]
 
     return all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta
 
 
 # Checks for matching data between two passive scan files HPOL and VPOL to ensure they are from the same dataset
-def check_matching_files(file1, file2):
+def check_matching_files(file_path1, file_path2):
+    """Verify that two passive measurement files have matching parameters."""
+
+    def _extract_params(content_lines):
+        freq = None
+        angles = []
+        for line in content_lines:
+            if "Test Frequency" in line:
+                try:
+                    freq = float(line.split("=")[1].split()[0])
+                except (IndexError, ValueError):
+                    pass
+            if any(kw in line for kw in ("Start", "Stop", "Inc")) and any(
+                kw in line for kw in ("Phi", "Theta", "Axis")
+            ):
+                angles.append(line.strip())
+        return freq, angles
+
     # Extract filename without extension for comparison
-    filename1 = os.path.splitext(os.path.basename(file1))[0]
-    filename2 = os.path.splitext(os.path.basename(file2))[0]
+    filename1 = os.path.splitext(os.path.basename(file_path1))[0]
+    filename2 = os.path.splitext(os.path.basename(file_path2))[0]
 
     # Check if filenames match excluding the last 4 characters (polarization part)
     if filename1[:-4] != filename2[:-4]:
         return False, "File names do not match."
 
-    # Extract frequency and angular data from files
-    with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
-        content1 = f1.readlines()
-        content2 = f2.readlines()
+    with open(file_path1, "r", encoding="utf-8") as f:
+        content1 = f.readlines()
+    with open(file_path2, "r", encoding="utf-8") as f:
+        content2 = f.readlines()
 
-    # Extracting required data for comparison
-    freq1 = content1[33]
-    freq2 = content2[33]
-    phi1 = content1[42:44]
-    phi2 = content2[42:44]
-    theta1 = content1[49:51]
-    theta2 = content2[49:51]
+    freq1, angles1 = _extract_params(content1)
+    freq2, angles2 = _extract_params(content2)
 
-    if freq1 != freq2 or phi1 != phi2 or theta1 != theta2:
-        return False, "The selected files have mismatched frequency or angle data."
+    # Angle configurations must match for passive pair files
+    if angles1 != angles2:
+        return False, "The selected files have mismatched angle data."
 
     return True, ""
 
