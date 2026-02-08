@@ -473,6 +473,47 @@ def parse_agilent_data(file_path):
     return organized_data
 
 
+def parse_touchstone_to_dataframe(filepath):
+    """Parse a Touchstone .s2p file into a DataFrame compatible with the group delay pipeline.
+
+    Converts complex S-parameters back to the column format used by parse_2port_data:
+    '! Stimulus(Hz)', 'S11(dB)', 'S22(dB)', 'S21(dB)', 'S21(s)'.
+
+    Group delay is computed from the S21 phase: tau = -dphi/(2*pi*df).
+
+    Args:
+        filepath: Path to the .s2p file.
+
+    Returns:
+        pd.DataFrame with columns matching the S2VNA CSV convention.
+    """
+    from .uwb_analysis import parse_touchstone, compute_group_delay_from_s21
+
+    ts = parse_touchstone(filepath)
+    freq = ts['freq_hz']
+    s11 = ts['s11']
+    s21 = ts['s21']
+    s22 = ts['s22']
+
+    s11_dB = 20.0 * np.log10(np.maximum(np.abs(s11), 1e-30))
+    s22_dB = 20.0 * np.log10(np.maximum(np.abs(s22), 1e-30))
+    s21_dB = 20.0 * np.log10(np.maximum(np.abs(s21), 1e-30))
+
+    # Compute group delay from S21 phase
+    gd_result = compute_group_delay_from_s21(freq, s21)
+    group_delay = gd_result['group_delay_s']
+
+    df = pd.DataFrame({
+        '! Stimulus(Hz)': freq,
+        'S11(dB)': s11_dB,
+        'S22(dB)': s22_dB,
+        'S21(dB)': s21_dB,
+        'S21(s)': group_delay,
+    })
+
+    return df
+
+
 # File Utility to Conver Vpol and Hpol Gain Measurement to FFS file for CST Import/Visualization
 def convert_HpolVpol_files(
     vswr_file_path,

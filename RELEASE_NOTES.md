@@ -1,8 +1,8 @@
 # RFlect - Release Notes
 
-## Version 4.0.0 (02/07/2026) - MAJOR RELEASE
+## Version 4.0.0 (02/08/2026) - MAJOR RELEASE
 
-**Complete architecture refactoring, multi-provider AI support, 11 RF engineering fixes, secure API key management, MCP server with 20 tools, and 227 tests.**
+**Complete architecture refactoring, multi-provider AI support, 11 RF engineering fixes, secure API key management, MCP server with 23 tools, UWB analysis suite, and 346 tests.**
 
 ### RF Engineering Fixes
 - **Diversity gain**: Vaughan-Andersen formula `DG = 10*sqrt(1 - ECC^2)` replacing incorrect log-based formula
@@ -75,12 +75,26 @@
 - Fixed 8 bare `except:` clauses with specific exception types
 - Proper Python package with `__init__.py` and package metadata
 
-### MCP Server (20 Tools)
+### UWB Analysis Engine
+- **System Fidelity Factor (SFF)**: Cross-correlation-based `SFF = max_τ |⟨s(t), r(t-τ)⟩| / (‖s‖·‖r‖)` with quality thresholds (Excellent/Very Good/Good/Fair/Poor)
+- **Phase reconstruction**: `φ(f) = φ₀ - 2π∫τ_g(f')df'` from group delay via cumulative trapezoidal integration
+- **Complex S21 from S2VNA data**: Reconstruct phase from S21(s) group delay + S21(dB) magnitude
+- **UWB pulse library**: Gaussian monocycle, modulated Gaussian, 5th derivative Gaussian — auto-centered on measurement band
+- **Transfer function extraction**: Free-space channel removal `H(f) = S21·(4πfd/c)·exp(j2πfd/c)`
+- **Impulse response**: IFFT with Blackman window, pulse width and ringing metrics
+- **S11/VSWR analysis**: Impedance bandwidth, fractional bandwidth, VSWR conversion
+- **Multi-angle SFF**: SFF vs orientation with mean across all angles
+- **Touchstone .s2p support**: Manual parser (no scikit-rf dependency) for RI/MA/DB formats and Hz/kHz/MHz/GHz units
+- **UWB plots**: SFF vs angle, group delay, impulse response, transfer function, input/output pulse overlay, S11/VSWR, group delay variation
+- Fixed broken `calculate_SFF_with_gaussian_pulse()` — was using magnitude-only IFFT, now uses proper phase-reconstructed complex S21 + cross-correlation
+
+### MCP Server (23 Tools)
 - FastMCP-based server for Claude Code, Cline, and other AI assistants
 - Import tools: `import_antenna_file`, `import_antenna_folder`, `import_passive_pair`, `import_active_processed`
 - Analysis tools: gain statistics, pattern analysis, polarization comparison
 - Report tools: DOCX generation with AI summaries and YAML template engine
 - Bulk tools: batch process passive/active folders, CST conversion, file validation
+- UWB tools: `calculate_sff_from_files`, `analyze_uwb_channel`, `get_impedance_bandwidth`
 - Thread-safe measurement store with `threading.Lock`
 - End-to-end analysis pipeline verified against chamber reference data
 
@@ -101,11 +115,13 @@
 - GitHub Actions release workflow: Windows .exe build on version tags
 
 ### Testing
-- 227 tests, all passing
-- `test_mcp_integration.py`: 66 MCP integration tests covering all 20 tools
+- 346 tests, all passing
+- `test_mcp_integration.py`: 66 MCP integration tests covering all 20+ tools
+- `test_uwb_analysis.py`: 33 synthetic UWB tests (93% coverage on `uwb_analysis.py`)
+- `test_uwb_real_data.py`: 8 real data integration tests with GroupDelay measurement files
 - `test_real_data_integration.py`: Real BLE and LoRa chamber data tests
 - `test_api_keys.py`, `test_llm_provider.py`, `test_ai_analysis.py`
-- 22% overall code coverage
+- 24% overall code coverage
 
 ### Bug Fixes
 - Fixed mousewheel crash in scrollable dialogs (global binding persisted after dialog close)
