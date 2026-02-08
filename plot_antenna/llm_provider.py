@@ -144,8 +144,7 @@ class OpenAIProvider(BaseLLMProvider):
                     }
                 )
             elif msg.tool_calls:
-                # Assistant message with tool_calls
-                tc = msg.tool_calls[0]
+                # Assistant message with tool_calls — include all, not just first
                 api_messages.append(
                     {
                         "role": "assistant",
@@ -159,6 +158,7 @@ class OpenAIProvider(BaseLLMProvider):
                                     "arguments": json.dumps(tc.arguments),
                                 },
                             }
+                            for tc in msg.tool_calls
                         ],
                     }
                 )

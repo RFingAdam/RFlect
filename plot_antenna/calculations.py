@@ -520,13 +520,13 @@ def apply_directional_human_shadow(
 # Function to compute Diversity Gain from Envelope Correlation Coefficient (ECC)
 def diversity_gain(ecc):
     """
-    Compute Diversity Gain in dB from ECC.
-      DG = 10·log10(1 / (1 - ECC))
+    Compute Diversity Gain in dB from ECC using the Vaughan-Andersen formula.
+      DG = 10·√(1 − ECC²)
     ecc : array-like of envelope correlation coefficients (0 ≤ ecc < 1)
     returns: array of DG in dB
     """
     ecc = np.clip(ecc, 0, 0.9999)
-    return 10 * np.log10(1.0 / (1.0 - ecc))
+    return 10.0 * np.sqrt(1.0 - np.asarray(ecc) ** 2)
 
 
 # Function to compute MIMO capacity under AWGN + correlation
@@ -644,13 +644,21 @@ def calculate_polarization_parameters(hpol_data, vpol_data, cable_loss=0.0):
         A_theta = np.where(A_theta < epsilon, epsilon, A_theta)
         A_phi = np.where(A_phi < epsilon, epsilon, A_phi)
 
-        # Axial Ratio (AR) calculation for Ludwig-3
-        # AR is the ratio of major to minor axis of polarization ellipse
-        # Direct formula: AR = (|E_θ| + |E_φ|) / ||E_θ| - |E_φ||
-        # AR >= 1, where AR=1 is perfect circular polarization (0 dB)
-        numerator_ar = A_theta + A_phi
-        denominator_ar = np.abs(A_theta - A_phi) + epsilon
-        AR_linear = numerator_ar / denominator_ar
+        # Axial Ratio (AR) via polarization ellipse semi-axes.
+        # The full formula accounts for the phase difference δ between
+        # orthogonal field components:
+        #   AR = |E_major| / |E_minor|
+        # where the semi-axes are derived from:
+        #   a² = ½(A_θ² + A_φ² + √(A_θ⁴ + A_φ⁴ + 2A_θ²A_φ²cos(2δ)))
+        #   b² = ½(A_θ² + A_φ² - √(A_θ⁴ + A_φ⁴ + 2A_θ²A_φ²cos(2δ)))
+        A2_t = A_theta**2
+        A2_p = A_phi**2
+        discriminant = np.sqrt(
+            np.maximum(A2_t**2 + A2_p**2 + 2 * A2_t * A2_p * np.cos(2 * delta), 0)
+        )
+        a_sq = 0.5 * (A2_t + A2_p + discriminant)
+        b_sq = np.maximum(0.5 * (A2_t + A2_p - discriminant), epsilon**2)
+        AR_linear = np.sqrt(a_sq / b_sq)
         axial_ratio_dB = 20 * np.log10(AR_linear)
 
         # Amplitude ratio for other calculations
@@ -671,11 +679,10 @@ def calculate_polarization_parameters(hpol_data, vpol_data, cable_loss=0.0):
         sense = -np.sign(m * np.sin(delta))
 
         # Cross-Polarization Discrimination (XPD)
-        # Ratio of co-pol to cross-pol power
-        # For AR >= 1 (always true by definition): XPD = 10·log₁₀[(AR + 1) / (AR - 1)]
-        # Note: AR_linear is always >= 1 since it's |major axis| / |minor axis|
-        # When AR = 1 (circular polarization), XPD → infinity (handled by epsilon)
-        XPD_dB = 10 * np.log10((AR_linear + 1) / (AR_linear - 1 + epsilon))
+        # XPD is the field (voltage) ratio of co-pol to cross-pol:
+        #   XPD = 20·log₁₀[(AR + 1) / (AR - 1)]
+        # AR_linear >= 1 always. When AR = 1 (circular), XPD → ∞ (clamped by epsilon).
+        XPD_dB = 20 * np.log10((AR_linear + 1) / (AR_linear - 1 + epsilon))
 
         results.append(
             {

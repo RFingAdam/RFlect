@@ -131,7 +131,9 @@ class TestGainStatistics:
         assert stats["scan_type"] == "passive"
         assert stats["max_gain_dBi"] == pytest.approx(10.0)
         assert stats["min_gain_dBi"] == pytest.approx(-5.0)
-        assert stats["avg_gain_dBi"] == pytest.approx(2.5, abs=0.01)
+        # avg_gain is computed in linear domain: 10*log10(mean(10^(dB/10)))
+        # For linspace(-5, 10, 37) this is ~4.578 dBi (not the dB average of 2.5)
+        assert stats["avg_gain_dBi"] == pytest.approx(4.578, abs=0.01)
 
     def test_passive_gain_stats_with_frequency(self):
         """Check that 2D data is sliced by the correct frequency index."""

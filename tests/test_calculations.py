@@ -51,27 +51,28 @@ class TestImports:
 class TestDiversityGain:
     """Tests for the diversity_gain(ecc) function.
 
-    Formula: DG = 10 * log10(1 / (1 - ecc)), ecc clipped to [0, 0.9999].
+    Vaughan-Andersen formula: DG = 10 * sqrt(1 - ECC²), ecc clipped to [0, 0.9999].
     """
 
-    def test_zero_ecc_returns_zero(self):
-        """diversity_gain(0.0) should be 0 dB (no diversity gain when uncorrelated)"""
+    def test_zero_ecc_max_gain(self):
+        """diversity_gain(0.0) should be 10 dB (maximum diversity gain when uncorrelated)"""
+        # DG = 10 * sqrt(1 - 0²) = 10.0
         result = diversity_gain(0.0)
-        assert result == pytest.approx(0.0, abs=1e-10)
+        assert result == pytest.approx(10.0, abs=1e-10)
 
     def test_half_ecc(self):
-        """diversity_gain(0.5) should be approximately 3.01 dB"""
-        # 10*log10(1/(1-0.5)) = 10*log10(2) ≈ 3.0103
-        expected = 10 * np.log10(2.0)
+        """diversity_gain(0.5) should be approximately 8.66 dB"""
+        # 10 * sqrt(1 - 0.5²) = 10 * sqrt(0.75) ≈ 8.6603
+        expected = 10.0 * np.sqrt(1.0 - 0.5**2)
         result = diversity_gain(0.5)
         assert result == pytest.approx(expected, abs=1e-4)
 
     def test_near_one_ecc_clipped(self):
-        """diversity_gain(0.9999) should not crash and should be ~40 dB"""
-        # 10*log10(1/(1-0.9999)) = 10*log10(10000) = 40.0
+        """diversity_gain(0.9999) should approach 0 dB (fully correlated = no diversity)"""
+        # 10 * sqrt(1 - 0.9999²) ≈ 10 * sqrt(0.00019999) ≈ 0.1414
         result = diversity_gain(0.9999)
         assert np.isfinite(result)
-        assert result == pytest.approx(40.0, abs=0.1)
+        assert result == pytest.approx(10.0 * np.sqrt(1.0 - 0.9999**2), abs=0.01)
 
     def test_array_input(self):
         """diversity_gain should accept numpy arrays and return an array"""
@@ -79,8 +80,8 @@ class TestDiversityGain:
         result = diversity_gain(ecc_array)
         assert isinstance(result, np.ndarray)
         assert len(result) == 2
-        assert result[0] == pytest.approx(0.0, abs=1e-10)
-        assert result[1] == pytest.approx(10 * np.log10(2.0), abs=1e-4)
+        assert result[0] == pytest.approx(10.0, abs=1e-10)
+        assert result[1] == pytest.approx(10.0 * np.sqrt(0.75), abs=1e-4)
 
 
 # ---------------------------------------------------------------------------
