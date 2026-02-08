@@ -1,7 +1,6 @@
 # calculations.py
 
 import numpy as np
-from scipy.constants import c  # Speed of light
 from scipy.signal import windows
 
 
@@ -226,109 +225,218 @@ def calculate_passive_variables(
     return theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB
 
 
-# Enhanced NF to FF Transformation
-def apply_nf2ff_transformation(
+def extrapolate_pattern(
     hpol_data,
     vpol_data,
-    frequency,
-    start_phi,
-    stop_phi,
-    inc_phi,
-    start_theta,
-    stop_theta,
-    inc_theta,
-    measurement_distance,
-    window_function="none",
+    target_frequency,
+    fit_degree=2,
+    min_frequencies=5,
 ):
     """
-    Applies Near-Field to Far-Field transformation using Plane Wave Decomposition.
+    Extrapolate antenna pattern to a target frequency using polynomial fitting.
+
+    For each spatial point (theta, phi), fits gain-vs-frequency and phase-vs-frequency
+    curves across the measured band, then evaluates at the target frequency.
 
     Parameters:
-        hpol_data (list): List of dictionaries with 'mag' and 'phase' for horizontal polarization.
-        vpol_data (list): List of dictionaries with 'mag' and 'phase' for vertical polarization.
-        frequency (float): Frequency in MHz.
-        start_phi, stop_phi, inc_phi (float): Phi angle range and increment in degrees.
-        start_theta, stop_theta, inc_theta (float): Theta angle range and increment in degrees.
-        measurement_distance (float): Distance from antenna to probe in meters.
-        window_function (str): Type of window to apply ('none', 'hanning', 'hamming', etc.).
+        hpol_data (list): List of dicts from read_passive_file(), each with
+                          'frequency', 'theta', 'phi', 'mag', 'phase'.
+        vpol_data (list): Matched VPOL data (same structure).
+        target_frequency (float): Target frequency in MHz.
+        fit_degree (int): Polynomial order for magnitude fitting (default 2).
+        min_frequencies (int): Minimum number of frequency points required (default 5).
 
     Returns:
-        hpol_far_field (list): Far-field data for horizontal polarization.
-        vpol_far_field (list): Far-field data for vertical polarization.
+        dict with keys:
+            'hpol': dict with 'frequency', 'theta', 'phi', 'mag', 'phase'
+            'vpol': same structure
+            'confidence': dict with 'extrapolation_ratio', 'mean_r_squared',
+                          'max_estimated_error_dB', 'quality', 'warning'
+            'is_extrapolated': True
+
+    Raises:
+        ValueError: If fewer than min_frequencies data points available.
     """
-    # Calculate wavelength
-    wavelength = c / (frequency * 1e6)  # Convert MHz to Hz
+    if len(hpol_data) < min_frequencies:
+        raise ValueError(
+            f"Need at least {min_frequencies} frequency points for extrapolation, "
+            f"got {len(hpol_data)}"
+        )
 
-    # Prepare theta and phi grids in radians
-    theta = np.deg2rad(np.arange(start_theta, stop_theta + inc_theta, inc_theta))
-    phi = np.deg2rad(np.arange(start_phi, stop_phi + inc_phi, inc_phi))
-    theta_grid, phi_grid = np.meshgrid(theta, phi, indexing="ij")
+    # Build frequency array from measured data
+    freqs = np.array([d["frequency"] for d in hpol_data])
+    measured_min = float(np.min(freqs))
+    measured_max = float(np.max(freqs))
+    measured_bw = measured_max - measured_min
 
-    # Calculate Plane Wave Decomposition coefficients
-    k = 2 * np.pi / wavelength  # Wave number
+    # Number of spatial points (from the first entry)
+    n_points = len(hpol_data[0]["mag"])
 
-    # Initialize far-field lists
-    hpol_far_field = []
-    vpol_far_field = []
+    # Output arrays
+    h_mag_out = np.zeros(n_points)
+    h_phase_out = np.zeros(n_points)
+    v_mag_out = np.zeros(n_points)
+    v_phase_out = np.zeros(n_points)
 
-    # Select window function
-    window = get_window(window_function, theta_grid.shape)
+    r_squared_list = []
 
-    for hpol_entry, vpol_entry in zip(hpol_data, vpol_data):
-        # Convert magnitude (dB) and phase to complex near-field data
-        h_near_field = 10 ** (np.array(hpol_entry["mag"]) / 20) * np.exp(1j * np.deg2rad(hpol_entry["phase"]))
-        v_near_field = 10 ** (np.array(vpol_entry["mag"]) / 20) * np.exp(1j * np.deg2rad(vpol_entry["phase"]))
+    for i in range(n_points):
+        # --- HPOL magnitude ---
+        h_gains = np.array([d["mag"][i] for d in hpol_data])
+        h_coeffs = np.polyfit(freqs, h_gains, fit_degree)
+        h_mag_out[i] = np.clip(np.polyval(h_coeffs, target_frequency), -60.0, 30.0)
 
-        # Apply windowing if selected
-        if window is not None:
-            h_near_field *= window
-            v_near_field *= window
+        # R² for HPOL magnitude fit
+        h_fitted = np.polyval(h_coeffs, freqs)
+        ss_res = np.sum((h_gains - h_fitted) ** 2)
+        ss_tot = np.sum((h_gains - np.mean(h_gains)) ** 2)
+        r2_h = 1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0
+        r_squared_list.append(r2_h)
 
-        # Apply Plane Wave Decomposition
-        h_ff = plane_wave_decomposition(h_near_field, theta_grid, phi_grid, k, measurement_distance)
-        v_ff = plane_wave_decomposition(v_near_field, theta_grid, phi_grid, k, measurement_distance)
+        # --- HPOL phase (linear fit on unwrapped phase) ---
+        h_phases = np.array([d["phase"][i] for d in hpol_data])
+        h_phases_rad = np.unwrap(np.deg2rad(h_phases))
+        h_phase_coeffs = np.polyfit(freqs, h_phases_rad, 1)
+        h_phase_out[i] = np.rad2deg(np.polyval(h_phase_coeffs, target_frequency))
 
-        # Scale far-field based on wavelength and distance
-        scaling_factor = wavelength / (4 * np.pi * measurement_distance)
-        h_ff *= scaling_factor
-        v_ff *= scaling_factor
+        # --- VPOL magnitude ---
+        v_gains = np.array([d["mag"][i] for d in vpol_data])
+        v_coeffs = np.polyfit(freqs, v_gains, fit_degree)
+        v_mag_out[i] = np.clip(np.polyval(v_coeffs, target_frequency), -60.0, 30.0)
 
-        # Convert to magnitude and phase
-        h_far_field_mag = np.abs(h_ff)
-        h_far_field_phase = np.angle(h_ff, deg=True)
+        # R² for VPOL magnitude fit
+        v_fitted = np.polyval(v_coeffs, freqs)
+        ss_res_v = np.sum((v_gains - v_fitted) ** 2)
+        ss_tot_v = np.sum((v_gains - np.mean(v_gains)) ** 2)
+        r2_v = 1.0 - ss_res_v / ss_tot_v if ss_tot_v > 0 else 1.0
+        r_squared_list.append(r2_v)
 
-        v_far_field_mag = np.abs(v_ff)
-        v_far_field_phase = np.angle(v_ff, deg=True)
+        # --- VPOL phase (linear fit on unwrapped phase) ---
+        v_phases = np.array([d["phase"][i] for d in vpol_data])
+        v_phases_rad = np.unwrap(np.deg2rad(v_phases))
+        v_phase_coeffs = np.polyfit(freqs, v_phases_rad, 1)
+        v_phase_out[i] = np.rad2deg(np.polyval(v_phase_coeffs, target_frequency))
 
-        # Append to far-field lists
-        hpol_far_field.append({"mag": h_far_field_mag, "phase": h_far_field_phase})
-        vpol_far_field.append({"mag": v_far_field_mag, "phase": v_far_field_phase})
+    # Confidence metrics
+    nearest_measured = float(freqs[np.argmin(np.abs(freqs - target_frequency))])
+    distance_to_nearest = abs(target_frequency - nearest_measured)
+    extrapolation_ratio = distance_to_nearest / measured_bw if measured_bw > 0 else 1.0
+    mean_r2 = float(np.mean(r_squared_list))
 
-    return hpol_far_field, vpol_far_field
+    # Estimate max error from residuals scaled by extrapolation distance
+    max_estimated_error = distance_to_nearest * (1.0 - mean_r2) * 10.0  # heuristic dB
+
+    if extrapolation_ratio < 0.25:
+        quality = "good"
+        warning = None
+    elif extrapolation_ratio < 0.50:
+        quality = "fair"
+        warning = "Moderate extrapolation — verify against nearby measurements."
+    elif extrapolation_ratio < 0.75:
+        quality = "poor"
+        warning = "Large extrapolation distance — results may be unreliable."
+    else:
+        quality = "unreliable"
+        warning = (
+            "Extrapolation exceeds 75% of measured bandwidth — "
+            "treat results as rough estimates only."
+        )
+
+    # Use theta/phi from the first entry (same grid for all frequencies)
+    return {
+        "hpol": {
+            "frequency": target_frequency,
+            "theta": list(hpol_data[0]["theta"]),
+            "phi": list(hpol_data[0]["phi"]),
+            "mag": h_mag_out.tolist(),
+            "phase": h_phase_out.tolist(),
+        },
+        "vpol": {
+            "frequency": target_frequency,
+            "theta": list(vpol_data[0]["theta"]),
+            "phi": list(vpol_data[0]["phi"]),
+            "mag": v_mag_out.tolist(),
+            "phase": v_phase_out.tolist(),
+        },
+        "confidence": {
+            "extrapolation_ratio": round(extrapolation_ratio, 4),
+            "mean_r_squared": round(mean_r2, 4),
+            "max_estimated_error_dB": round(max_estimated_error, 2),
+            "quality": quality,
+            "warning": warning,
+        },
+        "is_extrapolated": True,
+    }
 
 
-def plane_wave_decomposition(near_field, theta, phi, k, distance):
+def validate_extrapolation(
+    hpol_data,
+    vpol_data,
+    holdout_frequency,
+    fit_degree=2,
+):
     """
-    Performs Plane Wave Decomposition on near-field data to obtain far-field.
+    Validate extrapolation accuracy by holding out a known frequency.
+
+    Removes holdout_frequency from both datasets, runs extrapolate_pattern(),
+    and compares with the actual measurement.
 
     Parameters:
-        near_field (2D np.array): Complex near-field data.
-        theta (2D np.array): Theta angles in radians.
-        phi (2D np.array): Phi angles in radians.
-        k (float): Wave number.
-        distance (float): Measurement distance in meters.
+        hpol_data (list): Full list of HPOL frequency entries.
+        vpol_data (list): Full list of VPOL frequency entries.
+        holdout_frequency (float): Frequency to hold out and predict.
+        fit_degree (int): Polynomial order for magnitude fitting.
 
     Returns:
-        far_field (2D np.array): Complex far-field data.
+        dict with 'holdout_frequency', 'rms_error_dB', 'max_error_dB', 'mean_error_dB'
+
+    Raises:
+        ValueError: If holdout_frequency not found in data.
     """
-    # Calculate the phase shift based on the distance and angle
-    # Assuming spherical measurement, phase shift is -j * k * r * cos(theta)
-    exponent = -1j * k * distance * np.cos(theta)
+    # Find and remove the holdout frequency
+    h_holdout = None
+    v_holdout = None
+    h_train = []
+    v_train = []
 
-    # Apply the phase shift to decompose into far-field
-    far_field = near_field * np.exp(exponent)
+    for h, v in zip(hpol_data, vpol_data):
+        if np.isclose(h["frequency"], holdout_frequency, atol=0.5):
+            h_holdout = h
+            v_holdout = v
+        else:
+            h_train.append(h)
+            v_train.append(v)
 
-    return far_field
+    if h_holdout is None:
+        raise ValueError(f"Holdout frequency {holdout_frequency} MHz not found in data.")
+
+    # Run extrapolation on training data
+    result = extrapolate_pattern(
+        h_train,
+        v_train,
+        holdout_frequency,
+        fit_degree=fit_degree,
+        min_frequencies=max(5, len(h_train)),
+    )
+
+    # Compare extrapolated vs actual (using total gain = HPOL + VPOL in linear)
+    actual_h = np.array(h_holdout["mag"])
+    actual_v = np.array(v_holdout["mag"])
+    extrap_h = np.array(result["hpol"]["mag"])
+    extrap_v = np.array(result["vpol"]["mag"])
+
+    # Errors per polarization
+    h_errors = extrap_h - actual_h
+    v_errors = extrap_v - actual_v
+    all_errors = np.concatenate([h_errors, v_errors])
+
+    return {
+        "holdout_frequency": holdout_frequency,
+        "rms_error_dB": float(np.sqrt(np.mean(all_errors**2))),
+        "max_error_dB": float(np.max(np.abs(all_errors))),
+        "mean_error_dB": float(np.mean(np.abs(all_errors))),
+        "confidence": result["confidence"],
+    }
 
 
 def get_window(window_type, shape):

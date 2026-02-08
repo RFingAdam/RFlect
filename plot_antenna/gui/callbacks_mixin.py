@@ -25,7 +25,7 @@ from ..calculations import (
     determine_polarization,
     calculate_passive_variables,
     calculate_active_variables,
-    apply_nf2ff_transformation,
+    extrapolate_pattern,
     apply_directional_human_shadow,
     angles_match,
 )
@@ -121,7 +121,7 @@ class CallbacksMixin:
     progress_bar: Any
     _processing_lock: bool
     _active_figures: List[Any]
-    _nf2ff_cache: dict
+    _extrapolation_cache: dict
     _measurement_context: dict
 
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
@@ -144,7 +144,7 @@ class CallbacksMixin:
             except Exception:
                 pass
         self._active_figures.clear()
-        self._nf2ff_cache.clear()
+        self._extrapolation_cache.clear()
         self.data = None
         self.hpol_file_path = None
         self.vpol_file_path = None
@@ -805,6 +805,94 @@ class CallbacksMixin:
         self.log_text.see("end")
 
     # ────────────────────────────────────────────────────────────────────────
+    # FREQUENCY EXTRAPOLATION
+    # ────────────────────────────────────────────────────────────────────────
+
+    def _run_extrapolation(self, target_frequency):
+        """Run frequency extrapolation and display results as a standalone operation.
+
+        Args:
+            target_frequency: Target frequency in MHz to extrapolate to.
+        """
+        if not self.hpol_file_path or not self.vpol_file_path:
+            messagebox.showerror("Error", "No passive HPOL/VPOL files loaded.")
+            return
+
+        try:
+            hpol_data, *_ = read_passive_file(self.hpol_file_path)
+            vpol_data, *_ = read_passive_file(self.vpol_file_path)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read passive files: {e}")
+            return
+
+        # Check cache
+        cache_key = (target_frequency, self.hpol_file_path, self.vpol_file_path)
+        if cache_key in self._extrapolation_cache:
+            extrap = self._extrapolation_cache[cache_key]
+            self.log_message("Using cached extrapolation results.", level="info")
+        else:
+            try:
+                self.log_message(f"Extrapolating pattern to {target_frequency} MHz...")
+                extrap = extrapolate_pattern(hpol_data, vpol_data, target_frequency)
+                self._extrapolation_cache[cache_key] = extrap
+            except ValueError as e:
+                messagebox.showerror("Extrapolation Failed", str(e))
+                self.log_message(f"Extrapolation failed: {e}", level="error")
+                return
+
+        # Compute summary stats
+        h_mag = np.array(extrap["hpol"]["mag"])
+        v_mag = np.array(extrap["vpol"]["mag"])
+        # Total gain: power sum of H and V in linear
+        h_lin = 10 ** (h_mag / 10)
+        v_lin = 10 ** (v_mag / 10)
+        total_dB = 10 * np.log10(h_lin + v_lin)
+
+        peak_total = float(np.max(total_dB))
+        peak_hpol = float(np.max(h_mag))
+        peak_vpol = float(np.max(v_mag))
+        # Spherical average with sin(theta) weighting
+        theta_deg = np.array(extrap["hpol"]["theta"])
+        sin_theta = np.sin(np.radians(theta_deg))
+        total_lin = 10 ** (total_dB / 10)
+        if np.sum(sin_theta) > 0:
+            avg_gain = float(10 * np.log10(np.sum(total_lin * sin_theta) / np.sum(sin_theta)))
+        else:
+            avg_gain = float(np.mean(total_dB))
+
+        confidence = extrap["confidence"]
+        quality = confidence["quality"]
+
+        # Log results
+        self.log_message(f"─── Extrapolation to {target_frequency} MHz ───", level="info")
+        self.log_message(f"  Peak Total Gain: {peak_total:.2f} dBi", level="info")
+        self.log_message(f"  Peak HPOL Gain:  {peak_hpol:.2f} dBi", level="info")
+        self.log_message(f"  Peak VPOL Gain:  {peak_vpol:.2f} dBi", level="info")
+        self.log_message(f"  Avg Total Gain:  {avg_gain:.2f} dBi", level="info")
+        self.log_message(
+            f"  Confidence: {quality} (R²={confidence['mean_r_squared']:.3f})",
+            level="info" if quality in ("high", "moderate") else "warning",
+        )
+        if confidence.get("warning"):
+            self.log_message(f"  Warning: {confidence['warning']}", level="warning")
+
+        # Update measurement context
+        self._measurement_context["extrapolation_applied"] = True
+        self._measurement_context["extrapolation_confidence"] = confidence
+
+        # Show summary dialog
+        messagebox.showinfo(
+            f"Extrapolation to {target_frequency} MHz",
+            f"Peak Total Gain: {peak_total:.2f} dBi\n"
+            f"Peak HPOL Gain: {peak_hpol:.2f} dBi\n"
+            f"Peak VPOL Gain: {peak_vpol:.2f} dBi\n"
+            f"Avg Total Gain: {avg_gain:.2f} dBi\n\n"
+            f"Confidence: {quality}\n"
+            f"R²: {confidence['mean_r_squared']:.3f}\n"
+            f"Est. Max Error: {confidence['max_estimated_error_dB']:.1f} dB",
+        )
+
+    # ────────────────────────────────────────────────────────────────────────
     # DATA PROCESSING
     # ────────────────────────────────────────────────────────────────────────
 
@@ -878,28 +966,8 @@ class CallbacksMixin:
                 self.h_gain_dB = h_gain_dB
                 self.total_gain_dB = Total_Gain_dB
 
-                # Apply NF2FF if needed
-                if float(self.selected_frequency.get()) < 500:
-                    measurement_distance = 1.0
-                    window_function = "none"
-                    hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
-                        hpol_data,
-                        vpol_data,
-                        float(self.selected_frequency.get()),
-                        start_phi_h,
-                        stop_phi_h,
-                        inc_phi_h,
-                        start_theta_h,
-                        stop_theta_h,
-                        inc_theta_h,
-                        measurement_distance,
-                        window_function,
-                    )
-                    self.hpol_far_field = hpol_far_field
-                    self.vpol_far_field = vpol_far_field
-                else:
-                    self.hpol_far_field = h_gain_dB
-                    self.vpol_far_field = v_gain_dB
+                self.hpol_far_field = h_gain_dB
+                self.vpol_far_field = v_gain_dB
 
                 return True
 
@@ -1260,39 +1328,8 @@ class CallbacksMixin:
         self.h_gain_dB = h_gain_dB
         self.total_gain_dB = Total_Gain_dB
 
-        # Apply NF2FF transformation if needed (with caching)
-        if float(self.selected_frequency.get()) < 500:
-            cache_key = (
-                float(self.selected_frequency.get()),
-                self.hpol_file_path,
-                self.vpol_file_path,
-            )
-            if cache_key in self._nf2ff_cache:
-                hpol_far_field, vpol_far_field = self._nf2ff_cache[cache_key]
-                self.log_message("Using cached NF2FF results.", level="info")
-                self._measurement_context["nf2ff_applied"] = True
-            else:
-                measurement_distance = 1.0
-                window_function = "none"
-                self.log_message("Applying NF2FF Transformation...")
-                hpol_far_field, vpol_far_field = apply_nf2ff_transformation(
-                    hpol_data,
-                    vpol_data,
-                    float(self.selected_frequency.get()),
-                    start_phi_h,
-                    stop_phi_h,
-                    inc_phi_h,
-                    start_theta_h,
-                    stop_theta_h,
-                    inc_theta_h,
-                    measurement_distance,
-                    window_function,
-                )
-                self._nf2ff_cache[cache_key] = (hpol_far_field, vpol_far_field)
-                self._measurement_context["nf2ff_applied"] = True
-        else:
-            hpol_far_field = h_gain_dB
-            vpol_far_field = v_gain_dB
+        hpol_far_field = h_gain_dB
+        vpol_far_field = v_gain_dB
         self.log_message("Passive data processed successfully.", level="success")
 
         # Update measurement context for AI awareness

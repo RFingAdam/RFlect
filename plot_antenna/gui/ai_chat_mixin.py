@@ -40,6 +40,8 @@ except ImportError:
     AI_CHAT_MAX_TOKENS = 800
 
 from ..api_keys import is_api_key_configured, get_api_key
+from ..file_utils import read_passive_file
+from ..calculations import extrapolate_pattern
 
 from ..plotting import (
     plot_2d_passive_data,
@@ -458,9 +460,16 @@ Ask me anything about your measurements, patterns, or RF analysis!
         if ctx.get("cable_loss_applied"):
             parts.append(f"Cable Loss: {ctx['cable_loss_applied']} dB applied")
 
-        # NF2FF
-        if ctx.get("nf2ff_applied"):
-            parts.append("NF2FF Transformation: Applied")
+        # Frequency extrapolation
+        if ctx.get("extrapolation_applied"):
+            conf = ctx.get("extrapolation_confidence")
+            if conf:
+                parts.append(
+                    f"Frequency Extrapolation: Applied (quality: {conf['quality']}, "
+                    f"R²: {conf['mean_r_squared']:.3f})"
+                )
+            else:
+                parts.append("Frequency Extrapolation: Applied")
 
         # Processing status
         if ctx.get("processing_complete"):
@@ -501,6 +510,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             "analyze_pattern": self._ai_analyze_pattern,
             "compare_polarizations": self._ai_compare_polarizations,
             "analyze_all_frequencies": self._ai_analyze_all_frequencies,
+            "extrapolate_to_frequency": self._ai_extrapolate_to_frequency,
         }
 
         # Build tool definitions (unified format for all providers)
@@ -576,6 +586,20 @@ Ask me anything about your measurements, patterns, or RF analysis!
                 description="Analyze gain/power trends across ALL measured frequencies. Returns resonance frequency, 3dB bandwidth, gain variation, and per-frequency peak gains.",
                 parameters={"type": "object", "properties": {}},
             ),
+            ToolDefinition(
+                name="extrapolate_to_frequency",
+                description="Extrapolate antenna pattern to a target frequency outside the measured range. Uses polynomial fitting across measured frequencies to estimate gain at unmeasured frequencies.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "target_frequency": {
+                            "type": "number",
+                            "description": "Target frequency in MHz to extrapolate to",
+                        },
+                    },
+                    "required": ["target_frequency"],
+                },
+            ),
         ]
 
         # Build enhanced system message
@@ -592,6 +616,7 @@ You can call these functions to help answer user questions:
 4. analyze_pattern(frequency) - Analyze HPBW, front-to-back ratio, null detection, pattern type, beam direction
 5. compare_polarizations(frequency) - Compare HPOL vs VPOL: XPD, polarization balance
 6. analyze_all_frequencies() - Analyze gain/power trends across ALL frequencies
+7. extrapolate_to_frequency(target_frequency) - Estimate antenna pattern at a frequency outside the measured range
 
 **Analysis Guidelines:**
 - Use proper units and terminology (dBi, HPBW, F/B ratio, XPD)
@@ -1469,3 +1494,60 @@ You can call these functions to help answer user questions:
             return json.dumps(result)
         except Exception as e:
             return json.dumps({"error": f"Frequency analysis failed: {str(e)}"})
+
+    def _ai_extrapolate_to_frequency(self, target_frequency):
+        """Extrapolate antenna pattern to a frequency outside the measured range."""
+        try:
+            if not hasattr(self, "hpol_file_path") or not self.hpol_file_path:
+                return json.dumps({"error": "No passive HPOL/VPOL files loaded"})
+            if not hasattr(self, "vpol_file_path") or not self.vpol_file_path:
+                return json.dumps({"error": "No passive HPOL/VPOL files loaded"})
+
+            hpol_data, *_ = read_passive_file(self.hpol_file_path)
+            vpol_data, *_ = read_passive_file(self.vpol_file_path)
+
+            extrap = extrapolate_pattern(hpol_data, vpol_data, target_frequency)
+
+            # Compute summary stats
+            h_mag = np.array(extrap["hpol"]["mag"])
+            v_mag = np.array(extrap["vpol"]["mag"])
+            h_lin = 10 ** (h_mag / 10)
+            v_lin = 10 ** (v_mag / 10)
+            total_dB = 10 * np.log10(h_lin + v_lin)
+
+            peak_total = float(np.max(total_dB))
+            peak_hpol = float(np.max(h_mag))
+            peak_vpol = float(np.max(v_mag))
+
+            # Spherical average with sin(theta) weighting
+            theta_deg = np.array(extrap["hpol"]["theta"])
+            sin_theta = np.sin(np.radians(theta_deg))
+            total_lin = 10 ** (total_dB / 10)
+            if np.sum(sin_theta) > 0:
+                avg_gain = float(10 * np.log10(np.sum(total_lin * sin_theta) / np.sum(sin_theta)))
+            else:
+                avg_gain = float(np.mean(total_dB))
+
+            confidence = extrap["confidence"]
+
+            return json.dumps(
+                {
+                    "target_frequency_MHz": target_frequency,
+                    "is_extrapolated": True,
+                    "peak_total_gain_dBi": round(peak_total, 2),
+                    "peak_hpol_gain_dBi": round(peak_hpol, 2),
+                    "peak_vpol_gain_dBi": round(peak_vpol, 2),
+                    "avg_total_gain_dBi": round(avg_gain, 2),
+                    "confidence": {
+                        "quality": confidence["quality"],
+                        "mean_r_squared": round(confidence["mean_r_squared"], 4),
+                        "max_estimated_error_dB": round(confidence["max_estimated_error_dB"], 1),
+                        "extrapolation_ratio": round(confidence["extrapolation_ratio"], 2),
+                    },
+                    "warning": confidence.get("warning", ""),
+                }
+            )
+        except ValueError as e:
+            return json.dumps({"error": str(e)})
+        except Exception as e:
+            return json.dumps({"error": f"Extrapolation failed: {str(e)}"})

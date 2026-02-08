@@ -96,12 +96,16 @@ class DialogsMixin:
     cb_groupdelay_sff: bool
     CURRENT_VERSION: str
 
+    hpol_file_path: Optional[str]
+    vpol_file_path: Optional[str]
+
     # Method declarations for type checking only (not defined at runtime to avoid MRO conflicts)
     if TYPE_CHECKING:
 
         def resource_path(self, relative_path: str) -> str: ...
         def get_user_data_dir(self) -> str: ...
         def update_visibility(self) -> None: ...
+        def _run_extrapolation(self, target_frequency: float) -> None: ...
 
     # ────────────────────────────────────────────────────────────────────────
     # ABOUT DIALOG
@@ -1454,18 +1458,67 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             self.lbl_max_dbi.grid(row=4, column=2, sticky=tk.W)
             self.ent_max_dbi.grid(row=4, column=3)
 
+            # Extrapolation controls (VPOL/HPOL only)
+            extrap_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
+            self.extrap_freq_var = tk.StringVar(value="")
+            tk.Label(
+                extrap_frame,
+                text="Extrapolate to Freq (MHz):",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).pack(side=tk.LEFT, padx=(0, 5))
+            tk.Entry(
+                extrap_frame,
+                textvariable=self.extrap_freq_var,
+                width=10,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
+            ).pack(side=tk.LEFT, padx=(0, 5))
+
+            has_files = bool(self.hpol_file_path and self.vpol_file_path)
+
+            def _do_extrapolate():
+                val = self.extrap_freq_var.get().strip()
+                if not val:
+                    from tkinter import messagebox as mb
+
+                    mb.showwarning("Input Required", "Enter a target frequency in MHz.")
+                    return
+                try:
+                    freq = float(val)
+                except ValueError:
+                    from tkinter import messagebox as mb
+
+                    mb.showerror("Invalid Input", "Frequency must be a number.")
+                    return
+                self._run_extrapolation(freq)
+
+            extrap_btn = tk.Button(
+                extrap_frame,
+                text="Extrapolate",
+                command=_do_extrapolate,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                state=tk.NORMAL if has_files else tk.DISABLED,
+            )
+            extrap_btn.pack(side=tk.LEFT)
+            extrap_frame.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
+
             # Helper to show / hide controls depending on radio-selection
             def refresh_passive_ui():
                 if self.plot_type_var.get() == "G&D":
                     # hide VPOL/HPOL-only controls
                     self.cb_datasheet_plots.grid_remove()
                     self.cb_ecc_analysis.grid_remove()
+                    extrap_frame.grid_remove()
                     # show G&D-specific
                     self.cb_min_max_eff_gain.grid(row=2, column=1, sticky=tk.W, padx=20)
                 else:  # VPOL/HPOL
                     self.cb_min_max_eff_gain.grid_remove()
                     self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)
                     self.cb_ecc_analysis.grid(row=5, column=0, sticky=tk.W, padx=20)
+                    extrap_frame.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
 
             # first run + connect
             refresh_passive_ui()
@@ -1487,7 +1540,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 command=save_passive_settings,
                 bg=ACCENT_BLUE_COLOR,
                 fg=LIGHT_TEXT_COLOR,
-            ).grid(row=8, column=0, columnspan=4, pady=20)
+            ).grid(row=9, column=0, columnspan=4, pady=20)
 
         elif scan_type_value == "vswr":
             # Show settings specific to VNA with organized LabelFrame sections

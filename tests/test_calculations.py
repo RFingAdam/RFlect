@@ -23,6 +23,8 @@ from plot_antenna.calculations import (
     angles_match,
     calculate_trp,
     process_data,
+    extrapolate_pattern,
+    validate_extrapolation,
 )
 
 
@@ -223,3 +225,117 @@ class TestProcessData:
         mag, phase = process_data(data, phi_deg, theta_deg)
         assert mag.shape == data.shape
         assert phase.shape == data.shape
+
+
+# ---------------------------------------------------------------------------
+# 7. TestExtrapolatePattern
+# ---------------------------------------------------------------------------
+class TestExtrapolatePattern:
+    """Tests for frequency extrapolation engine."""
+
+    @staticmethod
+    def _make_synthetic_data(freqs, n_points=10, slope=0.01, intercept=-5.0):
+        """
+        Create synthetic HPOL/VPOL data with linear gain-vs-frequency.
+
+        Each spatial point has mag = intercept + slope * freq (dB)
+        and phase = -0.5 * freq (degrees, wraps around).
+        """
+        hpol = []
+        vpol = []
+        theta = list(range(n_points))
+        phi = list(range(n_points))
+        for f in freqs:
+            mag_h = [intercept + slope * f + 0.1 * i for i in range(n_points)]
+            mag_v = [intercept + slope * f - 0.1 * i for i in range(n_points)]
+            phase_h = [(-0.5 * f + 10.0 * i) % 360 - 180 for i in range(n_points)]
+            phase_v = [(-0.3 * f + 5.0 * i) % 360 - 180 for i in range(n_points)]
+            hpol.append({
+                "frequency": f, "theta": theta, "phi": phi,
+                "mag": mag_h, "phase": phase_h,
+            })
+            vpol.append({
+                "frequency": f, "theta": theta, "phi": phi,
+                "mag": mag_v, "phase": phase_v,
+            })
+        return hpol, vpol
+
+    def test_interpolation_accuracy(self):
+        """Target within range with linear data → expect < 0.1 dB error."""
+        freqs = list(range(700, 1101, 50))  # 700, 750, ..., 1100
+        hpol, vpol = self._make_synthetic_data(freqs)
+        result = extrapolate_pattern(hpol, vpol, target_frequency=900.0, fit_degree=1)
+        # The synthetic data is linear, so a degree-1 fit should be near-perfect
+        expected_h = [-5.0 + 0.01 * 900 + 0.1 * i for i in range(10)]
+        for i in range(10):
+            assert abs(result["hpol"]["mag"][i] - expected_h[i]) < 0.1
+
+    def test_extrapolation_below_range(self):
+        """Target below measured range returns valid result with confidence info."""
+        freqs = list(range(700, 1101, 50))
+        hpol, vpol = self._make_synthetic_data(freqs)
+        result = extrapolate_pattern(hpol, vpol, target_frequency=500.0)
+        assert result["is_extrapolated"] is True
+        assert result["confidence"]["quality"] in ("good", "fair", "poor", "unreliable")
+        assert len(result["hpol"]["mag"]) == 10
+        assert len(result["vpol"]["mag"]) == 10
+
+    def test_output_format(self):
+        """Verify all required keys are present in the output."""
+        freqs = list(range(700, 1101, 50))
+        hpol, vpol = self._make_synthetic_data(freqs)
+        result = extrapolate_pattern(hpol, vpol, target_frequency=600.0)
+        # Top-level keys
+        assert "hpol" in result
+        assert "vpol" in result
+        assert "confidence" in result
+        assert result["is_extrapolated"] is True
+        # Per-pol keys
+        for pol in ("hpol", "vpol"):
+            assert "frequency" in result[pol]
+            assert "theta" in result[pol]
+            assert "phi" in result[pol]
+            assert "mag" in result[pol]
+            assert "phase" in result[pol]
+        # Confidence keys
+        conf = result["confidence"]
+        assert "extrapolation_ratio" in conf
+        assert "mean_r_squared" in conf
+        assert "max_estimated_error_dB" in conf
+        assert "quality" in conf
+
+    def test_confidence_degrades_with_distance(self):
+        """Extrapolation ratio increases as target moves further from measured range."""
+        freqs = list(range(700, 1101, 50))
+        hpol, vpol = self._make_synthetic_data(freqs)
+        close = extrapolate_pattern(hpol, vpol, target_frequency=650.0)
+        far = extrapolate_pattern(hpol, vpol, target_frequency=400.0)
+        assert far["confidence"]["extrapolation_ratio"] > close["confidence"]["extrapolation_ratio"]
+
+    def test_min_frequencies_guard(self):
+        """Raises ValueError with fewer than min_frequencies points."""
+        hpol, vpol = self._make_synthetic_data([700, 800, 900], n_points=5)
+        with pytest.raises(ValueError, match="Need at least"):
+            extrapolate_pattern(hpol, vpol, target_frequency=600.0, min_frequencies=5)
+
+    def test_phase_unwrap(self):
+        """Phase that wraps 180/-180 should still produce smooth extrapolation."""
+        freqs = list(range(700, 1101, 50))
+        n_points = 5
+        hpol = []
+        vpol = []
+        for f in freqs:
+            # Phase wraps through -180/+180 boundary
+            phase = [(170.0 + 5.0 * (f - 700) / 50.0 + i * 30) % 360 - 180 for i in range(n_points)]
+            hpol.append({
+                "frequency": f, "theta": list(range(n_points)), "phi": list(range(n_points)),
+                "mag": [-10.0] * n_points, "phase": phase,
+            })
+            vpol.append({
+                "frequency": f, "theta": list(range(n_points)), "phi": list(range(n_points)),
+                "mag": [-10.0] * n_points, "phase": phase,
+            })
+        result = extrapolate_pattern(hpol, vpol, target_frequency=650.0)
+        # Just verify it returns finite phases (no NaN from unwrap issues)
+        for p in result["hpol"]["phase"]:
+            assert np.isfinite(p)

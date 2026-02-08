@@ -1,15 +1,20 @@
 """
 Analysis Tools for RFlect MCP Server
 
-Provides pattern analysis, gain statistics, and polarization comparison.
+Provides pattern analysis, gain statistics, polarization comparison,
+and frequency extrapolation.
 Uses plot_antenna.ai_analysis.AntennaAnalyzer for core functionality.
 """
 
+import os
 from typing import Optional, List, Dict, Any
 import json
+import numpy as np
 
 # Import from RFlect
 from plot_antenna.ai_analysis import AntennaAnalyzer
+from plot_antenna.calculations import extrapolate_pattern, validate_extrapolation
+from plot_antenna.file_utils import read_passive_file
 from .import_tools import get_loaded_measurements, LoadedMeasurement
 
 
@@ -287,6 +292,79 @@ def get_all_analysis(
     return "\n".join(results)
 
 
+def extrapolate_to_frequency(
+    hpol_file: str,
+    vpol_file: str,
+    target_frequency: float,
+    fit_degree: int = 2,
+) -> str:
+    """
+    Extrapolate antenna pattern to a target frequency outside the measured range.
+
+    Fits polynomial curves to gain-vs-frequency for each spatial point across
+    the measured band, then evaluates at the target frequency. Useful for
+    estimating performance at frequencies below the chamber's calibration range.
+
+    Args:
+        hpol_file: Path to the H-polarization measurement file
+        vpol_file: Path to the V-polarization measurement file
+        target_frequency: Target frequency in MHz
+        fit_degree: Polynomial order for magnitude fitting (default 2)
+
+    Returns:
+        Extrapolation summary with estimated gain stats and confidence metrics.
+    """
+    for p in (hpol_file, vpol_file):
+        if not os.path.exists(p):
+            return f"Error: File not found: {p}"
+
+    try:
+        h_result = read_passive_file(hpol_file)
+        hpol_data = h_result[0]
+        v_result = read_passive_file(vpol_file)
+        vpol_data = v_result[0]
+
+        freqs = [d["frequency"] for d in hpol_data]
+
+        result = extrapolate_pattern(
+            hpol_data, vpol_data, target_frequency, fit_degree=fit_degree
+        )
+
+        h_mag = np.array(result["hpol"]["mag"])
+        v_mag = np.array(result["vpol"]["mag"])
+        total_linear = 10 ** (h_mag / 10) + 10 ** (v_mag / 10)
+        total_dB = 10 * np.log10(np.maximum(total_linear, 1e-12))
+
+        conf = result["confidence"]
+
+        output = f"Frequency Extrapolation to {target_frequency} MHz\n"
+        output += "=" * 50 + "\n\n"
+        output += f"Measured range: {min(freqs):.1f} - {max(freqs):.1f} MHz "
+        output += f"({len(freqs)} frequencies)\n"
+        output += f"Target: {target_frequency} MHz\n\n"
+
+        output += "Estimated Gain Statistics\n"
+        output += "-" * 30 + "\n"
+        output += f"  Peak Total Gain: {_fmt(float(np.max(total_dB)))} dBi\n"
+        output += f"  Avg Total Gain:  {_fmt(float(np.mean(total_dB)))} dBi\n"
+        output += f"  Peak HPOL Gain:  {_fmt(float(np.max(h_mag)))} dBi\n"
+        output += f"  Peak VPOL Gain:  {_fmt(float(np.max(v_mag)))} dBi\n\n"
+
+        output += "Confidence\n"
+        output += "-" * 30 + "\n"
+        output += f"  Quality: {conf['quality']}\n"
+        output += f"  Extrapolation Ratio: {conf['extrapolation_ratio']:.3f}\n"
+        output += f"  Mean R²: {conf['mean_r_squared']:.4f}\n"
+        output += f"  Est. Max Error: {conf['max_estimated_error_dB']:.1f} dB\n"
+        if conf.get("warning"):
+            output += f"  Warning: {conf['warning']}\n"
+
+        return output
+
+    except Exception as e:
+        return f"Error during extrapolation: {str(e)}"
+
+
 # ---- MCP tool registration (wraps the standalone functions above) ----
 
 def register_analysis_tools(mcp):
@@ -297,3 +375,4 @@ def register_analysis_tools(mcp):
     mcp.tool()(get_gain_statistics)
     mcp.tool()(compare_polarizations)
     mcp.tool()(get_all_analysis)
+    mcp.tool()(extrapolate_to_frequency)

@@ -425,9 +425,14 @@ class AntennaAnalyzer:
                 # Directivity and efficiency estimation (Kraus approximation)
                 # Kraus is only valid for directive patterns; when either HPBW
                 # exceeds 180° the approximation breaks down and can yield η>100%.
-                if (hpbw_e is not None and hpbw_h is not None
-                        and hpbw_e > 0 and hpbw_h > 0
-                        and hpbw_e <= 180 and hpbw_h <= 180):
+                if (
+                    hpbw_e is not None
+                    and hpbw_h is not None
+                    and hpbw_e > 0
+                    and hpbw_h > 0
+                    and hpbw_e <= 180
+                    and hpbw_h <= 180
+                ):
                     directivity_linear = 41253.0 / (hpbw_e * hpbw_h)
                     directivity_dBi = float(10.0 * np.log10(directivity_linear))
                     analysis["estimated_directivity_dBi"] = round(directivity_dBi, 2)
