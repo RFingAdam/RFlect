@@ -5,7 +5,7 @@
 <h1 align="center">RFlect</h1>
 
 <p align="center">
-  <strong>Antenna measurement visualization and analysis for RF engineers.</strong>
+  <strong>The RF engineer's toolkit for antenna measurement visualization and analysis.</strong>
 </p>
 
 <p align="center">
@@ -17,22 +17,28 @@
 
 ---
 
-RFlect processes antenna measurement data from the **Howland 3100 Antenna Chamber** (WTL format), **Copper Mountain VNA** exports, and **CST** far-field simulation files. It computes TRP, passive gain, polarization parameters, and efficiency metrics with IEEE-standard methods, then generates publication-ready 2D/3D radiation pattern plots.
+RFlect takes raw antenna measurement data and turns it into publication-ready 2D/3D radiation pattern plots, TRP calculations, polarization analysis, and efficiency metrics — all validated against IEEE-standard methods. Whether you're characterizing a BLE chip antenna or qualifying a cellular array, RFlect handles the heavy lifting so you can focus on the engineering.
+
+<p align="center">
+  <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
+</p>
 
 ## New in v4.0
 
-- **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. All formulas verified against IEEE references and chamber data.
-- **Modern dark GUI** — Complete visual overhaul with dark ttk theme, color-coded logs, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance across all dialogs.
-- **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama with timeout/retry hardening. AI chat assistant, report generation, and vision-based analysis.
-- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
-- **MCP server (20 tools)** — Programmatic antenna analysis for Claude Code and other AI assistants. End-to-end pipeline verified against chamber reference data.
-- **227 tests** — Up from ~50 in v3.x. Integration tests with real BLE and LoRa chamber data.
+This is a ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and battle-tested math.
+
+- **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. Every formula verified against IEEE references and real chamber data.
+- **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance across every dialog.
+- **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
+- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration. Your keys never leave your machine.
+- **MCP server with 20 tools** — Programmatic antenna analysis for Claude Code and other AI assistants. Full end-to-end pipeline verified to match chamber reference data.
+- **227 tests** — Up from ~50 in v3.x, with integration tests against real BLE and LoRa chamber measurements.
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 
 ## Quick Start
 
-**Windows:** Download `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases).
+**Windows:** Grab `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases) — no install required.
 
 **From source:**
 ```bash
@@ -43,9 +49,9 @@ pip install -r requirements.txt
 python run_rflect.py
 ```
 
-## Supported Data
+## What It Handles
 
-| Scan Type | Input Format | Analysis |
+| Scan Type | Input Format | What You Get |
 |-----------|-------------|----------|
 | **Active TRP** | WTL `.txt` (V5.02/V5.03) | TRP, H/V power, 2D/3D radiation patterns |
 | **Passive Gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
@@ -55,13 +61,17 @@ python run_rflect.py
 
 ## Usage
 
-1. **Select scan type** (Active, Passive, or VNA)
-2. **Adjust settings** if needed (cable loss, limit lines, frequency range)
-3. **Import file(s)** via the Import button or `Ctrl+O`
-4. **View results** — plots render automatically; use `Ctrl+R` to reprocess
+1. **Select scan type** — Active, Passive, or VNA
+2. **Adjust settings** — cable loss, limit lines, frequency range, 3D scale
+3. **Import your files** via the Import button or `Ctrl+O`
+4. **View results** — plots render automatically; hit `Ctrl+R` to reprocess
+
+<p align="center">
+  <img src="./assets/passive_settings.png" alt="Passive Settings Dialog" width="500">
+</p>
 
 <details>
-<summary><strong>Screenshots (click to expand)</strong></summary>
+<summary><strong>Example Results (click to expand)</strong></summary>
 
 ### Passive Measurements
 
@@ -71,25 +81,23 @@ python run_rflect.py
 **HPOL/VPOL 1D** — Efficiency and total gain vs frequency:
 ![Passive 1D](./assets/python_1d_results.png)
 
-**2D Azimuth Cuts** — Gain pattern for various theta angles:
+**2D Azimuth Cuts** — Gain pattern across theta angles:
 ![Passive 2D](./assets/python_passive_2d_results_azimuth.png)
 
 **Datasheet Plots** — Peak gain per polarization, polar cuts at key planes:
 ![Datasheet 1D](./assets/python_1d_results_datasheet.png)
 ![Datasheet 2D](./assets/python_2d_results_datasheet.png)
 
-**3D Radiation Patterns** — Phi, theta, and total gain:
+**3D Radiation Patterns** — Total gain with turbo colormap:
 ![Passive 3D](./assets/python_passive_3d_results.png)
 
 ### Active TRP Measurements
 
-**2D Power Cuts:**
 ![Active 2D](./assets/python_active_2d_results_azimuth.png)
 ![Active Datasheet](./assets/python_active_2d_results_datasheet.png)
 
 ### VNA / S-Parameters
 
-**S-Parameter Overlay:**
 ![VNA Results](./assets/python_vna_results.png)
 
 **Group Delay Analysis:**
@@ -100,23 +108,27 @@ python run_rflect.py
 ## Key Features
 
 - **Polarization Analysis** — Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
-- **Batch Processing** — Automatically find and process all HPOL/VPOL pairs or TRP files in a directory with organized per-pair output folders
-- **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated analysis
-- **3D Visualization** — Turbo colormap, transparent panes, coordinate axes on top, manual or auto Z-axis scaling
+- **Batch Processing** — Point it at a folder and let it find and process all HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
+- **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated executive analysis
+- **3D Visualization** — Perceptually uniform turbo colormap, transparent panes, coordinate axes, and manual or auto Z-axis scaling
 
-## AI Features (Optional)
+## AI-Powered Analysis (Optional)
 
-RFlect integrates with **OpenAI**, **Anthropic**, and **Ollama** for intelligent measurement analysis. Features include a chat assistant with function-calling tools, AI-powered report generation, and vision-based plot analysis. All AI features are optional — core functionality works without any provider configured.
+RFlect integrates with **OpenAI**, **Anthropic**, and **Ollama** to bring intelligent analysis to your measurement workflow. Ask questions about your data in natural language, get AI-generated executive summaries in reports, or let vision models interpret your radiation patterns.
 
-API keys are stored securely using OS keyring or Fernet-encrypted files bound to your machine ID. Configure via **Tools > Manage API Keys**.
+All AI features are completely optional — RFlect works fully without any provider configured. When you're ready, configure a provider via **Tools > Manage API Keys**. Your keys are encrypted locally with AES-128 and never leave your machine.
+
+<p align="center">
+  <img src="./assets/api_key_management.png" alt="API Key Management" width="440">
+</p>
 
 See [AI_STATUS.md](AI_STATUS.md) for provider details and supported models.
 
 ## MCP Server
 
-RFlect includes an [MCP](https://modelcontextprotocol.io/) server with 20 tools for programmatic antenna analysis via AI assistants like Claude Code. Import measurements, run analysis, and generate reports without the GUI.
+RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 20 tools that let AI assistants like Claude Code import your measurements, run analysis, and generate reports programmatically. No GUI required.
 
-See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and tool reference.
+See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
 
 ## Project Structure
 
@@ -143,7 +155,7 @@ python -m pytest tests/                    # run tests
 pyinstaller RFlect.spec                    # build exe
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, architecture details, and test guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, architecture details, and how to get involved.
 
 ## License
 
