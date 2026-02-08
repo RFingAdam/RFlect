@@ -1,5 +1,239 @@
 # RFlect - Release Notes
 
+## Version 4.0.0 (02/08/2026) - MAJOR RELEASE
+
+**Complete architecture refactoring, multi-provider AI support, 11 RF engineering fixes, secure API key management, MCP server with 23 tools, UWB analysis suite, and 346 tests.**
+
+### RF Engineering Fixes
+- **Diversity gain**: Vaughan-Andersen formula `DG = 10*sqrt(1 - ECC^2)` replacing incorrect log-based formula
+- **Axial ratio**: Polarization ellipse semi-axes with phase difference delta (`cos(2*delta)` discriminant)
+- **XPD from AR**: Field ratio uses `20*log10` (was incorrectly `10*log10`)
+- **TRP calculation**: IEEE solid-angle integration verified to 0.002 dB of chamber reference
+- **Average gain**: Linear domain averaging instead of dB domain
+- **HPBW**: Modular arithmetic for 0/360 degree boundary wrapping
+- **NaN propagation floor** in `Total_Gain_dB` (prevents `log(0)`)
+- **angles_match**: `np.isclose()` with `bool()` wrapper for floating-point comparison
+- **capacity_monte_carlo**: Enforces scalar ECC input
+- **Frequency alignment**: Validates HPOL/VPOL frequency match at import
+- **UTF-8 encoding** on file readers (`determine_polarization`, `extract_passive_frequencies`)
+
+### Modern GUI Overhaul
+- Custom dark ttk theme based on `clam` with styled widgets across the entire application
+- Branded header bar with Smith chart logo, red "RFlect" title, subtitle, and version badge
+- Dark theme applied to ALL settings Toplevel dialogs (active, passive, VSWR)
+- Action buttons bar with flat, icon-prefixed buttons and hover effects
+- Monospace output log panel with dark background
+- Color-coded logs: Info (white), Success (green), Warning (amber), Error (red)
+- Dark-themed menus, combobox dropdowns, tooltips, and scrollbars
+- Increased default window size to 850x600 with 700x500 minimum
+- WCAG AA contrast fix: `DISABLED_FG_COLOR #A0A0A0` (5.6:1 ratio on `#2E2E2E`)
+- Ctrl+R / F5 keyboard shortcuts for process data
+- Re-import confirmation dialog before overwriting loaded data
+- Bulk processing runs in background thread with progress window
+- Semantic version comparison for update checks
+- Processing lock prevents double-clicks during data processing
+- VSWR input validation with frequency range check
+- Settings persistence for VSWR limits via `user_settings.json`
+
+### Multi-Provider AI Support
+- **Unified LLM Provider Abstraction** (`llm_provider.py`)
+  - Common interface for OpenAI, Anthropic, and Ollama
+  - Unified data types: `LLMMessage`, `ToolDefinition`, `ToolCall`, `LLMResponse`
+  - Provider-agnostic tool calling loop
+  - Factory function `create_provider()` and `get_available_providers()`
+- **OpenAI Provider**: Chat Completions API (GPT-4) + Responses API (GPT-5) with vision
+- **Anthropic Provider**: Messages API with tool use and vision
+- **Ollama Provider**: Local LLM support (llama3.1, qwen2.5, llava for vision, etc.)
+- **LLM timeout/retry**: OpenAI/Anthropic `timeout=30s` `max_retries=3`, Ollama `timeout=60s`
+- **AI Chat Assistant**: Quick-action buttons, multi-turn conversations, rich measurement context
+- **AI Settings Dialog**: Provider selection, model lists, Ollama URL field
+- **Report Generation**: Provider-aware error messages, works with any configured provider
+
+### Secure API Key Management
+- **Fernet AES-128 encryption** (HMAC-SHA256) with PBKDF2 key derivation (600K iterations)
+- **Machine-ID encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows)
+- OS keyring integration (Windows Credential Manager, macOS Keychain, Linux keyring)
+- Restrictive file permissions (`chmod 600` / Windows ACL)
+- Multi-provider tabbed dialog (OpenAI, Anthropic, Ollama)
+- Key validation via threaded "Test Connection" button
+- Keys stored in `_key_cache` dict instead of `os.environ`
+- Legacy base64 auto-migration from pre-4.0.0 storage
+
+### AI Analysis Engine
+- `AntennaAnalyzer` class: GUI-independent, reusable for MCP and programmatic access
+- HPBW (Half-Power Beamwidth) calculation for E-plane and H-plane
+- Front-to-back ratio with proper direction identification
+- Batch frequency analysis: resonance detection, 3dB bandwidth, gain stability
+- Pattern classification (omnidirectional, sectoral, directional)
+- Antenna engineering domain knowledge in AI prompts
+
+### Architecture Refactoring
+- **GUI Refactored to Mixin-Based Design**
+  - Migrated from monolithic `gui.py` (4,331 lines) to modular architecture:
+    `main_window.py`, `dialogs_mixin.py`, `ai_chat_mixin.py`, `tools_mixin.py`, `callbacks_mixin.py`
+- Consolidated duplicate code (`DualOutput`, utility functions, API key methods)
+- Fixed 8 bare `except:` clauses with specific exception types
+- Proper Python package with `__init__.py` and package metadata
+
+### UWB Analysis Engine
+- **System Fidelity Factor (SFF)**: Cross-correlation-based `SFF = max_τ |⟨s(t), r(t-τ)⟩| / (‖s‖·‖r‖)` with quality thresholds (Excellent/Very Good/Good/Fair/Poor)
+- **Phase reconstruction**: `φ(f) = φ₀ - 2π∫τ_g(f')df'` from group delay via cumulative trapezoidal integration
+- **Complex S21 from S2VNA data**: Reconstruct phase from S21(s) group delay + S21(dB) magnitude
+- **UWB pulse library**: Gaussian monocycle, modulated Gaussian, 5th derivative Gaussian — auto-centered on measurement band
+- **Transfer function extraction**: Free-space channel removal `H(f) = S21·(4πfd/c)·exp(j2πfd/c)`
+- **Impulse response**: IFFT with Blackman window, pulse width and ringing metrics
+- **S11/VSWR analysis**: Impedance bandwidth, fractional bandwidth, VSWR conversion
+- **Multi-angle SFF**: SFF vs orientation with mean across all angles
+- **Touchstone .s2p support**: Manual parser (no scikit-rf dependency) for RI/MA/DB formats and Hz/kHz/MHz/GHz units
+- **UWB plots**: SFF vs angle, group delay, impulse response, transfer function, input/output pulse overlay, S11/VSWR, group delay variation
+- Fixed broken `calculate_SFF_with_gaussian_pulse()` — was using magnitude-only IFFT, now uses proper phase-reconstructed complex S21 + cross-correlation
+
+### MCP Server (23 Tools)
+- FastMCP-based server for Claude Code, Cline, and other AI assistants
+- Import tools: `import_antenna_file`, `import_antenna_folder`, `import_passive_pair`, `import_active_processed`
+- Analysis tools: gain statistics, pattern analysis, polarization comparison
+- Report tools: DOCX generation with AI summaries and YAML template engine
+- Bulk tools: batch process passive/active folders, CST conversion, file validation
+- UWB tools: `calculate_sff_from_files`, `analyze_uwb_channel`, `get_impedance_bandwidth`
+- Thread-safe measurement store with `threading.Lock`
+- End-to-end analysis pipeline verified against chamber reference data
+
+### Plotting/Parser
+- **turbo** colormap replaces **jet** for perceptual uniformity
+- DPI 300 for saved figures (was default 100)
+- `check_matching_files` uses keyword-based search instead of hardcoded line indices
+- Infinite loop prevention in passive parser
+- `_get_gain_grid` returns `None` on reshape mismatch instead of 1D data
+- NF2FF caching by (frequency, file pair)
+- Individual figure close on reset instead of `plt.close("all")`
+
+### Release Infrastructure
+- `requirements.txt` and `requirements-dev.txt` with versioned dependencies
+- `pyproject.toml` following PEP 621 with optional dependency groups (dev, ai, exe)
+- `.bumpversion.cfg` for automated version bumping
+- GitHub Actions CI: multi-OS (Ubuntu, Windows, macOS), multi-Python (3.11, 3.12), coverage, linting
+- GitHub Actions release workflow: Windows .exe build on version tags
+
+### Testing
+- 346 tests, all passing
+- `test_mcp_integration.py`: 66 MCP integration tests covering all 20+ tools
+- `test_uwb_analysis.py`: 33 synthetic UWB tests (93% coverage on `uwb_analysis.py`)
+- `test_uwb_real_data.py`: 8 real data integration tests with GroupDelay measurement files
+- `test_real_data_integration.py`: Real BLE and LoRa chamber data tests
+- `test_api_keys.py`, `test_llm_provider.py`, `test_ai_analysis.py`
+- 24% overall code coverage
+
+### Bug Fixes
+- Fixed mousewheel crash in scrollable dialogs (global binding persisted after dialog close)
+- Fixed PyInstaller compatibility (upgraded to 6.18.0 for setuptools 80+)
+- Reduced .exe size from ~3.1 GB to ~135 MB via targeted excludes
+- Lambda scoping bug in exception handlers (Python 3 deletes `e` after except block)
+- File parser IndexError protection for malformed TRP headers
+
+### Migration Notes
+- No user action required — update via installer
+- Developers: Run `pip install -r requirements.txt` to update dependencies
+- API key storage location unchanged (AppData/RFlect)
+- All existing measurement files remain compatible
+
+---
+
+## Version 3.2.0 (11/18/2025)
+- **Added Interactive Polarization Analysis Tool**
+  - Calculate and visualize polarization parameters from HPOL/VPOL passive measurements
+  - Two analysis modes available in Tools menu:
+    - **Polarization Analysis (Export)**: Batch export all frequencies to CSV/TXT files
+    - **Polarization Analysis (Interactive)**: Live visualization with frequency selection
+  - Calculated parameters include:
+    - Axial Ratio (AR) in dB - measure of polarization ellipticity
+    - Tilt Angle in degrees - orientation of polarization ellipse
+    - Polarization Sense - LHCP vs RHCP classification
+    - Cross-Polarization Discrimination (XPD) in dB
+  - **2D Visualizations** (6 subplots):
+    - AR, Tilt, Sense, and XPD contour maps
+    - Polar plots of AR and Tilt at horizon (θ=90°)
+  - **3D Visualizations** (2 spherical plots):
+    - AR sphere with color and radius varying by axial ratio
+    - Polarization sense sphere (Red=LHCP, Blue=RHCP)
+    - High-resolution interpolation (120×180 points) for smooth rendering
+    - Enhanced shading and antialiasing for professional appearance
+- **Enhanced 3D Plot Visualization**
+  - Improved coordinate axis visibility in all 3D radiation pattern plots
+  - Transparent background panes allow axes to show through the surface
+  - Disabled depth shading on coordinate arrows (always render on top)
+  - Increased arrow thickness (2.5px) for better visibility
+  - Removed all axis tick labels for cleaner appearance
+  - Applied to Active TRP, Passive Gain, and Polarization 3D plots
+- **Professional GUI Enhancements**
+  - Added comprehensive menu structure (File/Tools/Help)
+  - **File Menu**: Import, Recent Files (5 file history), Clear Recent, Exit
+  - **Help Menu**: About, API Key Management, AI Settings, Updates, GitHub links
+  - Recent files automatically load correct scan type (Active/Passive)
+  - Status bar at bottom shows real-time operation feedback
+  - Keyboard shortcuts: Ctrl+O (import), Ctrl+Q (exit)
+  - Professional About dialog with logo, version, license info
+- **Advanced AI Configuration & Features**
+  - **AI Settings Dialog** (Help → AI Settings):
+    - Model selection dropdown (GPT-4o-mini, GPT-4o, GPT-5, O3, etc.)
+    - Response style configuration (concise/detailed)
+    - Max token/verbosity control
+    - Reasoning effort levels for GPT-5 models
+    - Settings saved to `config_local.py` for persistence
+  - **AI Chat Assistant** (Tools → AI Chat Assistant):
+    - **Fully integrated with OpenAI API** for real-time conversational analysis
+    - **Complete Function-Calling Implementation**:
+      - `generate_2d_plot` - Create 2D radiation pattern descriptions with gain statistics
+      - `generate_3d_plot` - Create 3D spherical pattern descriptions with peak locations
+      - `get_gain_statistics` - Calculate min/max/avg gain, standard deviation, frequency analysis
+      - `analyze_pattern` - Comprehensive pattern analysis (nulls, beamwidth, front-to-back ratio, pattern type)
+      - `compare_polarizations` - Full HPOL vs VPOL comparison with cross-pol discrimination (XPD)
+    - **Interactive Analysis**: AI executes Python functions on demand based on user questions
+    - **Detailed Metrics**: All functions return comprehensive JSON data for AI analysis
+    - Context-aware responses based on current scan type and loaded files
+    - Persistent chat history within session for follow-up questions
+    - Automatic data context injection (frequencies, file names, scan types)
+    - Interactive Q&A about radiation patterns, efficiency, and RF metrics
+    - Supports all configured AI models (GPT-4, GPT-5, O3, etc.)
+    - Clean error handling with descriptive messages
+    - Shift+Enter for newline, Enter to send message
+    - Clean error handling with helpful troubleshooting messages
+  - **Secure API Key Storage**:
+    - Keys stored in user's AppData folder (not in app directory)
+    - Base64 obfuscation for security
+    - Encrypted storage at %LOCALAPPDATA%\RFlect\.openai_key
+    - GUI-based key management (no manual .env editing)
+    - Works across Windows/macOS/Linux
+  - OpenAI API key automatically enables AI features in Tools menu
+- **Fixed Critical Task Manager Hanging Issue**
+  - Added proper window close protocol handler (`WM_DELETE_WINDOW`) in `gui.py`
+  - Implemented `on_closing()` cleanup method to properly shut down matplotlib figures and Tkinter
+  - Application now terminates cleanly when closed, eliminating persistent background processes
+- **Resolved Memory Leaks in Matplotlib Figure Management**
+  - Added `plt.close('all')` before all `plt.show()` calls in `groupdelay.py` (5 locations)
+  - Added `plt.close('all')` before all `plt.show()` calls in `plotting.py` (11 locations)
+  - Prevents accumulation of matplotlib figures in memory during interactive plotting sessions
+  - Significantly reduces memory footprint when generating multiple plots
+- **Code Quality and Maintainability Improvements**
+- **Enhanced AI-Powered Report Generation**
+  - Dual-API support: Chat Completions API (GPT-4 family) and Responses API (GPT-5 family)
+  - Configurable AI behavior via `config.py`: model selection, verbosity, reasoning effort, response style
+  - Intelligent executive summaries and context-aware conclusions based on measurement analysis
+- Replaced deprecated `scipy.interpolate.interp2d` with `RegularGridInterpolator` for SciPy 1.14.0+ compatibility
+- Fixed deprecated NumPy function: replaced `np.trapz` with `np.trapezoid` for Python 3.12+ compatibility
+- Corrected type checking errors in `file_utils.py` for robust null validation on angle parameters
+- Fixed type checking errors in `gui.py`:
+  - Fixed type mismatches for `zmin`/`zmax` parameters to accept float values
+  - Added null checking for user input dialogs to prevent runtime errors
+- Fixed type checking errors in `plotting.py`:
+- Corrected 3D plotting axis for consistency with displaying
+- Additional settings options for mix/max of active TRP measurements
+- Added support for limit lines for VNA 2-port measurements
+- Added batch processing for multiple passive scans in a folder with results saved in a subfolder
+- Added batch processing for multiple active scans in a folder with results saved in a subfolder
+- Added support for 3D plotting Autoscale or manual fixed scaling for comparison of multiple scans
+- Added support for Group Delay/Fidelity/ECC analysis for CST files
+- Added support for Envelope Correlation Coefficient (ECC) from 2 antenna measurements of HPOL/VPOL files
+
 ## Version 3.1.0 (2/5/2025)
 - Corrected Active TRP Measurement Calculation before Phi=0/360 append
 - Corrected Active Save Results to File for TRP Measurements

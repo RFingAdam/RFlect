@@ -4,6 +4,11 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
 # Compiled C extensions
 *.so
 *.dll
@@ -12,12 +17,61 @@ __pycache__/
 build/
 dist/
 debug/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv_clean/
+.claude/
 
 # PyInstaller spec files
 *.spec
+!RFlect.spec
 
 # Icon files
 *.ico
 
-#OpenApi Key
+# Company logo files (users should add their own)
+*_logo.png
+*_logo.jpg
+*_logo.jpeg
+*_logo.svg
+assets/*_logo.*
+!assets/rflect_logo.svg
+!assets/smith_logo.png
+
+# Local configuration (company-specific branding)
+plot_antenna/config_local.py
+
+# Environment files (API keys) - NEVER COMMIT
+.env
+*.env
 openapi.env
+openai.env
+.env.local
+
+# User-specific files
+recent_files.json
+user_settings.json
+
+# Archive directory
+plot_antenna/_archive/
+
+# Temp. files
+AI_CHAT_WORKFLOW.md
+
+# IDE config
+.vscode/
+*.code-workspace
+.idea/
+pyrightconfig.json
+
+# Ruff cache
+.ruff_cache/
+
+# MyPy cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+venv_build/
