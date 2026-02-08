@@ -30,6 +30,8 @@ from plot_antenna.calculations import (
     calculate_polarization_parameters,
     extract_passive_frequencies,
     angles_match,
+    extrapolate_pattern,
+    validate_extrapolation,
 )
 from plot_antenna.ai_analysis import AntennaAnalyzer
 
@@ -874,3 +876,59 @@ class TestCalculateTRP:
 
         trp_h = calculate_trp(h_power_2d, theta_angles_rad, data["Inc Theta"], data["Inc Phi"])
         assert np.isfinite(trp_h)
+
+
+# ===========================================================================
+# 8. Frequency Extrapolation
+# ===========================================================================
+class TestFrequencyExtrapolation:
+    """Holdout validation tests for frequency extrapolation using real data."""
+
+    def test_lora_holdout_700mhz(self):
+        """Fit 750-1100 MHz LoRa data, extrapolate to 700 MHz, expect RMS < 3 dB."""
+        hpol_data, *_ = read_passive_file(PASSIVE_LORA_HPOL)
+        vpol_data, *_ = read_passive_file(PASSIVE_LORA_VPOL)
+
+        # Find the lowest frequency to hold out
+        freqs = sorted(set(d["frequency"] for d in hpol_data))
+        holdout_freq = freqs[0]  # Lowest measured frequency
+
+        result = validate_extrapolation(
+            hpol_data, vpol_data, holdout_freq, fit_degree=2
+        )
+        assert result["rms_error_dB"] < 3.0, (
+            f"RMS error {result['rms_error_dB']:.2f} dB exceeds 3 dB threshold"
+        )
+
+    def test_ble_holdout_interpolation(self):
+        """Hold out a mid-band BLE frequency (interpolation), expect RMS < 1 dB."""
+        hpol_data, *_ = read_passive_file(PASSIVE_BLE_HPOL)
+        vpol_data, *_ = read_passive_file(PASSIVE_BLE_VPOL)
+
+        freqs = sorted(set(d["frequency"] for d in hpol_data))
+        # Pick a frequency near the middle of the band
+        mid_idx = len(freqs) // 2
+        holdout_freq = freqs[mid_idx]
+
+        result = validate_extrapolation(
+            hpol_data, vpol_data, holdout_freq, fit_degree=2
+        )
+        assert result["rms_error_dB"] < 1.5, (
+            f"RMS error {result['rms_error_dB']:.2f} dB exceeds 1.5 dB threshold "
+            f"for interpolation at {holdout_freq} MHz"
+        )
+
+    def test_confidence_increases_with_distance(self):
+        """Extrapolation ratio should be larger for frequencies further from measured range."""
+        hpol_data, *_ = read_passive_file(PASSIVE_LORA_HPOL)
+        vpol_data, *_ = read_passive_file(PASSIVE_LORA_VPOL)
+
+        freqs = sorted(set(d["frequency"] for d in hpol_data))
+        measured_min = freqs[0]
+
+        # Close extrapolation: 50 MHz below range
+        close = extrapolate_pattern(hpol_data, vpol_data, measured_min - 50)
+        # Far extrapolation: 300 MHz below range
+        far = extrapolate_pattern(hpol_data, vpol_data, measured_min - 300)
+
+        assert far["confidence"]["extrapolation_ratio"] > close["confidence"]["extrapolation_ratio"]

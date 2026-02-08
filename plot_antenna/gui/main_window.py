@@ -113,7 +113,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         # Processing state
         self._processing_lock = False
         self._active_figures = []
-        self._nf2ff_cache = {}
+        self._extrapolation_cache = {}
 
         # Measurement context for AI awareness
         self._measurement_context = {
@@ -122,7 +122,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
             "frequencies": [],
             "data_shape": None,
             "cable_loss_applied": 0.0,
-            "nf2ff_applied": False,
+            "extrapolation_applied": False,
+            "extrapolation_confidence": None,
             "processing_complete": False,
             "key_metrics": {},
         }
