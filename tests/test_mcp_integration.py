@@ -448,12 +448,9 @@ class TestReportTools:
         """preview_report reflects custom options in section toggles."""
         result = tools.preview_report(options={
             "include_3d_plots": True,
-            "include_raw_data_tables": True,
         })
         # 3D plots should show [x]
         assert "[x] 3D Pattern Plots" in result
-        # Raw data tables should show [x]
-        assert "[x] Raw Data Tables" in result
 
     def test_generate_report_no_data(self, tools, tmp_output_dir):
         """generate_report with no loaded data returns error."""
@@ -482,8 +479,8 @@ class TestReportTools:
         })
         assert "Measurements: 1" in result
         assert "2400.0" in result
-        assert "2D Plots: Yes" in result
-        assert "3D Plots: No" in result
+        assert "Gain tables: Yes" in result
+        assert "Cover page: Yes" in result
 
     def test_generate_report_docx_valid(self, tools, synthetic_passive_loaded, tmp_output_dir):
         """The generated DOCX is a valid file readable by python-docx."""

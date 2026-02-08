@@ -288,10 +288,16 @@ def register_import_tools(mcp):
 
             (data_points, theta_deg, phi_deg, theta_rad, phi_rad,
              total_power_2d, h_power_2d, v_power_2d,
-             *_plot_vars, TRP_dBm, h_TRP_dBm, v_TRP_dBm) = result
+             phi_deg_plot, phi_rad_plot,
+             total_power_2d_plot, h_power_2d_plot, v_power_2d_plot,
+             total_power_min, total_power_nom,
+             h_power_min, h_power_nom,
+             v_power_min, v_power_nom,
+             TRP_dBm, h_TRP_dBm, v_TRP_dBm) = result
 
             # Build analyzer-compatible data dict
             analyzer_data = {
+                # Flattened arrays for AntennaAnalyzer backward compatibility
                 'total_power': total_power_2d.flatten(),
                 'h_power': h_power_2d.flatten(),
                 'v_power': v_power_2d.flatten(),
@@ -300,6 +306,19 @@ def register_import_tools(mcp):
                 'V_TRP_dBm': float(v_TRP_dBm),
                 'theta': theta_deg,
                 'phi': phi_deg,
+                # 2D arrays for plotting
+                'data_points': data_points,
+                'theta_rad': theta_rad,
+                'phi_rad': phi_rad,
+                'total_power_2d': total_power_2d,
+                'h_power_2d': h_power_2d,
+                'v_power_2d': v_power_2d,
+                # Extended arrays for 3D plot wrapping
+                'phi_deg_plot': phi_deg_plot,
+                'phi_rad_plot': phi_rad_plot,
+                'total_power_2d_plot': total_power_2d_plot,
+                'h_power_2d_plot': h_power_2d_plot,
+                'v_power_2d_plot': v_power_2d_plot,
             }
 
             if name == "auto":
