@@ -519,7 +519,12 @@ class ToolsMixin:
         progress_window.geometry("300x100")
         progress_window.configure(bg=DARK_BG_COLOR)
         progress_window.transient(self.root)
-        tk.Label(progress_window, text="Bulk processing in progress...", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(pady=10)
+        tk.Label(
+            progress_window,
+            text="Bulk processing in progress...",
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+        ).pack(pady=10)
         progress_bar = ttk.Progressbar(progress_window, mode="indeterminate", length=250)
         progress_bar.pack(pady=10)
         progress_bar.start()
@@ -546,11 +551,14 @@ class ToolsMixin:
             progress_bar.stop()
             progress_window.destroy()
             if success:
-                messagebox.showinfo("Success", f"Bulk processing complete. Results saved to {save_base}")
+                messagebox.showinfo(
+                    "Success", f"Bulk processing complete. Results saved to {save_base}"
+                )
             else:
                 messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
 
         import threading
+
         threading.Thread(target=_process_worker, daemon=True).start()
 
     def open_bulk_active_processing(self):
@@ -585,7 +593,12 @@ class ToolsMixin:
         progress_window.geometry("300x100")
         progress_window.configure(bg=DARK_BG_COLOR)
         progress_window.transient(self.root)
-        tk.Label(progress_window, text="Bulk processing in progress...", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(pady=10)
+        tk.Label(
+            progress_window,
+            text="Bulk processing in progress...",
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+        ).pack(pady=10)
         progress_bar = ttk.Progressbar(progress_window, mode="indeterminate", length=250)
         progress_bar.pack(pady=10)
         progress_bar.start()
@@ -609,11 +622,14 @@ class ToolsMixin:
             progress_bar.stop()
             progress_window.destroy()
             if success:
-                messagebox.showinfo("Success", f"Bulk active processing complete. Results saved to {save_base}")
+                messagebox.showinfo(
+                    "Success", f"Bulk active processing complete. Results saved to {save_base}"
+                )
             else:
                 messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
 
         import threading
+
         threading.Thread(target=_process_worker, daemon=True).start()
 
     # ────────────────────────────────────────────────────────────────────────

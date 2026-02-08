@@ -134,9 +134,7 @@ def _get_machine_id() -> str:
         import winreg
 
         try:
-            key = winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography"
-            )
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography")
             value, _ = winreg.QueryValueEx(key, "MachineGuid")
             return str(value)
         except Exception:

@@ -454,7 +454,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         # Import button (right side)
         self.btn_import = tk.Button(
             self.controls_frame,
-            text="\U0001F4C2  Import File(s)",
+            text="\U0001f4c2  Import File(s)",
             command=self.import_files,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
@@ -497,7 +497,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
 
         self.btn_view_results = tk.Button(
             self.actions_frame,
-            text="\u25B6  View Results",
+            text="\u25b6  View Results",
             command=self.process_data,
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,
@@ -512,7 +512,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
 
         self.btn_save_to_file = tk.Button(
             self.actions_frame,
-            text="\U0001F4BE  Save Results",
+            text="\U0001f4be  Save Results",
             command=lambda: self.save_results_to_file(),
             bg=ACCENT_BLUE_COLOR,
             fg=LIGHT_TEXT_COLOR,

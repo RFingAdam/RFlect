@@ -1061,7 +1061,9 @@ def plot_additional_polar_patterns(
                 )
 
         if save_path:
-            plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"), dpi=300)
+            plt.savefig(
+                os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"), dpi=300
+            )
             plt.close()
         else:
             plt.show()
