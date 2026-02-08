@@ -22,7 +22,10 @@ jobs:
     - name: Extract version from tag
       id: get_version
       shell: bash
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: |
+        TAG="${GITHUB_REF#refs/tags/}"
+        echo "TAG=$TAG" >> $GITHUB_OUTPUT
+        echo "NUM=${TAG#v}" >> $GITHUB_OUTPUT
 
     - name: Install dependencies
       run: |
@@ -33,9 +36,9 @@ jobs:
     - name: Update settings.json with version
       shell: bash
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
+        TAG: ${{ steps.get_version.outputs.TAG }}
       run: |
-        echo "{\"CURRENT_VERSION\": \"$VERSION\"}" > settings.json
+        echo "{\"CURRENT_VERSION\": \"$TAG\"}" > settings.json
 
     - name: Build executable with PyInstaller
       run: pyinstaller RFlect.spec
@@ -56,7 +59,7 @@ jobs:
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
       with:
         path: installer.iss
-        options: /DRFLECT_VERSION=${{ steps.get_version.outputs.VERSION }}
+        options: /DRFLECT_VERSION=${{ steps.get_version.outputs.NUM }}
 
     - name: Verify installer exists
       shell: bash
@@ -71,21 +74,21 @@ jobs:
     - name: Rename standalone exe
       shell: bash
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
-      run: cp dist/RFlect.exe "dist/RFlect_${VERSION}.exe"
+        NUM: ${{ steps.get_version.outputs.NUM }}
+      run: cp dist/RFlect.exe "dist/RFlect_${NUM}.exe"
 
     - name: Upload Windows standalone
       uses: actions/upload-artifact@v4
       with:
-        name: RFlect-Windows-Standalone-${{ steps.get_version.outputs.VERSION }}
-        path: dist/RFlect_${{ steps.get_version.outputs.VERSION }}.exe
+        name: RFlect-Windows-Standalone
+        path: dist/RFlect_${{ steps.get_version.outputs.NUM }}.exe
         retention-days: 90
 
     - name: Upload Windows installer
       uses: actions/upload-artifact@v4
       if: ${{ hashFiles('installer_output/RFlect_Installer_*.exe') != '' }}
       with:
-        name: RFlect-Windows-Installer-${{ steps.get_version.outputs.VERSION }}
+        name: RFlect-Windows-Installer
         path: installer_output/RFlect_Installer_*.exe
         retention-days: 90
 
@@ -101,7 +104,10 @@ jobs:
 
     - name: Extract version from tag
       id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: |
+        TAG="${GITHUB_REF#refs/tags/}"
+        echo "TAG=$TAG" >> $GITHUB_OUTPUT
+        echo "NUM=${TAG#v}" >> $GITHUB_OUTPUT
 
     - name: Install system dependencies
       run: |
@@ -116,9 +122,9 @@ jobs:
 
     - name: Update settings.json with version
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
+        TAG: ${{ steps.get_version.outputs.TAG }}
       run: |
-        echo "{\"CURRENT_VERSION\": \"$VERSION\"}" > settings.json
+        echo "{\"CURRENT_VERSION\": \"$TAG\"}" > settings.json
 
     - name: Build executable with PyInstaller
       run: pyinstaller RFlect.spec
@@ -137,14 +143,14 @@ jobs:
 
     - name: Rename linux binary
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
-      run: cp dist/RFlect "dist/RFlect_${VERSION}_linux"
+        NUM: ${{ steps.get_version.outputs.NUM }}
+      run: cp dist/RFlect "dist/RFlect_${NUM}_linux"
 
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
       with:
-        name: RFlect-Linux-${{ steps.get_version.outputs.VERSION }}
-        path: dist/RFlect_${{ steps.get_version.outputs.VERSION }}_linux
+        name: RFlect-Linux
+        path: dist/RFlect_${{ steps.get_version.outputs.NUM }}_linux
         retention-days: 90
 
   create-release:
@@ -155,25 +161,28 @@ jobs:
 
     - name: Extract version from tag
       id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: |
+        TAG="${GITHUB_REF#refs/tags/}"
+        echo "TAG=$TAG" >> $GITHUB_OUTPUT
+        echo "NUM=${TAG#v}" >> $GITHUB_OUTPUT
 
     - name: Download Windows standalone
       uses: actions/download-artifact@v4
       with:
-        name: RFlect-Windows-Standalone-${{ steps.get_version.outputs.VERSION }}
+        name: RFlect-Windows-Standalone
         path: release-assets/
 
     - name: Download Windows installer
       uses: actions/download-artifact@v4
       continue-on-error: true
       with:
-        name: RFlect-Windows-Installer-${{ steps.get_version.outputs.VERSION }}
+        name: RFlect-Windows-Installer
         path: release-assets/
 
     - name: Download Linux binary
       uses: actions/download-artifact@v4
       with:
-        name: RFlect-Linux-${{ steps.get_version.outputs.VERSION }}
+        name: RFlect-Linux
         path: release-assets/
 
     - name: List release assets
@@ -181,12 +190,14 @@ jobs:
 
     - name: Extract release notes for this version
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
+        NUM: ${{ steps.get_version.outputs.NUM }}
       run: |
-        # Extract the relevant section from RELEASE_NOTES.md
-        awk "/## Version ${VERSION#v}/,/## Version [0-9]/" RELEASE_NOTES.md | head -n -1 > release_body.md
+        # Escape dots for awk regex (4.0.0 -> 4\.0\.0)
+        ESCAPED=$(echo "$NUM" | sed 's/\./\\./g')
+        # Extract section: from matching header to next ## Version header
+        awk "/^## Version ${ESCAPED}/{ found=1; print; next } found && /^## Version /{ exit } found{ print }" RELEASE_NOTES.md > release_body.md
         if [ ! -s release_body.md ]; then
-          echo "## Release $VERSION" > release_body.md
+          echo "## Release v${NUM}" > release_body.md
           echo "" >> release_body.md
           echo "See [RELEASE_NOTES.md](RELEASE_NOTES.md) for full changelog." >> release_body.md
         fi
@@ -194,9 +205,9 @@ jobs:
         echo "" >> release_body.md
         echo "----" >> release_body.md
         echo "### Downloads" >> release_body.md
-        echo "- **Windows (installer)**: \`RFlect_Installer_${VERSION}.exe\` — includes Start Menu shortcut and uninstaller" >> release_body.md
-        echo "- **Windows (portable)**: \`RFlect_${VERSION}.exe\` — standalone, no install required" >> release_body.md
-        echo "- **Linux**: \`RFlect_${VERSION}_linux\` — standalone binary (\`chmod +x\` then run)" >> release_body.md
+        echo "- **Windows (installer)**: \`RFlect_Installer_${NUM}.exe\` — includes Start Menu shortcut and uninstaller" >> release_body.md
+        echo "- **Windows (portable)**: \`RFlect_${NUM}.exe\` — standalone, no install required" >> release_body.md
+        echo "- **Linux**: \`RFlect_${NUM}_linux\` — standalone binary (\`chmod +x\` then run)" >> release_body.md
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -210,7 +221,7 @@ jobs:
 
     - name: Notify release complete
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
+        TAG: ${{ steps.get_version.outputs.TAG }}
       run: |
-        echo "Release ${VERSION} created successfully!"
-        echo "Download: https://github.com/${{ github.repository }}/releases/tag/${VERSION}"
+        echo "Release ${TAG} created successfully!"
+        echo "Download: https://github.com/${{ github.repository }}/releases/tag/${TAG}"
