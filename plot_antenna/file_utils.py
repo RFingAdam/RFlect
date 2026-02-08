@@ -50,35 +50,38 @@ def parse_active_file(content):
 
     # Depending on the file format, the information is located on different lines
     # TODO Consider a more dynamic approach vs relying on hard coded number for extraction
-    if file_format == "V5.02":
-        start_phi = float(content[34].split(":")[1].split("Deg")[0].strip())
-        stop_phi = float(content[35].split(":")[1].split("Deg")[0].strip())
-        inc_phi = float(content[36].split(":")[1].split("Deg")[0].strip())
+    try:
+        if file_format == "V5.02":
+            start_phi = float(content[34].split(":")[1].split("Deg")[0].strip())
+            stop_phi = float(content[35].split(":")[1].split("Deg")[0].strip())
+            inc_phi = float(content[36].split(":")[1].split("Deg")[0].strip())
 
-        start_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
-        stop_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
-        inc_theta = float(content[41].split(":")[1].split("Deg")[0].strip())
+            start_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
+            stop_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
+            inc_theta = float(content[41].split(":")[1].split("Deg")[0].strip())
 
-        calc_TRP = float(content[50].split("=")[1].split(" ")[0].strip())
-        data_start_line = 55
+            calc_TRP = float(content[50].split("=")[1].split(" ")[0].strip())
+            data_start_line = 55
 
-        v_cal_fact = float(content[48].split("=")[1].strip().split(" ")[0])
-        h_cal_fact = float(content[47].split("=")[1].strip().split(" ")[0])
+            v_cal_fact = float(content[48].split("=")[1].strip().split(" ")[0])
+            h_cal_fact = float(content[47].split("=")[1].strip().split(" ")[0])
 
-    else:  # if file_format == "V5.03" or newer
-        start_phi = float(content[31].split(":")[1].split("Deg")[0].strip())
-        stop_phi = float(content[32].split(":")[1].split("Deg")[0].strip())
-        inc_phi = float(content[33].split(":")[1].split("Deg")[0].strip())
+        else:  # if file_format == "V5.03" or newer
+            start_phi = float(content[31].split(":")[1].split("Deg")[0].strip())
+            stop_phi = float(content[32].split(":")[1].split("Deg")[0].strip())
+            inc_phi = float(content[33].split(":")[1].split("Deg")[0].strip())
 
-        start_theta = float(content[38].split(":")[1].split("Deg")[0].strip())
-        stop_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
-        inc_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
+            start_theta = float(content[38].split(":")[1].split("Deg")[0].strip())
+            stop_theta = float(content[39].split(":")[1].split("Deg")[0].strip())
+            inc_theta = float(content[40].split(":")[1].split("Deg")[0].strip())
 
-        calc_TRP = float(content[49].split("=")[1].strip().split(" ")[0])
-        data_start_line = 54
+            calc_TRP = float(content[49].split("=")[1].strip().split(" ")[0])
+            data_start_line = 54
 
-        v_cal_fact = float(content[47].split("=")[1].strip().split(" ")[0])
-        h_cal_fact = float(content[46].split("=")[1].strip().split(" ")[0])
+            v_cal_fact = float(content[47].split("=")[1].strip().split(" ")[0])
+            h_cal_fact = float(content[46].split("=")[1].strip().split(" ")[0])
+    except (IndexError, AttributeError) as e:
+        raise ValueError(f"Malformed TRP file header (format {file_format}): {e}")
 
     # Extracting data points
     theta_angles_deg = []
