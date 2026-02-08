@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Clip to Smith chart boundary -->
+    <clipPath id="sc">
+      <circle cx="256" cy="256" r="200"/>
+    </clipPath>
+
+    <!-- Background gradient: deep navy with subtle warmth at center -->
+    <radialGradient id="bg" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#1C2035"/>
+      <stop offset="100%" stop-color="#0B0D16"/>
+    </radialGradient>
+
+    <!-- Red glow on impedance trace -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="1 0 0 0 0  0.15 0 0 0 0  0.15 0 0 0 0  0 0 0 0.8 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft halo on marker dot -->
+    <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
+    </filter>
+
+    <!-- Blue haze on outer ring -->
+    <filter id="ring-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="0.25 0 0 0 0  0.4 0 0 0 0  0.8 0 0 0 0  0 0 0 0.6 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Trace color: warm red gradient -->
+    <linearGradient id="trace-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B"/>
+      <stop offset="40%" stop-color="#E63946"/>
+      <stop offset="100%" stop-color="#B22D35"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ================= BACKGROUND ================= -->
+  <circle cx="256" cy="256" r="245" fill="url(#bg)"/>
+
+  <!-- Accent ring at edge: thin blue outline with glow -->
+  <circle cx="256" cy="256" r="243" fill="none"
+    stroke="#4A90E2" stroke-width="1.5" opacity="0.35" filter="url(#ring-glow)"/>
+  <circle cx="256" cy="256" r="244" fill="none"
+    stroke="#4A90E2" stroke-width="0.6" opacity="0.55"/>
+
+  <!-- ============= SMITH CHART GRID ============== -->
+  <!--
+    Grid uses muted steel-blue strokes on the dark background.
+    All elements are clipped to the unit circle.
+    Hierarchy: r=1 and x=+/-1 are primary (brighter/thicker),
+    other values are secondary (thinner/dimmer).
+  -->
+  <g clip-path="url(#sc)">
+
+    <!-- Constant-resistance circles -->
+    <!-- r = 0.3: center (r/(1+r), 0) = (0.231, 0), radius 1/(1+r) = 0.769 -->
+    <circle cx="302.2" cy="256" r="153.8" fill="none"
+      stroke="#3D5A73" stroke-width="1.6" opacity="0.45"/>
+    <!-- r = 1: center (0.5, 0), radius 0.5 — PRIMARY -->
+    <circle cx="356" cy="256" r="100" fill="none"
+      stroke="#5A8DB0" stroke-width="2.4" opacity="0.72"/>
+    <!-- r = 2: center (0.667, 0), radius 0.333 -->
+    <circle cx="389.3" cy="256" r="66.7" fill="none"
+      stroke="#3D5A73" stroke-width="1.6" opacity="0.45"/>
+    <!-- r = 5: center (0.833, 0), radius 0.167 -->
+    <circle cx="422.7" cy="256" r="33.3" fill="none"
+      stroke="#3D5A73" stroke-width="1.4" opacity="0.38"/>
+
+    <!-- Center horizontal line (real axis) -->
+    <line x1="56" y1="256" x2="456" y2="256"
+      stroke="#5A8DB0" stroke-width="1.8" opacity="0.6"/>
+
+    <!-- Constant-reactance arcs -->
+    <!-- x = +0.5 (upper): center (1, 2), radius 2 -->
+    <path d="M 136 96 A 400 400 0 0 1 456 256"
+      fill="none" stroke="#3D5A73" stroke-width="1.5" opacity="0.42"/>
+    <!-- x = -0.5 (lower): center (1, -2), radius 2 -->
+    <path d="M 136 416 A 400 400 0 0 0 456 256"
+      fill="none" stroke="#3D5A73" stroke-width="1.5" opacity="0.42"/>
+    <!-- x = +1 (upper): center (1, 1), radius 1 — PRIMARY -->
+    <path d="M 256 56 A 200 200 0 0 1 456 256"
+      fill="none" stroke="#5A8DB0" stroke-width="2.2" opacity="0.68"/>
+    <!-- x = -1 (lower): center (1, -1), radius 1 — PRIMARY -->
+    <path d="M 256 456 A 200 200 0 0 0 456 256"
+      fill="none" stroke="#5A8DB0" stroke-width="2.2" opacity="0.68"/>
+    <!-- x = +2 (upper): center (1, 0.5), radius 0.5 -->
+    <path d="M 376 96 A 100 100 0 0 1 456 256"
+      fill="none" stroke="#3D5A73" stroke-width="1.5" opacity="0.42"/>
+    <!-- x = -2 (lower): center (1, -0.5), radius 0.5 -->
+    <path d="M 376 416 A 100 100 0 0 0 456 256"
+      fill="none" stroke="#3D5A73" stroke-width="1.5" opacity="0.42"/>
+
+  </g>
+
+  <!-- Unit circle (outer boundary of Smith chart) — most prominent grid line -->
+  <circle cx="256" cy="256" r="200" fill="none"
+    stroke="#6FA8C8" stroke-width="2.8" opacity="0.8"/>
+
+  <!-- ============ IMPEDANCE TRACE ================ -->
+  <!--
+    Decaying spiral in the Gamma plane, representing a typical
+    antenna impedance locus across frequency, spiralling inward
+    toward the matched centre (Gamma = 0).
+    Parameters: |Gamma_0| = 0.88, decay alpha = 1.4,
+                start angle 2.3 rad, angular sweep 4.5 rad (~260 deg).
+  -->
+  <path d="M 138.74 124.76 L 134.66 131.91 L 130.96 139.14
+    L 127.64 146.43 L 124.7 153.76 L 122.12 161.11 L 119.9 168.46
+    L 118.05 175.8 L 116.55 183.12 L 115.39 190.39 L 114.58 197.6
+    L 114.09 204.75 L 113.93 211.81 L 114.09 218.77 L 114.55 225.62
+    L 115.31 232.34 L 116.36 238.94 L 117.68 245.39 L 119.27 251.68
+    L 121.12 257.81 L 123.21 263.76 L 125.53 269.54 L 128.08 275.13
+    L 130.83 280.51 L 133.78 285.7 L 136.92 290.68 L 140.24 295.45
+    L 143.71 299.99 L 147.33 304.32 L 151.1 308.42 L 154.99 312.29
+    L 158.99 315.93 L 163.09 319.34 L 167.29 322.52 L 171.56 325.47
+    L 175.9 328.18 L 180.29 330.65 L 184.73 332.9 L 189.21 334.92
+    L 193.7 336.7 L 198.21 338.26 L 202.72 339.6 L 207.22 340.72
+    L 211.71 341.62 L 216.17 342.31 L 220.59 342.79 L 224.97 343.07
+    L 229.29 343.15 L 233.56 343.03 L 237.75 342.73 L 241.87 342.25
+    L 245.91 341.59 L 249.85 340.76 L 253.7 339.77 L 257.46 338.63
+    L 261.1 337.33 L 264.63 335.89 L 268.05 334.32 L 271.34 332.62
+    L 274.51 330.8 L 277.55 328.86 L 280.46 326.82 L 283.24 324.68
+    L 285.88 322.45 L 288.38 320.13 L 290.75 317.74 L 292.97 315.28
+    L 295.05 312.75 L 296.98 310.18 L 298.77 307.55 L 300.42 304.89
+    L 301.93 302.19 L 303.29 299.46 L 304.52 296.72 L 305.6 293.96
+    L 306.55 291.19 L 307.35 288.42 L 308.03 285.66 L 308.57 282.91
+    L 308.98 280.18 L 309.26 277.47 L 309.42 274.79 L 309.46 272.14
+    L 309.38 269.53 L 309.18 266.96 L 308.87 264.43 L 308.46 261.96
+    L 307.94 259.55 L 307.33 257.19 L 306.61 254.9 L 305.81 252.67
+    L 304.92 250.51 L 303.95 248.42 L 302.9 246.4 L 301.77 244.47
+    L 300.58 242.61 L 299.32 240.83 L 298.0 239.13 L 296.63 237.52
+    L 295.2 236.0 L 293.73 234.55"
+    fill="none" stroke="url(#trace-grad)"
+    stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+    filter="url(#glow)"/>
+
+  <!-- Frequency marker dot at trace end -->
+  <circle cx="293.73" cy="234.55" r="10"
+    fill="#E63946" opacity="0.3" filter="url(#dot-glow)"/>
+  <circle cx="293.73" cy="234.55" r="5" fill="#E63946"/>
+  <circle cx="293.73" cy="234.55" r="2.2" fill="#FFFFFF" opacity="0.9"/>
+
+</svg>
