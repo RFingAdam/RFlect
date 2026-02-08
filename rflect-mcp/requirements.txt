@@ -1,0 +1,16 @@
+# RFlect MCP Server Dependencies
+
+# MCP SDK
+mcp>=1.0.0
+
+# RFlect core (install from parent directory)
+# pip install -e ..
+
+# Report generation
+python-docx>=1.2.0
+
+# Template engine
+pyyaml>=6.0
+
+# AI (optional - for AI summaries)
+openai>=1.38.0

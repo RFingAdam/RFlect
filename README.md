@@ -1,99 +1,168 @@
-# RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
+<p align="center">
+  <img src="./assets/rflect_logo.svg" alt="RFlect Logo" width="160">
+</p>
 
+<h1 align="center">RFlect</h1>
 
-**Version:** 3.1.0
+<p align="center">
+  <strong>The RF engineer's toolkit for antenna measurement visualization and analysis.</strong>
+</p>
 
-RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files from Copper Mountain RVNA and S2VNA software of S11/VSWR/Group Delay(S21(s)) measurements, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
+<p align="center">
+  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.0.0-blue" alt="Version"></a>
+  <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License"></a>
+  <img src="https://img.shields.io/badge/tests-346%20passing-brightgreen" alt="Tests">
+</p>
 
-## Installation
-1. Run the provided installer from the latest release (`RFlect_vX.X.X.exe`)
-2. Follow the on-screen instructions to complete the installation.
+---
 
-![Installation Steps](./assets/installation_steps.png)
+RFlect takes raw antenna measurement data and turns it into publication-ready 2D/3D radiation pattern plots, TRP calculations, polarization analysis, and efficiency metrics — all validated against IEEE-standard methods. Whether you're characterizing a BLE chip antenna or qualifying a cellular array, RFlect handles the heavy lifting so you can focus on the engineering.
 
-## How to Use
-### Select Scan Type:
-- Choose from **Active**, **Passive**, or **.csv (VNA/S-Parameters)** scan.
+<p align="center">
+  <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
+</p>
 
-  ![Scan Type Selection](./assets/scan_type_selection.png)
+## New in v4.0
 
-### Adjust Settings (if needed):
-- Click the **Settings** button to open the settings window.
-- Depending on your scan type selection, adjust the relevant settings.
-  - For VNA/S11 LogMAG scans, you can set limit lines.
-  - Select Group Delay & SFF(*future implementation*) for Group Delay Measurements, Peak to Peak Delay Difference, etc from 2-Port S2VNA .csv files
-    ![VSWR Settings Window](./assets/vswr_settings_window.png)
-  - For Passive scans, select between G&D or HPOL/VPOL.
-  - Datasheet Plots Check Option will additionally plot Peak Phi & Theta Gain vs Frequency with Total Gain vs Freq. Also plots Elevation/Azimuth 2D cuts for 3-planes.
-    ![Passive Settings Window](./assets/passive_settings_window.png)
-  - For Active scans, *future implementation*
+Ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and corrected RF math throughout.
 
-### Import Data:
-- Click the **Import File(s)** button.
-- Follow the on-screen prompts to select and import your data files.
+- **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. Every formula verified against IEEE references and real chamber data.
+- **UWB analysis** — System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
+- **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
+- **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
+- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
+- **MCP server with 23 tools** — Programmatic antenna analysis for Claude Code and other AI assistants, including UWB characterization.
+- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE/LoRa chamber measurements and UWB group delay data.
 
-### View Results:
-- If you've selected a VPOL/HPOL Passive scan, or Active Scan, you can click **View Results** to visualize the data.
-- For other scan types, results will be displayed after data import.
+See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
+
+## Quick Start
+
+**Windows:** Grab `RFlect_Installer_vX.X.X.exe` or the standalone `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases).
+
+**Linux:** Download `RFlect_vX.X.X_linux` from the [latest release](https://github.com/RFingAdam/RFlect/releases), then `chmod +x` and run.
+
+**From source:**
+```bash
+git clone https://github.com/RFingAdam/RFlect.git
+cd RFlect
+python -m venv .venv && source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python run_rflect.py
+```
+
+## What It Handles
+
+| Scan Type | Input Format | What You Get |
+|-----------|-------------|----------|
+| **Active TRP** | WTL `.txt` (V5.02/V5.03) | TRP, H/V power, 2D/3D radiation patterns |
+| **Passive Gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
+| **S-Parameters** | Copper Mountain `.csv` | S11, VSWR, return loss with limit lines |
+| **Group Delay** | 2-port VNA `.csv`, Touchstone `.s2p` | Group delay vs frequency, peak-to-peak, distance error |
+| **UWB Analysis** | S2VNA `.csv`, Touchstone `.s2p` | SFF, transfer function, impulse response, impedance BW |
+| **CST Far-Field** | `.txt` simulation files | ECC, fidelity factor, group delay |
+
+## Usage
+
+1. **Select scan type** — Active, Passive, or VNA
+2. **Adjust settings** — cable loss, limit lines, frequency range, 3D scale
+3. **Import your files** via the Import button or `Ctrl+O`
+4. **View results** — plots render automatically; hit `Ctrl+R` to reprocess
+
+<p align="center">
+  <img src="./assets/passive_settings.png" alt="Passive Settings Dialog" width="500">
+</p>
 
 <details>
 <summary><strong>Example Results (click to expand)</strong></summary>
 
-Here are some examples of the results you can expect with this tool. Click on an image to view it in full size.
+### Passive Measurements
 
-# Passive Routine
-## G&D Files
-### Passive G&D Comparison
-![G&D File - 1D Results](./assets/python_1d_results_g&d.png)
-Efficiency, Gain, and Directivity comparison of 'n' Number of G&D Files/Scans
+**G&D Comparison** — Efficiency, gain, and directivity across multiple scans:
+![G&D Results](./assets/python_1d_results_g&d.png)
 
-## HPOL & VPOL Files
-### Passive 1D Results
-![Passive 1D Results](./assets/python_1d_results.png)
-Eff(%) vs Freq., Eff(dB) vs Freq., and Total Gain vs Freq.
+**HPOL/VPOL 1D** — Efficiency and total gain vs frequency:
+![Passive 1D](./assets/python_1d_results.png)
 
-### Passive 2D Results
-![Passive 2D Results](./assets/python_passive_2d_results_azimuth.png)
+**2D Azimuth Cuts** — Gain pattern across theta angles:
+![Passive 2D](./assets/python_passive_2d_results_azimuth.png)
 
-Gain Pattern Azimuth Cuts vs Phi for various Theta Angles
+**Datasheet Plots** — Peak gain per polarization, polar cuts at key planes:
+![Datasheet 1D](./assets/python_1d_results_datasheet.png)
+![Datasheet 2D](./assets/python_2d_results_datasheet.png)
 
-### Additional Passive "Datasheet" Plots
-![Additional 1D Results](./assets/python_1d_results_datasheet.png)
-![Additional 2D Results](./assets/python_2d_results_datasheet.png)
-Peak gain for Phi & Theta Polarization in addition to Total Gain per IEEE Definition and Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
+**3D Radiation Patterns** — Total gain with turbo colormap:
+![Passive 3D](./assets/python_passive_3d_results.png)
 
-### Passive 3D Results
-![Passive 3D Results](./assets/python_passive_3d_results.png)
-3D Gain Pattern for Phi, Theta, and Total Gains
+### Active TRP Measurements
 
-# Active Routine
-## TRP Files
-### Active 2D Results
-![Active 2D Results](./assets/python_active_2d_results_azimuth.png)
-Azimuth Power Cuts vs Phi for various Theta Angles
+![Active 2D](./assets/python_active_2d_results_azimuth.png)
+![Active Datasheet](./assets/python_active_2d_results_datasheet.png)
 
-![Additional 2D Results](./assets/python_active_2d_results_datasheet.png)
-Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
+### VNA / S-Parameters
 
-# VNA Routine
-## Text/.csv Files
-### 1 or 2-Port S-Parameters
-![1 or 2-port S-Parameters](./assets/python_vna_results.png)
-'n' number of S-Parameter Files Plotted
+![VNA Results](./assets/python_vna_results.png)
 
-## 2-Port, Group Delay Measurements
+**Group Delay Analysis:**
 ![Group Delay](./assets/python_groupdelay_results.png)
-Plots Group Delay vs Frequency for Various Theta (Azimuthal Rotation), Peak-to-peak Group Delay Difference over Theta, and Max Distance Error over Theta
+
 </details>
 
-## Additional Features
-- Save your results using the **Save Results to File** button.
-- Adjust the frequency and other parameters using the provided dropdown menus and input fields.
+## Key Features
 
-## Note to Users
-- Always ensure the data you're importing is consistent with the scan type you've selected.
-- For best results, ensure that settings are appropriately adjusted before importing data.
+- **Polarization Analysis** — Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
+- **Batch Processing** — Process an entire folder of HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
+- **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated executive analysis
+- **3D Visualization** — Perceptually uniform turbo colormap, transparent panes, coordinate axes, and manual or auto Z-axis scaling
 
----
+## AI-Powered Analysis (Optional)
 
-**The software is under active development, and additional features and improvements are expected in the future. Please refer to the release notes for version-specific details.**
+RFlect integrates with **OpenAI**, **Anthropic**, and **Ollama** to bring intelligent analysis to your measurement workflow. Ask questions about your data in natural language, get AI-generated executive summaries in reports, or let vision models interpret your radiation patterns.
+
+All AI features are completely optional — RFlect works fully without any provider configured. When you're ready, configure a provider via **Tools > Manage API Keys**. Your keys are encrypted locally with AES-128 and never leave your machine.
+
+<p align="center">
+  <img src="./assets/api_key_management.png" alt="API Key Management" width="440">
+</p>
+
+See [AI_STATUS.md](AI_STATUS.md) for provider details and supported models.
+
+## MCP Server
+
+RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 23 tools that let AI assistants like Claude Code import your measurements, run analysis, generate reports, and perform UWB characterization programmatically. No GUI required.
+
+See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
+
+## Project Structure
+
+```
+RFlect/
+  plot_antenna/           # Core application
+    gui/                  #   GUI mixins (callbacks, tools, dialogs, AI chat)
+    ai_analysis.py        #   RF analysis engine (gain stats, pattern, polarization)
+    calculations.py       #   TRP, passive gain, efficiency computations
+    file_utils.py         #   WTL/VNA file parsers
+    plotting.py           #   2D/3D matplotlib rendering
+    uwb_analysis.py       #   UWB analysis (SFF, transfer function, Touchstone)
+    uwb_plotting.py       #   UWB-specific plot functions
+    llm_provider.py       #   Multi-provider LLM abstraction
+    api_keys.py           #   Secure key storage (keyring + Fernet)
+    save.py               #   DOCX report generation
+  rflect-mcp/             # MCP server for programmatic access
+  tests/                  # 346 tests (pytest)
+```
+
+## Development
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/                    # run tests
+pyinstaller RFlect.spec                    # build exe
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, architecture details, and how to get involved.
+
+## License
+
+[GPL-3.0](LICENSE)
