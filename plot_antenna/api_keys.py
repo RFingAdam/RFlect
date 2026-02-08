@@ -14,7 +14,8 @@ Priority order for loading:
 4. .env file (development only)
 
 Keys are NEVER stored in plaintext. The encrypted fallback uses AES-128-CBC
-with HMAC-SHA256 (Fernet) keyed to the machine's unique identifier.
+with HMAC-SHA256 (Fernet) keyed to the machine's unique identifier via
+PBKDF2-HMAC-SHA256 with 600,000 iterations.
 """
 
 import os
@@ -162,7 +163,7 @@ def _get_encryption_key() -> bytes:
         algorithm=hashes.SHA256(),
         length=32,
         salt=salt,
-        iterations=480_000,
+        iterations=600_000,
     )
     key_material = kdf.derive(machine_id)
     return _b64.urlsafe_b64encode(key_material)

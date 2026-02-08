@@ -32,17 +32,18 @@ _measurements_lock = threading.Lock()
 
 def get_loaded_data_summary() -> str:
     """Get summary of currently loaded data."""
-    if not _loaded_measurements:
-        return "No data loaded. Use import_antenna_file or import_antenna_folder to load measurements."
+    with _measurements_lock:
+        if not _loaded_measurements:
+            return "No data loaded. Use import_antenna_file or import_antenna_folder to load measurements."
 
-    summary = f"Loaded {len(_loaded_measurements)} measurement(s):\n\n"
-    for name, measurement in _loaded_measurements.items():
-        summary += f"- {name}\n"
-        summary += f"  Type: {measurement.scan_type}\n"
-        summary += f"  Frequencies: {measurement.frequencies}\n"
-        summary += f"  File: {measurement.file_path}\n\n"
+        summary = f"Loaded {len(_loaded_measurements)} measurement(s):\n\n"
+        for name, measurement in _loaded_measurements.items():
+            summary += f"- {name}\n"
+            summary += f"  Type: {measurement.scan_type}\n"
+            summary += f"  Frequencies: {measurement.frequencies}\n"
+            summary += f"  File: {measurement.file_path}\n\n"
 
-    return summary
+        return summary
 
 
 def register_import_tools(mcp):
@@ -359,11 +360,13 @@ def register_import_tools(mcp):
         Returns:
             Detailed information about the measurement data.
         """
-        if measurement_name not in _loaded_measurements:
-            available = list(_loaded_measurements.keys())
-            return f"Measurement '{measurement_name}' not found. Available: {available}"
+        with _measurements_lock:
+            if measurement_name not in _loaded_measurements:
+                available = list(_loaded_measurements.keys())
+                return f"Measurement '{measurement_name}' not found. Available: {available}"
 
-        m = _loaded_measurements[measurement_name]
+            m = _loaded_measurements[measurement_name]
+
         details = f"Measurement: {measurement_name}\n"
         details += f"File: {m.file_path}\n"
         details += f"Type: {m.scan_type}\n"
@@ -379,5 +382,6 @@ def register_import_tools(mcp):
 
 
 def get_loaded_measurements() -> Dict[str, LoadedMeasurement]:
-    """Get all loaded measurements (for use by other tools)."""
-    return _loaded_measurements
+    """Get a snapshot of all loaded measurements (for use by other tools)."""
+    with _measurements_lock:
+        return dict(_loaded_measurements)
