@@ -12,7 +12,7 @@
   <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.0.0-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License"></a>
-  <img src="https://img.shields.io/badge/tests-227%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-346%20passing-brightgreen" alt="Tests">
 </p>
 
 ---
@@ -32,7 +32,7 @@ This is a ground-up overhaul from v3.x — new GUI, new analysis engine, new int
 - **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
 - **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration. Your keys never leave your machine.
 - **MCP server with 20 tools** — Programmatic antenna analysis for Claude Code and other AI assistants. Full end-to-end pipeline verified to match chamber reference data.
-- **227 tests** — Up from ~50 in v3.x, with integration tests against real BLE and LoRa chamber measurements.
+- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE and LoRa chamber measurements plus 41 UWB analysis tests.
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 
@@ -56,7 +56,8 @@ python run_rflect.py
 | **Active TRP** | WTL `.txt` (V5.02/V5.03) | TRP, H/V power, 2D/3D radiation patterns |
 | **Passive Gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
 | **S-Parameters** | Copper Mountain `.csv` | S11, VSWR, return loss with limit lines |
-| **Group Delay** | 2-port VNA `.csv` | Group delay vs frequency, peak-to-peak, distance error |
+| **Group Delay** | 2-port VNA `.csv`, Touchstone `.s2p` | Group delay vs frequency, peak-to-peak, distance error |
+| **UWB Analysis** | S2VNA `.csv`, Touchstone `.s2p` | SFF, transfer function, impulse response, impedance BW |
 | **CST Far-Field** | `.txt` simulation files | ECC, fidelity factor, group delay |
 
 ## Usage
@@ -126,7 +127,7 @@ See [AI_STATUS.md](AI_STATUS.md) for provider details and supported models.
 
 ## MCP Server
 
-RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 20 tools that let AI assistants like Claude Code import your measurements, run analysis, and generate reports programmatically. No GUI required.
+RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 23 tools that let AI assistants like Claude Code import your measurements, run analysis, generate reports, and perform UWB characterization programmatically. No GUI required.
 
 See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
 
@@ -140,11 +141,13 @@ RFlect/
     calculations.py       #   TRP, passive gain, efficiency computations
     file_utils.py         #   WTL/VNA file parsers
     plotting.py           #   2D/3D matplotlib rendering
+    uwb_analysis.py       #   UWB analysis (SFF, transfer function, Touchstone)
+    uwb_plotting.py       #   UWB-specific plot functions
     llm_provider.py       #   Multi-provider LLM abstraction
     api_keys.py           #   Secure key storage (keyring + Fernet)
     save.py               #   DOCX report generation
   rflect-mcp/             # MCP server for programmatic access
-  tests/                  # 227 tests (pytest)
+  tests/                  # 346 tests (pytest)
 ```
 
 ## Development

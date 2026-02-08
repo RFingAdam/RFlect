@@ -22,7 +22,7 @@ Add to your Claude Code configuration file (`~/.claude/settings.json`):
 
 **Important**: Use the absolute path to `server.py` on your system.
 
-Then restart Claude Code and you'll have access to 20 antenna analysis tools. See [Quick-Start Workflow](#quick-start-workflow) below.
+Then restart Claude Code and you'll have access to 23 antenna analysis tools. See [Quick-Start Workflow](#quick-start-workflow) below.
 
 ## Installation
 
@@ -76,7 +76,7 @@ Most MCP-compatible clients use similar JSON configuration. Consult your client'
 
 ## Available Tools
 
-The RFlect MCP server provides 20 tools across four categories:
+The RFlect MCP server provides 23 tools across five categories:
 
 ### Import Tools (6 tools)
 
@@ -125,6 +125,18 @@ The RFlect MCP server provides 20 tools across four categories:
 | `batch_analyze_frequencies` | Analyze all frequencies in loaded data | None |
 
 **Typical usage**: Process multiple antennas or frequencies in one operation.
+
+### UWB Analysis Tools (3 tools)
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `calculate_sff_from_files` | Calculate System Fidelity Factor from S-parameter files | `file_paths` (list[str]), `pulse_type` (str), `min_freq_ghz` (float), `max_freq_ghz` (float) |
+| `analyze_uwb_channel` | Full UWB channel characterization (SFF, group delay, transfer function, impulse response) | `file_path` (str), `distance_m` (float), `pulse_type` (str) |
+| `get_impedance_bandwidth` | Compute impedance bandwidth from S11 data | `file_path` (str), `threshold_dB` (float) |
+
+**Supported formats**: S2VNA CSV files (with S21(dB) + S21(s) group delay columns) and Touchstone .s2p files.
+
+**Typical usage**: Characterize UWB antenna performance — SFF indicates how well the antenna preserves pulse shape.
 
 ## Quick-Start Workflow
 

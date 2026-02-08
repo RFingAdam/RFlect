@@ -29,6 +29,7 @@ from tools.import_tools import register_import_tools
 from tools.analysis_tools import register_analysis_tools
 from tools.report_tools import register_report_tools
 from tools.bulk_tools import register_bulk_tools
+from tools.uwb_tools import register_uwb_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -38,6 +39,7 @@ register_import_tools(mcp)
 register_analysis_tools(mcp)
 register_report_tools(mcp)
 register_bulk_tools(mcp)
+register_uwb_tools(mcp)
 
 
 @mcp.resource("rflect://status")
@@ -77,6 +79,11 @@ BULK PROCESSING TOOLS:
 - bulk_process_active(folder_path) - Batch process TRP files
 - validate_file_pair(hpol_path, vpol_path) - Validate HPOL/VPOL file pairing
 - convert_to_cst(hpol_path, vpol_path, vswr_path, frequency) - Convert to CST .ffs format
+
+UWB ANALYSIS TOOLS:
+- calculate_sff_from_files(file_paths, pulse_type, min_freq_ghz, max_freq_ghz) - System Fidelity Factor
+- analyze_uwb_channel(file_path, distance_m) - Full UWB channel characterization
+- get_impedance_bandwidth(file_path, threshold_dB) - S11 impedance bandwidth
 """
 
 
