@@ -38,6 +38,8 @@ venv_clean/
 *_logo.jpeg
 *_logo.svg
 assets/*_logo.*
+!assets/rflect_logo.svg
+!assets/smith_logo.png
 
 # Local configuration (company-specific branding)
 plot_antenna/config_local.py
