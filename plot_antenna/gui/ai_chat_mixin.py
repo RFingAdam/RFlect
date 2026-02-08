@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import json
 import base64
+import threading
 import tkinter as tk
 from typing import TYPE_CHECKING, Optional, List, Any
 
@@ -32,6 +33,11 @@ try:
     from ..config import AI_TEMPERATURE
 except ImportError:
     AI_TEMPERATURE = 0.7
+
+try:
+    from ..config import AI_CHAT_MAX_TOKENS
+except ImportError:
+    AI_CHAT_MAX_TOKENS = 800
 
 from ..api_keys import is_api_key_configured, get_api_key
 
@@ -283,35 +289,43 @@ Ask me anything about your measurements, patterns, or RF analysis!
             chat_text.tag_config("ai_thinking", foreground="#FFC107", font=("Arial", 10, "italic"))
             chat_text.see(tk.END)
             chat_text.config(state=tk.DISABLED)
-            chat_window.update()
 
-            try:
-                # Build context from loaded data
-                data_context = self._build_chat_context()
+            # Disable input while AI is processing
+            user_input.config(state=tk.DISABLED)
+            send_btn.config(state=tk.DISABLED)
 
-                # Add user message to history
-                chat_history.append({"role": "user", "content": user_msg})
+            # Capture context on main thread before spawning worker
+            data_context = self._build_chat_context()
+            chat_history.append({"role": "user", "content": user_msg})
 
-                # Call OpenAI API (handles function calling internally)
-                ai_response = self._get_ai_response(chat_history, data_context)
+            def _ai_worker():
+                try:
+                    response = self._get_ai_response(chat_history, data_context)
+                    chat_history.append({"role": "assistant", "content": response})
+                except Exception as e:
+                    response = f"Sorry, I encountered an error: {str(e)}\n\nPlease check your API key configuration and internet connection."
+                    print(f"AI Chat Error: {e}")
+                self.root.after(0, lambda r=response: _display_response(r))
 
-                # Add AI response to history
-                chat_history.append({"role": "assistant", "content": ai_response})
+            def _display_response(ai_response):
+                # Remove thinking indicator
+                chat_text.config(state=tk.NORMAL)
+                chat_text.delete("end-3l", "end-1c")
 
-            except Exception as e:
-                ai_response = f"Sorry, I encountered an error: {str(e)}\n\nPlease check your API key configuration and internet connection."
-                print(f"AI Chat Error: {e}")
+                # Display AI response
+                chat_text.insert(tk.END, f"AI: {ai_response}\n\n", "ai")
+                chat_text.tag_config("ai", foreground="#4CAF50")
+                chat_text.insert(tk.END, "=" * 80 + "\n\n")
+                chat_text.see(tk.END)
+                chat_text.config(state=tk.DISABLED)
 
-            # Remove thinking indicator
-            chat_text.config(state=tk.NORMAL)
-            chat_text.delete("end-3l", "end-1c")
+                # Re-enable input
+                user_input.config(state=tk.NORMAL)
+                send_btn.config(state=tk.NORMAL)
+                user_input.focus_set()
 
-            # Display AI response
-            chat_text.insert(tk.END, f"AI: {ai_response}\n\n", "ai")
-            chat_text.tag_config("ai", foreground="#4CAF50")
-            chat_text.insert(tk.END, "=" * 80 + "\n\n")
-            chat_text.see(tk.END)
-            chat_text.config(state=tk.DISABLED)
+            thread = threading.Thread(target=_ai_worker, daemon=True)
+            thread.start()
 
         # Quick action buttons
         action_frame = tk.Frame(chat_window, bg=DARK_BG_COLOR)
@@ -583,7 +597,7 @@ You can call these functions to help answer user questions:
         for msg in chat_history:
             messages.append(LLMMessage(role=msg["role"], content=msg["content"]))
 
-        max_tokens_value = AI_MAX_TOKENS if "AI_MAX_TOKENS" in globals() else 500
+        max_tokens_value = AI_CHAT_MAX_TOKENS
         temperature_value = AI_TEMPERATURE if "AI_TEMPERATURE" in globals() else 0.2
 
         try:

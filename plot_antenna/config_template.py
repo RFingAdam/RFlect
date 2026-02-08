@@ -73,15 +73,26 @@ HEADER_ACCENT_COLOR = "#E63946"
 DISABLED_FG_COLOR = "#888888"
 FOCUS_BORDER_COLOR = "#5A9CF5"
 
-# Modern Fonts
-FONT_FAMILY = "Segoe UI"
-HEADER_BAR_FONT = ("Segoe UI", 16, "bold")
-HEADER_VERSION_FONT = ("Segoe UI", 9)
-SECTION_HEADER_FONT = ("Segoe UI", 11, "bold")
-LABEL_FONT_MODERN = ("Segoe UI", 10)
-BUTTON_FONT = ("Segoe UI", 10)
-LOG_FONT = ("Consolas", 9)
-STATUS_FONT = ("Segoe UI", 9)
+# Modern Fonts (platform-aware fallbacks for Linux/macOS/Windows)
+import sys as _sys
+
+if _sys.platform == "win32":
+    FONT_FAMILY = "Segoe UI"
+    _MONO_FAMILY = "Consolas"
+elif _sys.platform == "darwin":
+    FONT_FAMILY = "Helvetica Neue"
+    _MONO_FAMILY = "Menlo"
+else:  # Linux / other
+    FONT_FAMILY = "DejaVu Sans"
+    _MONO_FAMILY = "DejaVu Sans Mono"
+
+HEADER_BAR_FONT = (FONT_FAMILY, 16, "bold")
+HEADER_VERSION_FONT = (FONT_FAMILY, 9)
+SECTION_HEADER_FONT = (FONT_FAMILY, 11, "bold")
+LABEL_FONT_MODERN = (FONT_FAMILY, 10)
+BUTTON_FONT = (FONT_FAMILY, 10)
+LOG_FONT = (_MONO_FAMILY, 9)
+STATUS_FONT = (FONT_FAMILY, 9)
 
 # Button Geometry
 BTN_PADX = 16
@@ -174,7 +185,8 @@ AI_MODEL = "gpt-4o-mini"  # OpenAI model to use (default: gpt-4o-mini for compat
 # - Use "gpt-5-mini" for balanced speed/quality
 # - Use "gpt-4o-mini" if GPT-5 API access not available
 # - DON'T use O-series models for AI chat (no function calling)
-AI_MAX_TOKENS = 150  # Maximum response length (150 = ~100 words, 300 = ~200 words)
+AI_MAX_TOKENS = 150  # Maximum response length for report captions (150 = ~100 words)
+AI_CHAT_MAX_TOKENS = 800  # Maximum response length for AI Chat assistant (800 = ~500 words)
 # NOTE: For GPT-5, this maps to verbosity levels:
 # ≤100 → "low", ≤250 → "medium", >250 → "high"
 AI_TEMPERATURE = 0.2  # Lower = more consistent (0.0-1.0)

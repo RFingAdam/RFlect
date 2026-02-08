@@ -138,22 +138,28 @@ class OpenAIProvider(BaseLLMProvider):
             if msg.role == "tool":
                 api_messages.append(
                     {
-                        "role": "function",
-                        "name": msg.tool_name or "",
+                        "role": "tool",
+                        "tool_call_id": msg.tool_call_id or "",
                         "content": msg.content,
                     }
                 )
             elif msg.tool_calls:
-                # Assistant message with function_call
+                # Assistant message with tool_calls
                 tc = msg.tool_calls[0]
                 api_messages.append(
                     {
                         "role": "assistant",
                         "content": None,
-                        "function_call": {
-                            "name": tc.name,
-                            "arguments": json.dumps(tc.arguments),
-                        },
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.name,
+                                    "arguments": json.dumps(tc.arguments),
+                                },
+                            }
+                        ],
                     }
                 )
             elif msg.images:
@@ -179,36 +185,42 @@ class OpenAIProvider(BaseLLMProvider):
             "temperature": temperature,
         }
 
-        # Add function definitions if tools provided
+        # Add tool definitions if tools provided
         if tools:
-            api_params["functions"] = [
+            api_params["tools"] = [
                 {
-                    "name": t.name,
-                    "description": t.description,
-                    "parameters": t.parameters,
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters,
+                    },
                 }
                 for t in tools
             ]
-            api_params["function_call"] = "auto"
+            api_params["tool_choice"] = "auto"
 
         response = self.client.chat.completions.create(**api_params)
         msg = response.choices[0].message
 
-        # Check for function call
-        if msg.function_call:
-            try:
-                args = json.loads(msg.function_call.arguments)
-            except (json.JSONDecodeError, TypeError):
-                args = {}
-            return LLMResponse(
-                content=msg.content or "",
-                tool_calls=[
+        # Check for tool calls
+        if msg.tool_calls:
+            parsed_calls = []
+            for tc in msg.tool_calls:
+                try:
+                    args = json.loads(tc.function.arguments)
+                except (json.JSONDecodeError, TypeError):
+                    args = {}
+                parsed_calls.append(
                     ToolCall(
-                        id=f"call_{msg.function_call.name}",
-                        name=msg.function_call.name,
+                        id=tc.id,
+                        name=tc.function.name,
                         arguments=args,
                     )
-                ],
+                )
+            return LLMResponse(
+                content=msg.content or "",
+                tool_calls=parsed_calls,
                 stop_reason="tool_use",
                 raw=response,
             )
