@@ -737,6 +737,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         """Bind keyboard shortcuts."""
         self.root.bind("<Control-q>", lambda e: self.on_closing())
         self.root.bind("<Control-o>", lambda e: self.import_files())
+        self.root.bind("<Control-r>", lambda e: self.process_data())
+        self.root.bind("<F5>", lambda e: self.process_data())
 
     # ────────────────────────────────────────────────────────────────────────
     # WINDOW MANAGEMENT

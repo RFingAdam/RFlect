@@ -70,7 +70,7 @@ DIVIDER_COLOR = "#444444"
 LOG_BG_COLOR = "#1E1E1E"
 HEADER_BAR_COLOR = "#252525"
 HEADER_ACCENT_COLOR = "#E63946"
-DISABLED_FG_COLOR = "#888888"
+DISABLED_FG_COLOR = "#A0A0A0"  # WCAG AA compliant (5.6:1 on #2E2E2E)
 FOCUS_BORDER_COLOR = "#5A9CF5"
 
 # Modern Fonts (platform-aware fallbacks for Linux/macOS/Windows)

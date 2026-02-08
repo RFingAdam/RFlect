@@ -51,6 +51,9 @@ except ImportError:
     DOTENV_AVAILABLE = False
 
 
+# In-memory key cache — avoids leaking keys into os.environ
+_key_cache: dict = {}
+
 # ────────────────────────────────────────────────────────────────────────────
 # PROVIDER REGISTRY
 # ────────────────────────────────────────────────────────────────────────────
@@ -101,17 +104,58 @@ def get_user_data_dir() -> str:
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _get_machine_id() -> str:
+    """Get a machine-unique identifier, preferring OS-specific IDs over MAC address."""
+    import sys
+
+    if sys.platform == "linux":
+        try:
+            with open("/etc/machine-id", "r") as f:
+                return f.read().strip()
+        except (FileNotFoundError, PermissionError):
+            pass
+    elif sys.platform == "darwin":
+        import subprocess
+
+        try:
+            result = subprocess.run(
+                ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            for line in result.stdout.splitlines():
+                if "IOPlatformUUID" in line:
+                    return line.split('"')[-2]
+        except Exception:
+            pass
+    elif sys.platform == "win32":
+        import winreg
+
+        try:
+            key = winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography"
+            )
+            value, _ = winreg.QueryValueEx(key, "MachineGuid")
+            return str(value)
+        except Exception:
+            pass
+    # Fallback to MAC address
+    return str(uuid.getnode())
+
+
 def _get_encryption_key() -> bytes:
     """Derive a machine-unique Fernet key via PBKDF2.
 
-    Uses the machine's MAC address (uuid.getnode()) combined with a fixed
-    application salt. The key is deterministic for a given machine, so
-    encrypted files can only be decrypted on the same machine.
+    Uses an OS-specific machine identifier (falling back to MAC address)
+    combined with a fixed application salt. The key is deterministic for
+    a given machine, so encrypted files can only be decrypted on the
+    same machine.
     """
     if not CRYPTO_AVAILABLE:
         raise RuntimeError("cryptography package required for encrypted key storage")
 
-    machine_id = str(uuid.getnode()).encode("utf-8")
+    machine_id = _get_machine_id().encode("utf-8")
     salt = b"RFlect_v4.1_secure_key_storage"
 
     kdf = PBKDF2HMAC(
@@ -366,13 +410,13 @@ def load_api_key(provider_name: str = "openai") -> Optional[str]:
     # 1. OS keyring
     key = _load_from_keyring(provider_name)
     if key:
-        os.environ[info["env_vars"][0]] = key
+        _key_cache[info["env_vars"][0]] = key
         return key
 
     # 2. Encrypted file
     key = _load_from_encrypted_file(provider_name)
     if key:
-        os.environ[info["env_vars"][0]] = key
+        _key_cache[info["env_vars"][0]] = key
         return key
 
     # 3. Environment variable
@@ -410,12 +454,12 @@ def save_api_key(provider_name: str, api_key: str) -> bool:
 
     # Try keyring first
     if _save_to_keyring(provider_name, api_key):
-        os.environ[info["env_vars"][0]] = api_key
+        _key_cache[info["env_vars"][0]] = api_key
         return True
 
     # Fall back to encrypted file
     if _save_to_encrypted_file(provider_name, api_key):
-        os.environ[info["env_vars"][0]] = api_key
+        _key_cache[info["env_vars"][0]] = api_key
         return True
 
     return False
@@ -450,10 +494,11 @@ def delete_api_key(provider_name: str) -> bool:
     except Exception as e:
         print(f"[WARNING] Could not remove key file: {e}")
 
-    # Remove from environment
+    # Remove from environment and cache
     for var_name in info["env_vars"]:
         if var_name in os.environ:
             del os.environ[var_name]
+        _key_cache.pop(var_name, None)
 
     return deleted
 
@@ -461,7 +506,7 @@ def delete_api_key(provider_name: str) -> bool:
 def get_api_key(provider_name: str = "openai") -> Optional[str]:
     """Get the currently active API key for a provider.
 
-    Checks environment variables first (populated by load_api_key at startup).
+    Checks in-memory cache first, then falls back to environment variables.
 
     Args:
         provider_name: Provider identifier ("openai" or "anthropic")
@@ -473,6 +518,11 @@ def get_api_key(provider_name: str = "openai") -> Optional[str]:
     if not info:
         return None
     for var_name in info["env_vars"]:
+        # Check in-memory cache first
+        key = _key_cache.get(var_name)
+        if key:
+            return key
+        # Fall back to environment variable
         key = os.getenv(var_name)
         if key:
             return key
@@ -550,7 +600,8 @@ def initialize_keys() -> None:
 
 
 def clear_env_keys() -> None:
-    """Clear API keys from environment variables. Call on app shutdown."""
+    """Clear API keys from environment variables and cache. Call on app shutdown."""
+    _key_cache.clear()
     for info in PROVIDERS.values():
         for var_name in info["env_vars"]:
             if var_name in os.environ:

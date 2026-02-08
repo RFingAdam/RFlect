@@ -22,6 +22,7 @@ from ..config import (
     LIGHT_TEXT_COLOR,
     ACCENT_BLUE_COLOR,
     BUTTON_COLOR,
+    SURFACE_COLOR,
     AI_MODEL,
     AI_RESPONSE_STYLE,
     AI_MAX_TOKENS,
@@ -443,21 +444,24 @@ Features:
                     )
                     return
                 status_lbl.config(text="Testing...", fg="#FFC107")
-                api_window.update()
-                ok, msg = api_keys_test(provider_name, key)
-                if ok:
-                    status_lbl.config(text="Configured", fg="#4CAF50")
-                    messagebox.showinfo("Connection OK", msg)
-                else:
-                    status_lbl.config(
-                        text=(
-                            "Configured"
-                            if is_api_key_configured(provider_name)
-                            else "Not configured"
-                        ),
-                        fg="#4CAF50" if is_api_key_configured(provider_name) else "#FFC107",
-                    )
-                    messagebox.showerror("Connection Failed", msg)
+
+                def _test_worker():
+                    ok, msg = api_keys_test(provider_name, key)
+                    self.root.after(0, lambda: _test_done(ok, msg))
+
+                def _test_done(ok, msg):
+                    if ok:
+                        status_lbl.config(text="Configured", fg="#4CAF50")
+                        messagebox.showinfo("Connection OK", msg)
+                    else:
+                        status_lbl.config(
+                            text="Configured" if is_api_key_configured(provider_name) else "Not configured",
+                            fg="#4CAF50" if is_api_key_configured(provider_name) else "#FFC107",
+                        )
+                        messagebox.showerror("Connection Failed", msg)
+
+                import threading
+                threading.Thread(target=_test_worker, daemon=True).start()
 
             tk.Button(
                 btn_frame,
@@ -1204,35 +1208,42 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         settings_window = tk.Toplevel(self.root)
         settings_window.geometry("600x350")
         settings_window.title(f"{scan_type_value.capitalize()} Settings")
+        settings_window.configure(bg=DARK_BG_COLOR)
 
         # ────────────────────────────────────
         #  ACTIVE  (TRP) SETTINGS
         # ────────────────────────────────────
         if scan_type_value == "active":
-            tk.Label(settings_window, text="Active Plot Settings").grid(
+            tk.Label(settings_window, text="Active Plot Settings", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=0, columnspan=4, pady=20
             )
 
             # 3-D interpolation
             self.interpolate_var = tk.BooleanVar(value=self.interpolate_3d_plots)
             tk.Checkbutton(
-                settings_window, text="Interpolate 3-D Plots", variable=self.interpolate_var
+                settings_window, text="Interpolate 3-D Plots", variable=self.interpolate_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=0, sticky=tk.W, padx=20)
 
             # Manual / auto Z-axis
-            tk.Label(settings_window, text="3-D Z-Axis Scale:").grid(
+            tk.Label(settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=2, column=0, sticky=tk.W, padx=20
             )
             tk.Radiobutton(
-                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto"
+                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=2, column=1, sticky=tk.W)
             tk.Radiobutton(
-                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual"
+                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=2, column=2, sticky=tk.W)
-            tk.Label(settings_window, text="Min dBm:").grid(row=3, column=0, sticky=tk.W, padx=20)
-            tk.Entry(settings_window, textvariable=self.axis_min, width=6).grid(row=3, column=1)
-            tk.Label(settings_window, text="Max dBm:").grid(row=3, column=2, sticky=tk.W)
-            tk.Entry(settings_window, textvariable=self.axis_max, width=6).grid(row=3, column=3)
+            tk.Label(settings_window, text="Min dBm:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(row=3, column=0, sticky=tk.W, padx=20)
+            tk.Entry(settings_window, textvariable=self.axis_min, width=6, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=1)
+            tk.Label(settings_window, text="Max dBm:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(row=3, column=2, sticky=tk.W)
+            tk.Entry(settings_window, textvariable=self.axis_max, width=6, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=3)
 
             def save_active_settings():
                 self.interpolate_3d_plots = self.interpolate_var.get()
@@ -1251,24 +1262,30 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         #  PASSIVE  (HPOL/VPOL  or  G&D) SETTINGS
         # ────────────────────────────────────
         elif scan_type_value == "passive":
-            tk.Label(settings_window, text="Passive Plot Settings").grid(
+            tk.Label(settings_window, text="Passive Plot Settings", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=0, columnspan=4, pady=10
             )
 
             # VPOL/HPOL  vs  G&D
             self.plot_type_var = tk.StringVar(value=self.passive_scan_type.get())
             r_hv = tk.Radiobutton(
-                settings_window, text="VPOL / HPOL", variable=self.plot_type_var, value="VPOL/HPOL"
+                settings_window, text="VPOL / HPOL", variable=self.plot_type_var, value="VPOL/HPOL",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
             r_gd = tk.Radiobutton(
-                settings_window, text="G&D", variable=self.plot_type_var, value="G&D"
+                settings_window, text="G&D", variable=self.plot_type_var, value="G&D",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
             r_hv.grid(row=1, column=0, sticky=tk.W, padx=20)
             r_gd.grid(row=1, column=1, sticky=tk.W, padx=20)
 
             # Datasheet-style plots  (only for VPOL/HPOL)
             self.cb_datasheet_plots = tk.Checkbutton(
-                settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var
+                settings_window, text="Datasheet Plots", variable=self.datasheet_plots_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
 
             # ECC calculation  (only for VPOL/HPOL)
@@ -1279,19 +1296,25 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 settings_window,
                 text="Calculate Envelope Correlation Coefficient (ECC)",
                 variable=self.cb_ecc_analysis_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
 
             # Min/Max Eff & Gain  (only for G&D)
             self.cb_min_max_eff_gain = tk.Checkbutton(
-                settings_window, text="Min/Max Eff & Gain", variable=self.min_max_eff_gain_var
+                settings_window, text="Min/Max Eff & Gain", variable=self.min_max_eff_gain_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
 
             # Human-torso shadowing model
             self.cb_shadowing_var = tk.BooleanVar(value=getattr(self, "shadowing_enabled", False))
             tk.Checkbutton(
-                settings_window, text="Apply Human Torso Shadow", variable=self.cb_shadowing_var
+                settings_window, text="Apply Human Torso Shadow", variable=self.cb_shadowing_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=6, column=0, sticky=tk.W, padx=20)
-            tk.Label(settings_window, text="Shadow Direction:").grid(row=6, column=1, sticky=tk.E)
+            tk.Label(settings_window, text="Shadow Direction:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(row=6, column=1, sticky=tk.E)
             self.shadow_direction_var = tk.StringVar(value=getattr(self, "shadow_direction", "-X"))
             ttk.Combobox(
                 settings_window,
@@ -1302,17 +1325,21 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=6, column=2)
 
             # 3-D axis controls (shared with Active logic)
-            self.lbl_axis = tk.Label(settings_window, text="3-D Z-Axis Scale:")
+            self.lbl_axis = tk.Label(settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
             self.rb_axis_auto = tk.Radiobutton(
-                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto"
+                settings_window, text="Auto", variable=self.axis_scale_mode, value="auto",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
             self.rb_axis_man = tk.Radiobutton(
-                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual"
+                settings_window, text="Manual", variable=self.axis_scale_mode, value="manual",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             )
-            self.lbl_min_dbi = tk.Label(settings_window, text="Min dBi:")
-            self.ent_min_dbi = tk.Entry(settings_window, textvariable=self.axis_min, width=6)
-            self.lbl_max_dbi = tk.Label(settings_window, text="Max dBi:")
-            self.ent_max_dbi = tk.Entry(settings_window, textvariable=self.axis_max, width=6)
+            self.lbl_min_dbi = tk.Label(settings_window, text="Min dBi:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
+            self.ent_min_dbi = tk.Entry(settings_window, textvariable=self.axis_min, width=6, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR)
+            self.lbl_max_dbi = tk.Label(settings_window, text="Max dBi:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
+            self.ent_max_dbi = tk.Entry(settings_window, textvariable=self.axis_max, width=6, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR)
 
             # put them in the grid now (we'll hide some later)
             self.lbl_axis.grid(row=3, column=0, sticky=tk.W, padx=20)
@@ -1364,21 +1391,36 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 settings_window,
                 text="VSWR/Return Loss Settings",
                 font=("Arial", 12, "bold"),
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
             )
             title.grid(row=0, column=0, columnspan=2, pady=10)
 
             def save_vswr_settings():
-                self.saved_limit1_freq1 = self.limit1_freq1.get()
-                self.saved_limit1_freq2 = self.limit1_freq2.get()
-                self.saved_limit1_start = self.limit1_val1.get()
-                self.saved_limit1_stop = self.limit1_val2.get()
-                self.saved_limit2_freq1 = self.limit2_freq1.get()
-                self.saved_limit2_freq2 = self.limit2_freq2.get()
-                self.saved_limit2_start = self.limit2_val1.get()
-                self.saved_limit2_stop = self.limit2_val2.get()
-                self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
-                self.saved_min_max_vswr = self.min_max_vswr_var.get()
-                settings_window.destroy()
+                try:
+                    f1 = self.limit1_freq1.get()
+                    f2 = self.limit1_freq2.get()
+                    if f1 != 0 and f2 != 0 and f1 >= f2:
+                        messagebox.showwarning("Invalid", "Limit 1: Freq Start must be less than Freq End")
+                        return
+                    f1_2 = self.limit2_freq1.get()
+                    f2_2 = self.limit2_freq2.get()
+                    if f1_2 != 0 and f2_2 != 0 and f1_2 >= f2_2:
+                        messagebox.showwarning("Invalid", "Limit 2: Freq Start must be less than Freq End")
+                        return
+                    self.saved_limit1_freq1 = self.limit1_freq1.get()
+                    self.saved_limit1_freq2 = self.limit1_freq2.get()
+                    self.saved_limit1_start = self.limit1_val1.get()
+                    self.saved_limit1_stop = self.limit1_val2.get()
+                    self.saved_limit2_freq1 = self.limit2_freq1.get()
+                    self.saved_limit2_freq2 = self.limit2_freq2.get()
+                    self.saved_limit2_start = self.limit2_val1.get()
+                    self.saved_limit2_stop = self.limit2_val2.get()
+                    self.cb_groupdelay_sff = self.cb_groupdelay_sff_var.get()
+                    self.saved_min_max_vswr = self.min_max_vswr_var.get()
+                    settings_window.destroy()
+                except tk.TclError:
+                    messagebox.showerror("Invalid Input", "Please enter valid numeric values.")
 
             def default_vswr_settings():
                 for var in (
@@ -1405,23 +1447,29 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 self.min_max_vswr_var.set(False)
 
             # Options section
-            opts_frame = tk.LabelFrame(settings_window, text="Options", padx=10, pady=5)
+            opts_frame = tk.LabelFrame(settings_window, text="Options", padx=10, pady=5,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
             opts_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
             tk.Checkbutton(
                 opts_frame,
                 text="Group Delay & SFF",
                 variable=self.cb_groupdelay_sff_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).pack(anchor=tk.W)
             tk.Checkbutton(
                 opts_frame,
                 text="Tabled Min/Max VSWR",
                 variable=self.min_max_vswr_var,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
             ).pack(anchor=tk.W)
             if hasattr(self, "saved_min_max_vswr"):
                 self.min_max_vswr_var.set(self.saved_min_max_vswr)
 
             # Limit Line 1 section
-            limit1_frame = tk.LabelFrame(settings_window, text="Limit Line 1", padx=10, pady=5)
+            limit1_frame = tk.LabelFrame(settings_window, text="Limit Line 1", padx=10, pady=5,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
             limit1_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
 
             self.limit1_freq1 = tk.DoubleVar()
@@ -1429,34 +1477,35 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             self.limit1_val1 = tk.DoubleVar()
             self.limit1_val2 = tk.DoubleVar()
 
-            tk.Label(limit1_frame, text="Freq Start (GHz):").grid(
+            tk.Label(limit1_frame, text="Freq Start (GHz):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=0, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit1_frame, textvariable=self.limit1_freq1, width=10).grid(
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq1, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=0, column=1, padx=5, pady=2
             )
-            tk.Label(limit1_frame, text="Value Start:").grid(
+            tk.Label(limit1_frame, text="Value Start:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=2, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit1_frame, textvariable=self.limit1_val1, width=10).grid(
+            tk.Entry(limit1_frame, textvariable=self.limit1_val1, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=0, column=3, padx=5, pady=2
             )
 
-            tk.Label(limit1_frame, text="Freq End (GHz):").grid(
+            tk.Label(limit1_frame, text="Freq End (GHz):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=1, column=0, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit1_frame, textvariable=self.limit1_freq2, width=10).grid(
+            tk.Entry(limit1_frame, textvariable=self.limit1_freq2, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=1, column=1, padx=5, pady=2
             )
-            tk.Label(limit1_frame, text="Value End:").grid(
+            tk.Label(limit1_frame, text="Value End:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=1, column=2, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit1_frame, textvariable=self.limit1_val2, width=10).grid(
+            tk.Entry(limit1_frame, textvariable=self.limit1_val2, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=1, column=3, padx=5, pady=2
             )
 
             # Limit Line 2 section
-            limit2_frame = tk.LabelFrame(settings_window, text="Limit Line 2", padx=10, pady=5)
+            limit2_frame = tk.LabelFrame(settings_window, text="Limit Line 2", padx=10, pady=5,
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR)
             limit2_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
 
             self.limit2_freq1 = tk.DoubleVar()
@@ -1464,29 +1513,29 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             self.limit2_val1 = tk.DoubleVar()
             self.limit2_val2 = tk.DoubleVar()
 
-            tk.Label(limit2_frame, text="Freq Start (GHz):").grid(
+            tk.Label(limit2_frame, text="Freq Start (GHz):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=0, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit2_frame, textvariable=self.limit2_freq1, width=10).grid(
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq1, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=0, column=1, padx=5, pady=2
             )
-            tk.Label(limit2_frame, text="Value Start:").grid(
+            tk.Label(limit2_frame, text="Value Start:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=0, column=2, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit2_frame, textvariable=self.limit2_val1, width=10).grid(
+            tk.Entry(limit2_frame, textvariable=self.limit2_val1, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=0, column=3, padx=5, pady=2
             )
 
-            tk.Label(limit2_frame, text="Freq End (GHz):").grid(
+            tk.Label(limit2_frame, text="Freq End (GHz):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=1, column=0, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit2_frame, textvariable=self.limit2_freq2, width=10).grid(
+            tk.Entry(limit2_frame, textvariable=self.limit2_freq2, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=1, column=1, padx=5, pady=2
             )
-            tk.Label(limit2_frame, text="Value End:").grid(
+            tk.Label(limit2_frame, text="Value End:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
                 row=1, column=2, sticky="e", padx=5, pady=2
             )
-            tk.Entry(limit2_frame, textvariable=self.limit2_val2, width=10).grid(
+            tk.Entry(limit2_frame, textvariable=self.limit2_val2, width=10, bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR).grid(
                 row=1, column=3, padx=5, pady=2
             )
 
@@ -1502,7 +1551,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 self.limit2_val2.set(self.saved_limit2_stop)
 
             # Buttons
-            btn_frame = tk.Frame(settings_window)
+            btn_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
             btn_frame.grid(row=4, column=0, columnspan=2, pady=15)
             tk.Button(
                 btn_frame,

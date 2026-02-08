@@ -104,7 +104,7 @@ def plot_2d_azimuth_power_cuts(
     if save_path:
         # Save the plot with appropriate naming
         azimuth_plot_path = os.path.join(save_path, f"2D_Azimuth_Cuts_{frequency}_MHz.png")
-        plt.savefig(azimuth_plot_path, format="png")
+        plt.savefig(azimuth_plot_path, format="png", dpi=300)
         plt.close()  # Close the plot after saving
     else:
         plt.show()
@@ -314,7 +314,7 @@ def plot_polar_power_pattern(
             title.replace(" ", "_").replace("=", "_").replace(":", "_").replace("/", "_")
         )
         plot_path = os.path.join(save_path, f"{sanitized_title}.png")
-        plt.savefig(plot_path, format="png")
+        plt.savefig(plot_path, format="png", dpi=300)
         plt.close(fig)
     else:
         plt.show()
@@ -466,14 +466,14 @@ def plot_active_3d_data(
         norm = Normalize(zmin, zmax)
     else:
         norm = Normalize(data_interp.min(), data_interp.max())
-    mappable = cm.ScalarMappable(norm=norm, cmap=cm.jet)  # type: ignore
+    mappable = cm.ScalarMappable(norm=norm, cmap=cm.turbo)  # type: ignore
     mappable.set_array(data_interp)
 
     surf = ax.plot_surface(
         X,
         Y,
         Z,
-        facecolors=cm.jet(norm(data_interp)),  # type: ignore
+        facecolors=cm.turbo(norm(data_interp)),  # type: ignore
         linewidth=0.5,
         antialiased=True,
         shade=False,
@@ -642,14 +642,14 @@ def plot_active_3d_data(
     if save_path:
         # Save the first view
         plot_3d_path_1 = os.path.join(save_path, f"3D_TRP_{power_type}_{frequency}MHz_1of2.png")
-        fig.savefig(plot_3d_path_1, format="png")
+        fig.savefig(plot_3d_path_1, format="png", dpi=300)
 
         # Adjust view angle to get the rear side of the 3D plot
         ax.view_init(elev=20, azim=150)
 
         # Save the second view
         plot_3d_path_2 = os.path.join(save_path, f"3D_TRP_{power_type}_{frequency}MHz_2of2.png")
-        fig.savefig(plot_3d_path_2, format="png")
+        fig.savefig(plot_3d_path_2, format="png", dpi=300)
 
         plt.close(fig)
     else:
@@ -756,7 +756,7 @@ def plot_2d_passive_data(
     fig.gca().grid(True, which="both", linestyle="--", linewidth=0.5)
     if save_path:
         eff_db_path = os.path.join(save_path, f"efficiency_db_{min_freq}-{max_freq}MHz.png")
-        fig.savefig(eff_db_path, format="png")
+        fig.savefig(eff_db_path, format="png", dpi=300)
         plt.close(fig)
     else:
         plt.show()
@@ -775,7 +775,7 @@ def plot_2d_passive_data(
         eff_percent_path = os.path.join(
             save_path, f"efficiency_percent_{min_freq}-{max_freq}MHz.png"
         )
-        fig.savefig(eff_percent_path, format="png")
+        fig.savefig(eff_percent_path, format="png", dpi=300)
         plt.close(fig)
     else:
         plt.show()
@@ -792,7 +792,7 @@ def plot_2d_passive_data(
     fig.gca().grid(True, which="both", linestyle="--", linewidth=0.5)
     if save_path:
         total_gain_path = os.path.join(save_path, f"total_gain_{min_freq}-{max_freq}MHz.png")
-        fig.savefig(total_gain_path, format="png")
+        fig.savefig(total_gain_path, format="png", dpi=300)
         plt.close(fig)
     else:
         plt.show()
@@ -885,8 +885,8 @@ def plot_2d_passive_data(
 
         # If save path specified, save otherwise show
         if save_path:
-            fig_phi.savefig(os.path.join(save_path, "phi_gain.png"), format="png")
-            fig_theta.savefig(os.path.join(save_path, "theta_gain.png"), format="png")
+            fig_phi.savefig(os.path.join(save_path, "phi_gain.png"), format="png", dpi=300)
+            fig_theta.savefig(os.path.join(save_path, "theta_gain.png"), format="png", dpi=300)
             plt.close(fig_phi)
             plt.close(fig_theta)
         else:
@@ -944,7 +944,7 @@ def plot_2d_passive_data(
 
     if save_path:
         azimuth_plot_path = os.path.join(save_path, f"Azimuth_Cuts_{selected_frequency}MHz.png")
-        plt.savefig(azimuth_plot_path, format="png")
+        plt.savefig(azimuth_plot_path, format="png", dpi=300)
         plt.close()  # Close the plot after saving
     else:
         plt.show()  # Display the plot
@@ -1061,7 +1061,7 @@ def plot_additional_polar_patterns(
                 )
 
         if save_path:
-            plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"))
+            plt.savefig(os.path.join(save_path, title.replace(" ", "_") + f"_at_{freq}_MHz.png"), dpi=300)
             plt.close()
         else:
             plt.show()
@@ -1351,7 +1351,7 @@ def plot_passive_3d_component(
         X,
         Y,
         Z,
-        facecolors=cm.jet(norm(gain_interp)),  # type: ignore
+        facecolors=cm.turbo(norm(gain_interp)),  # type: ignore
         linewidth=0.5,
         antialiased=True,
         shade=False,
@@ -1442,7 +1442,7 @@ def plot_passive_3d_component(
     ax.set_title(plot_title, fontsize=16)
 
     # Add a colorbar
-    mappable = cm.ScalarMappable(norm=norm, cmap=cm.jet)  # type: ignore
+    mappable = cm.ScalarMappable(norm=norm, cmap=cm.turbo)  # type: ignore
     mappable.set_array(gain_interp)
     cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
     cbar.set_label("Gain (dBi)", rotation=270, labelpad=20, fontsize=14)
@@ -1456,14 +1456,14 @@ def plot_passive_3d_component(
     if save_path:
         # Save the first view
         plot_3d_path_1 = os.path.join(save_path, f"3D_{gain_type}_1of2.png")
-        fig.savefig(plot_3d_path_1, format="png")
+        fig.savefig(plot_3d_path_1, format="png", dpi=300)
 
         # Adjust view angle to get the rear side of the 3D plot
         ax.view_init(elev=20, azim=150)  # Adjust the azimuthal angle to get the rear view
 
         # Save the second view
         plot_3d_path_2 = os.path.join(save_path, f"3D_{gain_type}_2of2.png")
-        fig.savefig(plot_3d_path_2, format="png")
+        fig.savefig(plot_3d_path_2, format="png", dpi=300)
 
         plt.close(fig)
     else:

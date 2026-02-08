@@ -312,6 +312,9 @@ class CallbacksMixin:
 
     def import_files(self):
         """Import TRP or HPOL/VPOL data files for analysis."""
+        if self.hpol_file_path or self.TRP_file_path:
+            if not messagebox.askyesno("Confirm", "This will discard current data. Continue?"):
+                return
         self.reset_data()
 
         if self.scan_type.get() == "active":

@@ -16,7 +16,7 @@ import os
 import datetime
 import webbrowser
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from tkinter.simpledialog import askstring
 from typing import TYPE_CHECKING, Optional, List, Any
 
@@ -25,6 +25,7 @@ import requests
 
 from ..config import (
     ACCENT_BLUE_COLOR,
+    DARK_BG_COLOR,
     LIGHT_TEXT_COLOR,
     HOVER_COLOR,
     BUTTON_FONT,
@@ -512,24 +513,44 @@ class ToolsMixin:
         zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15
         zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15
 
-        # Invoke batch processing
-        try:
-            batch_process_passive_scans(
-                folder_path=directory,
-                freq_list=freq_list,
-                selected_frequencies=selected_freqs,
-                cable_loss=cable_loss,
-                datasheet_plots=datasheet_plots,
-                save_base=save_base,
-                axis_mode=axis_mode,
-                zmin=zmin,
-                zmax=zmax,
-            )
-            messagebox.showinfo(
-                "Success", f"Bulk processing complete. Results saved to {save_base}"
-            )
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred during processing: {e}")
+        # Invoke batch processing with progress feedback
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Processing...")
+        progress_window.geometry("300x100")
+        progress_window.configure(bg=DARK_BG_COLOR)
+        progress_window.transient(self.root)
+        tk.Label(progress_window, text="Bulk processing in progress...", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(pady=10)
+        progress_bar = ttk.Progressbar(progress_window, mode="indeterminate", length=250)
+        progress_bar.pack(pady=10)
+        progress_bar.start()
+
+        def _process_worker():
+            try:
+                batch_process_passive_scans(
+                    folder_path=directory,
+                    freq_list=freq_list,
+                    selected_frequencies=selected_freqs,
+                    cable_loss=cable_loss,
+                    datasheet_plots=datasheet_plots,
+                    save_base=save_base,
+                    axis_mode=axis_mode,
+                    zmin=zmin,
+                    zmax=zmax,
+                )
+                self.root.after(0, lambda: _process_done(True, None))
+            except Exception as e:
+                self.root.after(0, lambda: _process_done(False, str(e)))
+
+        def _process_done(success, error_msg):
+            progress_bar.stop()
+            progress_window.destroy()
+            if success:
+                messagebox.showinfo("Success", f"Bulk processing complete. Results saved to {save_base}")
+            else:
+                messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
+
+        import threading
+        threading.Thread(target=_process_worker, daemon=True).start()
 
     def open_bulk_active_processing(self):
         """Prompt the user for a directory of TRP files and process them in bulk."""
@@ -557,21 +578,41 @@ class ToolsMixin:
         zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15.0
         zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15.0
 
-        # Invoke batch processing
-        try:
-            batch_process_active_scans(
-                folder_path=directory,
-                save_base=save_base,
-                interpolate=interpolate,
-                axis_mode=axis_mode,
-                zmin=zmin,
-                zmax=zmax,
-            )
-            messagebox.showinfo(
-                "Success", f"Bulk active processing complete. Results saved to {save_base}"
-            )
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred during processing: {e}")
+        # Invoke batch processing with progress feedback
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Processing...")
+        progress_window.geometry("300x100")
+        progress_window.configure(bg=DARK_BG_COLOR)
+        progress_window.transient(self.root)
+        tk.Label(progress_window, text="Bulk processing in progress...", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(pady=10)
+        progress_bar = ttk.Progressbar(progress_window, mode="indeterminate", length=250)
+        progress_bar.pack(pady=10)
+        progress_bar.start()
+
+        def _process_worker():
+            try:
+                batch_process_active_scans(
+                    folder_path=directory,
+                    save_base=save_base,
+                    interpolate=interpolate,
+                    axis_mode=axis_mode,
+                    zmin=zmin,
+                    zmax=zmax,
+                )
+                self.root.after(0, lambda: _process_done(True, None))
+            except Exception as e:
+                self.root.after(0, lambda: _process_done(False, str(e)))
+
+        def _process_done(success, error_msg):
+            progress_bar.stop()
+            progress_window.destroy()
+            if success:
+                messagebox.showinfo("Success", f"Bulk active processing complete. Results saved to {save_base}")
+            else:
+                messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
+
+        import threading
+        threading.Thread(target=_process_worker, daemon=True).start()
 
     # ────────────────────────────────────────────────────────────────────────
     # POLARIZATION ANALYSIS
@@ -1122,7 +1163,7 @@ class ToolsMixin:
         repo = "RFlect"
         url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
 
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
 
         if response.status_code == 200:
             data = response.json()
@@ -1138,8 +1179,13 @@ class ToolsMixin:
 
     def check_for_updates(self):
         """Check for software updates."""
+
+        def _parse_version(v):
+            """Parse version string like 'v4.2.0' into comparable tuple."""
+            return tuple(int(x) for x in v.lstrip("v").split("."))
+
         latest_version, release_url = self.get_latest_release()
-        if latest_version and latest_version > self.CURRENT_VERSION:
+        if latest_version and _parse_version(latest_version) > _parse_version(self.CURRENT_VERSION):
             self.log_message(f"Update Available. A new version {latest_version} is available!")
 
             answer = messagebox.askyesno(

@@ -285,7 +285,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
 
             # Show typing indicator
             chat_text.config(state=tk.NORMAL)
-            chat_text.insert(tk.END, "AI: Thinking...\n\n", "ai_thinking")
+            chat_text.insert(tk.END, "AI: Thinking...\n\n", ("ai_thinking", "thinking_marker"))
             chat_text.tag_config("ai_thinking", foreground="#FFC107", font=("Arial", 10, "italic"))
             chat_text.see(tk.END)
             chat_text.config(state=tk.DISABLED)
@@ -293,6 +293,8 @@ Ask me anything about your measurements, patterns, or RF analysis!
             # Disable input while AI is processing
             user_input.config(state=tk.DISABLED)
             send_btn.config(state=tk.DISABLED)
+            for btn in quick_buttons:
+                btn.config(state=tk.DISABLED)
 
             # Capture context on main thread before spawning worker
             data_context = self._build_chat_context()
@@ -310,7 +312,9 @@ Ask me anything about your measurements, patterns, or RF analysis!
             def _display_response(ai_response):
                 # Remove thinking indicator
                 chat_text.config(state=tk.NORMAL)
-                chat_text.delete("end-3l", "end-1c")
+                thinking_range = chat_text.tag_ranges("thinking_marker")
+                if thinking_range:
+                    chat_text.delete(thinking_range[0], thinking_range[1])
 
                 # Display AI response
                 chat_text.insert(tk.END, f"AI: {ai_response}\n\n", "ai")
@@ -322,6 +326,8 @@ Ask me anything about your measurements, patterns, or RF analysis!
                 # Re-enable input
                 user_input.config(state=tk.NORMAL)
                 send_btn.config(state=tk.NORMAL)
+                for btn in quick_buttons:
+                    btn.config(state=tk.NORMAL)
                 user_input.focus_set()
 
             thread = threading.Thread(target=_ai_worker, daemon=True)
@@ -343,6 +349,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
             user_input.insert("1.0", prompt_text)
             send_message()
 
+        quick_buttons = []
         for label, prompt in quick_actions:
             btn = tk.Button(
                 action_frame,
@@ -353,6 +360,7 @@ Ask me anything about your measurements, patterns, or RF analysis!
                 command=lambda p=prompt: _quick_send(p),
             )
             btn.pack(side=tk.LEFT, padx=3, pady=3)
+            quick_buttons.append(btn)
 
         def _clear_chat():
             chat_text.config(state=tk.NORMAL)

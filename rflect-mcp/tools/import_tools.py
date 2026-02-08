@@ -6,6 +6,7 @@ Handles importing antenna measurement files and folders.
 
 import os
 import glob
+import threading
 import numpy as np
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ class LoadedMeasurement:
 
 # Global storage for loaded measurements
 _loaded_measurements: Dict[str, LoadedMeasurement] = {}
+_measurements_lock = threading.Lock()
 
 
 def get_loaded_data_summary() -> str:
@@ -99,12 +101,13 @@ def register_import_tools(mcp):
 
             # Store the measurement
             name = os.path.basename(file_path)
-            _loaded_measurements[name] = LoadedMeasurement(
-                file_path=file_path,
-                scan_type=scan_type,
-                frequencies=frequencies,
-                data=data
-            )
+            with _measurements_lock:
+                _loaded_measurements[name] = LoadedMeasurement(
+                    file_path=file_path,
+                    scan_type=scan_type,
+                    frequencies=frequencies,
+                    data=data
+                )
 
             return f"Successfully imported: {name}\nType: {scan_type}\nFrequencies: {frequencies}\nData points loaded."
 
@@ -225,12 +228,13 @@ def register_import_tools(mcp):
                 h_base = os.path.basename(hpol_file)
                 name = h_base.replace("_HPol", "").replace("_VPol", "").replace(".txt", "").strip()
 
-            _loaded_measurements[name] = LoadedMeasurement(
-                file_path=f"{hpol_file} + {vpol_file}",
-                scan_type="passive",
-                frequencies=frequencies,
-                data=analyzer_data,
-            )
+            with _measurements_lock:
+                _loaded_measurements[name] = LoadedMeasurement(
+                    file_path=f"{hpol_file} + {vpol_file}",
+                    scan_type="passive",
+                    frequencies=frequencies,
+                    data=analyzer_data,
+                )
 
             n_spatial = total_gain_dB.shape[0]
             n_freqs = total_gain_dB.shape[1] if total_gain_dB.ndim == 2 else 1
@@ -300,12 +304,13 @@ def register_import_tools(mcp):
             if name == "auto":
                 name = os.path.basename(file_path).replace(".txt", "").strip()
 
-            _loaded_measurements[name] = LoadedMeasurement(
-                file_path=file_path,
-                scan_type="active",
-                frequencies=[frequency],
-                data=analyzer_data,
-            )
+            with _measurements_lock:
+                _loaded_measurements[name] = LoadedMeasurement(
+                    file_path=file_path,
+                    scan_type="active",
+                    frequencies=[frequency],
+                    data=analyzer_data,
+                )
 
             return (
                 f"Successfully imported active file: {name}\n"
@@ -338,8 +343,9 @@ def register_import_tools(mcp):
         Returns:
             Confirmation message.
         """
-        count = len(_loaded_measurements)
-        _loaded_measurements.clear()
+        with _measurements_lock:
+            count = len(_loaded_measurements)
+            _loaded_measurements.clear()
         return f"Cleared {count} measurement(s) from memory."
 
     @mcp.tool()

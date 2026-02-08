@@ -242,7 +242,7 @@ class RFAnalyzer:
         - is_paired: Whether this is part of a 1of2/2of2 pair (combines both views)
         """
         if self.use_ai:
-            analysis = self.send_to_openai(
+            analysis = self.send_to_ai_provider(
                 image_path, self.project_context, measurement_type, is_paired
             )
 
@@ -648,7 +648,7 @@ Analyze all images together and provide:
 
         return conclusions
 
-    def send_to_openai(
+    def send_to_ai_provider(
         self, image_path, project_context=None, measurement_type=None, is_paired=False
     ):
         """
@@ -900,18 +900,28 @@ Analyze the provided antenna measurement plot and provide a comprehensive techni
         return base_prompt + analysis_prompt + output_requirements
 
     def _handle_api_error(self, result, api_name):
-        """Handle API errors with helpful messages."""
+        """Handle API errors with helpful messages. Provider-aware."""
         error_msg = result.get("error", {}).get("message", "Unknown error")
         error_type = result.get("error", {}).get("type", "unknown")
         error_code = result.get("error", {}).get("code", "unknown")
 
+        # Determine current provider for context-appropriate messages
+        provider_name = self._provider.provider_name() if self._provider else "openai"
+
+        provider_urls = {
+            "openai": "https://platform.openai.com",
+            "anthropic": "https://console.anthropic.com",
+            "ollama": "http://localhost:11434",
+        }
+        provider_url = provider_urls.get(provider_name, "")
+
         # Provide helpful error messages
         if "quota" in error_msg.lower() or "insufficient_quota" in error_type:
             helpful_msg = (
-                f"⚠️ OpenAI {api_name} API Quota Exceeded\n"
-                "Your OpenAI account has insufficient credits.\n\n"
+                f"[WARNING] {provider_name.title()} {api_name} API Quota Exceeded\n"
+                f"Your {provider_name.title()} account has insufficient credits.\n\n"
                 "To fix this:\n"
-                "1. Visit: https://platform.openai.com/account/billing\n"
+                f"1. Visit: {provider_url}/account/billing\n"
                 "2. Add payment method and credits ($5-10 recommended)\n"
                 "3. Wait a few minutes for credits to activate\n"
                 "4. Try generating the report again\n\n"
@@ -920,40 +930,39 @@ Analyze the provided antenna measurement plot and provide a comprehensive techni
             print(f"\n{'='*60}")
             print(helpful_msg)
             print(f"{'='*60}\n")
-            return "**AI Analysis Unavailable** - OpenAI quota exceeded. Please add billing credits at platform.openai.com/account/billing"
+            return f"**AI Analysis Unavailable** - {provider_name.title()} quota exceeded. Please add billing credits at {provider_url}/account/billing"
         elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
             helpful_msg = (
-                f"⚠️ OpenAI {api_name} API Key Issue\n"
+                f"[WARNING] {provider_name.title()} {api_name} API Key Issue\n"
                 "The API key is invalid or not authorized.\n\n"
                 "To fix this:\n"
-                "1. Visit: https://platform.openai.com/api-keys\n"
+                f"1. Visit: {provider_url}/api-keys\n"
                 "2. Generate a new API key\n"
-                "3. Update 'openapi.env' file: OPENAI_API_KEY=sk-...\n"
+                "3. Update your key via RFlect Settings or .env file\n"
                 "4. Restart the application\n"
             )
             print(f"\n{'='*60}")
             print(helpful_msg)
             print(f"{'='*60}\n")
-            return "**AI Analysis Unavailable** - Invalid API key. Check openapi.env file."
+            return f"**AI Analysis Unavailable** - Invalid {provider_name.title()} API key. Check settings."
         elif "model" in error_msg.lower() and (
             "not found" in error_msg.lower() or "does not exist" in error_msg.lower()
         ):
             helpful_msg = (
-                f"⚠️ Model Not Available\n"
+                f"[WARNING] Model Not Available\n"
                 f"The model specified in config is not available or not supported by {api_name} API.\n\n"
                 f"Error: {error_msg}\n\n"
                 "To fix this:\n"
-                "1. Check AI_MODEL setting in config_local.py or config_template.py\n"
-                "2. Verify model name matches OpenAI's current offerings\n"
-                "3. GPT-5 models require Responses API access\n"
-                "4. Try switching to 'gpt-4o-mini' for guaranteed compatibility\n"
+                "1. Check AI model settings in config_local.py or config_template.py\n"
+                f"2. Verify model name matches {provider_name.title()}'s current offerings\n"
+                "3. Try switching to a compatible model in Settings\n"
             )
             print(f"\n{'='*60}")
             print(helpful_msg)
             print(f"{'='*60}\n")
-            return f"**AI Analysis Unavailable** - Model not available. Check AI_MODEL in config. Error: {error_msg}"
+            return f"**AI Analysis Unavailable** - Model not available. Check AI model in config. Error: {error_msg}"
         else:
-            print(f"OpenAI {api_name} API Error ({error_type}): {error_msg}")
+            print(f"{provider_name.title()} {api_name} API Error ({error_type}): {error_msg}")
             return f"**Analysis unavailable**: {error_msg}"
 
 

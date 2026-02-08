@@ -173,7 +173,7 @@ class AntennaAnalyzer:
         n_phi = len(unique_phi)
 
         if n_theta * n_phi != len(gain_data_1d):
-            # Data doesn't form a complete grid — can't reshape
+            # Data does not fit expected grid shape — cannot form 2D grid
             return None
 
         try:

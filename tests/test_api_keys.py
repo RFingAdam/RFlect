@@ -211,7 +211,9 @@ class TestPublicAPI:
 
     @pytest.fixture
     def clean_env(self, monkeypatch):
-        """Remove API key env vars before each test."""
+        """Remove API key env vars and cache before each test."""
+        from plot_antenna.api_keys import _key_cache
+        _key_cache.clear()
         for provider_info in PROVIDERS.values():
             for var_name in provider_info["env_vars"]:
                 monkeypatch.delenv(var_name, raising=False)
@@ -335,6 +337,9 @@ class TestInitialize:
     @pytest.mark.skipif(not CRYPTO_AVAILABLE, reason="cryptography not installed")
     def test_initialize_keys_loads_all_providers(self, tmp_path, monkeypatch):
         """initialize_keys should load keys for all providers."""
+        from plot_antenna.api_keys import _key_cache
+        _key_cache.clear()
+
         user_dir = tmp_path / "test_rflect_data"
         user_dir.mkdir(exist_ok=True)
         monkeypatch.setattr("plot_antenna.api_keys.get_user_data_dir", lambda: str(user_dir))
@@ -354,8 +359,8 @@ class TestInitialize:
             for var_name in provider_info["env_vars"]:
                 monkeypatch.delenv(var_name, raising=False)
 
-        # Initialize should load all keys into environment
+        # Initialize should load all keys into cache (not os.environ)
         initialize_keys()
 
-        assert os.getenv("OPENAI_API_KEY") == "sk-openai-init-test"
-        assert os.getenv("ANTHROPIC_API_KEY") == "sk-ant-init-test"
+        assert get_api_key("openai") == "sk-openai-init-test"
+        assert get_api_key("anthropic") == "sk-ant-init-test"

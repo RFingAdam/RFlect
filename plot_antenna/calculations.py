@@ -113,7 +113,7 @@ def calculate_active_variables(
 # _____________Passive Calculation Functions___________
 # Auto Determine Polarization for HPOL & VPOL Files
 def determine_polarization(file_path):
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
         if "Horizontal Polarization" in content:
             return "HPol"
@@ -137,19 +137,19 @@ def angles_match(
     inc_theta_v,
 ):
 
-    return (
-        start_phi_h == start_phi_v
-        and stop_phi_h == stop_phi_v
-        and inc_phi_h == inc_phi_v
-        and start_theta_h == start_theta_v
-        and stop_theta_h == stop_theta_v
-        and inc_theta_h == inc_theta_v
+    return bool(
+        np.isclose(start_phi_h, start_phi_v)
+        and np.isclose(stop_phi_h, stop_phi_v)
+        and np.isclose(inc_phi_h, inc_phi_v)
+        and np.isclose(start_theta_h, start_theta_v)
+        and np.isclose(stop_theta_h, stop_theta_v)
+        and np.isclose(inc_theta_h, inc_theta_v)
     )
 
 
 # Extract Frequency points for selection in the drop-down menu
 def extract_passive_frequencies(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.readlines()
 
     # Extracting frequencies
@@ -186,6 +186,11 @@ def calculate_passive_variables(
     h_phase = np.zeros((phi_points * theta_points, len(freq_list)))
 
     for m, (hpol_entry, vpol_entry) in enumerate(zip(hpol_data, vpol_data)):
+        if not np.isclose(hpol_entry.get('frequency', 0), vpol_entry.get('frequency', 0)):
+            raise ValueError(
+                f"Frequency mismatch at index {m}: "
+                f"HPOL={hpol_entry.get('frequency')} MHz, VPOL={vpol_entry.get('frequency')} MHz"
+            )
         for n, (theta_h, phi_h, mag_h, phase_h, theta_v, phi_v, mag_v, phase_v) in enumerate(
             zip(
                 hpol_entry["theta"],
@@ -214,7 +219,7 @@ def calculate_passive_variables(
     v_gain_dB += cable_loss_matrix
     h_gain_dB += cable_loss_matrix
 
-    Total_Gain_dB = 10 * np.log10(10 ** (v_gain_dB / 10) + 10 ** (h_gain_dB / 10))
+    Total_Gain_dB = 10 * np.log10(np.maximum(10 ** (v_gain_dB / 10) + 10 ** (h_gain_dB / 10), 1e-12))
 
     return theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB
 
@@ -551,13 +556,14 @@ def capacity_awgn(ecc, snr_db):
 def capacity_monte_carlo(ecc, snr_db, fading="rayleigh", K=10, trials=2000):
     """
     Monte-Carlo estimate of 2×2 MIMO capacity under correlated fading.
-    ecc      : scalar or array of ECC (|ρ₁₂|)
+    ecc      : scalar ECC value (|ρ₁₂|), must be a single float
     snr_db   : scalar SNR in dB
     fading   : 'rayleigh' or 'rician'
     K        : Rician K-factor (linear) if fading='rician'
     trials   : number of channel realizations
     returns  : average capacity (b/s/Hz)
     """
+    ecc = float(ecc)  # Enforce scalar — 2x2 correlation matrix requires single value
     rho = 10 ** (snr_db / 10.0)
     # correlation matrix R
     R = np.array([[1, ecc], [ecc, 1]], dtype=complex)

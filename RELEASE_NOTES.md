@@ -1,5 +1,82 @@
 # RFlect - Release Notes
 
+## Version 4.3.0 (02/07/2026)
+
+**11 RF engineering fixes, MCP pipeline fix, provider hardening, full GUI dark theme, 227 tests.**
+
+### RF Engineering Fixes
+- **Diversity gain**: Vaughan-Andersen formula `DG = 10*sqrt(1 - ECC^2)` replacing incorrect log-based formula
+- **Axial ratio**: Polarization ellipse semi-axes with phase difference delta (`cos(2*delta)` discriminant)
+- **XPD from AR**: Field ratio uses `20*log10` (was incorrectly `10*log10`)
+- **TRP calculation**: IEEE solid-angle integration verified to 0.002 dB of chamber reference
+- **Average gain**: Linear domain averaging instead of dB domain
+- **HPBW**: Modular arithmetic for 0/360 degree boundary wrapping
+- **NaN propagation floor** in `Total_Gain_dB` (prevents `log(0)`)
+- **angles_match**: `np.isclose()` with `bool()` wrapper for floating-point comparison
+- **capacity_monte_carlo**: Enforces scalar ECC input
+- **Frequency alignment**: Validates HPOL/VPOL frequency match at import
+- **UTF-8 encoding** on file readers (`determine_polarization`, `extract_passive_frequencies`)
+
+### GUI Improvements
+- Dark theme applied to ALL settings Toplevel dialogs (active, passive, VSWR)
+- API key test threading prevents GUI freeze during validation
+- VSWR input validation with `try/except TclError` and frequency range check
+- AI chat thinking indicator with tag-based removal
+- Quick action buttons disabled during AI processing
+- Bulk processing runs in background thread with progress window and indeterminate progressbar
+- Semantic version comparison for update checks (parses `v4.2.0` into tuple)
+- Ctrl+R / F5 keyboard shortcuts for process data
+- Re-import confirmation dialog before overwriting loaded data
+- WCAG AA contrast fix: `DISABLED_FG_COLOR #A0A0A0` (5.6:1 ratio on `#2E2E2E`)
+
+### Backend/Provider
+- **LLM timeout/retry**: OpenAI/Anthropic `timeout=30s` `max_retries=3`, Ollama `timeout=60s`
+- **Machine-ID encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows) replacing MAC-based
+- API keys stored in `_key_cache` dict instead of `os.environ` (prevents env pollution)
+- MCP thread safety: `threading.Lock` on `_loaded_measurements` dict
+- `report_tools.py` uses `create_provider()` instead of hardcoded OpenAI import
+- `save.py`: `send_to_openai` renamed to `send_to_ai_provider` with provider-aware error messages
+- Ollama tool call IDs now use UUID for uniqueness
+
+### MCP Server
+- New `import_passive_pair` tool processes HPOL/VPOL data during import
+- New `import_active_processed` tool processes active TRP data during import
+- End-to-end analysis pipeline: TRP = -6.61 dBm matches chamber reference exactly
+- Thread-safe measurement store with `threading.Lock`
+- 20 total tools (up from 18)
+
+### Plotting/Parser
+- **turbo** colormap replaces **jet** for perceptual uniformity
+- DPI 300 for saved figures (was default 100)
+- `check_matching_files` uses keyword-based search instead of hardcoded line indices
+- Infinite loop prevention in passive parser
+- `_get_gain_grid` returns `None` on reshape mismatch instead of 1D data
+
+### Testing
+- 227 tests, all passing (up from 82 in v4.1.0, 150 in v4.2.0)
+- New `test_mcp_integration.py`: 66 MCP integration tests covering all 20 tools
+- New `test_real_data_integration.py`: Real BLE and LoRa chamber data tests
+- 22% overall code coverage
+
+---
+
+## Version 4.2.0 (02/06/2026)
+
+**AI analysis engine, report tables, threading, multi-provider polish.**
+
+### AI Analysis Engine
+- `AntennaAnalyzer` class with pattern analysis, HPBW, F/B ratio
+- Batch frequency analysis (`analyze_all_frequencies`)
+- Report tables with gain statistics
+
+### Multi-Provider Threading
+- Multi-provider threading improvements
+
+### Testing
+- 150+ tests, all passing
+
+---
+
 ## Version 4.1.0 (02/06/2026)
 
 **Secure AI features, multi-provider key management, and MCP documentation.**

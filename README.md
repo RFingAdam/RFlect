@@ -1,7 +1,7 @@
 # RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
 
-**Version:** 4.1.0
+**Version:** 4.3.0
 
 RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files from Copper Mountain RVNA and S2VNA software of S11/VSWR/Group Delay(S21(s)) measurements, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
 
@@ -92,7 +92,7 @@ Plots Group Delay vs Frequency for Various Theta (Azimuthal Rotation), Peak-to-p
 - Save your results using the **Save Results to File** button
 - Adjust the frequency and other parameters using the provided dropdown menus and input fields
 - **Recent Files**: Access up to 5 recently opened files via File → Recent Files
-- **Keyboard Shortcuts**: Ctrl+O (Import), Ctrl+Q (Exit)
+- **Keyboard Shortcuts**: Ctrl+O (Import), Ctrl+R / F5 (Process Data), Ctrl+Q (Exit)
 
 ### Menu Structure
 RFlect features a professional menu bar with organized access to all functionality:
@@ -180,10 +180,12 @@ RFlect supports multiple AI providers for intelligent antenna analysis:
 - Intelligent executive summaries based on measurement analysis
 - Vision-capable plot analysis (OpenAI GPT-4o+, Anthropic Claude, Ollama llava)
 - Context-aware conclusions and recommendations
+- Provider-aware error messages for troubleshooting across OpenAI, Anthropic, and Ollama
 
 **Secure API Key Storage**:
 - Keys stored in user's AppData folder (not in app directory)
 - Cross-platform support: Windows (%LOCALAPPDATA%\RFlect), macOS (~/Library/Application Support/RFlect), Linux (~/.config/RFlect)
+- Machine-ID based encryption key derived from `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), or `MachineGuid` (Windows)
 - GUI-based key management (Tools → Manage API Keys)
 - Multiple storage backends: OS Keyring, user data file, environment variables
 
@@ -222,6 +224,7 @@ All 3D radiation pattern plots feature:
 - Coordinate axes rendered on top of surface (no depth shading)
 - Increased arrow thickness (2.5px) for better visibility
 - Cleaned tick labels for professional appearance
+- Turbo colormap for perceptual uniformity (replaces jet)
 - Applied to Active TRP, Passive Gain, and Polarization 3D plots
 
 <details>
@@ -240,7 +243,7 @@ For comparison of multiple scans, configure 3D plotting via Settings:
 
 ## MCP Server (Programmatic Access)
 
-RFlect includes an MCP (Model Context Protocol) server that enables AI assistants like Claude Code and Cline to programmatically analyze antenna measurements and generate reports.
+RFlect includes an MCP (Model Context Protocol) server with 20 tools that enables AI assistants like Claude Code and Cline to programmatically analyze antenna measurements and generate reports.
 
 See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and usage details.
 
