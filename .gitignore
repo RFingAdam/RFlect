@@ -21,6 +21,7 @@ debug/
 .eggs/
 
 # Virtual environments
+.venv/
 venv_clean/
 .claude/
 

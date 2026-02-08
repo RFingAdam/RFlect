@@ -1,258 +1,133 @@
-# RFlect - Antenna Plot Tool      <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
+# RFlect <img src="./assets/smith_logo.png" alt="RFlect Logo" width="40">
 
+**Antenna measurement visualization and analysis for RF engineers.**
 
-**Version:** 4.3.0
+[![Version](https://img.shields.io/badge/version-4.3.0-blue)]()
+[![Python](https://img.shields.io/badge/python-3.11+-green)]()
+[![License](https://img.shields.io/badge/license-GPL--3.0-orange)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-227%20passing-brightgreen)]()
 
-RFlect is a comprehensive antenna plotting tool, currently designed specifically for visualizing and analyzing antenna measurements from the Howland Company 3100 Antenna Chamber and WTL Test Lab outputs. Additionally, it offers support for .csv VNA files from Copper Mountain RVNA and S2VNA software of S11/VSWR/Group Delay(S21(s)) measurements, making it a versatile choice for a wide range of antenna data processing needs. Through its user-friendly graphical interface, RFlect provides an intuitive way to handle various antenna metrics and visualize results.
+RFlect processes antenna measurement data from the Howland 3100 Antenna Chamber (WTL format), Copper Mountain VNA exports, and CST far-field simulation files. It computes TRP, passive gain, polarization parameters, and efficiency metrics with IEEE-standard methods, then generates publication-ready 2D/3D radiation pattern plots.
 
-## Installation
-1. Run the provided installer from the latest release (`RFlect_vX.X.X.exe`)
-2. Follow the on-screen instructions to complete the installation.
+## Quick Start
 
-![Installation Steps](./assets/installation_steps.png)
+**Windows Installer:** Download `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases).
 
-## How to Use
-### Select Scan Type:
-- Choose from **Active**, **Passive**, or **.csv (VNA/S-Parameters)** scan.
+**From source:**
+```bash
+git clone https://github.com/RFingAdam/RFlect.git
+cd RFlect
+python -m venv .venv && source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python run_rflect.py
+```
 
-  ![Scan Type Selection](./assets/scan_type_selection.png)
+## Supported Data Types
 
-### Adjust Settings (if needed):
-- Click the **Settings** button to open the settings window.
-- Depending on your scan type selection, adjust the relevant settings.
-  - For VNA/S11 LogMAG scans, you can set limit lines.
-  - Select Group Delay & SFF(*future implementation*) for Group Delay Measurements, Peak to Peak Delay Difference, etc from 2-Port S2VNA .csv files
-    ![VSWR Settings Window](./assets/vswr_settings_window.png)
-  - For Passive scans, select between G&D or HPOL/VPOL.
-  - Datasheet Plots Check Option will additionally plot Peak Phi & Theta Gain vs Frequency with Total Gain vs Freq. Also plots Elevation/Azimuth 2D cuts for 3-planes.
-    ![Passive Settings Window](./assets/passive_settings_window.png)
-  - For Active scans, *future implementation*
+| Scan Type | Input Format | Analysis |
+|-----------|-------------|----------|
+| **Active TRP** | WTL `.txt` (V5.02/V5.03) | TRP, H/V power, 2D/3D radiation patterns |
+| **Passive Gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
+| **S-Parameters** | Copper Mountain `.csv` | S11, VSWR, return loss with limit lines |
+| **Group Delay** | 2-port VNA `.csv` | Group delay vs frequency, peak-to-peak, distance error |
+| **CST Far-Field** | `.txt` simulation files | ECC, fidelity factor, group delay |
 
-### Import Data:
-- Click the **Import File(s)** button.
-- Follow the on-screen prompts to select and import your data files.
+## Usage
 
-### View Results:
-- If you've selected a VPOL/HPOL Passive scan, or Active Scan, you can click **View Results** to visualize the data.
-- For other scan types, results will be displayed after data import.
+1. **Select scan type** (Active, Passive, or VNA)
+2. **Adjust settings** if needed (cable loss, limit lines, frequency range)
+3. **Import file(s)** via the Import button or `Ctrl+O`
+4. **View results** -- plots render automatically; use `Ctrl+R` to reprocess
+
+![Scan Type Selection](./assets/scan_type_selection.png)
 
 <details>
 <summary><strong>Example Results (click to expand)</strong></summary>
 
-Here are some examples of the results you can expect with this tool. Click on an image to view it in full size.
+### Passive Measurements
 
-# Passive Routine
-## G&D Files
-### Passive G&D Comparison
-![G&D File - 1D Results](./assets/python_1d_results_g&d.png)
-Efficiency, Gain, and Directivity comparison of 'n' Number of G&D Files/Scans
+**G&D Comparison** -- Efficiency, gain, and directivity across multiple scans:
+![G&D Results](./assets/python_1d_results_g&d.png)
 
-## HPOL & VPOL Files
-### Passive 1D Results
-![Passive 1D Results](./assets/python_1d_results.png)
-Eff(%) vs Freq., Eff(dB) vs Freq., and Total Gain vs Freq.
+**HPOL/VPOL 1D** -- Efficiency and total gain vs frequency:
+![Passive 1D](./assets/python_1d_results.png)
 
-### Passive 2D Results
-![Passive 2D Results](./assets/python_passive_2d_results_azimuth.png)
+**2D Azimuth Cuts** -- Gain pattern for various theta angles:
+![Passive 2D](./assets/python_passive_2d_results_azimuth.png)
 
-Gain Pattern Azimuth Cuts vs Phi for various Theta Angles
+**Datasheet Plots** -- Peak gain per polarization, polar cuts at key planes:
+![Datasheet 1D](./assets/python_1d_results_datasheet.png)
+![Datasheet 2D](./assets/python_2d_results_datasheet.png)
 
-### Additional Passive "Datasheet" Plots
-![Additional 1D Results](./assets/python_1d_results_datasheet.png)
-![Additional 2D Results](./assets/python_2d_results_datasheet.png)
-Peak gain for Phi & Theta Polarization in addition to Total Gain per IEEE Definition and Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
+**3D Radiation Patterns** -- Phi, theta, and total gain:
+![Passive 3D](./assets/python_passive_3d_results.png)
 
-### Passive 3D Results
-![Passive 3D Results](./assets/python_passive_3d_results.png)
-3D Gain Pattern for Phi, Theta, and Total Gains
+### Active TRP Measurements
 
-# Active Routine
-## TRP Files
-### Active 2D Results
-![Active 2D Results](./assets/python_active_2d_results_azimuth.png)
-Azimuth Power Cuts vs Phi for various Theta Angles
+**2D Power Cuts:**
+![Active 2D](./assets/python_active_2d_results_azimuth.png)
+![Active Datasheet](./assets/python_active_2d_results_datasheet.png)
 
-![Additional 2D Results](./assets/python_active_2d_results_datasheet.png)
-Additional Polar plots for Azimuth, Theta=90deg, Elevation Phi=0deg&180deg, and Elevation Phi=90deg&270deg
+### VNA / S-Parameters
 
-# VNA Routine
-## Text/.csv Files
-### 1 or 2-Port S-Parameters
-![1 or 2-port S-Parameters](./assets/python_vna_results.png)
-'n' number of S-Parameter Files Plotted
+**S-Parameter Overlay:**
+![VNA Results](./assets/python_vna_results.png)
 
-## 2-Port, Group Delay Measurements
+**Group Delay Analysis:**
 ![Group Delay](./assets/python_groupdelay_results.png)
-Plots Group Delay vs Frequency for Various Theta (Azimuthal Rotation), Peak-to-peak Group Delay Difference over Theta, and Max Distance Error over Theta
+
 </details>
 
-## Additional Features
+## Key Features
 
-### File Management
-- Save your results using the **Save Results to File** button
-- Adjust the frequency and other parameters using the provided dropdown menus and input fields
-- **Recent Files**: Access up to 5 recently opened files via File → Recent Files
-- **Keyboard Shortcuts**: Ctrl+O (Import), Ctrl+R / F5 (Process Data), Ctrl+Q (Exit)
+- **Polarization Analysis** -- Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
+- **Batch Processing** -- Automatically find and process all HPOL/VPOL pairs or TRP files in a directory with organized per-pair output folders
+- **Report Generation** -- Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated analysis
+- **3D Plot Enhancements** -- Turbo colormap, transparent panes, coordinate axes on top, manual or auto Z-axis scaling
+- **Keyboard Shortcuts** -- `Ctrl+O` Import, `Ctrl+R`/`F5` Process, `Ctrl+Q` Exit
 
-### Menu Structure
-RFlect features a professional menu bar with organized access to all functionality:
+## AI Features (Optional)
 
-- **File Menu**
-  - Import File(s)...
-  - Recent Files (with history of 5 most recent files)
-  - Clear Recent Files
-  - Exit
+RFlect integrates with OpenAI, Anthropic, and Ollama for intelligent measurement analysis. AI features include a chat assistant with function-calling tools, AI-powered report generation, and vision-based plot analysis. All AI features are optional -- RFlect works fully without any provider configured.
 
-- **Tools Menu**
-  - Bulk Passive Processing
-  - Bulk Active Processing
-  - Polarization Analysis (Export)
-  - Polarization Analysis (Interactive)
-  - HPOL/VPOL → CST FFS Converter
-  - Active Chamber Calibration
-  - Generate Report
-  - Generate Report with AI
-  - AI Chat Assistant
-  - Manage API Keys
-  - AI Settings
+API keys are stored securely using OS keyring (primary) or Fernet-encrypted files bound to your machine ID. Configure via **Tools > Manage API Keys**.
 
-- **Help Menu**
-  - About RFlect
-  - Check for Updates
-  - View on GitHub
-  - Report an Issue
+See [AI_STATUS.md](AI_STATUS.md) for provider details, supported models, and roadmap.
 
-### Polarization Analysis Tool
-Calculate and visualize polarization parameters from HPOL/VPOL passive measurements:
+## MCP Server
 
-**Two Analysis Modes (Tools Menu)**:
-- **Polarization Analysis (Export)**: Batch export all frequencies to CSV/TXT files with complete polarization data
-- **Polarization Analysis (Interactive)**: Live visualization with frequency selection dropdown
+RFlect includes an MCP (Model Context Protocol) server with 20 tools for programmatic antenna analysis via AI assistants like Claude Code. Import measurements, run analysis, and generate reports without the GUI.
 
-**Calculated Parameters**:
-| Parameter | Description |
-|-----------|-------------|
-| Axial Ratio (AR) | Measure of polarization ellipticity in dB (Ludwig-3 definition) |
-| Tilt Angle | Orientation of polarization ellipse in degrees |
-| Polarization Sense | LHCP vs RHCP classification (+1/-1) |
-| Cross-Pol Discrimination (XPD) | Ratio of co-pol to cross-pol power in dB |
+See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and tool documentation.
 
-**2D Visualizations** (6 subplots):
-- AR, Tilt, Sense, and XPD contour maps
-- Polar plots of AR and Tilt at horizon (θ=90°)
+## Project Structure
 
-**3D Visualizations** (2 spherical plots):
-- AR sphere with color and radius varying by axial ratio
-- Polarization sense sphere (Red=LHCP, Blue=RHCP)
-- High-resolution interpolation (120×180 points) for smooth rendering
+```
+RFlect/
+  plot_antenna/           # Core application
+    gui/                  #   GUI mixins (callbacks, tools, dialogs, AI chat)
+    ai_analysis.py        #   RF analysis engine (gain stats, pattern, polarization)
+    calculations.py       #   TRP, passive gain, efficiency computations
+    file_utils.py         #   WTL/VNA file parsers
+    plotting.py           #   2D/3D matplotlib rendering
+    llm_provider.py       #   Multi-provider LLM abstraction
+    api_keys.py           #   Secure key storage (keyring + Fernet)
+    save.py               #   DOCX report generation
+  rflect-mcp/             # MCP server for programmatic access
+  tests/                  # 227 tests (pytest)
+  assets/                 # Screenshots and logo
+```
 
-### AI-Powered Features
-> **Status: Experimental** - AI features are functional but still maturing (~80-90% complete). See [AI_STATUS.md](AI_STATUS.md) for details.
+## Development
 
-RFlect supports multiple AI providers for intelligent antenna analysis:
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/                    # run tests
+pyinstaller RFlect.spec                    # build exe
+```
 
-| Provider | Models | Notes |
-|----------|--------|-------|
-| **OpenAI** | GPT-4o-mini, GPT-4o, GPT-5 family | Default provider, requires API key |
-| **Anthropic** | Claude Sonnet, Claude Opus | Requires API key (`ANTHROPIC_API_KEY` env var) |
-| **Ollama** | Llama 3.1, Qwen 2.5, etc. | Local/free, no API key needed |
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, architecture details, and test guidelines.
 
-**AI Chat Assistant** (Tools → AI Chat Assistant):
-- Real-time conversational analysis of your antenna measurements
-- Quick-action buttons for common queries (Gain Stats, Pattern, Polarization, All Freqs)
-- Function-calling implementation for on-demand analysis:
-  - `get_gain_statistics` - Min/max/avg gain, standard deviation, frequency analysis
-  - `analyze_pattern` - Nulls, beamwidth, front-to-back ratio, pattern type classification
-  - `compare_polarizations` - HPOL vs VPOL comparison with XPD analysis
-  - `generate_2d_plot` / `generate_3d_plot` - Radiation pattern descriptions
-- Rich file context awareness (loaded files, frequencies, data shape, key metrics)
-- Persistent chat history within session
+## License
 
-**AI Settings** (Tools → AI Settings):
-| Setting | Options |
-|---------|---------|
-| AI Provider | OpenAI, Anthropic, Ollama |
-| Model Selection | Provider-specific model list |
-| Response Style | Concise (~80 words), Detailed (~200+ words) |
-| Max Tokens | 50-1000 tokens |
-
-**AI-Powered Report Generation**:
-- Intelligent executive summaries based on measurement analysis
-- Vision-capable plot analysis (OpenAI GPT-4o+, Anthropic Claude, Ollama llava)
-- Context-aware conclusions and recommendations
-- Provider-aware error messages for troubleshooting across OpenAI, Anthropic, and Ollama
-
-**Secure API Key Storage**:
-- Keys stored in user's AppData folder (not in app directory)
-- Cross-platform support: Windows (%LOCALAPPDATA%\RFlect), macOS (~/Library/Application Support/RFlect), Linux (~/.config/RFlect)
-- Machine-ID based encryption key derived from `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), or `MachineGuid` (Windows)
-- GUI-based key management (Tools → Manage API Keys)
-- Multiple storage backends: OS Keyring, user data file, environment variables
-
-**Note**: AI features are **optional**. RFlect works fully without any AI provider configured. See [AI_STATUS.md](AI_STATUS.md) for current status and roadmap.
-
-### Batch Processing
-Process multiple measurement files automatically:
-
-**Bulk Passive Processing** (Tools Menu):
-- Automatically finds all HPOL/VPOL pairs in a directory
-- Processes multiple frequencies per antenna pair
-- Generates 2D and 3D plots for each pair/frequency
-- Saves results to organized subfolders
-
-**Bulk Active Processing** (Tools Menu):
-- Finds all TRP measurement files in a directory
-- Generates 2D azimuth/elevation cuts
-- Creates 3D TRP visualization plots
-- Saves results to per-file subfolders
-
-### Group Delay & Advanced Analysis
-**CST Far-Field File Support**:
-- Import CST simulation far-field .txt files
-- Group Delay analysis from phase vs frequency data
-- Fidelity factor calculations
-- Envelope Correlation Coefficient (ECC) from 2-antenna HPOL/VPOL measurements
-
-**VNA 2-Port Measurements**:
-- Support for S2VNA and RVNA data formats
-- Configurable limit lines on VSWR vs Frequency plots
-- Frequency range filtering
-
-### 3D Plot Enhancements
-All 3D radiation pattern plots feature:
-- Transparent background panes for improved axis visibility
-- Coordinate axes rendered on top of surface (no depth shading)
-- Increased arrow thickness (2.5px) for better visibility
-- Cleaned tick labels for professional appearance
-- Turbo colormap for perceptual uniformity (replaces jet)
-- Applied to Active TRP, Passive Gain, and Polarization 3D plots
-
-<details>
-<summary><strong>3D Plot Autoscale Options</strong></summary>
-
-For comparison of multiple scans, configure 3D plotting via Settings:
-- **Autoscale**: Automatic Z-axis scaling based on data range
-- **Manual Fixed Scaling**: Set consistent min/max values across multiple plots
-</details>
-
-## Note to Users
-- Always ensure the data you're importing is consistent with the scan type you've selected
-- For best results, ensure that settings are appropriately adjusted before importing data
-- AI features require an API key or local Ollama installation (configure via Tools → Manage API Keys)
-- Status bar at the bottom of the window provides real-time operation feedback
-
-## MCP Server (Programmatic Access)
-
-RFlect includes an MCP (Model Context Protocol) server with 20 tools that enables AI assistants like Claude Code and Cline to programmatically analyze antenna measurements and generate reports.
-
-See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and usage details.
-
-## System Requirements
-- Windows, macOS, or Linux
-- Python 3.11+ (for source installation)
-- SciPy 1.14.0+ (uses RegularGridInterpolator)
-- NumPy with trapezoid function support
-
----
-
-**The software is under active development, and additional features and improvements are expected in the future. Please refer to the release notes for version-specific details.**
+[GPL-3.0](LICENSE)
