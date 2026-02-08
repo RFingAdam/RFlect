@@ -52,17 +52,11 @@ jobs:
           exit 1
         fi
 
-    - name: Install Inno Setup
+    - name: Build Inno Setup installer
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
       with:
-        version: '6.4.1'
-
-    - name: Build Inno Setup installer
-      shell: cmd
-      env:
-        RFLECT_VERSION: ${{ steps.get_version.outputs.VERSION }}
-      run: |
-        iscc /DRFLECT_VERSION=%RFLECT_VERSION% installer.iss
+        path: installer.iss
+        options: /DRFLECT_VERSION=${{ steps.get_version.outputs.VERSION }}
 
     - name: Verify installer exists
       shell: bash
