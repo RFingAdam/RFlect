@@ -539,7 +539,8 @@ class ToolsMixin:
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
-                self.root.after(0, lambda: _process_done(False, str(e)))
+                err = str(e)
+                self.root.after(0, lambda: _process_done(False, err))
 
         def _process_done(success, error_msg):
             progress_bar.stop()
@@ -601,7 +602,8 @@ class ToolsMixin:
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
-                self.root.after(0, lambda: _process_done(False, str(e)))
+                err = str(e)
+                self.root.after(0, lambda: _process_done(False, err))
 
         def _process_done(success, error_msg):
             progress_bar.stop()
