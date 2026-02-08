@@ -275,9 +275,9 @@ def apply_nf2ff_transformation(
     window = get_window(window_function, theta_grid.shape)
 
     for hpol_entry, vpol_entry in zip(hpol_data, vpol_data):
-        # Convert magnitude and phase to complex near-field data
-        h_near_field = hpol_entry["mag"] * np.exp(1j * np.deg2rad(hpol_entry["phase"]))
-        v_near_field = vpol_entry["mag"] * np.exp(1j * np.deg2rad(vpol_entry["phase"]))
+        # Convert magnitude (dB) and phase to complex near-field data
+        h_near_field = 10 ** (np.array(hpol_entry["mag"]) / 20) * np.exp(1j * np.deg2rad(hpol_entry["phase"]))
+        v_near_field = 10 ** (np.array(vpol_entry["mag"]) / 20) * np.exp(1j * np.deg2rad(vpol_entry["phase"]))
 
         # Apply windowing if selected
         if window is not None:
@@ -507,9 +507,13 @@ def apply_directional_human_shadow(
     eps_r, sigma = get_tissue_properties(frequency_mhz)
     omega = 2 * pi * frequency_mhz * 1e6
     epsilon = eps_r * 8.854e-12  # ε0
-    delta = np.sqrt(
-        2 / (omega * 4e-7 * pi * np.sqrt(1 + (sigma / (omega * epsilon)) ** 2))
-    )  # skin depth
+    mu = 4e-7 * pi  # μ₀ (tissue is non-magnetic)
+    # General skin depth for lossy media:
+    #   α = ω√(με/2) · √(√(1 + (σ/ωε)²) - 1)
+    #   δ = 1/α
+    loss_tangent_sq = (sigma / (omega * epsilon)) ** 2
+    alpha = omega * np.sqrt(mu * epsilon / 2) * np.sqrt(np.sqrt(1 + loss_tangent_sq) - 1)
+    delta = 1.0 / alpha  # skin depth
 
     depth = (tissue_thickness_cm / 100.0) / np.cos(angle_diff)
     depth = np.clip(depth, 0, 0.25)
@@ -625,10 +629,10 @@ def calculate_polarization_parameters(hpol_data, vpol_data, cable_loss=0.0):
         theta = np.array(h_entry["theta"])
         phi = np.array(h_entry["phi"])
 
-        # Apply cable loss and convert to linear
-        h_mag = np.array(h_entry["mag"]) - cable_loss
+        # Apply cable loss compensation (add back the loss) and convert to linear
+        h_mag = np.array(h_entry["mag"]) + cable_loss
         h_phase = np.radians(h_entry["phase"])
-        v_mag = np.array(v_entry["mag"]) - cable_loss
+        v_mag = np.array(v_entry["mag"]) + cable_loss
         v_phase = np.radians(v_entry["phase"])
 
         # Construct complex E-field components (E_phi and E_theta)

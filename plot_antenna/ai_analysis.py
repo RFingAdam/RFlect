@@ -89,10 +89,26 @@ class AntennaAnalyzer:
                 else:
                     gain_data = self.data["total_gain"]
 
-                # Average gain must be computed in the linear domain
-                # to avoid the ~2 dB error from averaging dB values directly
+                # Spherical average gain: weight by sin(θ) for correct solid-angle
+                # integration on a sphere. Points near poles represent less area.
+                # Only applies when theta array matches gain data length.
                 gain_linear = 10.0 ** (gain_data / 10.0)
-                avg_gain_linear = float(np.mean(gain_linear))
+                theta_data = self.data.get("theta")
+                if theta_data is not None:
+                    theta_col = np.asarray(theta_data)
+                    if theta_col.ndim == 2:
+                        theta_col = theta_col[:, freq_idx]
+                    if len(theta_col) == len(gain_data):
+                        sin_weights = np.sin(np.deg2rad(theta_col))
+                        weight_sum = float(np.sum(sin_weights))
+                        if weight_sum > 0:
+                            avg_gain_linear = float(np.sum(gain_linear * sin_weights) / weight_sum)
+                        else:
+                            avg_gain_linear = float(np.mean(gain_linear))
+                    else:
+                        avg_gain_linear = float(np.mean(gain_linear))
+                else:
+                    avg_gain_linear = float(np.mean(gain_linear))
                 avg_gain_dBi = (
                     10.0 * np.log10(avg_gain_linear)
                     if avg_gain_linear > 0
@@ -547,7 +563,12 @@ class AntennaAnalyzer:
 
         # Frequency stability metrics
         analysis["gain_variation_dB"] = max(valid_gains) - min(valid_gains)
-        analysis["avg_peak_gain_dBi"] = float(np.mean(valid_gains))
+        # Average peak gain in linear domain to avoid dB-averaging error
+        gains_linear = [10.0 ** (g / 10.0) for g in valid_gains]
+        avg_linear = float(np.mean(gains_linear))
+        analysis["avg_peak_gain_dBi"] = (
+            10.0 * np.log10(avg_linear) if avg_linear > 0 else float(np.mean(valid_gains))
+        )
         analysis["gain_std_dev_dB"] = float(np.std(valid_gains))
 
         return analysis

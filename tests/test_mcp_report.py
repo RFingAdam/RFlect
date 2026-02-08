@@ -1241,9 +1241,9 @@ class TestBandAwareFrequencySelection:
         band_info = _detect_rf_band(freqs)
         result = _select_representative_frequencies(freqs, 5, band_info=band_info)
         # Should include band edges and key channels
-        assert 2402 in result  # first freq / CH0
-        assert 2480 in result  # last freq / CH39
-        assert 2440 in result  # center / CH19
+        assert 2402 in result  # first freq / CH37 (adv)
+        assert 2480 in result  # last freq / CH39 (adv)
+        assert 2440 in result  # center / CH18
 
     def test_unknown_band_falls_back(self):
         """Without band info, should use even-spacing algorithm."""
@@ -1294,14 +1294,14 @@ class TestChannelLabel:
         from tools.report_tools import _channel_label
         band_info = {
             "name": "BLE",
-            "channels": {"CH0 (adv)": 2402, "CH19 (center)": 2440},
+            "channels": {"CH37 (adv)": 2402, "CH18 (center)": 2440},
         }
-        assert _channel_label(2402, band_info) == "BLE CH0 (adv)"
-        assert _channel_label(2440, band_info) == "BLE CH19 (center)"
+        assert _channel_label(2402, band_info) == "BLE CH37 (adv)"
+        assert _channel_label(2440, band_info) == "BLE CH18 (center)"
 
     def test_no_match(self):
         from tools.report_tools import _channel_label
-        band_info = {"name": "BLE", "channels": {"CH0 (adv)": 2402}}
+        band_info = {"name": "BLE", "channels": {"CH37 (adv)": 2402}}
         assert _channel_label(2500, band_info) is None
 
     def test_none_band_info(self):
@@ -1369,15 +1369,15 @@ class TestBandContextInProse:
             )
             band_info = _detect_rf_band(ble_freqs)
 
-            # Test at 2440 MHz — should mention CH19
+            # Test at 2440 MHz — should mention CH18 (data channel 18 = center)
             prose = _build_pattern_prose(analyzer, 2440.0, "BLE_Test",
                                         band_info=band_info)
-            assert "CH19" in prose
+            assert "CH18" in prose
 
-            # Test at 2402 MHz — should mention CH0
+            # Test at 2402 MHz — should mention CH37 (advertising channel)
             prose = _build_pattern_prose(analyzer, 2402.0, "BLE_Test",
                                         band_info=band_info)
-            assert "CH0" in prose
+            assert "CH37" in prose
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("BLE_Test", None)
