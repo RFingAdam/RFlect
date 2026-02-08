@@ -1,5 +1,42 @@
 # RFlect - Release Notes
 
+## Version 4.1.0 (02/06/2026)
+
+**Secure AI features, multi-provider key management, and MCP documentation.**
+
+### Secure API Key Management
+- **Fernet Encryption**: API keys stored using AES-128-CBC + HMAC-SHA256 (replaces v4.0.0 base64 obfuscation)
+- **PBKDF2 Key Derivation**: 480,000 iterations with machine-unique salt
+- **Multi-Provider Support**: Manage keys for OpenAI and Anthropic from a single tabbed dialog
+- **OS Keyring Integration**: Windows Credential Manager / macOS Keychain / Linux keyring as primary storage
+- **Restrictive File Permissions**: `chmod 600` (Unix) / `icacls` owner-only (Windows) on encrypted key files
+- **Legacy Migration**: Automatic upgrade of v4.0.0 base64-encoded key files to Fernet encryption
+- **Key Validation**: "Test Connection" button verifies keys against live API
+- **Shutdown Cleanup**: API keys cleared from environment variables on app exit
+
+### AI Features Re-Enabled in GUI
+- **Manage API Keys** and **AI Settings** menu items restored under Tools menu
+- **Generate Report with AI** and **AI Chat Assistant** appear when any provider key is configured
+- **Multi-provider key dialog**: Tabbed interface (OpenAI / Anthropic / Ollama) with per-provider status, save, test, delete
+- **"Manage API Keys..." button** added to AI Settings dialog for quick access
+- **Provider consumers updated**: `ai_chat_mixin.py` and `save.py` now use centralized `get_api_key()` / `is_api_key_configured()` API
+
+### MCP Server Documentation
+- Expanded `rflect-mcp/README.md` with full Claude Code and Cline configuration examples
+- Quick-start workflow guide: Import -> Analyze -> Report
+- 18-tool reference table with parameters
+- **Help -> MCP Server Setup** menu item links to documentation
+
+### Testing
+- 82 tests (up from ~50), all passing
+- New test files: `test_api_keys.py` (20 tests), `test_llm_provider.py` (12 tests)
+- Coverage: 15% overall, 55% on `api_keys.py`, 40% on `llm_provider.py`
+
+### Dependencies
+- Added `cryptography>=43.0.0,<44.0.0` for Fernet encryption
+
+---
+
 ## Version 4.0.0 (02/05/2026) - MAJOR RELEASE
 
 **This is a major release with complete architecture refactoring, multi-provider AI support, and GUI polish.**

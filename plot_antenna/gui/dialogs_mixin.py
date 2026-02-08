@@ -45,7 +45,14 @@ except ImportError:
     AI_INCLUDE_RECOMMENDATIONS = False
 
 # Import centralized API key management
-from ..api_keys import save_api_key as api_keys_save, delete_api_key as api_keys_delete, get_api_key
+from ..api_keys import (
+    save_api_key as api_keys_save,
+    delete_api_key as api_keys_delete,
+    get_api_key,
+    is_api_key_configured,
+    test_api_key as api_keys_test,
+    PROVIDERS,
+)
 
 # Import utility functions
 from .utils import resource_path
@@ -242,208 +249,363 @@ Features:
     # API KEY MANAGEMENT
     # ────────────────────────────────────────────────────────────────────────
 
-    def load_api_key(self):
-        """Load API key using centralized api_keys module.
+    def load_api_key(self, provider_name="openai"):
+        """Load API key using centralized api_keys module."""
+        return get_api_key(provider_name)
 
-        Uses secure storage (OS keyring) when available, falls back to:
-        - User data file (~/.config/RFlect/.openai_key)
-        - Environment variables (OPENAI_API_KEY, OPENAI_API_KEY2)
-        - .env files (openai.env, openapi.env, .env)
-        """
-        return get_api_key()
+    def save_api_key(self, api_key, provider_name="openai"):
+        """Save API key using centralized api_keys module."""
+        return api_keys_save(provider_name, api_key)
 
-    def save_api_key(self, api_key):
-        """Save API key using centralized api_keys module.
-
-        Uses secure storage (OS keyring/Windows Credential Manager) when available,
-        falls back to base64-obfuscated file in user data directory.
-        """
-        return api_keys_save(api_key)
-
-    def delete_api_key(self):
+    def delete_api_key(self, provider_name="openai"):
         """Delete stored API key using centralized api_keys module."""
-        return api_keys_delete()
+        return api_keys_delete(provider_name)
 
     def manage_api_key(self):
-        """Show API key management dialog."""
+        """Show multi-provider API key management dialog with tabbed interface."""
         api_window = tk.Toplevel(self.root)
-        api_window.title("Manage OpenAI API Key")
-        api_window.geometry("550x350")
+        api_window.title("Manage API Keys")
+        api_window.geometry("600x480")
         api_window.resizable(False, False)
         api_window.configure(bg=DARK_BG_COLOR)
-
-        # Center the window
         api_window.transient(self.root)
         api_window.grab_set()
 
         # Title
-        title_label = tk.Label(
+        tk.Label(
             api_window,
-            text="OpenAI API Key Management",
+            text="API Key Management",
             font=("Arial", 14, "bold"),
             bg=DARK_BG_COLOR,
             fg=ACCENT_BLUE_COLOR,
-        )
-        title_label.pack(pady=(20, 10))
+        ).pack(pady=(15, 5))
 
-        # Description
-        desc_text = """The OpenAI API key enables AI-powered report generation features.
-Your key is stored securely in your user data folder and never shared."""
-
-        desc_label = tk.Label(
+        tk.Label(
             api_window,
-            text=desc_text,
+            text="Keys are encrypted (AES-128) and stored locally. Never uploaded.",
             font=("Arial", 9),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
-            justify=tk.LEFT,
-            wraplength=500,
+        ).pack(pady=(0, 10))
+
+        # Configure ttk style for dark tabs
+        style = ttk.Style()
+        style.configure("Keys.TNotebook", background=DARK_BG_COLOR)
+        style.configure(
+            "Keys.TNotebook.Tab",
+            background=BUTTON_COLOR,
+            foreground=LIGHT_TEXT_COLOR,
+            padding=[12, 4],
         )
-        desc_label.pack(pady=10, padx=20)
-
-        # Current status
-        current_key = self.load_api_key()
-        status_text = "[OK] API Key is configured" if current_key else "[!] No API Key configured"
-        status_color = "#4CAF50" if current_key else "#FFC107"
-
-        status_label = tk.Label(
-            api_window,
-            text=status_text,
-            font=("Arial", 10, "bold"),
-            bg=DARK_BG_COLOR,
-            fg=status_color,
+        style.map(
+            "Keys.TNotebook.Tab",
+            background=[("selected", ACCENT_BLUE_COLOR)],
+            foreground=[("selected", LIGHT_TEXT_COLOR)],
         )
-        status_label.pack(pady=10)
 
-        # If key exists, show masked version
-        if current_key:
-            masked_key = (
-                f"{current_key[:7]}...{current_key[-4:]}" if len(current_key) > 11 else "***"
+        notebook = ttk.Notebook(api_window, style="Keys.TNotebook")
+        notebook.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 5))
+
+        def _build_provider_tab(parent, provider_name):
+            """Build a single provider tab with status, entry, and action buttons."""
+            info = PROVIDERS[provider_name]
+            frame = tk.Frame(parent, bg=DARK_BG_COLOR)
+            frame.pack(fill=tk.BOTH, expand=True)
+
+            # --- Status ---
+            current_key = get_api_key(provider_name)
+            configured = current_key is not None
+
+            status_frame = tk.Frame(frame, bg=DARK_BG_COLOR)
+            status_frame.pack(fill=tk.X, padx=20, pady=(15, 5))
+
+            status_color = "#4CAF50" if configured else "#FFC107"
+            status_text = "Configured" if configured else "Not configured"
+            status_lbl = tk.Label(
+                status_frame,
+                text=status_text,
+                font=("Arial", 10, "bold"),
+                bg=DARK_BG_COLOR,
+                fg=status_color,
             )
-            masked_label = tk.Label(
-                api_window,
-                text=f"Current: {masked_key}",
-                font=("Courier", 9),
+            status_lbl.pack(side=tk.LEFT)
+
+            if configured and current_key:
+                masked = (
+                    f"{current_key[:8]}...{current_key[-4:]}" if len(current_key) > 12 else "***"
+                )
+                tk.Label(
+                    status_frame,
+                    text=f"  ({masked})",
+                    font=("Courier", 9),
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                ).pack(side=tk.LEFT)
+
+            # --- Key entry ---
+            entry_frame = tk.Frame(frame, bg=DARK_BG_COLOR)
+            entry_frame.pack(fill=tk.X, padx=20, pady=10)
+
+            tk.Label(
+                entry_frame,
+                text="API Key:",
+                font=("Arial", 10),
                 bg=DARK_BG_COLOR,
                 fg=LIGHT_TEXT_COLOR,
+            ).pack(anchor=tk.W)
+
+            key_var = tk.StringVar()
+            key_entry = tk.Entry(
+                entry_frame,
+                textvariable=key_var,
+                width=65,
+                show="*",
+                font=("Courier", 9),
             )
-            masked_label.pack()
+            key_entry.pack(fill=tk.X, pady=(3, 5))
 
-        # Input frame
-        input_frame = tk.Frame(api_window, bg=DARK_BG_COLOR)
-        input_frame.pack(pady=20, padx=20, fill=tk.X)
+            # Show/Hide toggle
+            show_var = tk.BooleanVar(value=False)
 
-        tk.Label(
-            input_frame, text="API Key:", font=("Arial", 10), bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-        ).pack(anchor=tk.W)
+            def _toggle_show():
+                if show_var.get():
+                    key_entry.config(show="")
+                    show_btn.config(text="Hide")
+                else:
+                    key_entry.config(show="*")
+                    show_btn.config(text="Show")
 
-        api_key_var = tk.StringVar(value=current_key if current_key else "")
-        api_key_entry = tk.Entry(
-            input_frame, textvariable=api_key_var, width=60, show="*", font=("Courier", 9)
-        )
-        api_key_entry.pack(fill=tk.X, pady=5)
+            show_btn = tk.Button(
+                entry_frame,
+                text="Show",
+                command=_toggle_show,
+                bg=BUTTON_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=6,
+            )
+            show_btn.pack(anchor=tk.W)
 
-        # Show/Hide button
-        show_var = tk.BooleanVar(value=False)
+            # --- Link to provider key page ---
+            link_text = f"Get your key: {info['url']}"
+            link_lbl = tk.Label(
+                frame,
+                text=link_text,
+                font=("Arial", 8, "italic"),
+                bg=DARK_BG_COLOR,
+                fg=ACCENT_BLUE_COLOR,
+                cursor="hand2",
+            )
+            link_lbl.pack(padx=20, anchor=tk.W, pady=(0, 10))
+            link_lbl.bind("<Button-1>", lambda e, u=info["url"]: webbrowser.open(u))
 
-        def toggle_show():
-            if show_var.get():
-                api_key_entry.config(show="")
-                show_btn.config(text="Hide")
-            else:
-                api_key_entry.config(show="*")
-                show_btn.config(text="Show")
+            # --- Action buttons ---
+            btn_frame = tk.Frame(frame, bg=DARK_BG_COLOR)
+            btn_frame.pack(padx=20, pady=(5, 10))
 
-        show_btn = tk.Button(
-            input_frame,
-            text="Show",
-            command=toggle_show,
-            bg=ACCENT_BLUE_COLOR,
-            fg=LIGHT_TEXT_COLOR,
-            width=8,
-        )
-        show_btn.pack(anchor=tk.W, pady=5)
-
-        # Help text
-        help_text = "Get your API key from: https://platform.openai.com/api-keys"
-        help_label = tk.Label(
-            api_window,
-            text=help_text,
-            font=("Arial", 8, "italic"),
-            bg=DARK_BG_COLOR,
-            fg=LIGHT_TEXT_COLOR,
-            cursor="hand2",
-        )
-        help_label.pack(pady=5)
-        help_label.bind(
-            "<Button-1>", lambda e: webbrowser.open("https://platform.openai.com/api-keys")
-        )
-
-        # Buttons frame
-        button_frame = tk.Frame(api_window, bg=DARK_BG_COLOR)
-        button_frame.pack(pady=20)
-
-        def save_key():
-            key = api_key_var.get().strip()
-            if not key:
-                messagebox.showwarning("Empty Key", "Please enter an API key.")
-                return
-
-            if not key.startswith("sk-"):
-                response = messagebox.askyesno(
-                    "Invalid Format", "API key doesn't start with 'sk-'. Save anyway?"
-                )
-                if not response:
+            def _save():
+                key = key_var.get().strip()
+                if not key:
+                    messagebox.showwarning("Empty Key", "Please enter an API key.")
                     return
+                prefix = info.get("prefix", "")
+                if prefix and not key.startswith(prefix):
+                    if not messagebox.askyesno(
+                        "Format Warning",
+                        f"Key doesn't start with '{prefix}'. Save anyway?",
+                    ):
+                        return
+                if api_keys_save(provider_name, key):
+                    status_lbl.config(text="Configured", fg="#4CAF50")
+                    messagebox.showinfo("Saved", f"{info['display_name']} key saved.")
+                    key_var.set("")
 
-            if self.save_api_key(key):
-                messagebox.showinfo(
-                    "Success", "API key saved successfully!\n\nAI features are now enabled."
-                )
-                api_window.destroy()
+            def _delete():
+                if not is_api_key_configured(provider_name):
+                    messagebox.showinfo("Nothing to Delete", "No key is stored for this provider.")
+                    return
+                if messagebox.askyesno(
+                    "Confirm Delete",
+                    f"Delete the stored {info['display_name']} API key?",
+                ):
+                    if api_keys_delete(provider_name):
+                        status_lbl.config(text="Not configured", fg="#FFC107")
+                        messagebox.showinfo("Deleted", "Key removed.")
 
-        def delete_key():
-            if messagebox.askyesno(
-                "Confirm Delete", "Are you sure you want to delete the stored API key?"
-            ):
-                if self.delete_api_key():
-                    messagebox.showinfo("Deleted", "API key has been removed.")
-                    api_window.destroy()
+            def _test():
+                key = key_var.get().strip()
+                if not key:
+                    # Test stored key
+                    key = get_api_key(provider_name)
+                if not key:
+                    messagebox.showwarning(
+                        "No Key",
+                        "Enter a key or save one first to test.",
+                    )
+                    return
+                status_lbl.config(text="Testing...", fg="#FFC107")
+                api_window.update()
+                ok, msg = api_keys_test(provider_name, key)
+                if ok:
+                    status_lbl.config(text="Configured", fg="#4CAF50")
+                    messagebox.showinfo("Connection OK", msg)
+                else:
+                    status_lbl.config(
+                        text=(
+                            "Configured"
+                            if is_api_key_configured(provider_name)
+                            else "Not configured"
+                        ),
+                        fg="#4CAF50" if is_api_key_configured(provider_name) else "#FFC107",
+                    )
+                    messagebox.showerror("Connection Failed", msg)
 
-        save_btn = tk.Button(
-            button_frame,
-            text="Save Key",
-            command=save_key,
-            bg=ACCENT_BLUE_COLOR,
-            fg=LIGHT_TEXT_COLOR,
-            width=12,
-            pady=5,
-        )
-        save_btn.pack(side=tk.LEFT, padx=5)
+            tk.Button(
+                btn_frame,
+                text="Save Key",
+                command=_save,
+                bg=ACCENT_BLUE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=12,
+                pady=4,
+            ).pack(side=tk.LEFT, padx=4)
 
-        if current_key:
-            delete_btn = tk.Button(
-                button_frame,
+            tk.Button(
+                btn_frame,
+                text="Test",
+                command=_test,
+                bg=BUTTON_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=10,
+                pady=4,
+            ).pack(side=tk.LEFT, padx=4)
+
+            tk.Button(
+                btn_frame,
                 text="Delete Key",
-                command=delete_key,
+                command=_delete,
                 bg="#F44336",
                 fg=LIGHT_TEXT_COLOR,
                 width=12,
-                pady=5,
-            )
-            delete_btn.pack(side=tk.LEFT, padx=5)
+                pady=4,
+            ).pack(side=tk.LEFT, padx=4)
 
-        cancel_btn = tk.Button(
-            button_frame,
-            text="Cancel",
+            return frame
+
+        def _build_ollama_tab(parent):
+            """Build the Ollama tab (local server, no API key)."""
+            frame = tk.Frame(parent, bg=DARK_BG_COLOR)
+            frame.pack(fill=tk.BOTH, expand=True)
+
+            tk.Label(
+                frame,
+                text="Ollama runs locally — no API key required.",
+                font=("Arial", 10),
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).pack(padx=20, pady=(20, 10), anchor=tk.W)
+
+            url_frame = tk.Frame(frame, bg=DARK_BG_COLOR)
+            url_frame.pack(fill=tk.X, padx=20, pady=5)
+
+            tk.Label(
+                url_frame,
+                text="Server URL:",
+                font=("Arial", 10),
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).pack(anchor=tk.W)
+
+            try:
+                from ..config import AI_OLLAMA_URL
+            except ImportError:
+                AI_OLLAMA_URL = "http://localhost:11434"
+
+            url_var = tk.StringVar(value=AI_OLLAMA_URL)
+            tk.Entry(
+                url_frame,
+                textvariable=url_var,
+                width=50,
+                font=("Courier", 9),
+            ).pack(fill=tk.X, pady=5)
+
+            ollama_status = tk.Label(
+                frame,
+                text="",
+                font=("Arial", 10, "bold"),
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            )
+            ollama_status.pack(padx=20, pady=5, anchor=tk.W)
+
+            def _test_ollama():
+                import requests
+
+                url = url_var.get().strip().rstrip("/")
+                ollama_status.config(text="Testing...", fg="#FFC107")
+                api_window.update()
+                try:
+                    resp = requests.get(f"{url}/api/tags", timeout=5)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        models = [m["name"] for m in data.get("models", [])]
+                        model_list = ", ".join(models[:5]) if models else "none found"
+                        ollama_status.config(text="Connected", fg="#4CAF50")
+                        messagebox.showinfo(
+                            "Ollama Connected",
+                            f"Server responding at {url}\nModels: {model_list}",
+                        )
+                    else:
+                        ollama_status.config(text="Error", fg="#F44336")
+                        messagebox.showerror("Error", f"HTTP {resp.status_code} from {url}")
+                except Exception as e:
+                    ollama_status.config(text="Not running", fg="#F44336")
+                    messagebox.showerror(
+                        "Connection Failed",
+                        f"Could not reach Ollama at {url}\n\n{e}",
+                    )
+
+            tk.Button(
+                frame,
+                text="Test Connection",
+                command=_test_ollama,
+                bg=BUTTON_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                width=16,
+                pady=4,
+            ).pack(padx=20, pady=10, anchor=tk.W)
+
+            tk.Label(
+                frame,
+                text="Install Ollama: https://ollama.com",
+                font=("Arial", 8, "italic"),
+                bg=DARK_BG_COLOR,
+                fg=ACCENT_BLUE_COLOR,
+                cursor="hand2",
+            ).pack(padx=20, anchor=tk.W)
+
+            return frame
+
+        # Build tabs for each provider
+        for pname in ("openai", "anthropic"):
+            tab_frame = tk.Frame(notebook, bg=DARK_BG_COLOR)
+            notebook.add(tab_frame, text=f"  {PROVIDERS[pname]['display_name']}  ")
+            _build_provider_tab(tab_frame, pname)
+
+        ollama_frame = tk.Frame(notebook, bg=DARK_BG_COLOR)
+        notebook.add(ollama_frame, text="  Ollama  ")
+        _build_ollama_tab(ollama_frame)
+
+        # Close button at bottom
+        tk.Button(
+            api_window,
+            text="Close",
             command=api_window.destroy,
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
             width=12,
-            pady=5,
+            pady=4,
             relief=tk.RIDGE,
-        )
-        cancel_btn.pack(side=tk.LEFT, padx=5)
+        ).pack(pady=(5, 15))
 
     # ────────────────────────────────────────────────────────────────────────
     # AI SETTINGS DIALOG
@@ -493,6 +655,20 @@ Your key is stored securely in your user data folder and never shared."""
             wraplength=600,
         )
         desc_label.pack(pady=5, padx=20)
+
+        # Manage API Keys button (opens the multi-provider key dialog)
+        keys_btn_frame = tk.Frame(scrollable_frame, bg=DARK_BG_COLOR)
+        keys_btn_frame.pack(pady=(5, 10), padx=30, anchor=tk.W)
+        tk.Button(
+            keys_btn_frame,
+            text="Manage API Keys...",
+            command=self.manage_api_key,
+            bg=ACCENT_BLUE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            font=("Arial", 10),
+            padx=10,
+            pady=3,
+        ).pack(side=tk.LEFT)
 
         # Main frame
         main_frame = tk.Frame(scrollable_frame, bg=DARK_BG_COLOR)

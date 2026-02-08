@@ -10,7 +10,6 @@ This mixin provides AI-powered analysis capabilities:
 
 from __future__ import annotations
 
-import os
 import io
 import json
 import base64
@@ -33,6 +32,8 @@ try:
     from ..config import AI_TEMPERATURE
 except ImportError:
     AI_TEMPERATURE = 0.7
+
+from ..api_keys import is_api_key_configured, get_api_key
 
 from ..plotting import (
     plot_2d_passive_data,
@@ -197,18 +198,13 @@ class AIChatMixin:
         except ImportError:
             AI_PROVIDER = "openai"
 
-        if AI_PROVIDER == "openai":
-            if not (os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")):
+        if AI_PROVIDER in ("openai", "anthropic"):
+            if not is_api_key_configured(AI_PROVIDER):
+                provider_label = "OpenAI" if AI_PROVIDER == "openai" else "Anthropic"
                 messagebox.showwarning(
                     "API Key Required",
-                    "Please configure your OpenAI API key first.\n\nGo to Tools -> Manage OpenAI API Key",
-                )
-                return
-        elif AI_PROVIDER == "anthropic":
-            if not os.getenv("ANTHROPIC_API_KEY"):
-                messagebox.showwarning(
-                    "API Key Required",
-                    "Please set the ANTHROPIC_API_KEY environment variable.",
+                    f"Please configure your {provider_label} API key first.\n\n"
+                    "Go to Tools -> Manage API Keys",
                 )
                 return
         elif AI_PROVIDER == "ollama":
@@ -652,19 +648,17 @@ You can call these functions to help answer user questions:
         from ..llm_provider import create_provider
 
         if provider_name == "openai":
-            api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY2")
+            api_key = get_api_key("openai")
             if not api_key:
-                raise ValueError(
-                    "OpenAI API key not found. Configure in Tools -> Manage OpenAI API Key."
-                )
+                raise ValueError("OpenAI API key not found. Configure in Tools -> Manage API Keys.")
             model = AI_MODEL if "AI_MODEL" in globals() else "gpt-4o-mini"
             return create_provider("openai", api_key=api_key, model=model)
 
         elif provider_name == "anthropic":
-            api_key = os.getenv("ANTHROPIC_API_KEY")
+            api_key = get_api_key("anthropic")
             if not api_key:
                 raise ValueError(
-                    "Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable."
+                    "Anthropic API key not found. Configure in Tools -> Manage API Keys."
                 )
             try:
                 from ..config import AI_ANTHROPIC_MODEL
