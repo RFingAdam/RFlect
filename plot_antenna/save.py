@@ -29,13 +29,13 @@ def _create_report_provider():
         provider_name = config.AI_PROVIDER if hasattr(config, "AI_PROVIDER") else "openai"
 
         if provider_name == "openai":
-            api_key = get_api_key()
+            api_key = get_api_key("openai")
             if not api_key:
                 return None
             model = config.AI_MODEL if hasattr(config, "AI_MODEL") else "gpt-4o-mini"
             return create_provider("openai", api_key=api_key, model=model)
         elif provider_name == "anthropic":
-            api_key = os.getenv("ANTHROPIC_API_KEY")
+            api_key = get_api_key("anthropic")
             if not api_key:
                 return None
             model = (

@@ -58,8 +58,7 @@ from ..config import (
 )
 from ..calculations import extract_passive_frequencies
 
-# AI features hidden for v4.0.0 release
-# from ..api_keys import load_api_key, get_api_key, is_api_key_configured
+from ..api_keys import is_api_key_configured, initialize_keys, clear_env_keys
 
 # Import mixins
 from .dialogs_mixin import DialogsMixin
@@ -143,9 +142,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.max_recent_files = 5
         self.load_recent_files()
 
-        # AI API key loading disabled for v4.0.0 release
-        # if not is_api_key_configured():
-        #     load_api_key()
+        # Initialize API key storage (loads keys from keyring/file/env)
+        initialize_keys()
 
         # VSWR limit settings
         self.saved_limit1_freq1 = 0.0
@@ -618,18 +616,19 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         tools_menu.add_separator()
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
 
-        # AI tools (hidden for v4.0.0 release — experimental, not yet ready)
-        # tools_menu.add_separator()
-        # tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
-        # tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
-        # if is_api_key_configured():
-        #     tools_menu.add_command(
-        #         label="Generate Report with AI", command=self.generate_ai_report_from_directory
-        #     )
-        #     tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
-        # else:
-        #     print("[INFO] No AI API key configured. AI features disabled.")
-        #     print("       Configure via: Tools -> Manage API Keys")
+        # AI tools
+        tools_menu.add_separator()
+        tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
+        tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
+        any_key = is_api_key_configured("openai") or is_api_key_configured("anthropic")
+        if any_key:
+            tools_menu.add_command(
+                label="Generate Report with AI", command=self.generate_ai_report_from_directory
+            )
+            tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
+        else:
+            print("[INFO] No AI API key configured. AI report/chat disabled.")
+            print("       Configure via: Tools -> Manage API Keys")
 
         menubar.add_cascade(label="Tools", menu=tools_menu)
 
@@ -646,6 +645,13 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         help_menu.add_command(
             label="Report an Issue",
             command=lambda: webbrowser.open("https://github.com/RFingAdam/RFlect/issues"),
+        )
+        help_menu.add_separator()
+        help_menu.add_command(
+            label="MCP Server Setup",
+            command=lambda: webbrowser.open(
+                "https://github.com/RFingAdam/RFlect/tree/main/rflect-mcp#readme"
+            ),
         )
 
         menubar.add_cascade(label="Help", menu=help_menu)
@@ -740,6 +746,10 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         """Properly cleanup resources before closing the application."""
         try:
             self._save_user_settings()
+        except Exception:
+            pass
+        try:
+            clear_env_keys()
         except Exception:
             pass
         try:

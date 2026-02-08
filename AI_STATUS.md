@@ -1,8 +1,8 @@
 # RFlect AI Features - Status & Roadmap
 
-**Last Updated**: February 5, 2026
-**Current Version**: v4.0.0
-**Status**: Experimental / Not Production-Ready
+**Last Updated**: February 6, 2026
+**Current Version**: v4.1.0
+**Status**: Beta / Enabled in GUI
 
 ---
 
@@ -53,16 +53,20 @@ RFlect includes experimental AI-powered features for intelligent antenna analysi
 | Provider | Tool Calling | Vision | Notes |
 |----------|-------------|--------|-------|
 | **OpenAI** | GPT-4 (Chat Completions) + GPT-5 (Responses API) | GPT-4o+ | Default provider |
-| **Anthropic** | Claude Messages API | All Claude models | Via `ANTHROPIC_API_KEY` env var |
+| **Anthropic** | Claude Messages API | All Claude models | Via Tools → Manage API Keys |
 | **Ollama** | llama3.1+, qwen2.5+ | llava, llama3.2-vision | Local, no API key needed |
 
-### 4. Secure API Key Management
+### 4. Secure API Key Management (v4.1.0)
 **Status**: Complete
 
 **Working Features**:
+- **Fernet AES-128 encryption** with PBKDF2 key derivation (480K iterations)
 - OS keyring integration (Windows Credential Manager, macOS Keychain)
-- Fallback to encrypted file storage
-- Environment variable support
+- Restrictive file permissions (chmod 600 / Windows ACL)
+- Multi-provider tabbed dialog (OpenAI, Anthropic, Ollama)
+- Key validation via "Test Connection" button
+- Legacy base64 auto-migration from v4.0.0
+- Environment variable cleanup on shutdown
 - GUI-based key management (Tools → Manage API Keys)
 
 ---
