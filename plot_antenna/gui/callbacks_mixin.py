@@ -579,21 +579,22 @@ class CallbacksMixin:
                         continue
                     f = h1p["frequency"]
 
+                    # Ludwig-3 convention: HPOL → E_φ, VPOL → E_θ
                     mag_h1 = np.array(h1p["mag"])
                     ph_h1 = np.radians(h1p["phase"])
-                    E1_theta = 10 ** (mag_h1 / 20) * np.exp(1j * ph_h1)
+                    E1_phi = 10 ** (mag_h1 / 20) * np.exp(1j * ph_h1)
 
                     mag_v1 = np.array(v1p["mag"])
                     ph_v1 = np.radians(v1p["phase"])
-                    E1_phi = 10 ** (mag_v1 / 20) * np.exp(1j * ph_v1)
+                    E1_theta = 10 ** (mag_v1 / 20) * np.exp(1j * ph_v1)
 
                     mag_h2 = np.array(h2p["mag"])
                     ph_h2 = np.radians(h2p["phase"])
-                    E2_theta = 10 ** (mag_h2 / 20) * np.exp(1j * ph_h2)
+                    E2_phi = 10 ** (mag_h2 / 20) * np.exp(1j * ph_h2)
 
                     mag_v2 = np.array(v2p["mag"])
                     ph_v2 = np.radians(v2p["phase"])
-                    E2_phi = 10 ** (mag_v2 / 20) * np.exp(1j * ph_v2)
+                    E2_theta = 10 ** (mag_v2 / 20) * np.exp(1j * ph_v2)
 
                     theta = np.array(h1p["theta"])
                     sin_theta = np.sin(np.radians(theta))
