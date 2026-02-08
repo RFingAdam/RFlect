@@ -1045,7 +1045,14 @@ def _add_freq_comparison_table(doc, antenna_analyzer, add_branded_heading, brand
     add_branded_heading(doc, "Multi-Frequency Comparison", level=2)
 
     # Header row
-    headers = ["Freq (MHz)", "Peak Gain (dBi)", "Pattern Type", "HPBW-E (°)", "HPBW-H (°)", "F/B (dB)"]
+    headers = [
+        "Freq (MHz)",
+        "Peak Gain (dBi)",
+        "Pattern Type",
+        "HPBW-E (°)",
+        "HPBW-H (°)",
+        "F/B (dB)",
+    ]
     table = doc.add_table(rows=1 + len(freqs), cols=len(headers))
     table.style = "Light Shading Accent 1"
 

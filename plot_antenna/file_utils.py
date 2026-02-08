@@ -220,7 +220,7 @@ def parse_passive_file(content):
         all_data.append(freq_data)
         # Ensure forward progress to prevent infinite loops
         min_advance = max(start_index + 1, 1) if start_index is not None else 1
-        content = content[max(start_index + data_points, min_advance):]
+        content = content[max(start_index + data_points, min_advance) :]
 
     return all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta
 

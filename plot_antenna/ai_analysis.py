@@ -93,7 +93,11 @@ class AntennaAnalyzer:
                 # to avoid the ~2 dB error from averaging dB values directly
                 gain_linear = 10.0 ** (gain_data / 10.0)
                 avg_gain_linear = float(np.mean(gain_linear))
-                avg_gain_dBi = 10.0 * np.log10(avg_gain_linear) if avg_gain_linear > 0 else float(np.mean(gain_data))
+                avg_gain_dBi = (
+                    10.0 * np.log10(avg_gain_linear)
+                    if avg_gain_linear > 0
+                    else float(np.mean(gain_data))
+                )
 
                 stats.update(
                     {
@@ -128,7 +132,11 @@ class AntennaAnalyzer:
                 # Average power must be computed in the linear domain (mW)
                 power_linear = 10.0 ** (power_data / 10.0)
                 avg_power_linear = float(np.mean(power_linear))
-                avg_power_dBm = 10.0 * np.log10(avg_power_linear) if avg_power_linear > 0 else float(np.mean(power_data))
+                avg_power_dBm = (
+                    10.0 * np.log10(avg_power_linear)
+                    if avg_power_linear > 0
+                    else float(np.mean(power_data))
+                )
 
                 stats.update(
                     {

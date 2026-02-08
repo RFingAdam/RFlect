@@ -186,7 +186,7 @@ def calculate_passive_variables(
     h_phase = np.zeros((phi_points * theta_points, len(freq_list)))
 
     for m, (hpol_entry, vpol_entry) in enumerate(zip(hpol_data, vpol_data)):
-        if not np.isclose(hpol_entry.get('frequency', 0), vpol_entry.get('frequency', 0)):
+        if not np.isclose(hpol_entry.get("frequency", 0), vpol_entry.get("frequency", 0)):
             raise ValueError(
                 f"Frequency mismatch at index {m}: "
                 f"HPOL={hpol_entry.get('frequency')} MHz, VPOL={vpol_entry.get('frequency')} MHz"
@@ -219,7 +219,9 @@ def calculate_passive_variables(
     v_gain_dB += cable_loss_matrix
     h_gain_dB += cable_loss_matrix
 
-    Total_Gain_dB = 10 * np.log10(np.maximum(10 ** (v_gain_dB / 10) + 10 ** (h_gain_dB / 10), 1e-12))
+    Total_Gain_dB = 10 * np.log10(
+        np.maximum(10 ** (v_gain_dB / 10) + 10 ** (h_gain_dB / 10), 1e-12)
+    )
 
     return theta_angles_deg, phi_angles_deg, v_gain_dB, h_gain_dB, Total_Gain_dB
 
