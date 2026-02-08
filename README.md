@@ -25,20 +25,23 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 
 ## New in v4.0
 
-This is a ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and battle-tested math.
+Ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and corrected RF math throughout.
 
 - **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. Every formula verified against IEEE references and real chamber data.
-- **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance across every dialog.
+- **UWB analysis** — System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
+- **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
 - **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
-- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration. Your keys never leave your machine.
-- **MCP server with 20 tools** — Programmatic antenna analysis for Claude Code and other AI assistants. Full end-to-end pipeline verified to match chamber reference data.
-- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE and LoRa chamber measurements plus 41 UWB analysis tests.
+- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
+- **MCP server with 23 tools** — Programmatic antenna analysis for Claude Code and other AI assistants, including UWB characterization.
+- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE/LoRa chamber measurements and UWB group delay data.
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 
 ## Quick Start
 
-**Windows:** Grab `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases) — no install required.
+**Windows:** Grab `RFlect_Installer_vX.X.X.exe` or the standalone `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases).
+
+**Linux:** Download `RFlect_vX.X.X_linux` from the [latest release](https://github.com/RFingAdam/RFlect/releases), then `chmod +x` and run.
 
 **From source:**
 ```bash
@@ -109,7 +112,7 @@ python run_rflect.py
 ## Key Features
 
 - **Polarization Analysis** — Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
-- **Batch Processing** — Point it at a folder and let it find and process all HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
+- **Batch Processing** — Process an entire folder of HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
 - **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated executive analysis
 - **3D Visualization** — Perceptually uniform turbo colormap, transparent panes, coordinate axes, and manual or auto Z-axis scaling
 
