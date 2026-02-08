@@ -407,7 +407,11 @@ class AntennaAnalyzer:
                     analysis["first_sll_h_plane_dB"] = h_sidelobes[0]["sll_dB"]
 
                 # Directivity and efficiency estimation (Kraus approximation)
-                if hpbw_e is not None and hpbw_h is not None and hpbw_e > 0 and hpbw_h > 0:
+                # Kraus is only valid for directive patterns; when either HPBW
+                # exceeds 180° the approximation breaks down and can yield η>100%.
+                if (hpbw_e is not None and hpbw_h is not None
+                        and hpbw_e > 0 and hpbw_h > 0
+                        and hpbw_e <= 180 and hpbw_h <= 180):
                     directivity_linear = 41253.0 / (hpbw_e * hpbw_h)
                     directivity_dBi = float(10.0 * np.log10(directivity_linear))
                     analysis["estimated_directivity_dBi"] = round(directivity_dBi, 2)
@@ -415,9 +419,10 @@ class AntennaAnalyzer:
                     # Efficiency: η = G/D (in dB: G_dBi - D_dBi)
                     eta_dB = peak_gain - directivity_dBi
                     eta_linear = 10.0 ** (eta_dB / 10.0)
-                    eta_pct = min(max(eta_linear * 100.0, 0.0), 100.0)
-                    analysis["estimated_efficiency_pct"] = round(eta_pct, 1)
-                    analysis["estimated_efficiency_dB"] = round(float(eta_dB), 2)
+                    eta_pct = eta_linear * 100.0
+                    if 0 < eta_pct <= 100:
+                        analysis["estimated_efficiency_pct"] = round(eta_pct, 1)
+                        analysis["estimated_efficiency_dB"] = round(float(eta_dB), 2)
 
         return analysis
 
