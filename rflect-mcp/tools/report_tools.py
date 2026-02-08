@@ -161,7 +161,9 @@ def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
         return paths
 
     freqs = _filter_frequencies(m.frequencies, opts)
-    plot_freqs = _select_representative_frequencies(freqs, opts.max_plot_frequencies)
+    band_info = _detect_rf_band(freqs)
+    plot_freqs = _select_representative_frequencies(freqs, opts.max_plot_frequencies,
+                                                    band_info=band_info)
 
     # 2D plots: summary plots once (at first freq), azimuth cuts at representative freqs
     if opts.include_2d_plots:
@@ -273,11 +275,154 @@ def _filter_frequencies(all_freqs: List[float], opts: ReportOptions) -> List[flo
     return [f for f in all_freqs if f in opts.frequencies]
 
 
-def _select_representative_frequencies(freqs: List[float], max_count: int) -> List[float]:
-    """Select evenly-spaced representative frequencies from a sorted list.
+# ---------------------------------------------------------------------------
+# RF Band Detection
+# ---------------------------------------------------------------------------
 
-    Always includes the first and last frequency. For large datasets this
-    avoids generating a plot for every 5 MHz step.
+# Band definitions: (name, standard, min_mhz, max_mhz, key_frequencies, channels)
+_RF_BANDS = [
+    {
+        "name": "BLE",
+        "standard": "Bluetooth 5.x",
+        "range": (2400, 2483.5),
+        "key_frequencies": [2402, 2426, 2440, 2454, 2480],
+        "channels": {
+            "CH0 (adv)": 2402, "CH12": 2426, "CH19 (center)": 2440,
+            "CH26": 2454, "CH39 (adv)": 2480,
+        },
+    },
+    {
+        "name": "WiFi 2.4 GHz",
+        "standard": "IEEE 802.11",
+        "range": (2400, 2500),
+        "key_frequencies": [2412, 2437, 2462],
+        "channels": {"CH1": 2412, "CH6": 2437, "CH11": 2462},
+    },
+    {
+        "name": "WiFi 5 GHz",
+        "standard": "IEEE 802.11ac/ax",
+        "range": (5150, 5850),
+        "key_frequencies": [5180, 5500, 5745, 5825],
+        "channels": {"CH36": 5180, "CH100": 5500, "CH149": 5745, "CH165": 5825},
+    },
+    {
+        "name": "WiFi 6E",
+        "standard": "IEEE 802.11ax",
+        "range": (5925, 7125),
+        "key_frequencies": [5955, 6415, 6875, 7115],
+        "channels": {},
+    },
+    {
+        "name": "LoRa EU868",
+        "standard": "EU868",
+        "range": (863, 870),
+        "key_frequencies": [868.1, 868.3, 868.5],
+        "channels": {},
+    },
+    {
+        "name": "LoRa US915",
+        "standard": "US915",
+        "range": (902, 928),
+        "key_frequencies": [903, 915, 927],
+        "channels": {},
+    },
+    {
+        "name": "GPS L1",
+        "standard": "GPS",
+        "range": (1565.42, 1585.42),
+        "key_frequencies": [1575.42],
+        "channels": {"L1": 1575.42},
+    },
+    {
+        "name": "LTE Band 7",
+        "standard": "3GPP",
+        "range": (2500, 2690),
+        "key_frequencies": [2535, 2595, 2655],
+        "channels": {},
+    },
+    {
+        "name": "Sub-GHz IoT",
+        "standard": "ISM",
+        "range": (315, 435),
+        "key_frequencies": [315, 433.92],
+        "channels": {},
+    },
+    {
+        "name": "UWB",
+        "standard": "IEEE 802.15.4z",
+        "range": (3100, 10600),
+        "key_frequencies": [3494, 4993, 6490, 7987, 9484],
+        "channels": {
+            "CH1": 3494, "CH2": 4993, "CH3": 6490, "CH4": 7987, "CH5": 9484,
+        },
+    },
+]
+
+
+def _detect_rf_band(frequencies: List[float]) -> Optional[Dict]:
+    """Detect which RF band a set of frequencies belongs to.
+
+    Checks if >60% of frequencies fall within a known band range.
+    Returns the band with the best coverage, or None if no match.
+
+    Returns dict with: name, standard, full_range, key_frequencies, channels.
+    """
+    if not frequencies:
+        return None
+
+    best_band = None
+    best_coverage = 0.0
+
+    for band in _RF_BANDS:
+        lo, hi = band["range"]
+        in_band = sum(1 for f in frequencies if lo <= f <= hi)
+        coverage = in_band / len(frequencies)
+        if coverage > best_coverage:
+            best_coverage = coverage
+            best_band = band
+
+    if best_coverage < 0.6:
+        return None
+
+    return {
+        "name": best_band["name"],
+        "standard": best_band["standard"],
+        "full_range": best_band["range"],
+        "key_frequencies": best_band["key_frequencies"],
+        "channels": best_band["channels"],
+    }
+
+
+def _snap_to_nearest(target: float, available: List[float],
+                     tolerance_mhz: float = 5.0) -> Optional[float]:
+    """Find the closest frequency in available list to target, within tolerance."""
+    if not available:
+        return None
+    closest = min(available, key=lambda f: abs(f - target))
+    if abs(closest - target) <= tolerance_mhz:
+        return closest
+    return None
+
+
+def _channel_label(freq: float, band_info: Optional[Dict]) -> Optional[str]:
+    """Get channel label for a frequency, e.g. 'BLE CH39 (adv)' for 2480 MHz."""
+    if band_info is None:
+        return None
+    for label, ch_freq in band_info.get("channels", {}).items():
+        if abs(freq - ch_freq) < 1.0:
+            return f"{band_info['name']} {label}"
+    return None
+
+
+def _select_representative_frequencies(freqs: List[float], max_count: int,
+                                       band_info: Optional[Dict] = None) -> List[float]:
+    """Select representative frequencies, preferring key band channels.
+
+    If band_info is provided, starts with key channel frequencies that exist
+    in the dataset (snapped to nearest available), always includes first/last,
+    then fills remaining slots with evenly-spaced picks.
+
+    Falls back to pure even-spacing when no band is detected.
     """
     if len(freqs) <= max_count:
         return list(freqs)
@@ -286,7 +431,43 @@ def _select_representative_frequencies(freqs: List[float], max_count: int) -> Li
     if max_count == 1:
         return [freqs[len(freqs) // 2]]
 
-    # Always include first and last; fill middle with evenly spaced picks
+    if band_info is not None:
+        # Start with key channel frequencies snapped to available data
+        selected = []
+        for key_freq in band_info.get("key_frequencies", []):
+            snapped = _snap_to_nearest(key_freq, freqs)
+            if snapped is not None and snapped not in selected:
+                selected.append(snapped)
+
+        # Always include first and last
+        if freqs[0] not in selected:
+            selected.insert(0, freqs[0])
+        if freqs[-1] not in selected:
+            selected.append(freqs[-1])
+
+        # If we already have enough, trim to max_count keeping edges + key freqs
+        if len(selected) > max_count:
+            # Keep first, last, and as many key freqs as fit
+            edges = {freqs[0], freqs[-1]}
+            key_only = [f for f in selected if f not in edges]
+            selected = [freqs[0]] + key_only[:max_count - 2] + [freqs[-1]]
+
+        # Fill remaining slots with evenly-spaced picks
+        if len(selected) < max_count:
+            remaining = [f for f in freqs if f not in selected]
+            slots = max_count - len(selected)
+            if remaining and slots > 0:
+                step = max(1, len(remaining) // (slots + 1))
+                for i in range(1, slots + 1):
+                    idx = min(i * step, len(remaining) - 1)
+                    if remaining[idx] not in selected:
+                        selected.append(remaining[idx])
+
+        # Sort by frequency
+        selected.sort()
+        return selected[:max_count]
+
+    # Fallback: evenly-spaced algorithm
     indices = [0]
     for i in range(1, max_count - 1):
         idx = int(round(i * (len(freqs) - 1) / (max_count - 1)))
@@ -504,7 +685,9 @@ def _get_test_configuration(m: LoadedMeasurement) -> Dict:
 # ---------------------------------------------------------------------------
 
 def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
-                              opts: ReportOptions) -> List[str]:
+                              opts: ReportOptions,
+                              band_info_map: Optional[Dict[str, Optional[Dict]]] = None
+                              ) -> List[str]:
     """Build a data-driven executive summary (3 paragraphs, no AI needed)."""
     paragraphs = []
 
@@ -521,6 +704,17 @@ def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
         all_freqs.extend(measurements[n].frequencies)
     all_freqs = sorted(set(all_freqs))
 
+    # Detect overall band (use first detected band across measurements)
+    overall_band = None
+    if band_info_map:
+        for name in passive_names + active_names:
+            bi = band_info_map.get(name)
+            if bi is not None:
+                overall_band = bi
+                break
+    if overall_band is None:
+        overall_band = _detect_rf_band(all_freqs)
+
     # Paragraph 1: Scope
     parts = []
     if passive_names:
@@ -530,7 +724,10 @@ def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
     scope = f"This report documents {' and '.join(parts)}"
     if len(all_freqs) > 1:
         scope += f" spanning {min(all_freqs):.0f} to {max(all_freqs):.0f} MHz"
-        scope += f" ({len(all_freqs)} frequency points)"
+        scope += f" ({len(all_freqs)} frequency points"
+        if overall_band:
+            scope += f", {overall_band['name']} band"
+        scope += ")"
     elif all_freqs:
         scope += f" at {all_freqs[0]:.0f} MHz"
     scope += "."
@@ -605,7 +802,8 @@ def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
     return paragraphs
 
 
-def _build_pattern_prose(analyzer, freq, measurement_name) -> str:
+def _build_pattern_prose(analyzer, freq, measurement_name,
+                         band_info: Optional[Dict] = None) -> str:
     """Build a prose paragraph describing pattern characteristics at a frequency."""
     pattern = analyzer.analyze_pattern(frequency=freq)
     stats = analyzer.get_gain_statistics(frequency=freq)
@@ -621,7 +819,13 @@ def _build_pattern_prose(analyzer, freq, measurement_name) -> str:
 
     actual_freq = pattern.get("frequency", freq)
 
-    parts = [f"At {_fmt(actual_freq, '.0f')} MHz, {measurement_name} exhibits "
+    # Build frequency label with optional channel annotation
+    freq_label = f"{_fmt(actual_freq, '.0f')} MHz"
+    ch_label = _channel_label(actual_freq, band_info)
+    if ch_label:
+        freq_label += f" ({ch_label})"
+
+    parts = [f"At {freq_label}, {measurement_name} exhibits "
              f"a {pattern_type} radiation pattern with peak gain of {_fmt(peak)} dBi"]
 
     rating, desc = _classify_gain_quality(peak)
@@ -659,7 +863,9 @@ def _build_pattern_prose(analyzer, freq, measurement_name) -> str:
 
 
 def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
-                                    opts: ReportOptions) -> List[str]:
+                                    opts: ReportOptions,
+                                    band_info_map: Optional[Dict[str, Optional[Dict]]] = None
+                                    ) -> List[str]:
     """Build data-driven conclusion bullets referencing actual values."""
     bullets = []
 
@@ -687,11 +893,22 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
                 f"{name}: Peak gain of {_fmt(peak)} dBi at {_fmt(res_freq, '.0f')} MHz "
                 f"places this antenna in the {desc} category")
 
-        # Bandwidth
+        # Bandwidth + band coverage
         if bw is not None:
-            bullets.append(
-                f"{name}: 3 dB bandwidth of {_fmt(bw, '.0f')} MHz "
-                f"({_fmt(res_freq, '.0f')} MHz center)")
+            bw_text = (f"{name}: 3 dB bandwidth of {_fmt(bw, '.0f')} MHz "
+                       f"({_fmt(res_freq, '.0f')} MHz center)")
+            meas_band = (band_info_map or {}).get(name)
+            if meas_band is not None:
+                band_lo, band_hi = meas_band["full_range"]
+                band_width = band_hi - band_lo
+                if bw is not None and float(bw) >= band_width:
+                    bw_text += (f" covers the full {meas_band['name']} band "
+                                f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)")
+                else:
+                    coverage_pct = min(100, float(bw) / band_width * 100) if band_width > 0 else 0
+                    bw_text += (f" covers {coverage_pct:.0f}% of the {meas_band['name']} band "
+                                f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)")
+            bullets.append(bw_text)
 
         # Gain stability
         if variation is not None:
@@ -1076,6 +1293,14 @@ def _build_branded_docx(output_path: str, report_data: Dict,
 
     doc = Document()
 
+    # Pre-compute band info per measurement
+    band_info_map: Dict[str, Optional[Dict]] = {}
+    for meas_name in report_data.get("measurements", []):
+        m = measurements.get(meas_name)
+        if m:
+            meas_freqs = _filter_frequencies(m.frequencies, opts)
+            band_info_map[meas_name] = _detect_rf_band(meas_freqs)
+
     # Margins
     for section in doc.sections:
         section.top_margin = Inches(0.75)
@@ -1189,7 +1414,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     add_branded_heading(doc, "Executive Summary", level=1)
 
     # Always build data-driven summary as the baseline
-    summary_paragraphs = _build_executive_summary(measurements, opts)
+    summary_paragraphs = _build_executive_summary(measurements, opts,
+                                                   band_info_map=band_info_map)
 
     if opts.ai_executive_summary:
         # Try AI enhancement; fall back to data-driven if unavailable
@@ -1270,7 +1496,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
 
             freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                freqs, opts.max_frequencies_in_table)
+                freqs, opts.max_frequencies_in_table,
+                band_info=band_info_map.get(meas_name))
 
             # ONE consolidated table per measurement
             _build_consolidated_performance_table(
@@ -1348,14 +1575,17 @@ def _build_branded_docx(output_path: str, report_data: Dict,
             if analyzer is None:
                 continue
 
+            meas_band = band_info_map.get(meas_name)
             meas_freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                meas_freqs, opts.max_plot_frequencies)
+                meas_freqs, opts.max_plot_frequencies,
+                band_info=meas_band)
 
             add_branded_heading(doc, f"Pattern Analysis - {meas_name}", level=2)
 
             for freq in rep_freqs:
-                prose = _build_pattern_prose(analyzer, freq, meas_name)
+                prose = _build_pattern_prose(analyzer, freq, meas_name,
+                                            band_info=meas_band)
                 doc.add_paragraph(prose)
 
         # Optional AI commentary
@@ -1386,7 +1616,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
 
             meas_freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                meas_freqs, opts.max_plot_frequencies)
+                meas_freqs, opts.max_plot_frequencies,
+                band_info=band_info_map.get(meas_name))
 
             add_branded_heading(doc, f"Polarization - {meas_name}", level=2)
             _build_polarization_table(doc, analyzer, rep_freqs, BRAND_DARK)
@@ -1425,9 +1656,9 @@ def _build_branded_docx(output_path: str, report_data: Dict,
                 if line:
                     doc.add_paragraph(f"{line}", style="List Bullet")
         else:
-            _add_data_driven_conclusions(doc, measurements, opts)
+            _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
     else:
-        _add_data_driven_conclusions(doc, measurements, opts)
+        _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
 
     # Brand footer
     if brand_tagline or brand_website:
@@ -1450,9 +1681,11 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     doc.save(output_path)
 
 
-def _add_data_driven_conclusions(doc, measurements, opts):
+def _add_data_driven_conclusions(doc, measurements, opts,
+                                 band_info_map=None):
     """Add data-driven conclusion bullets."""
-    bullets = _build_data_driven_conclusions(measurements, opts)
+    bullets = _build_data_driven_conclusions(measurements, opts,
+                                             band_info_map=band_info_map)
     doc.add_paragraph("Based on the measurement results presented in this report:")
     for bullet in bullets:
         doc.add_paragraph(bullet, style="List Bullet")

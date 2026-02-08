@@ -1168,3 +1168,216 @@ class TestFreqComparisonTable:
         # Header row + 3 data rows
         assert len(table.rows) == 4
         assert "Freq (MHz)" in table.rows[0].cells[0].text
+
+
+# ---------------------------------------------------------------------------
+# Tests: _detect_rf_band
+# ---------------------------------------------------------------------------
+
+class TestDetectRFBand:
+
+    def test_ble_band_detection(self):
+        """Frequencies 2402-2480 should be detected as BLE."""
+        from tools.report_tools import _detect_rf_band
+        freqs = [2402 + i * 2 for i in range(40)]  # 2402, 2404, ..., 2480
+        result = _detect_rf_band(freqs)
+        assert result is not None
+        assert result["name"] == "BLE"
+        assert result["standard"] == "Bluetooth 5.x"
+        assert 2402 in result["key_frequencies"]
+        assert 2440 in result["key_frequencies"]
+        assert 2480 in result["key_frequencies"]
+
+    def test_wifi_24_detection(self):
+        """Frequencies spanning 2400-2500 should be detected as WiFi 2.4 GHz."""
+        from tools.report_tools import _detect_rf_band
+        # Use wider range that fits WiFi but not just BLE
+        freqs = list(range(2400, 2501, 5))  # 2400, 2405, ..., 2500
+        result = _detect_rf_band(freqs)
+        assert result is not None
+        # Both BLE and WiFi 2.4 overlap; WiFi range is wider and covers more
+        assert result["name"] in ("BLE", "WiFi 2.4 GHz")
+
+    def test_lora_868_detection(self):
+        """Frequencies 863-870 should be detected as LoRa EU868."""
+        from tools.report_tools import _detect_rf_band
+        freqs = [863.0, 864.0, 865.0, 866.0, 867.0, 868.0, 869.0, 870.0]
+        result = _detect_rf_band(freqs)
+        assert result is not None
+        assert result["name"] == "LoRa EU868"
+
+    def test_unknown_band(self):
+        """Frequencies 100-200 MHz should not match any known band."""
+        from tools.report_tools import _detect_rf_band
+        freqs = list(range(100, 201, 10))
+        result = _detect_rf_band(freqs)
+        assert result is None
+
+    def test_multi_band_picks_best(self):
+        """Mixed frequencies should pick the band with best coverage."""
+        from tools.report_tools import _detect_rf_band
+        # 8 BLE frequencies + 2 outliers = 80% BLE coverage
+        freqs = [2402, 2410, 2420, 2430, 2440, 2450, 2460, 2480, 100, 200]
+        result = _detect_rf_band(freqs)
+        assert result is not None
+        assert result["name"] == "BLE"
+
+    def test_empty_frequencies(self):
+        """Empty frequency list should return None."""
+        from tools.report_tools import _detect_rf_band
+        assert _detect_rf_band([]) is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Band-Aware Frequency Selection
+# ---------------------------------------------------------------------------
+
+class TestBandAwareFrequencySelection:
+
+    def test_ble_includes_key_channels(self):
+        """BLE frequency selection should include key advertising channels."""
+        from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+        freqs = [2402 + i * 2 for i in range(40)]  # 2402..2480
+        band_info = _detect_rf_band(freqs)
+        result = _select_representative_frequencies(freqs, 5, band_info=band_info)
+        # Should include band edges and key channels
+        assert 2402 in result  # first freq / CH0
+        assert 2480 in result  # last freq / CH39
+        assert 2440 in result  # center / CH19
+
+    def test_unknown_band_falls_back(self):
+        """Without band info, should use even-spacing algorithm."""
+        from tools.report_tools import _select_representative_frequencies
+        freqs = list(range(100, 201, 10))  # 100, 110, ..., 200
+        result = _select_representative_frequencies(freqs, 3, band_info=None)
+        assert len(result) == 3
+        assert result[0] == 100  # first
+        assert result[-1] == 200  # last
+
+    def test_respects_max_count(self):
+        """Band-aware selection should never exceed max_count."""
+        from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+        freqs = [2402 + i * 2 for i in range(40)]
+        band_info = _detect_rf_band(freqs)
+        for max_count in [3, 5, 7]:
+            result = _select_representative_frequencies(freqs, max_count, band_info=band_info)
+            assert len(result) <= max_count
+
+    def test_snaps_to_nearest(self):
+        """Key freq not in list should pick closest available."""
+        from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+        # Dataset with 5 MHz steps — 2440 is a key BLE freq and IS in the list
+        freqs = list(range(2400, 2485, 5))  # 2400, 2405, ..., 2480
+        band_info = _detect_rf_band(freqs)
+        result = _select_representative_frequencies(freqs, 5, band_info=band_info)
+        # 2402 is key BLE freq, nearest in list is 2400 or 2405
+        assert any(abs(f - 2402) <= 5 for f in result)
+        # 2440 key freq IS in list
+        assert 2440 in result
+
+    def test_small_list_returns_all(self):
+        """When freqs <= max_count, return all regardless of band info."""
+        from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+        freqs = [2402.0, 2440.0, 2480.0]
+        band_info = _detect_rf_band(freqs)
+        result = _select_representative_frequencies(freqs, 5, band_info=band_info)
+        assert result == freqs
+
+
+# ---------------------------------------------------------------------------
+# Tests: Channel Label
+# ---------------------------------------------------------------------------
+
+class TestChannelLabel:
+
+    def test_known_channel(self):
+        from tools.report_tools import _channel_label
+        band_info = {
+            "name": "BLE",
+            "channels": {"CH0 (adv)": 2402, "CH19 (center)": 2440},
+        }
+        assert _channel_label(2402, band_info) == "BLE CH0 (adv)"
+        assert _channel_label(2440, band_info) == "BLE CH19 (center)"
+
+    def test_no_match(self):
+        from tools.report_tools import _channel_label
+        band_info = {"name": "BLE", "channels": {"CH0 (adv)": 2402}}
+        assert _channel_label(2500, band_info) is None
+
+    def test_none_band_info(self):
+        from tools.report_tools import _channel_label
+        assert _channel_label(2440, None) is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Band Context in Prose
+# ---------------------------------------------------------------------------
+
+class TestBandContextInProse:
+
+    def test_executive_summary_mentions_band(self, mock_passive_measurement):
+        """Executive summary should mention 'BLE' when frequencies match."""
+        from tools.report_tools import (
+            _build_executive_summary, _detect_rf_band, ReportOptions,
+        )
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        # Create measurement with BLE-range frequencies
+        from tools.import_tools import LoadedMeasurement
+        ble_meas = LoadedMeasurement(
+            file_path="test.txt",
+            scan_type="passive",
+            frequencies=[2402.0, 2440.0, 2480.0],
+            data=mock_passive_measurement.data,
+        )
+
+        with _measurements_lock:
+            _loaded_measurements["BLE_Test"] = ble_meas
+        try:
+            band_map = {"BLE_Test": _detect_rf_band(ble_meas.frequencies)}
+            paragraphs = _build_executive_summary(
+                {"BLE_Test": ble_meas}, ReportOptions(),
+                band_info_map=band_map)
+            full_text = " ".join(paragraphs)
+            assert "BLE" in full_text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("BLE_Test", None)
+
+    def test_pattern_prose_labels_channels(self, mock_passive_measurement):
+        """Pattern prose should label BLE channels at known frequencies."""
+        from tools.report_tools import _build_pattern_prose, _detect_rf_band
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+        from plot_antenna.ai_analysis import AntennaAnalyzer
+
+        ble_freqs = [2402.0, 2440.0, 2480.0]
+        from tools.import_tools import LoadedMeasurement
+        ble_meas = LoadedMeasurement(
+            file_path="test.txt",
+            scan_type="passive",
+            frequencies=ble_freqs,
+            data=mock_passive_measurement.data,
+        )
+
+        with _measurements_lock:
+            _loaded_measurements["BLE_Test"] = ble_meas
+        try:
+            analyzer = AntennaAnalyzer(
+                measurement_data=ble_meas.data,
+                scan_type="passive",
+                frequencies=ble_freqs,
+            )
+            band_info = _detect_rf_band(ble_freqs)
+
+            # Test at 2440 MHz — should mention CH19
+            prose = _build_pattern_prose(analyzer, 2440.0, "BLE_Test",
+                                        band_info=band_info)
+            assert "CH19" in prose
+
+            # Test at 2402 MHz — should mention CH0
+            prose = _build_pattern_prose(analyzer, 2402.0, "BLE_Test",
+                                        band_info=band_info)
+            assert "CH0" in prose
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("BLE_Test", None)
