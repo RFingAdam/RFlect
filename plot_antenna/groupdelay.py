@@ -137,8 +137,6 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
     # Plot Group Delay Difference & Error Vs Frequency
     difference_data = []
     error_data = []
-    variance_data = []
-    std_dev_data = []
 
     # Extracting all available frequency points from the data
     freq_points = data_dict[next(iter(data_dict))]["! Stimulus(Hz)"].to_numpy()
@@ -230,8 +228,10 @@ def plot_total_system_fidelity(data_dict, min_freq=None, max_freq=None):
         has_group_delay = "S21(s)" in data.columns or "S12(s)" in data.columns
 
         if not has_s21_dB or not has_group_delay:
-            print(f"Warning: Theta={theta} deg missing S21(dB) or group delay column, "
-                  f"skipping SFF. Available: {list(data.columns)}")
+            print(
+                f"Warning: Theta={theta} deg missing S21(dB) or group delay column, "
+                f"skipping SFF. Available: {list(data.columns)}"
+            )
             continue
 
         freq = data["! Stimulus(Hz)"].values
@@ -252,11 +252,13 @@ def plot_total_system_fidelity(data_dict, min_freq=None, max_freq=None):
         # Build complex S21 from magnitude + group delay
         s21_complex = build_complex_s21_from_s2vna(freq, s21_dB, gd)
 
-        angle_data.append({
-            'angle_deg': float(theta),
-            'freq_hz': freq,
-            's21_complex': s21_complex,
-        })
+        angle_data.append(
+            {
+                "angle_deg": float(theta),
+                "freq_hz": freq,
+                "s21_complex": s21_complex,
+            }
+        )
 
     if not angle_data:
         print("Warning: No angles had both S21(dB) and group delay data. SFF not computed.")
@@ -266,27 +268,25 @@ def plot_total_system_fidelity(data_dict, min_freq=None, max_freq=None):
     multi_result = calculate_sff_vs_angle(angle_data)
 
     for angle, sff_val, quality in zip(
-        multi_result['angles'], multi_result['sff_values'], multi_result['qualities']
+        multi_result["angles"], multi_result["sff_values"], multi_result["qualities"]
     ):
         print(f"System Fidelity Factor for Theta={angle:.0f} deg: {sff_val:.4f} ({quality})")
 
     print(f"Mean SFF across all angles: {multi_result['mean_sff']:.4f}")
 
     # Plot SFF vs angle bar chart
-    fig_sff = plot_sff_vs_angle(multi_result['angles'], multi_result['sff_values'])
+    fig_sff = plot_sff_vs_angle(multi_result["angles"], multi_result["sff_values"])
     plt.show()
 
     # Plot input vs output pulse for the last angle (boresight-like)
     last_entry = angle_data[-1]
-    last_sff_result = calculate_sff(
-        last_entry['freq_hz'], last_entry['s21_complex']
-    )
+    last_sff_result = calculate_sff(last_entry["freq_hz"], last_entry["s21_complex"])
     fig_pulse = plot_input_vs_output_pulse(
-        last_sff_result['time_s'],
-        last_sff_result['input_pulse'],
-        last_sff_result['output_pulse'],
-        last_sff_result['sff'],
-        last_sff_result['peak_delay_s'],
+        last_sff_result["time_s"],
+        last_sff_result["input_pulse"],
+        last_sff_result["output_pulse"],
+        last_sff_result["sff"],
+        last_sff_result["peak_delay_s"],
     )
     plt.show()
 
@@ -322,4 +322,4 @@ def calculate_SFF_with_gaussian_pulse(freq, S_param, group_delay_s=None):
 
     result = calculate_sff(freq, s21_complex)
 
-    return result['sff'], result['input_pulse'], result['output_pulse'], result['time_s']
+    return result["sff"], result["input_pulse"], result["output_pulse"], result["time_s"]

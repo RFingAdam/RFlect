@@ -25,6 +25,7 @@ C = 299792458.0  # speed of light (m/s)
 # 1a. Touchstone .s2p Parser
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def parse_touchstone(filepath: str) -> dict:
     """Parse a Touchstone .s2p file into complex S-parameter arrays.
 
@@ -40,28 +41,28 @@ def parse_touchstone(filepath: str) -> dict:
             's11', 's21', 's12', 's22': 1D complex arrays
             'z0': reference impedance (float)
     """
-    freq_mult = {'HZ': 1.0, 'KHZ': 1e3, 'MHZ': 1e6, 'GHZ': 1e9}
-    data_format = 'MA'
+    freq_mult = {"HZ": 1.0, "KHZ": 1e3, "MHZ": 1e6, "GHZ": 1e9}
+    data_format = "MA"
     z0 = 50.0
     multiplier = 1e9  # default GHz
 
     rows = []
 
-    with open(filepath, 'r', encoding='utf-8-sig') as f:
+    with open(filepath, "r", encoding="utf-8-sig") as f:
         for line in f:
             stripped = line.strip()
-            if not stripped or stripped.startswith('!'):
+            if not stripped or stripped.startswith("!"):
                 continue
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 # Option line: # <freq_unit> S <format> R <z0>
                 parts = stripped[1:].split()
                 for i, p in enumerate(parts):
                     pu = p.upper()
                     if pu in freq_mult:
                         multiplier = freq_mult[pu]
-                    elif pu in ('RI', 'MA', 'DB'):
+                    elif pu in ("RI", "MA", "DB"):
                         data_format = pu
-                    elif pu == 'R' and i + 1 < len(parts):
+                    elif pu == "R" and i + 1 < len(parts):
                         try:
                             z0 = float(parts[i + 1])
                         except ValueError:
@@ -85,11 +86,11 @@ def parse_touchstone(filepath: str) -> dict:
     freq_hz = data[:, 0] * multiplier
 
     def _to_complex(p1, p2, fmt):
-        if fmt == 'RI':
+        if fmt == "RI":
             return p1 + 1j * p2
-        elif fmt == 'MA':
+        elif fmt == "MA":
             return p1 * np.exp(1j * np.deg2rad(p2))
-        elif fmt == 'DB':
+        elif fmt == "DB":
             mag = 10 ** (p1 / 20.0)
             return mag * np.exp(1j * np.deg2rad(p2))
         raise ValueError(f"Unknown Touchstone format: {fmt}")
@@ -100,18 +101,19 @@ def parse_touchstone(filepath: str) -> dict:
     s22 = _to_complex(data[:, 7], data[:, 8], data_format)
 
     return {
-        'freq_hz': freq_hz,
-        's11': s11,
-        's21': s21,
-        's12': s12,
-        's22': s22,
-        'z0': z0,
+        "freq_hz": freq_hz,
+        "s11": s11,
+        "s21": s21,
+        "s12": s12,
+        "s22": s22,
+        "z0": z0,
     }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1b. Phase Reconstruction from Group Delay
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def reconstruct_phase_from_group_delay(freq_hz, group_delay_s, reference_phase_rad=0.0):
     """Reconstruct phase from group delay via cumulative integration.
@@ -138,6 +140,7 @@ def reconstruct_phase_from_group_delay(freq_hz, group_delay_s, reference_phase_r
 # 1c. Complex S21 from S2VNA Data
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def build_complex_s21_from_s2vna(freq_hz, s21_dB, group_delay_s, reference_phase_rad=0.0):
     """Build complex S21 from S2VNA magnitude + group delay data.
 
@@ -152,9 +155,7 @@ def build_complex_s21_from_s2vna(freq_hz, s21_dB, group_delay_s, reference_phase
     Returns:
         1D complex array of S21.
     """
-    phase_rad = reconstruct_phase_from_group_delay(
-        freq_hz, group_delay_s, reference_phase_rad
-    )
+    phase_rad = reconstruct_phase_from_group_delay(freq_hz, group_delay_s, reference_phase_rad)
     magnitude = 10 ** (np.asarray(s21_dB, dtype=float) / 20.0)
     return magnitude * np.exp(1j * phase_rad)
 
@@ -162,6 +163,7 @@ def build_complex_s21_from_s2vna(freq_hz, s21_dB, group_delay_s, reference_phase
 # ──────────────────────────────────────────────────────────────────────────────
 # 1d. Input Pulse Library
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def generate_gaussian_monocycle(t, sigma=65e-12, center=None):
     """Generate a Gaussian monocycle (1st derivative of Gaussian).
@@ -178,7 +180,7 @@ def generate_gaussian_monocycle(t, sigma=65e-12, center=None):
     if center is None:
         center = (t[0] + t[-1]) / 2.0
     tau = (t - center) / sigma
-    return -tau * np.exp(-0.5 * tau ** 2)
+    return -tau * np.exp(-0.5 * tau**2)
 
 
 def generate_modulated_gaussian(t, f0=6.85e9, sigma=150e-12, center=None):
@@ -215,16 +217,16 @@ def generate_5th_derivative_gaussian(t, sigma=51e-12, center=None):
     if center is None:
         center = (t[0] + t[-1]) / 2.0
     tau = (t - center) / sigma
-    tau2 = tau ** 2
+    tau2 = tau**2
     # H5(x) = x^5 - 10*x^3 + 15*x  (probabilist's Hermite)
-    h5 = tau ** 5 - 10 * tau ** 3 + 15 * tau
+    h5 = tau**5 - 10 * tau**3 + 15 * tau
     return h5 * np.exp(-0.5 * tau2)
 
 
 _PULSE_GENERATORS = {
-    'gaussian_monocycle': generate_gaussian_monocycle,
-    'modulated_gaussian': generate_modulated_gaussian,
-    '5th_derivative_gaussian': generate_5th_derivative_gaussian,
+    "gaussian_monocycle": generate_gaussian_monocycle,
+    "modulated_gaussian": generate_modulated_gaussian,
+    "5th_derivative_gaussian": generate_5th_derivative_gaussian,
 }
 
 
@@ -232,8 +234,8 @@ _PULSE_GENERATORS = {
 # 1e. System Fidelity Factor
 # ──────────────────────────────────────────────────────────────────────────────
 
-def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
-                  sigma=65e-12, nfft=8192):
+
+def calculate_sff(freq_hz, s21_complex, pulse_type="gaussian_monocycle", sigma=65e-12, nfft=8192):
     """Compute System Fidelity Factor (SFF) using cross-correlation.
 
     SFF = max_tau |<s(t), r(t-tau)>| / (||s|| * ||r||)
@@ -264,8 +266,9 @@ def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
     s21_complex = np.asarray(s21_complex, dtype=complex)
 
     if pulse_type not in _PULSE_GENERATORS:
-        raise ValueError(f"Unknown pulse type: {pulse_type}. "
-                         f"Choose from {list(_PULSE_GENERATORS.keys())}")
+        raise ValueError(
+            f"Unknown pulse type: {pulse_type}. " f"Choose from {list(_PULSE_GENERATORS.keys())}"
+        )
 
     f_min, f_max = freq_hz[0], freq_hz[-1]
     f0 = (f_min + f_max) / 2.0
@@ -278,7 +281,7 @@ def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
 
     # All pulse types use a modulated Gaussian centered on the measurement band.
     # sigma is set to match the bandwidth for monocycle/5th-derivative types.
-    if pulse_type == 'modulated_gaussian':
+    if pulse_type == "modulated_gaussian":
         input_pulse = generate_modulated_gaussian(t, f0=f0, sigma=sigma)
     else:
         # Auto-scale sigma to match measurement bandwidth
@@ -290,11 +293,10 @@ def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
     freq_fft = np.fft.fftfreq(nfft, dt)
 
     # Interpolate S21 onto FFT grid
-    s21_interp_mag = np.interp(np.abs(freq_fft), freq_hz,
-                               np.abs(s21_complex), left=0.0, right=0.0)
-    s21_interp_phase = np.interp(np.abs(freq_fft), freq_hz,
-                                 np.unwrap(np.angle(s21_complex)),
-                                 left=0.0, right=0.0)
+    s21_interp_mag = np.interp(np.abs(freq_fft), freq_hz, np.abs(s21_complex), left=0.0, right=0.0)
+    s21_interp_phase = np.interp(
+        np.abs(freq_fft), freq_hz, np.unwrap(np.angle(s21_complex)), left=0.0, right=0.0
+    )
     S21_interp = s21_interp_mag * np.exp(1j * s21_interp_phase)
 
     # Output spectrum and time-domain signal
@@ -302,17 +304,17 @@ def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
     output_pulse = np.real(np.fft.ifft(Y_f))
 
     # Normalized cross-correlation
-    corr = correlate(output_pulse, input_pulse, mode='full')
-    norm = np.sqrt(np.sum(input_pulse ** 2) * np.sum(output_pulse ** 2))
+    corr = correlate(output_pulse, input_pulse, mode="full")
+    norm = np.sqrt(np.sum(input_pulse**2) * np.sum(output_pulse**2))
 
     if norm < 1e-30:
         return {
-            'sff': 0.0,
-            'quality': 'Poor',
-            'input_pulse': input_pulse,
-            'output_pulse': output_pulse,
-            'time_s': t,
-            'peak_delay_s': 0.0,
+            "sff": 0.0,
+            "quality": "Poor",
+            "input_pulse": input_pulse,
+            "output_pulse": output_pulse,
+            "time_s": t,
+            "peak_delay_s": 0.0,
         }
 
     corr_norm = corr / norm
@@ -325,29 +327,30 @@ def calculate_sff(freq_hz, s21_complex, pulse_type='gaussian_monocycle',
 
     # Quality classification
     if sff >= 0.95:
-        quality = 'Excellent'
+        quality = "Excellent"
     elif sff >= 0.85:
-        quality = 'Very Good'
+        quality = "Very Good"
     elif sff >= 0.70:
-        quality = 'Good'
+        quality = "Good"
     elif sff >= 0.50:
-        quality = 'Fair'
+        quality = "Fair"
     else:
-        quality = 'Poor'
+        quality = "Poor"
 
     return {
-        'sff': sff,
-        'quality': quality,
-        'input_pulse': input_pulse,
-        'output_pulse': output_pulse,
-        'time_s': t,
-        'peak_delay_s': peak_delay_s,
+        "sff": sff,
+        "quality": quality,
+        "input_pulse": input_pulse,
+        "output_pulse": output_pulse,
+        "time_s": t,
+        "peak_delay_s": peak_delay_s,
     }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1f. Group Delay from Complex S21
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def compute_group_delay_from_s21(freq_hz, s21_complex):
     """Compute group delay from complex S21.
@@ -375,15 +378,16 @@ def compute_group_delay_from_s21(freq_hz, s21_complex):
     distance_error = variation * C
 
     return {
-        'group_delay_s': group_delay,
-        'variation_s': variation,
-        'distance_error_m': distance_error,
+        "group_delay_s": group_delay,
+        "variation_s": variation,
+        "distance_error_m": distance_error,
     }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1g. Transfer Function Extraction
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def extract_transfer_function(freq_hz, s21_complex, distance_m=1.0):
     """Extract antenna transfer function by removing free-space channel.
@@ -414,9 +418,9 @@ def extract_transfer_function(freq_hz, s21_complex, distance_m=1.0):
     H_phase_deg = np.rad2deg(np.unwrap(np.angle(H)))
 
     return {
-        'H_complex': H,
-        'H_mag_dB': H_mag_dB,
-        'H_phase_deg': H_phase_deg,
+        "H_complex": H,
+        "H_mag_dB": H_mag_dB,
+        "H_phase_deg": H_phase_deg,
     }
 
 
@@ -424,7 +428,8 @@ def extract_transfer_function(freq_hz, s21_complex, distance_m=1.0):
 # 1h. Impulse Response
 # ──────────────────────────────────────────────────────────────────────────────
 
-def compute_impulse_response(freq_hz, transfer_function, nfft=8192, window='blackman'):
+
+def compute_impulse_response(freq_hz, transfer_function, nfft=8192, window="blackman"):
     """Compute impulse response from transfer function via IFFT.
 
     Args:
@@ -448,15 +453,16 @@ def compute_impulse_response(freq_hz, transfer_function, nfft=8192, window='blac
 
     # Build frequency-domain array with Hermitian symmetry
     freq_fft = np.fft.fftfreq(nfft, dt)
-    H_interp_mag = np.interp(np.abs(freq_fft), freq_hz,
-                              np.abs(transfer_function), left=0.0, right=0.0)
-    H_interp_phase = np.interp(np.abs(freq_fft), freq_hz,
-                                np.unwrap(np.angle(transfer_function)),
-                                left=0.0, right=0.0)
+    H_interp_mag = np.interp(
+        np.abs(freq_fft), freq_hz, np.abs(transfer_function), left=0.0, right=0.0
+    )
+    H_interp_phase = np.interp(
+        np.abs(freq_fft), freq_hz, np.unwrap(np.angle(transfer_function)), left=0.0, right=0.0
+    )
     H_fft = H_interp_mag * np.exp(1j * H_interp_phase)
 
     # Apply window
-    if window != 'none':
+    if window != "none":
         win_func = getattr(np, window, None)
         if win_func is not None:
             w = win_func(nfft)
@@ -492,7 +498,7 @@ def compute_impulse_response(freq_hz, transfer_function, nfft=8192, window='blac
         right = peak_idx
         while right < len(h_copy) - 1 and h_copy[right] > 0.1 * peak_val:
             right += 1
-        h_copy[left:right + 1] = 0.0
+        h_copy[left : right + 1] = 0.0
         sidelobe_peak = np.max(h_copy) if np.any(h_copy > 0) else 1e-30
         ringing_dB = float(20.0 * np.log10(sidelobe_peak / peak_val))
     else:
@@ -500,16 +506,17 @@ def compute_impulse_response(freq_hz, transfer_function, nfft=8192, window='blac
         ringing_dB = -np.inf
 
     return {
-        'time_s': t,
-        'h_t': h_t,
-        'pulse_width_s': pulse_width_s,
-        'ringing_dB': ringing_dB,
+        "time_s": t,
+        "h_t": h_t,
+        "pulse_width_s": pulse_width_s,
+        "ringing_dB": ringing_dB,
     }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1i. S11/VSWR Analysis
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0):
     """Analyze return loss to determine impedance bandwidth.
@@ -556,12 +563,12 @@ def analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0):
         fractional_bandwidth = 0.0
 
     return {
-        'vswr': vswr,
-        'bandwidth_hz': bandwidth_hz,
-        'band_start_hz': band_start_hz,
-        'band_stop_hz': band_stop_hz,
-        'fractional_bandwidth': fractional_bandwidth,
-        'min_s11_dB': float(np.min(s11_dB)),
+        "vswr": vswr,
+        "bandwidth_hz": bandwidth_hz,
+        "band_start_hz": band_start_hz,
+        "band_stop_hz": band_stop_hz,
+        "fractional_bandwidth": fractional_bandwidth,
+        "min_s11_dB": float(np.min(s11_dB)),
     }
 
 
@@ -569,7 +576,8 @@ def analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0):
 # 1j. Multi-angle SFF
 # ──────────────────────────────────────────────────────────────────────────────
 
-def calculate_sff_vs_angle(angle_data, pulse_type='gaussian_monocycle', sigma=65e-12):
+
+def calculate_sff_vs_angle(angle_data, pulse_type="gaussian_monocycle", sigma=65e-12):
     """Compute SFF at multiple angle orientations.
 
     Args:
@@ -592,22 +600,22 @@ def calculate_sff_vs_angle(angle_data, pulse_type='gaussian_monocycle', sigma=65
     qualities = []
 
     for entry in angle_data:
-        angle = entry['angle_deg']
+        angle = entry["angle_deg"]
         result = calculate_sff(
-            entry['freq_hz'],
-            entry['s21_complex'],
+            entry["freq_hz"],
+            entry["s21_complex"],
             pulse_type=pulse_type,
             sigma=sigma,
         )
         angles.append(angle)
-        sff_values.append(result['sff'])
-        qualities.append(result['quality'])
+        sff_values.append(result["sff"])
+        qualities.append(result["quality"])
 
     mean_sff = float(np.mean(sff_values)) if sff_values else 0.0
 
     return {
-        'angles': angles,
-        'sff_values': sff_values,
-        'qualities': qualities,
-        'mean_sff': mean_sff,
+        "angles": angles,
+        "sff_values": sff_values,
+        "qualities": qualities,
+        "mean_sff": mean_sff,
     }

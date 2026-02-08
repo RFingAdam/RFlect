@@ -20,7 +20,13 @@ import matplotlib.pyplot as plt
 
 from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
 
-from ..file_utils import read_passive_file, read_active_file, check_matching_files, process_gd_file, parse_touchstone_to_dataframe
+from ..file_utils import (
+    read_passive_file,
+    read_active_file,
+    check_matching_files,
+    process_gd_file,
+    parse_touchstone_to_dataframe,
+)
 from ..calculations import (
     determine_polarization,
     calculate_passive_variables,
@@ -715,7 +721,11 @@ class CallbacksMixin:
             for _ in range(num_files):
                 file_path = filedialog.askopenfilename(
                     title="Select the 2-Port S-Parameter File(s)",
-                    filetypes=[("CSV files", "*.csv"), ("Touchstone", "*.s2p"), ("All files", "*.*")],
+                    filetypes=[
+                        ("CSV files", "*.csv"),
+                        ("Touchstone", "*.s2p"),
+                        ("All files", "*.*"),
+                    ],
                 )
                 if not file_path:
                     return
