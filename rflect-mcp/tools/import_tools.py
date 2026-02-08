@@ -302,8 +302,8 @@ def register_import_tools(mcp):
                 'h_power': h_power_2d.flatten(),
                 'v_power': v_power_2d.flatten(),
                 'TRP_dBm': float(TRP_dBm),
-                'H_TRP_dBm': float(h_TRP_dBm),
-                'V_TRP_dBm': float(v_TRP_dBm),
+                'h_TRP_dBm': float(h_TRP_dBm),
+                'v_TRP_dBm': float(v_TRP_dBm),
                 'theta': theta_deg,
                 'phi': phi_deg,
                 # 2D arrays for plotting
