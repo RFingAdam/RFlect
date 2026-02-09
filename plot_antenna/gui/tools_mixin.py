@@ -542,10 +542,22 @@ class ToolsMixin:
                     zmin=zmin,
                     zmax=zmax,
                     maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
-                    maritime_theta_min=self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0,
-                    maritime_theta_max=self.horizon_theta_max.get() if hasattr(self, "horizon_theta_max") else 120.0,
-                    maritime_theta_cuts=self._parse_theta_cuts() if hasattr(self, "_parse_theta_cuts") else None,
-                    maritime_gain_threshold=self.horizon_gain_threshold.get() if hasattr(self, "horizon_gain_threshold") else -3.0,
+                    maritime_theta_min=(
+                        self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0
+                    ),
+                    maritime_theta_max=(
+                        self.horizon_theta_max.get()
+                        if hasattr(self, "horizon_theta_max")
+                        else 120.0
+                    ),
+                    maritime_theta_cuts=(
+                        self._parse_theta_cuts() if hasattr(self, "_parse_theta_cuts") else None
+                    ),
+                    maritime_gain_threshold=(
+                        self.horizon_gain_threshold.get()
+                        if hasattr(self, "horizon_gain_threshold")
+                        else -3.0
+                    ),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
@@ -618,10 +630,22 @@ class ToolsMixin:
                     zmin=zmin,
                     zmax=zmax,
                     maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
-                    maritime_theta_min=self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0,
-                    maritime_theta_max=self.horizon_theta_max.get() if hasattr(self, "horizon_theta_max") else 120.0,
-                    maritime_theta_cuts=self._parse_theta_cuts() if hasattr(self, "_parse_theta_cuts") else None,
-                    maritime_gain_threshold=self.horizon_gain_threshold.get() if hasattr(self, "horizon_gain_threshold") else -3.0,
+                    maritime_theta_min=(
+                        self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0
+                    ),
+                    maritime_theta_max=(
+                        self.horizon_theta_max.get()
+                        if hasattr(self, "horizon_theta_max")
+                        else 120.0
+                    ),
+                    maritime_theta_cuts=(
+                        self._parse_theta_cuts() if hasattr(self, "_parse_theta_cuts") else None
+                    ),
+                    maritime_gain_threshold=(
+                        self.horizon_gain_threshold.get()
+                        if hasattr(self, "horizon_gain_threshold")
+                        else -3.0
+                    ),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:

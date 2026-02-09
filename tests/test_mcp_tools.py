@@ -14,7 +14,7 @@ import os
 import pytest
 
 # Add rflect-mcp to path so we can import the tools package
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'rflect-mcp'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "rflect-mcp"))
 
 
 class TestLoadedMeasurement:

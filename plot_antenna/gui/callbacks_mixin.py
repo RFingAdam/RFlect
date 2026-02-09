@@ -147,7 +147,9 @@ class CallbacksMixin:
     def _parse_theta_cuts(self):
         """Parse the comma-separated theta cuts string into a list of floats."""
         try:
-            return [float(x.strip()) for x in self.horizon_theta_cuts_var.get().split(",") if x.strip()]
+            return [
+                float(x.strip()) for x in self.horizon_theta_cuts_var.get().split(",") if x.strip()
+            ]
         except (ValueError, AttributeError):
             return [60, 70, 80, 90, 100, 110, 120]
 
@@ -1494,7 +1496,9 @@ class CallbacksMixin:
         # Maritime / Horizon plots (passive)
         if self.maritime_plots_enabled:
             self.log_message("Generating maritime plots (passive)...")
-            freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+            freq_idx = (
+                self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+            )
             unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
                 theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
             )
@@ -1516,4 +1520,6 @@ class CallbacksMixin:
                     save_path=None,
                 )
             else:
-                self.log_message("Maritime: Could not reshape gain data to 2D grid.", level="warning")
+                self.log_message(
+                    "Maritime: Could not reshape gain data to 2D grid.", level="warning"
+                )
