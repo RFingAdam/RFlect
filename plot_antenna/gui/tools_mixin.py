@@ -1180,19 +1180,21 @@ class ToolsMixin:
 
     def get_latest_release(self):
         """Get the latest release from GitHub."""
-        owner = "RFingAdam"
-        repo = "RFlect"
-        url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+        try:
+            owner = "RFingAdam"
+            repo = "RFlect"
+            url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
 
-        response = requests.get(url, timeout=5)
+            response = requests.get(url, timeout=5)
 
-        if response.status_code == 200:
-            data = response.json()
-            latest_version = data["tag_name"]
-            release_url = data["html_url"]
-            return latest_version, release_url
-        else:
-            return None, None
+            if response.status_code == 200:
+                data = response.json()
+                latest_version = data["tag_name"]
+                release_url = data["html_url"]
+                return latest_version, release_url
+        except (requests.RequestException, KeyError, ValueError):
+            pass
+        return None, None
 
     def download_latest_release(self, url):
         """Open the given URL in the default web browser to download the release."""
@@ -1200,22 +1202,27 @@ class ToolsMixin:
 
     def check_for_updates(self):
         """Check for software updates."""
+        try:
 
-        def _parse_version(v):
-            """Parse version string like 'v4.2.0' into comparable tuple."""
-            return tuple(int(x) for x in v.lstrip("v").split("."))
+            def _parse_version(v):
+                """Parse version string like 'v4.2.0' into comparable tuple."""
+                return tuple(int(x) for x in v.lstrip("v").split("."))
 
-        latest_version, release_url = self.get_latest_release()
-        if latest_version and _parse_version(latest_version) > _parse_version(self.CURRENT_VERSION):
-            self.log_message(f"Update Available. A new version {latest_version} is available!")
+            latest_version, release_url = self.get_latest_release()
+            if latest_version and _parse_version(latest_version) > _parse_version(
+                self.CURRENT_VERSION
+            ):
+                self.log_message(f"Update Available. A new version {latest_version} is available!")
 
-            answer = messagebox.askyesno(
-                "Update Available",
-                f"A new version {latest_version} is available! Would you like to download it?",
-            )
+                answer = messagebox.askyesno(
+                    "Update Available",
+                    f"A new version {latest_version} is available! Would you like to download it?",
+                )
 
-            if answer:
-                self.download_latest_release(release_url)
+                if answer:
+                    self.download_latest_release(release_url)
+        except Exception:
+            pass  # Never crash on update check
 
     # ────────────────────────────────────────────────────────────────────────
     # HOVER EFFECTS

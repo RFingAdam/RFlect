@@ -821,6 +821,8 @@ class CallbacksMixin:
             message: Text to display in the log
             level: One of "info", "success", "warning", "error"
         """
+        if not hasattr(self, "log_text"):
+            return
         self.log_text.configure(state="normal")
         tag = f"log_{level}"
         self.log_text.insert("end", message + "\n", tag)
