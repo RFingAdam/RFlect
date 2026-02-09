@@ -552,6 +552,13 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.cb_shadowing_var = tk.BooleanVar(value=False)
         self.shadow_direction_var = tk.StringVar(value="-X")
 
+        # Maritime / Horizon plot settings
+        self.maritime_plots_enabled = False
+        self.horizon_theta_min = tk.DoubleVar(value=60.0)
+        self.horizon_theta_max = tk.DoubleVar(value=120.0)
+        self.horizon_gain_threshold = tk.DoubleVar(value=-3.0)
+        self.horizon_theta_cuts_var = tk.StringVar(value="60,70,80,90,100,110,120")
+
         # Configure background
         self.root.config(bg=DARK_BG_COLOR)
 

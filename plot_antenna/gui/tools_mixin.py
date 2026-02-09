@@ -541,6 +541,7 @@ class ToolsMixin:
                     axis_mode=axis_mode,
                     zmin=zmin,
                     zmax=zmax,
+                    maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
@@ -612,6 +613,7 @@ class ToolsMixin:
                     axis_mode=axis_mode,
                     zmin=zmin,
                     zmax=zmax,
+                    maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
@@ -990,6 +992,7 @@ class ToolsMixin:
                 self.axis_min.get(),
                 self.axis_max.get(),
                 word=False,
+                maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
             )
 
         except ValueError as ve:

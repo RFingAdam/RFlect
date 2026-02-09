@@ -1012,6 +1012,7 @@ def batch_process_passive_scans(
     axis_mode="auto",
     zmin: float = -15.0,
     zmax: float = 15.0,
+    maritime_plots_enabled=False,
 ):
     """
     Batch‑process all HPOL/VPOL pairs in a directory.
@@ -1136,6 +1137,23 @@ def batch_process_passive_scans(
                     save_path=subfolder,
                 )
 
+            # Maritime / Horizon plots
+            if maritime_plots_enabled and subfolder:
+                from .plotting import _prepare_gain_grid, generate_maritime_plots
+
+                freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
+                unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+                    theta_deg, phi_deg, total_gain_dB, freq_idx
+                )
+                if gain_grid is not None:
+                    maritime_sub = os.path.join(subfolder, "Maritime Plots")
+                    os.makedirs(maritime_sub, exist_ok=True)
+                    generate_maritime_plots(
+                        unique_theta, unique_phi, gain_grid, sel_freq,
+                        data_label="Gain", data_unit="dBi",
+                        save_path=maritime_sub,
+                    )
+
 
 def batch_process_active_scans(
     folder_path,
@@ -1144,6 +1162,7 @@ def batch_process_active_scans(
     axis_mode="auto",
     zmin: float = -15.0,
     zmax: float = 15.0,
+    maritime_plots_enabled=False,
 ):
     """
     Batch‑process all active TRP measurement files in a directory.
@@ -1269,6 +1288,18 @@ def batch_process_active_scans(
                     zmin=zmin,
                     zmax=zmax,
                     save_path=subfolder,
+                )
+
+            # Maritime / Horizon plots
+            if maritime_plots_enabled and subfolder:
+                from .plotting import generate_maritime_plots
+
+                maritime_sub = os.path.join(subfolder, "Maritime Plots")
+                os.makedirs(maritime_sub, exist_ok=True)
+                generate_maritime_plots(
+                    theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency,
+                    data_label="Power", data_unit="dBm",
+                    save_path=maritime_sub,
                 )
 
             print(f"  ✓ Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")

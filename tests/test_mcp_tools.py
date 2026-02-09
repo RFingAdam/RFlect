@@ -94,3 +94,33 @@ class TestFmtHelper:
         from tools.analysis_tools import _fmt
 
         assert _fmt(10.123, ".1f") == "10.1"
+
+
+class TestMCPHorizonStats:
+    """Test the get_horizon_statistics MCP tool function registration."""
+
+    def test_function_exists(self):
+        """Verify get_horizon_statistics is importable from analysis_tools."""
+        from tools.analysis_tools import get_horizon_statistics
+
+        assert callable(get_horizon_statistics)
+
+    def test_function_signature(self):
+        """Verify get_horizon_statistics accepts expected parameters."""
+        import inspect
+        from tools.analysis_tools import get_horizon_statistics
+
+        sig = inspect.signature(get_horizon_statistics)
+        params = list(sig.parameters.keys())
+        assert "frequency" in params
+        assert "theta_min" in params
+        assert "theta_max" in params
+        assert "gain_threshold" in params
+        assert "measurement_name" in params
+
+    def test_no_data_returns_error(self):
+        """Without loaded data, should return an error message."""
+        from tools.analysis_tools import get_horizon_statistics
+
+        result = get_horizon_statistics()
+        assert "No data loaded" in result or "not found" in result
