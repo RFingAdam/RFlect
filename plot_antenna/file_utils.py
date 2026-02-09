@@ -1013,6 +1013,10 @@ def batch_process_passive_scans(
     zmin: float = -15.0,
     zmax: float = 15.0,
     maritime_plots_enabled=False,
+    maritime_theta_min=60.0,
+    maritime_theta_max=120.0,
+    maritime_theta_cuts=None,
+    maritime_gain_threshold=-3.0,
 ):
     """
     Batch‑process all HPOL/VPOL pairs in a directory.
@@ -1151,6 +1155,13 @@ def batch_process_passive_scans(
                     generate_maritime_plots(
                         unique_theta, unique_phi, gain_grid, sel_freq,
                         data_label="Gain", data_unit="dBi",
+                        theta_min=maritime_theta_min,
+                        theta_max=maritime_theta_max,
+                        theta_cuts=maritime_theta_cuts,
+                        gain_threshold=maritime_gain_threshold,
+                        axis_mode=axis_mode,
+                        zmin=zmin,
+                        zmax=zmax,
                         save_path=maritime_sub,
                     )
 
@@ -1163,6 +1174,10 @@ def batch_process_active_scans(
     zmin: float = -15.0,
     zmax: float = 15.0,
     maritime_plots_enabled=False,
+    maritime_theta_min=60.0,
+    maritime_theta_max=120.0,
+    maritime_theta_cuts=None,
+    maritime_gain_threshold=-3.0,
 ):
     """
     Batch‑process all active TRP measurement files in a directory.
@@ -1299,6 +1314,13 @@ def batch_process_active_scans(
                 generate_maritime_plots(
                     theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency,
                     data_label="Power", data_unit="dBm",
+                    theta_min=maritime_theta_min,
+                    theta_max=maritime_theta_max,
+                    theta_cuts=maritime_theta_cuts,
+                    gain_threshold=maritime_gain_threshold,
+                    axis_mode=axis_mode,
+                    zmin=zmin,
+                    zmax=zmax,
                     save_path=maritime_sub,
                 )
 
