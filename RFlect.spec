@@ -1,16 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules
+
+hiddenimports = ['anthropic', 'PIL._tkinter_finder']
+hiddenimports += collect_submodules('scipy')
 
 
 a = Analysis(
-    ['plot_antenna/main.py'],
+    ['run_rflect.py'],
     pathex=[],
     binaries=[],
-    datas=[('plot_antenna', 'plot_antenna'), ('settings.json', '.'), ('assets', 'assets')],
-    hiddenimports=['anthropic', 'PIL._tkinter_finder'],
+    datas=[('settings.json', '.'), ('assets/smith_logo.png', 'assets')],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'torch', 'torchvision', 'torchaudio',
+        'transformers', 'huggingface_hub', 'tokenizers', 'safetensors',
+        'tensorflow', 'keras',
+        'IPython', 'jupyter', 'notebook', 'ipykernel', 'ipywidgets',
+        'cv2', 'sklearn', 'scikit-learn',
+        'sympy', 'bokeh', 'plotly', 'dash',
+        'pytest', 'mypy', 'black', 'flake8',
+    ],
     noarchive=False,
     optimize=0,
 )
@@ -29,10 +41,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['smith_logo.ico'],
 )
