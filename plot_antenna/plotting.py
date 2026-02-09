@@ -2150,7 +2150,7 @@ def plot_mercator_heatmap(
     )
     ax.annotate(
         textstr,
-        xy=(0.5, -0.08),
+        xy=(0.5, -0.15),
         xycoords="axes fraction",
         fontsize=9,
         ha="center",

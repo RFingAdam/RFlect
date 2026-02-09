@@ -1,5 +1,21 @@
 # RFlect - Release Notes
 
+## Version 4.1.1 (02/09/2026)
+
+**Patch release with 8 bug fixes for v4.1.0.**
+
+### Bug Fixes
+- **Settings dialog crash**: Added missing `SECTION_HEADER_FONT` import in dialogs_mixin — the maritime settings section crashed the entire settings dialog
+- **HPOL/VPOL file matching**: Replaced brittle `[:-4]` filename slice with regex that correctly strips `AP_HPol`/`AP_VPol` suffixes
+- **Matplotlib mainloop conflict**: Added `plt.ion()` to prevent "main thread is not in main loop" errors during passive processing
+- **Batch processing warnings**: Suppressed noisy "GUI outside main thread" and "Tight layout not applied" warnings during bulk runs
+- **3D axis labels**: Added white stroke outline so X/Y/Z labels are readable when occluded by the radiation pattern surface
+- **Mercator summary overlap**: Moved gain summary annotation below X-axis labels
+- **Bulk settings pass-through**: Maritime settings (theta min/max, cuts, gain threshold) and axis scaling now forwarded from GUI to batch routines
+- **Black formatting**: Fixed CI formatting failures across 17 files
+
+---
+
 ## Version 4.1.0 (02/09/2026)
 
 **Maritime antenna plots, Windows installer overhaul, and startup crash fixes.**
