@@ -23,6 +23,7 @@ from ..config import (
     ACCENT_BLUE_COLOR,
     BUTTON_COLOR,
     SURFACE_COLOR,
+    SECTION_HEADER_FONT,
     AI_MODEL,
     AI_RESPONSE_STYLE,
     AI_MAX_TOKENS,
