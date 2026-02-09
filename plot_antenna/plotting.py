@@ -1,20 +1,22 @@
+import os
+import warnings
+from tkinter import messagebox, simpledialog
+
+import matplotlib
+matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib import cm
+from matplotlib.colors import Normalize
+import numpy as np
+import scipy.interpolate as spi
+
 from .config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
 from .file_utils import parse_2port_data
 from .calculations import calculate_trp
 
-import matplotlib
-
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.projections import polar  # Add this line
-from matplotlib.colors import Normalize
-import pandas as pd
-import os
-import numpy as np
-from matplotlib import cm
-import scipy.interpolate as spi
-from tkinter import messagebox
-from tkinter import simpledialog
+# Suppress noisy warnings during batch processing (worker thread + tight_layout)
+warnings.filterwarnings("ignore", message="Starting a Matplotlib GUI outside of the main thread")
+warnings.filterwarnings("ignore", message="Tight layout not applied")
 
 
 # _____________Active Plotting Functions___________
