@@ -31,6 +31,7 @@ venv_clean/
 
 # Icon files
 *.ico
+!smith_logo.ico
 
 # Company logo files (users should add their own)
 *_logo.png
