@@ -31,6 +31,13 @@ THETA_RESOLUTION_Save = 180  # default 180 - 1deg spacing
 polar_dB_max = 5.0
 polar_dB_min = -20.0
 
+# Maritime / Horizon Plot Defaults
+MARITIME_PLOTS_ENABLED = False
+HORIZON_THETA_MIN = 60.0
+HORIZON_THETA_MAX = 120.0
+HORIZON_THETA_CUTS = [60, 70, 80, 90, 100, 110, 120]
+HORIZON_COVERAGE_THRESHOLD = -3.0  # dB below peak for coverage calculation
+
 # ============================================================================
 # GUI SETTINGS
 # ============================================================================

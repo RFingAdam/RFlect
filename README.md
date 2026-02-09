@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.0.0-blue" alt="Version"></a>
+  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.1.0-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License"></a>
-  <img src="https://img.shields.io/badge/tests-346%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-391%20passing-brightgreen" alt="Tests">
 </p>
 
 ---
@@ -22,6 +22,13 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 <p align="center">
   <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
 </p>
+
+## New in v4.1
+
+- **Maritime/horizon antenna plots** — 5 new plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting. Configurable via settings toggle.
+- **Windows installer overhaul** — Proper app icon on shortcuts, no console window, seamless in-place upgrades, release notes shown after install, and old-version cleanup.
+- **Startup crash fix** — Update checker no longer crashes when network is unavailable or GUI isn't fully initialized.
+- **391 tests** — Up from 346 in v4.0, with 45 new maritime plot tests.
 
 ## New in v4.0
 

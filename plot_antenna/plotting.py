@@ -1,20 +1,23 @@
+import os
+import warnings
+from tkinter import messagebox, simpledialog
+
+import matplotlib
+matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+import matplotlib.pyplot as plt  # noqa: E402
+plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
+from matplotlib import cm, patheffects as pe
+from matplotlib.colors import Normalize
+import numpy as np
+import scipy.interpolate as spi
+
 from .config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
 from .file_utils import parse_2port_data
 from .calculations import calculate_trp
 
-import matplotlib
-
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.projections import polar  # Add this line
-from matplotlib.colors import Normalize
-import pandas as pd
-import os
-import numpy as np
-from matplotlib import cm
-import scipy.interpolate as spi
-from tkinter import messagebox
-from tkinter import simpledialog
+# Suppress noisy warnings during batch processing (worker thread + tight_layout)
+warnings.filterwarnings("ignore", message="Starting a Matplotlib GUI outside of the main thread")
+warnings.filterwarnings("ignore", message="Tight layout not applied")
 
 
 # _____________Active Plotting Functions___________
@@ -577,8 +580,10 @@ def plot_active_3d_data(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
+    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold", ha="center"
+        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -594,7 +599,10 @@ def plot_active_3d_data(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
-    ax.text(0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold", ha="center")
+    ax.text(
+        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
+    )
 
     # Z-axis (blue) - extends in positive Z direction
     ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
@@ -610,7 +618,8 @@ def plot_active_3d_data(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold", ha="center"
+        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Set Title based on power_type with rounded TRP values
@@ -1400,8 +1409,10 @@ def plot_passive_3d_component(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
+    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold", ha="center"
+        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -1417,7 +1428,10 @@ def plot_passive_3d_component(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
-    ax.text(0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold", ha="center")
+    ax.text(
+        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
+    )
 
     # Z-axis (blue) - extends in positive Z direction
     ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
@@ -1433,7 +1447,8 @@ def plot_passive_3d_component(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold", ha="center"
+        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Adjust the view angle for a top-down view
@@ -1965,3 +1980,639 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
         plt.close(fig)
     else:
         plt.show()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MARITIME / HORIZON VISUALIZATION FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _prepare_gain_grid(theta_angles_deg, phi_angles_deg, gain_data, freq_idx):
+    """
+    Reshape flat passive measurement data into a 2D gain grid.
+
+    For passive data, theta/phi/gain arrays are 2D with shape (n_points, n_freqs).
+    For active data, gain_2d is already (n_theta, n_phi) — passed through unchanged.
+
+    Parameters:
+        theta_angles_deg: Theta angle array (1D for active, 2D for passive)
+        phi_angles_deg: Phi angle array (1D for active, 2D for passive)
+        gain_data: Gain/power array (2D grid for active, 2D (n_pts, n_freqs) for passive)
+        freq_idx: Frequency index (used only for passive multi-freq arrays)
+
+    Returns:
+        Tuple of (unique_theta, unique_phi, gain_2d) or (None, None, None) on failure.
+    """
+    # Active data: gain_data is already a 2D grid (n_theta, n_phi)
+    if gain_data.ndim == 2 and theta_angles_deg.ndim == 1:
+        return theta_angles_deg, phi_angles_deg, gain_data
+
+    # Passive data: extract single frequency column
+    if gain_data.ndim == 2:
+        gain_1d = gain_data[:, freq_idx]
+        theta_1d = theta_angles_deg[:, freq_idx]
+        phi_1d = phi_angles_deg[:, freq_idx]
+    else:
+        gain_1d = gain_data
+        theta_1d = theta_angles_deg
+        phi_1d = phi_angles_deg
+
+    unique_theta = np.sort(np.unique(theta_1d))
+    unique_phi = np.sort(np.unique(phi_1d))
+    n_theta = len(unique_theta)
+    n_phi = len(unique_phi)
+
+    if n_theta * n_phi != len(gain_1d):
+        return None, None, None
+
+    try:
+        gain_2d = gain_1d.reshape((n_theta, n_phi))
+        return unique_theta, unique_phi, gain_2d
+    except ValueError:
+        return None, None, None
+
+
+def plot_mercator_heatmap(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    data_label="Gain",
+    data_unit="dBi",
+    theta_min=None,
+    theta_max=None,
+    cmap="turbo",
+    levels=30,
+    save_path=None,
+):
+    """
+    Plot a Mercator/cylindrical projection heatmap of antenna gain or power.
+
+    Parameters:
+        theta_deg: 1D array of theta angles in degrees
+        phi_deg: 1D array of phi angles in degrees
+        gain_2d: 2D array of gain/power values (n_theta, n_phi)
+        frequency: Frequency in MHz
+        data_label: Label for data ("Gain" or "Power")
+        data_unit: Unit string ("dBi" or "dBm")
+        theta_min: Optional min theta for Y-axis zoom
+        theta_max: Optional max theta for Y-axis zoom
+        cmap: Colormap name
+        levels: Number of contour levels
+        save_path: Optional path to save figure
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    phi_mesh, theta_mesh = np.meshgrid(phi_deg, theta_deg)
+    c = ax.contourf(phi_mesh, theta_mesh, gain_2d, levels=levels, cmap=cmap)
+    cbar = plt.colorbar(c, ax=ax)
+    cbar.set_label(f"{data_label} ({data_unit})")
+
+    ax.set_xlabel("Phi (degrees)")
+    ax.set_ylabel("Theta (degrees)")
+    ax.invert_yaxis()  # 0=zenith at top
+
+    zoomed = theta_min is not None and theta_max is not None
+    if zoomed:
+        ax.set_ylim(theta_max, theta_min)
+        ax.axhline(y=theta_min, color="white", linestyle="--", alpha=0.7, linewidth=1)
+        ax.axhline(y=theta_max, color="white", linestyle="--", alpha=0.7, linewidth=1)
+        title_suffix = f" (Theta {theta_min:.0f}-{theta_max:.0f} deg)"
+    else:
+        title_suffix = ""
+
+    ax.set_title(
+        f"Mercator {data_label} Heatmap @ {frequency} MHz{title_suffix}",
+        fontsize=14,
+    )
+    ax.grid(True, alpha=0.3)
+
+    # Gain summary annotation
+    if zoomed:
+        mask = (theta_mesh >= theta_min) & (theta_mesh <= theta_max)
+        visible = gain_2d[
+            (theta_deg >= theta_min) & (theta_deg <= theta_max), :
+        ]
+    else:
+        visible = gain_2d
+
+    max_val = np.max(visible)
+    min_val = np.min(visible)
+    lin = 10 ** (visible / 10)
+    avg_val = 10 * np.log10(np.mean(lin))
+
+    textstr = (
+        f"Max: {max_val:.1f} {data_unit}  "
+        f"Min: {min_val:.1f} {data_unit}  "
+        f"Avg: {avg_val:.1f} {data_unit}"
+    )
+    ax.annotate(
+        textstr,
+        xy=(0.5, -0.08),
+        xycoords="axes fraction",
+        fontsize=9,
+        ha="center",
+        bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8, boxstyle="round,pad=0.3"),
+    )
+
+    plt.tight_layout()
+
+    if save_path:
+        suffix = f"_theta{theta_min:.0f}-{theta_max:.0f}" if zoomed else ""
+        fname = f"mercator_{data_label.lower()}_{frequency}MHz{suffix}.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_conical_cuts(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    theta_cuts=None,
+    data_label="Gain",
+    data_unit="dBi",
+    polar=True,
+    save_path=None,
+):
+    """
+    Plot conical (constant-theta) cuts of gain/power vs phi.
+
+    Parameters:
+        theta_deg: 1D array of theta angles in degrees
+        phi_deg: 1D array of phi angles in degrees
+        gain_2d: 2D array of gain/power values (n_theta, n_phi)
+        frequency: Frequency in MHz
+        theta_cuts: List of theta angles for cuts (default: maritime horizon cuts)
+        data_label: Label for data ("Gain" or "Power")
+        data_unit: Unit string ("dBi" or "dBm")
+        polar: If True, plot on polar projection; if False, Cartesian
+        save_path: Optional path to save figure
+    """
+    if theta_cuts is None:
+        theta_cuts = [60, 70, 80, 90, 100, 110, 120]
+
+    fig = plt.figure(figsize=(10, 8) if polar else (12, 6))
+    if polar:
+        ax = fig.add_subplot(111, projection="polar")
+    else:
+        ax = fig.add_subplot(111)
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(theta_cuts)))
+
+    for i, theta_cut in enumerate(theta_cuts):
+        theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
+        cut_gain = gain_2d[theta_idx, :]
+
+        if polar:
+            phi_rad = np.deg2rad(phi_deg)
+            # Wrap for closure
+            phi_plot = np.append(phi_rad, phi_rad[0])
+            gain_plot = np.append(cut_gain, cut_gain[0])
+            ax.plot(phi_plot, gain_plot, color=colors[i], label=f"θ={theta_cut}°", linewidth=1.5)
+        else:
+            ax.plot(phi_deg, cut_gain, color=colors[i], label=f"θ={theta_cut}°", linewidth=1.5)
+
+    if polar:
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+        ax.set_title(
+            f"Conical Cuts - {data_label} @ {frequency} MHz",
+            pad=20, fontsize=14,
+        )
+    else:
+        ax.set_xlabel("Phi (degrees)")
+        ax.set_ylabel(f"{data_label} ({data_unit})")
+        ax.set_title(
+            f"Gain over Azimuth - {data_label} @ {frequency} MHz",
+            fontsize=14,
+        )
+        ax.grid(True, alpha=0.3)
+        ax.axhline(y=-3, color="red", linestyle="--", alpha=0.5, linewidth=1, label="-3 dB ref")
+
+    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.0), fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        mode = "polar" if polar else "cartesian"
+        fname = f"conical_cuts_{mode}_{frequency}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_gain_over_azimuth(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    theta_cuts=None,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Plot Gain-over-Azimuth (Cartesian view of conical cuts) with -3 dB reference.
+
+    Thin wrapper around plot_conical_cuts with polar=False and a dedicated filename.
+    """
+    if theta_cuts is None:
+        theta_cuts = [60, 70, 80, 90, 100, 110, 120]
+
+    # Use conical cuts in Cartesian mode
+    fig = plt.figure(figsize=(12, 6))
+    ax = fig.add_subplot(111)
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(theta_cuts)))
+
+    for i, theta_cut in enumerate(theta_cuts):
+        theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
+        cut_gain = gain_2d[theta_idx, :]
+        ax.plot(phi_deg, cut_gain, color=colors[i], label=f"θ={theta_cut}°", linewidth=1.5)
+
+    ax.axhline(y=-3, color="red", linestyle="--", alpha=0.5, linewidth=1, label="-3 dB ref")
+    ax.set_xlabel("Phi (degrees)")
+    ax.set_ylabel(f"{data_label} ({data_unit})")
+    ax.set_title(f"Gain over Azimuth @ {frequency} MHz", fontsize=14)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.0), fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"goa_{frequency}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_horizon_statistics(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    theta_min=60,
+    theta_max=120,
+    gain_threshold=-3.0,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Plot horizon coverage statistics as a table + mini polar plot.
+
+    Parameters:
+        theta_deg: 1D array of theta angles in degrees
+        phi_deg: 1D array of phi angles in degrees
+        gain_2d: 2D array of gain/power values (n_theta, n_phi)
+        frequency: Frequency in MHz
+        theta_min: Minimum theta for horizon band
+        theta_max: Maximum theta for horizon band
+        gain_threshold: dB threshold below peak for coverage calculation
+        data_label: Label for data
+        data_unit: Unit string
+        save_path: Optional path to save figure
+    """
+    # Extract horizon band
+    mask = (theta_deg >= theta_min) & (theta_deg <= theta_max)
+    horizon_theta = theta_deg[mask]
+    horizon_gain = gain_2d[mask, :]
+
+    if horizon_gain.size == 0:
+        print(f"[Maritime] No data in theta range {theta_min}-{theta_max} deg")
+        return
+
+    # Statistics
+    max_gain = np.max(horizon_gain)
+    min_gain = np.min(horizon_gain)
+    lin = 10 ** (horizon_gain / 10)
+    avg_gain = 10 * np.log10(np.mean(lin))
+
+    # Coverage: % of points above (peak + threshold)
+    coverage_limit = max_gain + gain_threshold  # threshold is negative
+    coverage_pct = 100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
+
+    # MEG: Mean Effective Gain with sin(theta) weighting
+    theta_rad = np.deg2rad(horizon_theta)
+    sin_weights = np.sin(theta_rad)
+    # Broadcast sin_weights to match gain shape: (n_horizon_theta, 1) * (n_horizon_theta, n_phi)
+    weighted_lin = lin * sin_weights[:, np.newaxis]
+    meg_lin = np.sum(weighted_lin) / np.sum(
+        np.tile(sin_weights[:, np.newaxis], (1, gain_2d.shape[1]))
+    )
+    meg_dB = 10 * np.log10(meg_lin) if meg_lin > 0 else float("-inf")
+
+    # Null detection: find the minimum point
+    null_flat_idx = np.argmin(horizon_gain)
+    null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, horizon_gain.shape)
+    null_depth = min_gain - max_gain
+    null_location = f"θ={horizon_theta[null_theta_idx]:.0f}°, φ={phi_deg[null_phi_idx]:.0f}°"
+
+    # Create figure with table and mini polar plot
+    fig = plt.figure(figsize=(14, 6))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.5, 1])
+
+    # Left: statistics table
+    ax_table = fig.add_subplot(gs[0])
+    ax_table.axis("off")
+
+    table_data = [
+        ["Max " + data_label, f"{max_gain:.1f} {data_unit}"],
+        ["Min " + data_label, f"{min_gain:.1f} {data_unit}"],
+        ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
+        ["MEG (sin-θ weighted)", f"{meg_dB:.1f} {data_unit}"],
+        [f"Coverage (>{coverage_limit:.1f} {data_unit})", f"{coverage_pct:.1f}%"],
+        ["Null Depth", f"{null_depth:.1f} dB"],
+        ["Null Location", null_location],
+        ["Theta Range", f"{theta_min}° - {theta_max}°"],
+        ["Frequency", f"{frequency} MHz"],
+    ]
+
+    table = ax_table.table(
+        cellText=table_data,
+        colLabels=["Metric", "Value"],
+        cellLoc="left",
+        loc="center",
+        colWidths=[0.55, 0.45],
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.6)
+
+    # Style header row
+    for j in range(2):
+        table[0, j].set_facecolor("#4A90E2")
+        table[0, j].set_text_props(color="white", fontweight="bold")
+
+    ax_table.set_title(
+        f"Horizon Statistics @ {frequency} MHz",
+        fontsize=14, fontweight="bold", pad=20,
+    )
+
+    # Right: mini polar plot at theta=90
+    ax_polar = fig.add_subplot(gs[1], projection="polar")
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90))
+    cut_gain = gain_2d[theta_90_idx, :]
+    phi_rad = np.deg2rad(phi_deg)
+    phi_plot = np.append(phi_rad, phi_rad[0])
+    gain_plot = np.append(cut_gain, cut_gain[0])
+    ax_polar.plot(phi_plot, gain_plot, "b-", linewidth=2)
+    ax_polar.set_theta_zero_location("N")
+    ax_polar.set_theta_direction(-1)
+    ax_polar.set_title(f"θ=90° Cut", pad=20, fontsize=11)
+    ax_polar.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"horizon_stats_{frequency}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_3d_pattern_masked(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    theta_highlight_min=60,
+    theta_highlight_max=120,
+    mask_alpha=0.15,
+    data_label="Gain",
+    data_unit="dBi",
+    interpolate=True,
+    axis_mode="auto",
+    zmin=-15,
+    zmax=15,
+    save_path=None,
+):
+    """
+    Plot 3D radiation pattern with alpha transparency outside the horizon band.
+
+    Parameters:
+        theta_deg: 1D array of theta angles in degrees
+        phi_deg: 1D array of phi angles in degrees
+        gain_2d: 2D array of gain/power values (n_theta, n_phi)
+        frequency: Frequency in MHz
+        theta_highlight_min: Min theta for full-opacity band
+        theta_highlight_max: Max theta for full-opacity band
+        mask_alpha: Alpha for regions outside highlight band
+        data_label: Label for data
+        data_unit: Unit string
+        interpolate: Whether to interpolate for smoother rendering
+        axis_mode: "auto" or "manual" axis scaling
+        zmin: Min gain value for manual scaling
+        zmax: Max gain value for manual scaling
+        save_path: Optional path to save figure
+    """
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
+    # --- Phi wrapping to close the sphere (matches process_data() logic) ---
+    phi_inc = phi_deg[1] - phi_deg[0] if len(phi_deg) > 1 else 5.0
+    phi_span = phi_deg[-1] - phi_deg[0]
+    needs_wrapping = phi_span < 360 and (360 - phi_span) <= phi_inc * 1.5
+
+    if needs_wrapping:
+        wrapped_phi = np.append(phi_deg, phi_deg[0] + 360)
+        wrapped_gain = np.column_stack((gain_2d, gain_2d[:, 0]))
+    else:
+        wrapped_phi = phi_deg
+        wrapped_gain = gain_2d
+
+    if interpolate:
+        theta_interp = np.linspace(theta_deg.min(), theta_deg.max(), THETA_RESOLUTION)
+        phi_interp = np.linspace(wrapped_phi.min(), wrapped_phi.max(), PHI_RESOLUTION)
+        try:
+            interp_func = spi.RegularGridInterpolator(
+                (theta_deg, wrapped_phi), wrapped_gain,
+                method="linear", bounds_error=False, fill_value=np.nan,
+            )
+            PHI_grid, THETA_grid = np.meshgrid(phi_interp, theta_interp)
+            pts = np.column_stack([THETA_grid.ravel(), PHI_grid.ravel()])
+            gain_interp = interp_func(pts).reshape(THETA_grid.shape)
+            use_theta = theta_interp
+            use_phi = phi_interp
+            use_gain = gain_interp
+        except Exception:
+            use_theta = theta_deg
+            use_phi = wrapped_phi
+            use_gain = wrapped_gain
+    else:
+        use_theta = theta_deg
+        use_phi = wrapped_phi
+        use_gain = wrapped_gain
+
+    # Build spherical coordinates
+    PHI, THETA = np.meshgrid(use_phi, use_theta)
+    theta_rad = np.deg2rad(THETA)
+    phi_rad = np.deg2rad(PHI)
+
+    # Map gain to radius
+    gmin, gmax = np.nanmin(use_gain), np.nanmax(use_gain)
+    if gmax == gmin:
+        R_unit = np.ones_like(use_gain)
+    else:
+        R_unit = (use_gain - gmin) / (gmax - gmin)
+    R = 0.75 * R_unit
+
+    X = R * np.sin(theta_rad) * np.cos(phi_rad)
+    Y = R * np.sin(theta_rad) * np.sin(phi_rad)
+    Z = R * np.cos(theta_rad)
+
+    # Color mapping
+    if axis_mode == "manual":
+        norm = Normalize(zmin, zmax)
+    else:
+        norm = Normalize(gmin, gmax)
+
+    face_colors = cm.turbo(norm(use_gain))
+
+    # Desaturate regions outside the horizon band instead of using alpha
+    # transparency (matplotlib's 3D renderer can't depth-sort transparent faces,
+    # causing back-surface bleed-through artifacts).
+    in_band = (THETA >= theta_highlight_min) & (THETA <= theta_highlight_max)
+    gray = np.array([0.82, 0.82, 0.82, 1.0])
+    face_colors[~in_band] = (
+        mask_alpha * face_colors[~in_band] + (1 - mask_alpha) * gray
+    )
+
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.plot_surface(
+        X, Y, Z,
+        facecolors=face_colors,
+        linewidth=0.3,
+        antialiased=True,
+        shade=False,
+        rstride=1,
+        cstride=1,
+    )
+
+    # Ring lines at band boundaries
+    for boundary_theta in [theta_highlight_min, theta_highlight_max]:
+        t_rad = np.deg2rad(boundary_theta)
+        ring_phi = np.linspace(0, 2 * np.pi, 100)
+        # Use average radius at that theta for ring placement
+        t_idx = np.argmin(np.abs(use_theta - boundary_theta))
+        r_ring = np.mean(R[t_idx, :]) if t_idx < R.shape[0] else 0.5
+        ring_x = r_ring * np.sin(t_rad) * np.cos(ring_phi)
+        ring_y = r_ring * np.sin(t_rad) * np.sin(ring_phi)
+        ring_z = r_ring * np.cos(t_rad) * np.ones_like(ring_phi)
+        ax.plot(ring_x, ring_y, ring_z, color="yellow", linewidth=2, alpha=0.9)
+
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
+    ax.grid(True)
+
+    # Transparent panes
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.xaxis.pane.set_alpha(0.2)
+    ax.yaxis.pane.set_alpha(0.2)
+    ax.zaxis.pane.set_alpha(0.2)
+
+    ax.view_init(elev=20, azim=-30)
+    ax.set_title(
+        f"3D Pattern - Horizon Band {theta_highlight_min}-{theta_highlight_max}° "
+        f"@ {frequency} MHz",
+        fontsize=14,
+    )
+
+    # Colorbar
+    mappable = cm.ScalarMappable(norm=norm, cmap=cm.turbo)
+    mappable.set_array(use_gain)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
+    cbar.set_label(f"{data_label} ({data_unit})")
+
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"3d_masked_{frequency}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def generate_maritime_plots(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    data_label="Gain",
+    data_unit="dBi",
+    theta_min=60.0,
+    theta_max=120.0,
+    theta_cuts=None,
+    gain_threshold=-3.0,
+    axis_mode="auto",
+    zmin=-15.0,
+    zmax=15.0,
+    save_path=None,
+):
+    """
+    Generate all maritime/horizon visualization plots.
+
+    This dispatcher calls all maritime plot functions with proper parameters,
+    avoiding duplication across the 4 entry points (View, Save, Bulk Passive, Bulk Active).
+    """
+    if theta_cuts is None:
+        theta_cuts = [60, 70, 80, 90, 100, 110, 120]
+
+    # 1. Full-range Mercator
+    plot_mercator_heatmap(
+        theta_deg, phi_deg, gain_2d, frequency,
+        data_label=data_label, data_unit=data_unit,
+        save_path=save_path,
+    )
+
+    # 2. Zoomed Mercator (horizon band)
+    plot_mercator_heatmap(
+        theta_deg, phi_deg, gain_2d, frequency,
+        data_label=data_label, data_unit=data_unit,
+        theta_min=theta_min, theta_max=theta_max,
+        save_path=save_path,
+    )
+
+    # 3. Conical cuts (polar)
+    plot_conical_cuts(
+        theta_deg, phi_deg, gain_2d, frequency,
+        theta_cuts=theta_cuts, data_label=data_label,
+        data_unit=data_unit, polar=True, save_path=save_path,
+    )
+
+    # 4. Gain-over-Azimuth (Cartesian)
+    plot_gain_over_azimuth(
+        theta_deg, phi_deg, gain_2d, frequency,
+        theta_cuts=theta_cuts, data_label=data_label,
+        data_unit=data_unit, save_path=save_path,
+    )
+
+    # 5. Horizon statistics
+    plot_horizon_statistics(
+        theta_deg, phi_deg, gain_2d, frequency,
+        theta_min=theta_min, theta_max=theta_max,
+        gain_threshold=gain_threshold,
+        data_label=data_label, data_unit=data_unit,
+        save_path=save_path,
+    )
+
+    # 6. 3D masked pattern
+    plot_3d_pattern_masked(
+        theta_deg, phi_deg, gain_2d, frequency,
+        theta_highlight_min=theta_min, theta_highlight_max=theta_max,
+        data_label=data_label, data_unit=data_unit,
+        axis_mode=axis_mode, zmin=zmin, zmax=zmax,
+        save_path=save_path,
+    )
