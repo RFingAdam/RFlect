@@ -1153,8 +1153,12 @@ def batch_process_passive_scans(
                     maritime_sub = os.path.join(subfolder, "Maritime Plots")
                     os.makedirs(maritime_sub, exist_ok=True)
                     generate_maritime_plots(
-                        unique_theta, unique_phi, gain_grid, sel_freq,
-                        data_label="Gain", data_unit="dBi",
+                        unique_theta,
+                        unique_phi,
+                        gain_grid,
+                        sel_freq,
+                        data_label="Gain",
+                        data_unit="dBi",
                         theta_min=maritime_theta_min,
                         theta_max=maritime_theta_max,
                         theta_cuts=maritime_theta_cuts,
@@ -1312,8 +1316,12 @@ def batch_process_active_scans(
                 maritime_sub = os.path.join(subfolder, "Maritime Plots")
                 os.makedirs(maritime_sub, exist_ok=True)
                 generate_maritime_plots(
-                    theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency,
-                    data_label="Power", data_unit="dBm",
+                    theta_angles_deg,
+                    phi_angles_deg,
+                    total_power_dBm_2d,
+                    frequency,
+                    data_label="Power",
+                    data_unit="dBm",
                     theta_min=maritime_theta_min,
                     theta_max=maritime_theta_max,
                     theta_cuts=maritime_theta_cuts,

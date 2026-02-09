@@ -64,8 +64,9 @@ class TestRealPhaseReconstruction:
         # For positive group delay, phase should generally decrease with frequency
         # Allow some noise, check overall trend
         phase_diff = np.diff(phase)
-        assert np.sum(phase_diff < 0) > len(phase_diff) * 0.8, \
-            "Phase should be predominantly decreasing for positive group delay"
+        assert (
+            np.sum(phase_diff < 0) > len(phase_diff) * 0.8
+        ), "Phase should be predominantly decreasing for positive group delay"
 
 
 # ===========================================================================
@@ -88,8 +89,7 @@ class TestRealSFF:
         s21_complex = build_complex_s21_from_s2vna(freq, s21_dB, gd)
         result = calculate_sff(freq, s21_complex)
 
-        assert 0.3 <= result['sff'] <= 1.0, \
-            f"SFF {result['sff']} outside expected [0.3, 1.0] range"
+        assert 0.3 <= result["sff"] <= 1.0, f"SFF {result['sff']} outside expected [0.3, 1.0] range"
 
     def test_sff_varies_with_angle(self):
         """SFF should vary between 0deg and 90deg measurements."""
@@ -108,7 +108,7 @@ class TestRealSFF:
             gd = df["S21(s)"].values
             s21_complex = build_complex_s21_from_s2vna(freq, s21_dB, gd)
             result = calculate_sff(freq, s21_complex)
-            sff_values.append(result['sff'])
+            sff_values.append(result["sff"])
 
         # SFF should differ between angles (antenna is not isotropic)
         # Allow them to be similar but not expect exact match
@@ -122,6 +122,7 @@ class TestRealSFF:
             pytest.skip("Need at least 2 GroupDelay files")
 
         import re
+
         pattern = re.compile(r"(\d+)deg", re.IGNORECASE)
 
         angle_data = []
@@ -135,17 +136,19 @@ class TestRealSFF:
             gd = df["S21(s)"].values
 
             s21_complex = build_complex_s21_from_s2vna(freq, s21_dB, gd)
-            angle_data.append({
-                'angle_deg': angle,
-                'freq_hz': freq,
-                's21_complex': s21_complex,
-            })
+            angle_data.append(
+                {
+                    "angle_deg": angle,
+                    "freq_hz": freq,
+                    "s21_complex": s21_complex,
+                }
+            )
 
         result = calculate_sff_vs_angle(angle_data)
 
-        assert len(result['angles']) == len(files)
-        assert 0.0 < result['mean_sff'] <= 1.0
-        assert all(0.0 <= v <= 1.0 for v in result['sff_values'])
+        assert len(result["angles"]) == len(files)
+        assert 0.0 < result["mean_sff"] <= 1.0
+        assert all(0.0 <= v <= 1.0 for v in result["sff_values"])
 
 
 # ===========================================================================
@@ -168,8 +171,9 @@ class TestRealGroupDelay:
         s21_complex = build_complex_s21_from_s2vna(freq, s21_dB, gd)
         result = compute_group_delay_from_s21(freq, s21_complex)
 
-        assert result['variation_s'] < 2e-9, \
-            f"Group delay variation {result['variation_s']*1e9:.3f} ns exceeds 2 ns"
+        assert (
+            result["variation_s"] < 2e-9
+        ), f"Group delay variation {result['variation_s']*1e9:.3f} ns exceeds 2 ns"
 
 
 # ===========================================================================
@@ -197,8 +201,8 @@ class TestRealS11Bandwidth:
         assert freq[0] >= 4e9
         assert freq[-1] <= 11e9
         # VSWR should be computed
-        assert len(result['vswr']) == len(freq)
-        assert all(v >= 1.0 for v in result['vswr'])
+        assert len(result["vswr"]) == len(freq)
+        assert all(v >= 1.0 for v in result["vswr"])
 
 
 # ===========================================================================
@@ -232,5 +236,5 @@ class TestRealMissingGroupDelay:
         s11_dB = df["S11(dB)"].values
 
         result = analyze_return_loss(freq, s11_dB)
-        assert result['min_s11_dB'] < 0  # S11 should be negative
-        assert len(result['vswr']) == len(freq)
+        assert result["min_s11_dB"] < 0  # S11 should be negative
+        assert len(result["vswr"]) == len(freq)

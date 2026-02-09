@@ -78,8 +78,7 @@ def detect_measurement_type(filename):
 
     # Maritime check first (conical_cuts_polar would otherwise match "polar" → polarization)
     if any(
-        kw in filename_lower
-        for kw in ("mercator", "conical", "goa_", "horizon_stats", "3d_masked")
+        kw in filename_lower for kw in ("mercator", "conical", "goa_", "horizon_stats", "3d_masked")
     ):
         return "maritime"
     elif (
@@ -1872,8 +1871,12 @@ def save_to_results_folder(
             maritime_path = os.path.join(project_path, "Maritime Plots")
             os.makedirs(maritime_path, exist_ok=True)
             generate_maritime_plots(
-                theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency,
-                data_label="Power", data_unit="dBm",
+                theta_angles_deg,
+                phi_angles_deg,
+                total_power_dBm_2d,
+                frequency,
+                data_label="Power",
+                data_unit="dBm",
                 save_path=maritime_path,
             )
 
@@ -1981,8 +1984,12 @@ def save_to_results_folder(
                 maritime_path = os.path.join(project_path, "Maritime Plots")
                 os.makedirs(maritime_path, exist_ok=True)
                 generate_maritime_plots(
-                    unique_theta, unique_phi, gain_grid, selected_frequency,
-                    data_label="Gain", data_unit="dBi",
+                    unique_theta,
+                    unique_phi,
+                    gain_grid,
+                    selected_frequency,
+                    data_label="Gain",
+                    data_unit="dBi",
                     save_path=maritime_path,
                 )
 

@@ -14,12 +14,13 @@ import pytest
 import numpy as np
 
 # Add rflect-mcp to path so we can import the tools package
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'rflect-mcp'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "rflect-mcp"))
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_passive_measurement():
@@ -150,6 +151,7 @@ def _inject_active(mock_active_measurement):
 # Tests: ReportOptions
 # ---------------------------------------------------------------------------
 
+
 class TestReportOptionsBranded:
     """Test ReportOptions dataclass with new fields."""
 
@@ -174,23 +176,28 @@ class TestReportOptionsBranded:
 # Tests: _fmt helper
 # ---------------------------------------------------------------------------
 
+
 class TestFmtReport:
     """Test the report-specific _fmt helper."""
 
     def test_fmt_float(self):
         from tools.report_tools import _fmt
+
         assert _fmt(10.123) == "10.12"
 
     def test_fmt_none(self):
         from tools.report_tools import _fmt
+
         assert _fmt(None) == "N/A"
 
     def test_fmt_with_suffix(self):
         from tools.report_tools import _fmt
+
         assert _fmt(10.0, ".1f", " dBi") == "10.0 dBi"
 
     def test_fmt_non_numeric(self):
         from tools.report_tools import _fmt
+
         assert _fmt("hello") == "hello"
 
 
@@ -198,39 +205,46 @@ class TestFmtReport:
 # Tests: Classification Helpers
 # ---------------------------------------------------------------------------
 
+
 class TestClassifyGainQuality:
 
     def test_below_isotropic(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(-2.0)
         assert rating == "poor"
         assert "below isotropic" in desc
 
     def test_chip_antenna_range(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(1.5)
         assert rating == "low"
         assert "chip antenna" in desc
 
     def test_pcb_trace_range(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(3.0)
         assert rating == "moderate"
         assert "PCB trace" in desc
 
     def test_patch_range(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(6.5)
         assert rating == "good"
         assert "patch" in desc
 
     def test_high_gain(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(15.0)
         assert rating == "very high"
 
     def test_none_input(self):
         from tools.report_tools import _classify_gain_quality
+
         rating, desc = _classify_gain_quality(None)
         assert rating == "unknown"
 
@@ -239,22 +253,27 @@ class TestClassifyEfficiency:
 
     def test_excellent(self):
         from tools.report_tools import _classify_efficiency
+
         assert "excellent" in _classify_efficiency(95)
 
     def test_good(self):
         from tools.report_tools import _classify_efficiency
+
         assert "good" in _classify_efficiency(80)
 
     def test_fair(self):
         from tools.report_tools import _classify_efficiency
+
         assert "fair" in _classify_efficiency(60)
 
     def test_poor(self):
         from tools.report_tools import _classify_efficiency
+
         assert "poor" in _classify_efficiency(30)
 
     def test_none_input(self):
         from tools.report_tools import _classify_efficiency
+
         assert "unknown" in _classify_efficiency(None)
 
 
@@ -262,6 +281,7 @@ class TestGetTestConfiguration:
 
     def test_passive_config(self, mock_passive_measurement):
         from tools.report_tools import _get_test_configuration
+
         config = _get_test_configuration(mock_passive_measurement)
         assert config["scan_type"] == "passive"
         assert config["num_frequencies"] == 3
@@ -270,6 +290,7 @@ class TestGetTestConfiguration:
 
     def test_active_config(self, mock_active_measurement):
         from tools.report_tools import _get_test_configuration
+
         config = _get_test_configuration(mock_active_measurement)
         assert config["scan_type"] == "active"
         assert "TRP_dBm" in config
@@ -279,6 +300,7 @@ class TestGetTestConfiguration:
 # ---------------------------------------------------------------------------
 # Tests: Executive Summary
 # ---------------------------------------------------------------------------
+
 
 class TestBuildExecutiveSummary:
 
@@ -290,7 +312,8 @@ class TestBuildExecutiveSummary:
             _loaded_measurements["TestPassive"] = mock_passive_measurement
         try:
             paragraphs = _build_executive_summary(
-                {"TestPassive": mock_passive_measurement}, ReportOptions())
+                {"TestPassive": mock_passive_measurement}, ReportOptions()
+            )
             assert len(paragraphs) >= 1
             # Scope paragraph should mention "passive"
             assert "passive" in paragraphs[0].lower()
@@ -309,7 +332,8 @@ class TestBuildExecutiveSummary:
             _loaded_measurements["TestActive"] = mock_active_measurement
         try:
             paragraphs = _build_executive_summary(
-                {"TestActive": mock_active_measurement}, ReportOptions())
+                {"TestActive": mock_active_measurement}, ReportOptions()
+            )
             assert len(paragraphs) >= 1
             assert "active" in paragraphs[0].lower() or "TRP" in paragraphs[0]
             full_text = " ".join(paragraphs)
@@ -322,6 +346,7 @@ class TestBuildExecutiveSummary:
 # ---------------------------------------------------------------------------
 # Tests: Pattern Prose
 # ---------------------------------------------------------------------------
+
 
 class TestBuildPatternProse:
 
@@ -353,6 +378,7 @@ class TestBuildPatternProse:
 # Tests: Data-Driven Conclusions
 # ---------------------------------------------------------------------------
 
+
 class TestBuildDataDrivenConclusions:
 
     def test_passive_conclusions_reference_data(self, mock_passive_measurement):
@@ -363,7 +389,8 @@ class TestBuildDataDrivenConclusions:
             _loaded_measurements["TestPassive"] = mock_passive_measurement
         try:
             bullets = _build_data_driven_conclusions(
-                {"TestPassive": mock_passive_measurement}, ReportOptions())
+                {"TestPassive": mock_passive_measurement}, ReportOptions()
+            )
             assert len(bullets) >= 1
             # Should contain actual numbers
             full_text = " ".join(bullets)
@@ -380,7 +407,8 @@ class TestBuildDataDrivenConclusions:
             _loaded_measurements["TestActive"] = mock_active_measurement
         try:
             bullets = _build_data_driven_conclusions(
-                {"TestActive": mock_active_measurement}, ReportOptions())
+                {"TestActive": mock_active_measurement}, ReportOptions()
+            )
             full_text = " ".join(bullets)
             assert "TRP" in full_text or "dBm" in full_text
         finally:
@@ -391,6 +419,7 @@ class TestBuildDataDrivenConclusions:
 # ---------------------------------------------------------------------------
 # Tests: _create_llm_provider
 # ---------------------------------------------------------------------------
+
 
 class TestCreateLLMProvider:
     """Test LLM provider creation with graceful fallback."""
@@ -406,6 +435,7 @@ class TestCreateLLMProvider:
         )
         # _create_llm_provider imports internally, so we need to patch at source
         import plot_antenna.api_keys as ak
+
         monkeypatch.setattr(ak, "get_api_key", lambda _: None)
 
         provider = _create_llm_provider(ReportOptions())
@@ -415,6 +445,7 @@ class TestCreateLLMProvider:
 # ---------------------------------------------------------------------------
 # Tests: _prepare_report_data
 # ---------------------------------------------------------------------------
+
 
 class TestPrepareReportData:
     """Test measurement filtering and frequency collection."""
@@ -463,15 +494,18 @@ class TestPrepareReportData:
 # Tests: _filter_frequencies
 # ---------------------------------------------------------------------------
 
+
 class TestFilterFrequencies:
 
     def test_no_filter(self):
         from tools.report_tools import _filter_frequencies, ReportOptions
+
         opts = ReportOptions(frequencies=None)
         assert _filter_frequencies([1.0, 2.0, 3.0], opts) == [1.0, 2.0, 3.0]
 
     def test_subset(self):
         from tools.report_tools import _filter_frequencies, ReportOptions
+
         opts = ReportOptions(frequencies=[2.0])
         assert _filter_frequencies([1.0, 2.0, 3.0], opts) == [2.0]
 
@@ -480,14 +514,17 @@ class TestFilterFrequencies:
 # Tests: _safe_filename
 # ---------------------------------------------------------------------------
 
+
 class TestSafeFilename:
 
     def test_safe_chars_preserved(self):
         from tools.report_tools import _safe_filename
+
         assert _safe_filename("BLE_AP_Test") == "BLE_AP_Test"
 
     def test_special_chars_replaced(self):
         from tools.report_tools import _safe_filename
+
         result = _safe_filename("test/path:file")
         assert "/" not in result
         assert ":" not in result
@@ -496,6 +533,7 @@ class TestSafeFilename:
 # ---------------------------------------------------------------------------
 # Tests: _add_gain_stats_table (legacy)
 # ---------------------------------------------------------------------------
+
 
 class TestGainStatsTable:
 
@@ -550,6 +588,7 @@ class TestGainStatsTable:
 # Tests: Consolidated Performance Table
 # ---------------------------------------------------------------------------
 
+
 class TestConsolidatedPerformanceTable:
 
     def test_passive_consolidated_table(self, mock_passive_measurement):
@@ -569,9 +608,13 @@ class TestConsolidatedPerformanceTable:
             )
             doc = Document()
             _build_consolidated_performance_table(
-                doc, analyzer, "TestPassive",
+                doc,
+                analyzer,
+                "TestPassive",
                 [2400.0, 2450.0, 2500.0],
-                RGBColor(50, 50, 50), "passive")
+                RGBColor(50, 50, 50),
+                "passive",
+            )
 
             # ONE table with 4 rows (header + 3 freqs)
             assert len(doc.tables) == 1
@@ -602,9 +645,8 @@ class TestConsolidatedPerformanceTable:
             )
             doc = Document()
             _build_consolidated_performance_table(
-                doc, analyzer, "TestActive",
-                [2450.0],
-                RGBColor(50, 50, 50), "active")
+                doc, analyzer, "TestActive", [2450.0], RGBColor(50, 50, 50), "active"
+            )
 
             assert len(doc.tables) == 1
             table = doc.tables[0]
@@ -620,6 +662,7 @@ class TestConsolidatedPerformanceTable:
 # ---------------------------------------------------------------------------
 # Tests: Polarization Table
 # ---------------------------------------------------------------------------
+
 
 class TestPolarizationTable:
 
@@ -639,8 +682,7 @@ class TestPolarizationTable:
                 frequencies=[2400.0, 2450.0, 2500.0],
             )
             doc = Document()
-            _build_polarization_table(
-                doc, analyzer, [2400.0, 2450.0, 2500.0], RGBColor(50, 50, 50))
+            _build_polarization_table(doc, analyzer, [2400.0, 2450.0, 2500.0], RGBColor(50, 50, 50))
 
             assert len(doc.tables) == 1
             table = doc.tables[0]
@@ -657,6 +699,7 @@ class TestPolarizationTable:
 # Tests: TRP Section
 # ---------------------------------------------------------------------------
 
+
 class TestTRPSection:
 
     def test_trp_section_with_balance(self, mock_active_measurement):
@@ -669,8 +712,7 @@ class TestTRPSection:
         def heading(d, t, level=1):
             d.add_heading(t, level)
 
-        _build_trp_section(
-            doc, mock_active_measurement, RGBColor(50, 50, 50), heading)
+        _build_trp_section(doc, mock_active_measurement, RGBColor(50, 50, 50), heading)
 
         assert len(doc.tables) == 1
         # Should have TRP values in table
@@ -691,6 +733,7 @@ class TestTRPSection:
 # Tests: _build_branded_docx (no AI, no plots)
 # ---------------------------------------------------------------------------
 
+
 class TestBuildBrandedDocx:
 
     def test_docx_no_ai_no_plots(self, mock_passive_measurement, temp_dir, default_opts):
@@ -707,8 +750,13 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "test_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                default_opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                None,
+                measurements,
             )
 
             assert os.path.exists(output)
@@ -716,6 +764,7 @@ class TestBuildBrandedDocx:
 
             # Verify DOCX structure
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -747,11 +796,17 @@ class TestBuildBrandedDocx:
             }
 
             _build_branded_docx(
-                output, report_data, {},
-                default_opts, None, metadata, measurements,
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                metadata,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -766,7 +821,9 @@ class TestBuildBrandedDocx:
     def test_docx_with_gain_tables(self, mock_passive_measurement, temp_dir):
         """Verify consolidated gain tables are present when enabled."""
         from tools.report_tools import (
-            _build_branded_docx, _prepare_report_data, ReportOptions,
+            _build_branded_docx,
+            _prepare_report_data,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -787,11 +844,17 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "tables_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                opts,
+                None,
+                None,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
 
             # Should have tables (consolidated + comparison + polarization)
@@ -814,11 +877,17 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "conclusions_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                default_opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                None,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -830,7 +899,8 @@ class TestBuildBrandedDocx:
                 _loaded_measurements.pop("TestPassive", None)
 
     def test_docx_has_executive_summary_with_data(
-            self, mock_passive_measurement, temp_dir, default_opts):
+        self, mock_passive_measurement, temp_dir, default_opts
+    ):
         """Verify executive summary contains actual gain/frequency data."""
         from tools.report_tools import _build_branded_docx, _prepare_report_data
         from tools.import_tools import _loaded_measurements, _measurements_lock
@@ -844,11 +914,17 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "exec_summary_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                default_opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                None,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -861,7 +937,8 @@ class TestBuildBrandedDocx:
                 _loaded_measurements.pop("TestPassive", None)
 
     def test_docx_has_test_config_methodology(
-            self, mock_passive_measurement, temp_dir, default_opts):
+        self, mock_passive_measurement, temp_dir, default_opts
+    ):
         """Verify test configuration includes angular resolution details."""
         from tools.report_tools import _build_branded_docx, _prepare_report_data
         from tools.import_tools import _loaded_measurements, _measurements_lock
@@ -875,11 +952,17 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "config_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                default_opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                None,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -891,11 +974,12 @@ class TestBuildBrandedDocx:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
 
-    def test_docx_pattern_analysis_is_prose(
-            self, mock_passive_measurement, temp_dir):
+    def test_docx_pattern_analysis_is_prose(self, mock_passive_measurement, temp_dir):
         """Verify pattern analysis is prose sentences, not raw key:value."""
         from tools.report_tools import (
-            _build_branded_docx, _prepare_report_data, ReportOptions,
+            _build_branded_docx,
+            _prepare_report_data,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -916,11 +1000,17 @@ class TestBuildBrandedDocx:
             output = os.path.join(temp_dir, "pattern_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                opts,
+                None,
+                None,
+                measurements,
             )
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -936,10 +1026,12 @@ class TestBuildBrandedDocx:
 # Tests: _generate_ai_text
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateAIText:
 
     def test_none_provider_returns_none(self):
         from tools.report_tools import _generate_ai_text, ReportOptions
+
         result = _generate_ai_text(None, "test", {"frequencies": []}, ReportOptions())
         assert result is None
 
@@ -947,6 +1039,7 @@ class TestGenerateAIText:
 # ---------------------------------------------------------------------------
 # Tests: End-to-end generate_report (via direct function call)
 # ---------------------------------------------------------------------------
+
 
 class TestEndToEnd:
 
@@ -964,7 +1057,9 @@ class TestEndToEnd:
     def test_full_pipeline_passive(self, mock_passive_measurement, temp_dir):
         """End-to-end: import passive data, build branded DOCX, verify output."""
         from tools.report_tools import (
-            _build_branded_docx, _prepare_report_data, ReportOptions,
+            _build_branded_docx,
+            _prepare_report_data,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -992,13 +1087,19 @@ class TestEndToEnd:
             }
 
             _build_branded_docx(
-                output, report_data, {},
-                opts, None, metadata, measurements,
+                output,
+                report_data,
+                {},
+                opts,
+                None,
+                metadata,
+                measurements,
             )
 
             assert os.path.exists(output)
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -1017,7 +1118,9 @@ class TestEndToEnd:
     def test_full_pipeline_active(self, mock_active_measurement, temp_dir):
         """End-to-end: active data with gain tables and TRP section."""
         from tools.report_tools import (
-            _build_branded_docx, _prepare_report_data, ReportOptions,
+            _build_branded_docx,
+            _prepare_report_data,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -1038,13 +1141,19 @@ class TestEndToEnd:
             output = os.path.join(temp_dir, "active_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                opts,
+                None,
+                None,
+                measurements,
             )
 
             assert os.path.exists(output)
 
             from docx import Document
+
             doc = Document(output)
 
             # Should have tables for active stats
@@ -1065,11 +1174,12 @@ class TestEndToEnd:
             with _measurements_lock:
                 _loaded_measurements.pop("TRP_Test", None)
 
-    def test_full_pipeline_mixed(self, mock_passive_measurement,
-                                  mock_active_measurement, temp_dir):
+    def test_full_pipeline_mixed(self, mock_passive_measurement, mock_active_measurement, temp_dir):
         """End-to-end: mixed passive + active data."""
         from tools.report_tools import (
-            _build_branded_docx, _prepare_report_data, ReportOptions,
+            _build_branded_docx,
+            _prepare_report_data,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
@@ -1094,13 +1204,19 @@ class TestEndToEnd:
             output = os.path.join(temp_dir, "mixed_report.docx")
 
             _build_branded_docx(
-                output, report_data, {},
-                opts, None, None, measurements,
+                output,
+                report_data,
+                {},
+                opts,
+                None,
+                None,
+                measurements,
             )
 
             assert os.path.exists(output)
 
             from docx import Document
+
             doc = Document(output)
             text = "\n".join(p.text for p in doc.paragraphs)
 
@@ -1122,6 +1238,7 @@ class TestEndToEnd:
 # ---------------------------------------------------------------------------
 # Tests: _add_freq_comparison_table (legacy interface)
 # ---------------------------------------------------------------------------
+
 
 class TestFreqComparisonTable:
 
@@ -1174,11 +1291,13 @@ class TestFreqComparisonTable:
 # Tests: _detect_rf_band
 # ---------------------------------------------------------------------------
 
+
 class TestDetectRFBand:
 
     def test_ble_band_detection(self):
         """Frequencies 2402-2480 should be detected as BLE."""
         from tools.report_tools import _detect_rf_band
+
         freqs = [2402 + i * 2 for i in range(40)]  # 2402, 2404, ..., 2480
         result = _detect_rf_band(freqs)
         assert result is not None
@@ -1191,6 +1310,7 @@ class TestDetectRFBand:
     def test_wifi_24_detection(self):
         """Frequencies spanning 2400-2500 should be detected as WiFi 2.4 GHz."""
         from tools.report_tools import _detect_rf_band
+
         # Use wider range that fits WiFi but not just BLE
         freqs = list(range(2400, 2501, 5))  # 2400, 2405, ..., 2500
         result = _detect_rf_band(freqs)
@@ -1201,6 +1321,7 @@ class TestDetectRFBand:
     def test_lora_868_detection(self):
         """Frequencies 863-870 should be detected as LoRa EU868."""
         from tools.report_tools import _detect_rf_band
+
         freqs = [863.0, 864.0, 865.0, 866.0, 867.0, 868.0, 869.0, 870.0]
         result = _detect_rf_band(freqs)
         assert result is not None
@@ -1209,6 +1330,7 @@ class TestDetectRFBand:
     def test_unknown_band(self):
         """Frequencies 100-200 MHz should not match any known band."""
         from tools.report_tools import _detect_rf_band
+
         freqs = list(range(100, 201, 10))
         result = _detect_rf_band(freqs)
         assert result is None
@@ -1216,6 +1338,7 @@ class TestDetectRFBand:
     def test_multi_band_picks_best(self):
         """Mixed frequencies should pick the band with best coverage."""
         from tools.report_tools import _detect_rf_band
+
         # 8 BLE frequencies + 2 outliers = 80% BLE coverage
         freqs = [2402, 2410, 2420, 2430, 2440, 2450, 2460, 2480, 100, 200]
         result = _detect_rf_band(freqs)
@@ -1225,6 +1348,7 @@ class TestDetectRFBand:
     def test_empty_frequencies(self):
         """Empty frequency list should return None."""
         from tools.report_tools import _detect_rf_band
+
         assert _detect_rf_band([]) is None
 
 
@@ -1232,11 +1356,13 @@ class TestDetectRFBand:
 # Tests: Band-Aware Frequency Selection
 # ---------------------------------------------------------------------------
 
+
 class TestBandAwareFrequencySelection:
 
     def test_ble_includes_key_channels(self):
         """BLE frequency selection should include key advertising channels."""
         from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+
         freqs = [2402 + i * 2 for i in range(40)]  # 2402..2480
         band_info = _detect_rf_band(freqs)
         result = _select_representative_frequencies(freqs, 5, band_info=band_info)
@@ -1248,6 +1374,7 @@ class TestBandAwareFrequencySelection:
     def test_unknown_band_falls_back(self):
         """Without band info, should use even-spacing algorithm."""
         from tools.report_tools import _select_representative_frequencies
+
         freqs = list(range(100, 201, 10))  # 100, 110, ..., 200
         result = _select_representative_frequencies(freqs, 3, band_info=None)
         assert len(result) == 3
@@ -1257,6 +1384,7 @@ class TestBandAwareFrequencySelection:
     def test_respects_max_count(self):
         """Band-aware selection should never exceed max_count."""
         from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+
         freqs = [2402 + i * 2 for i in range(40)]
         band_info = _detect_rf_band(freqs)
         for max_count in [3, 5, 7]:
@@ -1266,6 +1394,7 @@ class TestBandAwareFrequencySelection:
     def test_snaps_to_nearest(self):
         """Key freq not in list should pick closest available."""
         from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+
         # Dataset with 5 MHz steps — 2440 is a key BLE freq and IS in the list
         freqs = list(range(2400, 2485, 5))  # 2400, 2405, ..., 2480
         band_info = _detect_rf_band(freqs)
@@ -1278,6 +1407,7 @@ class TestBandAwareFrequencySelection:
     def test_small_list_returns_all(self):
         """When freqs <= max_count, return all regardless of band info."""
         from tools.report_tools import _select_representative_frequencies, _detect_rf_band
+
         freqs = [2402.0, 2440.0, 2480.0]
         band_info = _detect_rf_band(freqs)
         result = _select_representative_frequencies(freqs, 5, band_info=band_info)
@@ -1288,10 +1418,12 @@ class TestBandAwareFrequencySelection:
 # Tests: Channel Label
 # ---------------------------------------------------------------------------
 
+
 class TestChannelLabel:
 
     def test_known_channel(self):
         from tools.report_tools import _channel_label
+
         band_info = {
             "name": "BLE",
             "channels": {"CH37 (adv)": 2402, "CH18 (center)": 2440},
@@ -1301,11 +1433,13 @@ class TestChannelLabel:
 
     def test_no_match(self):
         from tools.report_tools import _channel_label
+
         band_info = {"name": "BLE", "channels": {"CH37 (adv)": 2402}}
         assert _channel_label(2500, band_info) is None
 
     def test_none_band_info(self):
         from tools.report_tools import _channel_label
+
         assert _channel_label(2440, None) is None
 
 
@@ -1313,17 +1447,21 @@ class TestChannelLabel:
 # Tests: Band Context in Prose
 # ---------------------------------------------------------------------------
 
+
 class TestBandContextInProse:
 
     def test_executive_summary_mentions_band(self, mock_passive_measurement):
         """Executive summary should mention 'BLE' when frequencies match."""
         from tools.report_tools import (
-            _build_executive_summary, _detect_rf_band, ReportOptions,
+            _build_executive_summary,
+            _detect_rf_band,
+            ReportOptions,
         )
         from tools.import_tools import _loaded_measurements, _measurements_lock
 
         # Create measurement with BLE-range frequencies
         from tools.import_tools import LoadedMeasurement
+
         ble_meas = LoadedMeasurement(
             file_path="test.txt",
             scan_type="passive",
@@ -1336,8 +1474,8 @@ class TestBandContextInProse:
         try:
             band_map = {"BLE_Test": _detect_rf_band(ble_meas.frequencies)}
             paragraphs = _build_executive_summary(
-                {"BLE_Test": ble_meas}, ReportOptions(),
-                band_info_map=band_map)
+                {"BLE_Test": ble_meas}, ReportOptions(), band_info_map=band_map
+            )
             full_text = " ".join(paragraphs)
             assert "BLE" in full_text
         finally:
@@ -1352,6 +1490,7 @@ class TestBandContextInProse:
 
         ble_freqs = [2402.0, 2440.0, 2480.0]
         from tools.import_tools import LoadedMeasurement
+
         ble_meas = LoadedMeasurement(
             file_path="test.txt",
             scan_type="passive",
@@ -1370,13 +1509,11 @@ class TestBandContextInProse:
             band_info = _detect_rf_band(ble_freqs)
 
             # Test at 2440 MHz — should mention CH18 (data channel 18 = center)
-            prose = _build_pattern_prose(analyzer, 2440.0, "BLE_Test",
-                                        band_info=band_info)
+            prose = _build_pattern_prose(analyzer, 2440.0, "BLE_Test", band_info=band_info)
             assert "CH18" in prose
 
             # Test at 2402 MHz — should mention CH37 (advertising channel)
-            prose = _build_pattern_prose(analyzer, 2402.0, "BLE_Test",
-                                        band_info=band_info)
+            prose = _build_pattern_prose(analyzer, 2402.0, "BLE_Test", band_info=band_info)
             assert "CH37" in prose
         finally:
             with _measurements_lock:

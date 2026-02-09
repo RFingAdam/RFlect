@@ -25,6 +25,7 @@ from plot_antenna.ai_analysis import (
 # Deterministic test data helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_passive_data_1d():
     """Create passive measurement data with 1D gain arrays (single frequency)."""
     num_points = 37  # 10-degree phi steps
@@ -48,12 +49,8 @@ def _make_passive_data_2d(num_points=37, num_freqs=3):
     total_gain = np.column_stack(
         [np.linspace(-5.0, 10.0, num_points) + i for i in range(num_freqs)]
     )
-    h_gain = np.column_stack(
-        [np.linspace(-3.0, 8.0, num_points) + i for i in range(num_freqs)]
-    )
-    v_gain = np.column_stack(
-        [np.linspace(-6.0, 6.0, num_points) + i for i in range(num_freqs)]
-    )
+    h_gain = np.column_stack([np.linspace(-3.0, 8.0, num_points) + i for i in range(num_freqs)])
+    v_gain = np.column_stack([np.linspace(-6.0, 6.0, num_points) + i for i in range(num_freqs)])
     return {
         "phi": np.linspace(0, 360, num_points),
         "theta": np.linspace(0, 180, 19),
@@ -80,6 +77,7 @@ def _make_active_data_1d():
 # ---------------------------------------------------------------------------
 # TestAntennaAnalyzerInit
 # ---------------------------------------------------------------------------
+
 
 class TestAntennaAnalyzerInit:
     """Test AntennaAnalyzer construction for different scan types."""
@@ -108,6 +106,7 @@ class TestAntennaAnalyzerInit:
 # ---------------------------------------------------------------------------
 # TestGainStatistics
 # ---------------------------------------------------------------------------
+
 
 class TestGainStatistics:
     """Test get_gain_statistics for passive and active data."""
@@ -191,6 +190,7 @@ class TestGainStatistics:
 # TestPatternAnalysis
 # ---------------------------------------------------------------------------
 
+
 class TestPatternAnalysis:
     """Test analyze_pattern for pattern classification and null detection."""
 
@@ -199,8 +199,8 @@ class TestPatternAnalysis:
         num_points = 37
         # Constant gain with a very small spread (max - min = 2 dB)
         gain = np.full(num_points, 5.0)
-        gain[0] = 4.0   # min
-        gain[-1] = 6.0   # max -> range = 2 dB
+        gain[0] = 4.0  # min
+        gain[-1] = 6.0  # max -> range = 2 dB
         data = {
             "phi": np.linspace(0, 360, num_points),
             "theta": np.linspace(0, 180, 19),
@@ -215,8 +215,8 @@ class TestPatternAnalysis:
         """A gain array with 6 <= range < 12 dB should be classified as sectoral."""
         num_points = 37
         gain = np.full(num_points, 5.0)
-        gain[0] = 2.0    # min
-        gain[-1] = 10.0   # max -> range = 8 dB
+        gain[0] = 2.0  # min
+        gain[-1] = 10.0  # max -> range = 8 dB
         data = {
             "phi": np.linspace(0, 360, num_points),
             "theta": np.linspace(0, 180, 19),
@@ -231,8 +231,8 @@ class TestPatternAnalysis:
         """A gain array with range >= 12 dB should be classified as directional."""
         num_points = 37
         gain = np.full(num_points, 0.0)
-        gain[0] = -5.0    # min
-        gain[-1] = 10.0   # max -> range = 15 dB
+        gain[0] = -5.0  # min
+        gain[-1] = 10.0  # max -> range = 15 dB
         data = {
             "phi": np.linspace(0, 360, num_points),
             "theta": np.linspace(0, 180, 19),
@@ -248,10 +248,10 @@ class TestPatternAnalysis:
         num_points = 37
         # Peak at 10 dBi, null threshold = 10 - 10 = 0 dBi
         gain = np.full(num_points, 5.0)  # all at 5 dBi (above threshold)
-        gain[18] = 10.0                  # peak
-        gain[0] = -5.0                   # null (below 0)
-        gain[1] = -2.0                   # null (below 0)
-        gain[2] = -1.0                   # null (below 0)
+        gain[18] = 10.0  # peak
+        gain[0] = -5.0  # null (below 0)
+        gain[1] = -2.0  # null (below 0)
+        gain[2] = -1.0  # null (below 0)
         data = {
             "phi": np.linspace(0, 360, num_points),
             "theta": np.linspace(0, 180, 19),
@@ -281,6 +281,7 @@ class TestPatternAnalysis:
 # ---------------------------------------------------------------------------
 # TestPolarizationComparison
 # ---------------------------------------------------------------------------
+
 
 class TestPolarizationComparison:
     """Test compare_polarizations for balanced, imbalanced, and XPD calculations."""
@@ -344,6 +345,7 @@ class TestPolarizationComparison:
 # TestAnalyzeAllFrequencies
 # ---------------------------------------------------------------------------
 
+
 class TestAnalyzeAllFrequencies:
     """Test analyze_all_frequencies across multiple frequency points."""
 
@@ -351,9 +353,12 @@ class TestAnalyzeAllFrequencies:
         """Verify resonance detection, gain variation, and bandwidth across frequencies."""
         num_points = 37
         # Build 2D gain: freq 0 peaks at 10, freq 1 peaks at 12, freq 2 peaks at 11
-        col0 = np.full(num_points, 5.0); col0[0] = 10.0
-        col1 = np.full(num_points, 5.0); col1[0] = 12.0
-        col2 = np.full(num_points, 5.0); col2[0] = 11.0
+        col0 = np.full(num_points, 5.0)
+        col0[0] = 10.0
+        col1 = np.full(num_points, 5.0)
+        col1[0] = 12.0
+        col2 = np.full(num_points, 5.0)
+        col2[0] = 11.0
         total_gain = np.column_stack([col0, col1, col2])
         data = {
             "phi": np.linspace(0, 360, num_points),
@@ -375,6 +380,7 @@ class TestAnalyzeAllFrequencies:
 # ---------------------------------------------------------------------------
 # TestUtilityFunctions
 # ---------------------------------------------------------------------------
+
 
 class TestUtilityFunctions:
     """Test standalone utility functions for AI prompts."""
@@ -403,6 +409,7 @@ class TestUtilityFunctions:
 # ---------------------------------------------------------------------------
 # TestXPDAtCopolPeak
 # ---------------------------------------------------------------------------
+
 
 class TestXPDAtCopolPeak:
     """Test proper XPD calculation at co-pol peak direction."""
@@ -448,6 +455,7 @@ class TestXPDAtCopolPeak:
 # TestSidelobeDetection
 # ---------------------------------------------------------------------------
 
+
 class TestSidelobeDetection:
     """Test _detect_sidelobes for finding sidelobes in gain cuts."""
 
@@ -455,12 +463,29 @@ class TestSidelobeDetection:
         """Detect sidelobes in a pattern with known peak structure."""
         angles = np.linspace(0, 180, 19)
         # Main lobe at index 9 (10 dBi), sidelobes at indices 3 and 15
-        gain = np.array([
-            -5, -2, 2, 5, 3,       # sidelobe peak at index 3 (5 dBi)
-            0, -3, -1, 5, 10,      # main lobe peak at index 9 (10 dBi)
-            5, -1, -3, 0, 3,
-            5, 2, -2, -5           # sidelobe peak at index 15 (5 dBi)
-        ])
+        gain = np.array(
+            [
+                -5,
+                -2,
+                2,
+                5,
+                3,  # sidelobe peak at index 3 (5 dBi)
+                0,
+                -3,
+                -1,
+                5,
+                10,  # main lobe peak at index 9 (10 dBi)
+                5,
+                -1,
+                -3,
+                0,
+                3,
+                5,
+                2,
+                -2,
+                -5,  # sidelobe peak at index 15 (5 dBi)
+            ]
+        )
         data = {"phi": angles, "theta": angles, "total_gain": gain}
         analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
 
@@ -496,6 +521,7 @@ class TestSidelobeDetection:
 # ---------------------------------------------------------------------------
 # TestGridPatternAnalysis (HPBW, efficiency, sidelobes on 2D grid)
 # ---------------------------------------------------------------------------
+
 
 def _make_grid_passive_data():
     """Create passive data on a complete theta x phi grid with a directive beam.
@@ -568,6 +594,7 @@ class TestGridPatternAnalysis:
 # TestAntennaAnalyzerHorizon
 # ---------------------------------------------------------------------------
 
+
 class TestAntennaAnalyzerHorizon:
     """Test get_horizon_statistics for passive grid data."""
 
@@ -578,13 +605,22 @@ class TestAntennaAnalyzerHorizon:
         result = analyzer.get_horizon_statistics(frequency=2400.0)
 
         expected_keys = {
-            "theta_min", "theta_max", "gain_threshold_dB",
-            "frequency_MHz", "unit",
-            "max_gain_dB", "min_gain_dB", "avg_gain_dB",
-            "coverage_pct", "meg_dB",
-            "null_depth_dB", "null_location",
+            "theta_min",
+            "theta_max",
+            "gain_threshold_dB",
+            "frequency_MHz",
+            "unit",
+            "max_gain_dB",
+            "min_gain_dB",
+            "avg_gain_dB",
+            "coverage_pct",
+            "meg_dB",
+            "null_depth_dB",
+            "null_location",
         }
-        assert expected_keys.issubset(result.keys()), f"Missing keys: {expected_keys - result.keys()}"
+        assert expected_keys.issubset(
+            result.keys()
+        ), f"Missing keys: {expected_keys - result.keys()}"
 
     def test_horizon_max_gain(self):
         """Peak gain in horizon band should be at theta=90 for this test pattern."""

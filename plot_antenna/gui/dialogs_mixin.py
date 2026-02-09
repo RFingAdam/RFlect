@@ -1300,7 +1300,9 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             )
             maritime_frame.grid(row=4, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
 
-            self.cb_maritime_var = tk.BooleanVar(value=getattr(self, "maritime_plots_enabled", False))
+            self.cb_maritime_var = tk.BooleanVar(
+                value=getattr(self, "maritime_plots_enabled", False)
+            )
             tk.Checkbutton(
                 maritime_frame,
                 text="Enable Maritime Plots",
@@ -1312,35 +1314,54 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
 
-            tk.Label(maritime_frame, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=1, column=0, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=1, column=0, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame, textvariable=self.horizon_theta_min, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                textvariable=self.horizon_theta_min,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=1, padx=5)
-            tk.Label(maritime_frame, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=1, column=2, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=1, column=2, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame, textvariable=self.horizon_theta_max, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                textvariable=self.horizon_theta_max,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=3, padx=5)
 
-            tk.Label(maritime_frame, text="Coverage Threshold (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=2, column=0, columnspan=2, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame,
+                text="Coverage Threshold (dB):",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame, textvariable=self.horizon_gain_threshold, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                textvariable=self.horizon_gain_threshold,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=2, column=2, padx=5)
 
-            tk.Label(maritime_frame, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=3, column=0, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=3, column=0, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame, textvariable=self.horizon_theta_cuts_var, width=25,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                textvariable=self.horizon_theta_cuts_var,
+                width=25,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             def save_active_settings():
@@ -1590,7 +1611,9 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             )
             maritime_frame_p.grid(row=8, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
 
-            self.cb_maritime_var = tk.BooleanVar(value=getattr(self, "maritime_plots_enabled", False))
+            self.cb_maritime_var = tk.BooleanVar(
+                value=getattr(self, "maritime_plots_enabled", False)
+            )
             tk.Checkbutton(
                 maritime_frame_p,
                 text="Enable Maritime Plots",
@@ -1602,35 +1625,54 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
 
-            tk.Label(maritime_frame_p, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=1, column=0, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame_p, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=1, column=0, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame_p, textvariable=self.horizon_theta_min, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame_p,
+                textvariable=self.horizon_theta_min,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=1, padx=5)
-            tk.Label(maritime_frame_p, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=1, column=2, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame_p, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=1, column=2, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame_p, textvariable=self.horizon_theta_max, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame_p,
+                textvariable=self.horizon_theta_max,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=3, padx=5)
 
-            tk.Label(maritime_frame_p, text="Coverage Threshold (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=2, column=0, columnspan=2, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame_p,
+                text="Coverage Threshold (dB):",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+            ).grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame_p, textvariable=self.horizon_gain_threshold, width=6,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame_p,
+                textvariable=self.horizon_gain_threshold,
+                width=6,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=2, column=2, padx=5)
 
-            tk.Label(maritime_frame_p, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=3, column=0, sticky=tk.W, padx=5
-            )
+            tk.Label(
+                maritime_frame_p, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+            ).grid(row=3, column=0, sticky=tk.W, padx=5)
             tk.Entry(
-                maritime_frame_p, textvariable=self.horizon_theta_cuts_var, width=25,
-                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                maritime_frame_p,
+                textvariable=self.horizon_theta_cuts_var,
+                width=25,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             # Save button

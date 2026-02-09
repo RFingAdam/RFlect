@@ -22,6 +22,7 @@ import numpy as np
 
 # Force non-interactive matplotlib backend before any plotting imports
 import matplotlib
+
 matplotlib.use("Agg")
 
 # --------------------------------------------------------------------------- #
@@ -58,6 +59,7 @@ pytestmark = pytest.mark.skipif(
 # --------------------------------------------------------------------------- #
 # Fixtures
 # --------------------------------------------------------------------------- #
+
 
 @pytest.fixture(scope="module")
 def mcp_server():
@@ -98,6 +100,7 @@ def tools(mcp_server):
 def _clear_state_between_tests():
     """Clear loaded measurements before each test to avoid cross-contamination."""
     from tools.import_tools import _loaded_measurements
+
     _loaded_measurements.clear()
     yield
     _loaded_measurements.clear()
@@ -133,8 +136,8 @@ def synthetic_passive_loaded():
     from tools.import_tools import _loaded_measurements, LoadedMeasurement
 
     np.random.seed(42)  # reproducibility
-    phi = np.linspace(0, 350, 36)       # 10-degree steps, 36 points
-    theta = np.linspace(0, 180, 19)     # 10-degree steps, 19 points
+    phi = np.linspace(0, 350, 36)  # 10-degree steps, 36 points
+    theta = np.linspace(0, 180, 19)  # 10-degree steps, 19 points
     phi_grid, theta_grid = np.meshgrid(phi, theta)
     n = phi_grid.size  # 36 * 19 = 684
 
@@ -327,10 +330,7 @@ class TestAnalysisTools:
         assert "Peak Gain" in result
         assert "dBi" in result
         # Must contain a pattern type classification
-        assert any(
-            t in result.lower()
-            for t in ["omnidirectional", "sectoral", "directional"]
-        )
+        assert any(t in result.lower() for t in ["omnidirectional", "sectoral", "directional"])
 
     def test_analyze_pattern_default_frequency(self, tools, synthetic_passive_loaded):
         """analyze_pattern with no frequency uses the first available."""
@@ -446,9 +446,11 @@ class TestReportTools:
 
     def test_preview_report_with_options(self, tools, synthetic_passive_loaded):
         """preview_report reflects custom options in section toggles."""
-        result = tools.preview_report(options={
-            "include_3d_plots": True,
-        })
+        result = tools.preview_report(
+            options={
+                "include_3d_plots": True,
+            }
+        )
         # 3D plots should show [x]
         assert "[x] 3D Pattern Plots" in result
 
@@ -461,22 +463,28 @@ class TestReportTools:
     def test_generate_report_creates_file(self, tools, synthetic_passive_loaded, tmp_output_dir):
         """generate_report creates a DOCX file on disk."""
         path = os.path.join(tmp_output_dir, "test_report.docx")
-        result = tools.generate_report(path, options={
-            "ai_executive_summary": False,
-            "ai_section_analysis": False,
-            "ai_recommendations": False,
-        })
+        result = tools.generate_report(
+            path,
+            options={
+                "ai_executive_summary": False,
+                "ai_section_analysis": False,
+                "ai_recommendations": False,
+            },
+        )
         assert "Report generated" in result
         assert os.path.isfile(path)
 
     def test_generate_report_content_summary(self, tools, synthetic_passive_loaded, tmp_output_dir):
         """generate_report summary lists measurements, frequencies, and plot flags."""
         path = os.path.join(tmp_output_dir, "test_report.docx")
-        result = tools.generate_report(path, options={
-            "ai_executive_summary": False,
-            "ai_section_analysis": False,
-            "ai_recommendations": False,
-        })
+        result = tools.generate_report(
+            path,
+            options={
+                "ai_executive_summary": False,
+                "ai_section_analysis": False,
+                "ai_recommendations": False,
+            },
+        )
         assert "Measurements: 1" in result
         assert "2400.0" in result
         assert "Gain tables: Yes" in result
@@ -487,11 +495,14 @@ class TestReportTools:
         from docx import Document
 
         path = os.path.join(tmp_output_dir, "test_report.docx")
-        tools.generate_report(path, options={
-            "ai_executive_summary": False,
-            "ai_section_analysis": False,
-            "ai_recommendations": False,
-        })
+        tools.generate_report(
+            path,
+            options={
+                "ai_executive_summary": False,
+                "ai_section_analysis": False,
+                "ai_recommendations": False,
+            },
+        )
         doc = Document(path)
         # Should have at least a title paragraph
         assert len(doc.paragraphs) > 0
@@ -605,12 +616,14 @@ class TestServerResources:
     def test_status_no_data(self):
         """rflect://status with no loaded data returns helpful message."""
         from tools.import_tools import get_loaded_data_summary
+
         result = get_loaded_data_summary()
         assert "No data loaded" in result
 
     def test_status_with_data(self, synthetic_passive_loaded):
         """rflect://status after loading data shows measurement summary."""
         from tools.import_tools import get_loaded_data_summary
+
         result = get_loaded_data_summary()
         assert "synth_passive.txt" in result
         assert "passive" in result.lower()
@@ -745,29 +758,35 @@ class TestHelpers:
     def test_fmt_float(self):
         """_fmt formats a float to 2 decimal places by default."""
         from tools.analysis_tools import _fmt
+
         assert _fmt(10.123) == "10.12"
 
     def test_fmt_none(self):
         """_fmt returns 'N/A' for None."""
         from tools.analysis_tools import _fmt
+
         assert _fmt(None) == "N/A"
 
     def test_fmt_na_string(self):
         """_fmt passes through 'N/A' string unchanged."""
         from tools.analysis_tools import _fmt
+
         assert _fmt("N/A") == "N/A"
 
     def test_fmt_custom_format(self):
         """_fmt respects a custom format specifier."""
         from tools.analysis_tools import _fmt
+
         assert _fmt(10.123, ".1f") == "10.1"
 
     def test_fmt_integer(self):
         """_fmt formats an integer as float."""
         from tools.analysis_tools import _fmt
+
         assert _fmt(10) == "10.00"
 
     def test_fmt_non_numeric_string(self):
         """_fmt returns string representation for non-numeric strings."""
         from tools.analysis_tools import _fmt
+
         assert _fmt("hello") == "hello"
