@@ -5,6 +5,7 @@ from tkinter import messagebox, simpledialog
 import matplotlib
 matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
+plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
 from matplotlib import cm
 from matplotlib.colors import Normalize
 import numpy as np
