@@ -1289,8 +1289,62 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=3)
 
+            # Maritime / Horizon plot settings
+            maritime_frame = tk.LabelFrame(
+                settings_window,
+                text="Maritime / Horizon Plots",
+                bg=DARK_BG_COLOR,
+                fg=ACCENT_BLUE_COLOR,
+                font=SECTION_HEADER_FONT,
+            )
+            maritime_frame.grid(row=4, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
+
+            self.cb_maritime_var = tk.BooleanVar(value=getattr(self, "maritime_plots_enabled", False))
+            tk.Checkbutton(
+                maritime_frame,
+                text="Enable Maritime Plots",
+                variable=self.cb_maritime_var,
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR,
+                activeforeground=LIGHT_TEXT_COLOR,
+            ).grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
+
+            tk.Label(maritime_frame, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=1, column=0, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame, textvariable=self.horizon_theta_min, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=1, column=1, padx=5)
+            tk.Label(maritime_frame, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=1, column=2, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame, textvariable=self.horizon_theta_max, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=1, column=3, padx=5)
+
+            tk.Label(maritime_frame, text="Coverage Threshold (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=2, column=0, columnspan=2, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame, textvariable=self.horizon_gain_threshold, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=2, column=2, padx=5)
+
+            tk.Label(maritime_frame, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=3, column=0, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame, textvariable=self.horizon_theta_cuts_var, width=25,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
+
             def save_active_settings():
                 self.interpolate_3d_plots = self.interpolate_var.get()
+                self.maritime_plots_enabled = self.cb_maritime_var.get()
                 self.update_visibility()
                 settings_window.destroy()
 
@@ -1525,12 +1579,66 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             r_hv.config(command=refresh_passive_ui)
             r_gd.config(command=refresh_passive_ui)
 
+            # Maritime / Horizon plot settings
+            maritime_frame_p = tk.LabelFrame(
+                settings_window,
+                text="Maritime / Horizon Plots",
+                bg=DARK_BG_COLOR,
+                fg=ACCENT_BLUE_COLOR,
+                font=SECTION_HEADER_FONT,
+            )
+            maritime_frame_p.grid(row=8, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
+
+            self.cb_maritime_var = tk.BooleanVar(value=getattr(self, "maritime_plots_enabled", False))
+            tk.Checkbutton(
+                maritime_frame_p,
+                text="Enable Maritime Plots",
+                variable=self.cb_maritime_var,
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR,
+                activeforeground=LIGHT_TEXT_COLOR,
+            ).grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
+
+            tk.Label(maritime_frame_p, text="Theta Min (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=1, column=0, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame_p, textvariable=self.horizon_theta_min, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=1, column=1, padx=5)
+            tk.Label(maritime_frame_p, text="Theta Max (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=1, column=2, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame_p, textvariable=self.horizon_theta_max, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=1, column=3, padx=5)
+
+            tk.Label(maritime_frame_p, text="Coverage Threshold (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=2, column=0, columnspan=2, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame_p, textvariable=self.horizon_gain_threshold, width=6,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=2, column=2, padx=5)
+
+            tk.Label(maritime_frame_p, text="Theta Cuts (°):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+                row=3, column=0, sticky=tk.W, padx=5
+            )
+            tk.Entry(
+                maritime_frame_p, textvariable=self.horizon_theta_cuts_var, width=25,
+                bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
+
             # Save button
             def save_passive_settings():
                 self.passive_scan_type.set(self.plot_type_var.get())
                 self.ecc_analysis_enabled = self.cb_ecc_analysis_var.get()
                 self.shadowing_enabled = self.cb_shadowing_var.get()
                 self.shadow_direction = self.shadow_direction_var.get()
+                self.maritime_plots_enabled = self.cb_maritime_var.get()
                 self.update_visibility()
                 settings_window.destroy()
 

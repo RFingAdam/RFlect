@@ -76,7 +76,13 @@ def detect_measurement_type(filename):
     """
     filename_lower = filename.lower()
 
-    if (
+    # Maritime check first (conical_cuts_polar would otherwise match "polar" → polarization)
+    if any(
+        kw in filename_lower
+        for kw in ("mercator", "conical", "goa_", "horizon_stats", "3d_masked")
+    ):
+        return "maritime"
+    elif (
         "polar" in filename_lower
         or "ar_" in filename_lower
         or "tilt" in filename_lower
@@ -1694,6 +1700,7 @@ def save_to_results_folder(
     zmax,
     word=False,
     logo_path=None,
+    maritime_plots_enabled=False,
 ):  # Initialize the GUI
     root = Tk()
     root.withdraw()  # Hide the main window
@@ -1858,6 +1865,18 @@ def save_to_results_folder(
             save_path=three_d_data_path,
         )
 
+        # Maritime / Horizon plots (active)
+        if maritime_plots_enabled:
+            from .plotting import generate_maritime_plots
+
+            maritime_path = os.path.join(project_path, "Maritime Plots")
+            os.makedirs(maritime_path, exist_ok=True)
+            generate_maritime_plots(
+                theta_angles_deg, phi_angles_deg, total_power_dBm_2d, frequency,
+                data_label="Power", data_unit="dBm",
+                save_path=maritime_path,
+            )
+
     elif scan_type == "passive":
         # After reading & parsing, hpol_data and vpol_data will be lists of dictionaries.
         # Each dictionary will represent a frequency point and will contain:
@@ -1949,4 +1968,22 @@ def save_to_results_folder(
                 zmax=zmax,
                 save_path=user_selected_frequency_path,
             )
+
+        # Maritime / Horizon plots (passive)
+        if maritime_plots_enabled:
+            from .plotting import _prepare_gain_grid, generate_maritime_plots
+
+            freq_idx = freq_list.index(selected_frequency) if selected_frequency in freq_list else 0
+            unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+                theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
+            )
+            if gain_grid is not None:
+                maritime_path = os.path.join(project_path, "Maritime Plots")
+                os.makedirs(maritime_path, exist_ok=True)
+                generate_maritime_plots(
+                    unique_theta, unique_phi, gain_grid, selected_frequency,
+                    data_label="Gain", data_unit="dBi",
+                    save_path=maritime_path,
+                )
+
     print(f"Data saved to {project_path}")

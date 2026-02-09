@@ -562,3 +562,81 @@ class TestGridPatternAnalysis:
 
         assert "front_to_back_dB" in result
         assert result["front_to_back_dB"] > 0
+
+
+# ---------------------------------------------------------------------------
+# TestAntennaAnalyzerHorizon
+# ---------------------------------------------------------------------------
+
+class TestAntennaAnalyzerHorizon:
+    """Test get_horizon_statistics for passive grid data."""
+
+    def test_basic_horizon_stats(self):
+        """Horizon stats should return all expected keys."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=2400.0)
+
+        expected_keys = {
+            "theta_min", "theta_max", "gain_threshold_dB",
+            "frequency_MHz", "unit",
+            "max_gain_dB", "min_gain_dB", "avg_gain_dB",
+            "coverage_pct", "meg_dB",
+            "null_depth_dB", "null_location",
+        }
+        assert expected_keys.issubset(result.keys()), f"Missing keys: {expected_keys - result.keys()}"
+
+    def test_horizon_max_gain(self):
+        """Peak gain in horizon band should be at theta=90 for this test pattern."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=2400.0, theta_min=60, theta_max=120)
+
+        assert result["max_gain_dB"] > 0  # Pattern peaks at theta=90
+        assert result["min_gain_dB"] < result["max_gain_dB"]
+
+    def test_horizon_coverage_percentage(self):
+        """Coverage should be between 0 and 100."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=2400.0)
+
+        assert 0 <= result["coverage_pct"] <= 100
+
+    def test_horizon_meg_weighted(self):
+        """MEG with sin-theta weighting should return a finite value."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=2400.0)
+
+        assert result["meg_dB"] is not None
+        assert np.isfinite(result["meg_dB"])
+
+    def test_horizon_null_detection(self):
+        """Null depth should be negative (null is below peak)."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=2400.0)
+
+        assert result["null_depth_dB"] <= 0
+        assert "theta_deg" in result["null_location"]
+        assert "phi_deg" in result["null_location"]
+
+    def test_horizon_invalid_frequency(self):
+        """Should return error for non-existent frequency."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        result = analyzer.get_horizon_statistics(frequency=9999.0)
+
+        assert "error" in result
+
+    def test_horizon_custom_range(self):
+        """Custom theta range should change results."""
+        data = _make_grid_passive_data()
+        analyzer = AntennaAnalyzer(data, scan_type="passive", frequencies=[2400.0])
+        r1 = analyzer.get_horizon_statistics(frequency=2400.0, theta_min=60, theta_max=120)
+        r2 = analyzer.get_horizon_statistics(frequency=2400.0, theta_min=80, theta_max=100)
+
+        # Narrower range should have different coverage
+        assert r1["theta_min"] == 60
+        assert r2["theta_min"] == 80

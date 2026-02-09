@@ -365,6 +365,77 @@ def extrapolate_to_frequency(
         return f"Error during extrapolation: {str(e)}"
 
 
+def get_horizon_statistics(
+    frequency: Optional[float] = None,
+    theta_min: float = 60.0,
+    theta_max: float = 120.0,
+    gain_threshold: float = -3.0,
+    measurement_name: Optional[str] = None,
+) -> str:
+    """
+    Get horizon-band statistics for maritime/on-water antenna applications.
+
+    Analyzes the antenna pattern in the horizon region (default theta 60-120 deg)
+    and returns coverage, MEG, null detection, and gain statistics.
+
+    Args:
+        frequency: Frequency in MHz (uses first available if not specified)
+        theta_min: Minimum theta angle for horizon band (default 60 deg)
+        theta_max: Maximum theta angle for horizon band (default 120 deg)
+        gain_threshold: dB threshold below peak for coverage calculation (default -3)
+        measurement_name: Optional specific measurement (uses first if not specified)
+
+    Returns:
+        Horizon statistics including min/max/avg gain, coverage %, MEG, and null info.
+    """
+    analyzer, name, error = _get_analyzer_for_measurement(measurement_name)
+    if error:
+        return error
+
+    try:
+        if frequency is None:
+            measurements = get_loaded_measurements()
+            freqs = measurements[name].frequencies
+            frequency = freqs[0] if freqs else None
+
+        if frequency is None:
+            return "No frequency available in the data."
+
+        result = analyzer.get_horizon_statistics(
+            frequency=frequency,
+            theta_min=theta_min,
+            theta_max=theta_max,
+            gain_threshold=gain_threshold,
+        )
+
+        if "error" in result:
+            return f"Error: {result['error']}"
+
+        unit = result.get("unit", "dB")
+        output = f"Horizon Statistics for {name} @ {frequency} MHz\n"
+        output += f"Theta Range: {theta_min}° - {theta_max}°\n"
+        output += "=" * 50 + "\n\n"
+
+        output += f"Max {unit}: {_fmt(result.get('max_gain_dB'))} {unit}\n"
+        output += f"Min {unit}: {_fmt(result.get('min_gain_dB'))} {unit}\n"
+        output += f"Avg {unit} (linear): {_fmt(result.get('avg_gain_dB'))} {unit}\n"
+        output += f"MEG (sin-θ weighted): {_fmt(result.get('meg_dB'))} {unit}\n\n"
+
+        output += f"Coverage (>{_fmt(result.get('max_gain_dB', 0) + gain_threshold)} {unit}): "
+        output += f"{_fmt(result.get('coverage_pct'), '.1f')}%\n"
+        output += f"Null Depth: {_fmt(result.get('null_depth_dB'), '.1f')} dB\n"
+
+        null_loc = result.get("null_location", {})
+        if null_loc:
+            output += f"Null Location: θ={_fmt(null_loc.get('theta_deg'), '.0f')}°, "
+            output += f"φ={_fmt(null_loc.get('phi_deg'), '.0f')}°\n"
+
+        return output
+
+    except Exception as e:
+        return f"Error calculating horizon statistics: {str(e)}"
+
+
 # ---- MCP tool registration (wraps the standalone functions above) ----
 
 def register_analysis_tools(mcp):
@@ -376,3 +447,4 @@ def register_analysis_tools(mcp):
     mcp.tool()(compare_polarizations)
     mcp.tool()(get_all_analysis)
     mcp.tool()(extrapolate_to_frequency)
+    mcp.tool()(get_horizon_statistics)
