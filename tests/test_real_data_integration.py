@@ -65,7 +65,9 @@ class TestReadPassiveFile:
     def test_ble_hpol_returns_seven_tuple(self):
         result = read_passive_file(PASSIVE_BLE_HPOL)
         assert isinstance(result, tuple)
-        assert len(result) == 7, "Expected (all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta)"
+        assert (
+            len(result) == 7
+        ), "Expected (all_data, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta)"
 
     def test_ble_hpol_angle_parameters(self):
         _, start_phi, stop_phi, inc_phi, start_theta, stop_theta, inc_theta = read_passive_file(
@@ -753,14 +755,18 @@ class TestAnglesMatchRealData:
     def test_same_file_pair_matches(self):
         _, sp_h, stp_h, ip_h, st_h, stht_h, it_h = read_passive_file(PASSIVE_BLE_HPOL)
         _, sp_v, stp_v, ip_v, st_v, stht_v, it_v = read_passive_file(PASSIVE_BLE_VPOL)
-        assert angles_match(sp_h, stp_h, ip_h, st_h, stht_h, it_h, sp_v, stp_v, ip_v, st_v, stht_v, it_v)
+        assert angles_match(
+            sp_h, stp_h, ip_h, st_h, stht_h, it_h, sp_v, stp_v, ip_v, st_v, stht_v, it_v
+        )
 
     def test_different_datasets_may_still_match(self):
         """BLE and LoRa may have same angle grids even if different frequencies."""
         _, sp_h, stp_h, ip_h, st_h, stht_h, it_h = read_passive_file(PASSIVE_BLE_HPOL)
         _, sp_l, stp_l, ip_l, st_l, stht_l, it_l = read_passive_file(PASSIVE_LORA_HPOL)
         # Both use same chamber setup (0-345/15 phi, 0-165/15 theta)
-        result = angles_match(sp_h, stp_h, ip_h, st_h, stht_h, it_h, sp_l, stp_l, ip_l, st_l, stht_l, it_l)
+        result = angles_match(
+            sp_h, stp_h, ip_h, st_h, stht_h, it_h, sp_l, stp_l, ip_l, st_l, stht_l, it_l
+        )
         # This is informational - both may match since same chamber setup
         assert isinstance(result, bool)
 
@@ -893,12 +899,10 @@ class TestFrequencyExtrapolation:
         freqs = sorted(set(d["frequency"] for d in hpol_data))
         holdout_freq = freqs[0]  # Lowest measured frequency
 
-        result = validate_extrapolation(
-            hpol_data, vpol_data, holdout_freq, fit_degree=2
-        )
-        assert result["rms_error_dB"] < 3.0, (
-            f"RMS error {result['rms_error_dB']:.2f} dB exceeds 3 dB threshold"
-        )
+        result = validate_extrapolation(hpol_data, vpol_data, holdout_freq, fit_degree=2)
+        assert (
+            result["rms_error_dB"] < 3.0
+        ), f"RMS error {result['rms_error_dB']:.2f} dB exceeds 3 dB threshold"
 
     def test_ble_holdout_interpolation(self):
         """Hold out a mid-band BLE frequency (interpolation), expect RMS < 1 dB."""
@@ -910,9 +914,7 @@ class TestFrequencyExtrapolation:
         mid_idx = len(freqs) // 2
         holdout_freq = freqs[mid_idx]
 
-        result = validate_extrapolation(
-            hpol_data, vpol_data, holdout_freq, fit_degree=2
-        )
+        result = validate_extrapolation(hpol_data, vpol_data, holdout_freq, fit_degree=2)
         assert result["rms_error_dB"] < 1.5, (
             f"RMS error {result['rms_error_dB']:.2f} dB exceeds 1.5 dB threshold "
             f"for interpolation at {holdout_freq} MHz"

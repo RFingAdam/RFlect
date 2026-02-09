@@ -213,6 +213,7 @@ class TestPublicAPI:
     def clean_env(self, monkeypatch):
         """Remove API key env vars and cache before each test."""
         from plot_antenna.api_keys import _key_cache
+
         _key_cache.clear()
         for provider_info in PROVIDERS.values():
             for var_name in provider_info["env_vars"]:
@@ -338,6 +339,7 @@ class TestInitialize:
     def test_initialize_keys_loads_all_providers(self, tmp_path, monkeypatch):
         """initialize_keys should load keys for all providers."""
         from plot_antenna.api_keys import _key_cache
+
         _key_cache.clear()
 
         user_dir = tmp_path / "test_rflect_data"

@@ -582,7 +582,9 @@ class AntennaAnalyzer:
             stats["error"] = f"No data in theta range {theta_min}-{theta_max}"
             return stats
 
-        stats["frequency_MHz"] = frequency if frequency else (self.frequencies[0] if self.frequencies else None)
+        stats["frequency_MHz"] = (
+            frequency if frequency else (self.frequencies[0] if self.frequencies else None)
+        )
         stats["unit"] = unit
 
         # Min / max / avg (linear-domain average)
@@ -601,9 +603,7 @@ class AntennaAnalyzer:
         theta_rad = np.deg2rad(horizon_theta)
         sin_weights = np.sin(theta_rad)
         weighted_lin = lin * sin_weights[:, np.newaxis]
-        total_weight = np.sum(
-            np.tile(sin_weights[:, np.newaxis], (1, horizon_gain.shape[1]))
-        )
+        total_weight = np.sum(np.tile(sin_weights[:, np.newaxis], (1, horizon_gain.shape[1])))
         meg_lin = np.sum(weighted_lin) / total_weight if total_weight > 0 else 0
         stats["meg_dB"] = float(10.0 * np.log10(meg_lin)) if meg_lin > 0 else None
 

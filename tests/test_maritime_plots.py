@@ -35,6 +35,7 @@ from plot_antenna.plotting import (
 # Test data helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_grid_data(n_theta=13, n_phi=24):
     """Create a simple 2D gain grid for testing (active-style: already gridded)."""
     theta = np.linspace(0, 180, n_theta)
@@ -67,6 +68,7 @@ def _make_passive_arrays(n_theta=13, n_phi=24, n_freqs=3):
 # ---------------------------------------------------------------------------
 # TestPrepareGainGrid
 # ---------------------------------------------------------------------------
+
 
 class TestPrepareGainGrid:
     """Test _prepare_gain_grid for passive reshape and active passthrough."""
@@ -115,6 +117,7 @@ class TestPrepareGainGrid:
 # TestMercatorHeatmap
 # ---------------------------------------------------------------------------
 
+
 class TestMercatorHeatmap:
     """Test plot_mercator_heatmap for full and zoomed modes."""
 
@@ -127,9 +130,7 @@ class TestMercatorHeatmap:
     def test_theta_zoom(self):
         """Zoomed Mercator with theta limits should display without error."""
         theta, phi, gain = _make_grid_data()
-        plot_mercator_heatmap(
-            theta, phi, gain, 2400, theta_min=60, theta_max=120, save_path=None
-        )
+        plot_mercator_heatmap(theta, phi, gain, 2400, theta_min=60, theta_max=120, save_path=None)
         plt.close("all")
 
     def test_save_to_file(self):
@@ -164,6 +165,7 @@ class TestMercatorHeatmap:
 # ---------------------------------------------------------------------------
 # TestConicalCuts
 # ---------------------------------------------------------------------------
+
 
 class TestConicalCuts:
     """Test plot_conical_cuts for polar and Cartesian modes."""
@@ -211,6 +213,7 @@ class TestConicalCuts:
 # TestGainOverAzimuth
 # ---------------------------------------------------------------------------
 
+
 class TestGainOverAzimuth:
     """Test plot_gain_over_azimuth (Cartesian wrapper)."""
 
@@ -232,15 +235,14 @@ class TestGainOverAzimuth:
     def test_custom_cuts(self):
         """Custom theta cuts should work."""
         theta, phi, gain = _make_grid_data()
-        plot_gain_over_azimuth(
-            theta, phi, gain, 2400, theta_cuts=[70, 90, 110], save_path=None
-        )
+        plot_gain_over_azimuth(theta, phi, gain, 2400, theta_cuts=[70, 90, 110], save_path=None)
         plt.close("all")
 
 
 # ---------------------------------------------------------------------------
 # TestHorizonStatistics
 # ---------------------------------------------------------------------------
+
 
 class TestHorizonStatistics:
     """Test plot_horizon_statistics."""
@@ -254,9 +256,7 @@ class TestHorizonStatistics:
     def test_custom_band(self):
         """Custom theta band should work."""
         theta, phi, gain = _make_grid_data()
-        plot_horizon_statistics(
-            theta, phi, gain, 2400, theta_min=70, theta_max=110, save_path=None
-        )
+        plot_horizon_statistics(theta, phi, gain, 2400, theta_min=70, theta_max=110, save_path=None)
         plt.close("all")
 
     def test_save_filename(self):
@@ -284,15 +284,14 @@ class TestHorizonStatistics:
         theta, phi, gain = _make_grid_data(n_theta=13, n_phi=24)
         # Make all gain values identical so coverage is 100%
         uniform_gain = np.ones_like(gain) * 5.0
-        plot_horizon_statistics(
-            theta, phi, uniform_gain, 2400, gain_threshold=-3.0, save_path=None
-        )
+        plot_horizon_statistics(theta, phi, uniform_gain, 2400, gain_threshold=-3.0, save_path=None)
         plt.close("all")
 
 
 # ---------------------------------------------------------------------------
 # TestMasked3DPattern
 # ---------------------------------------------------------------------------
+
 
 class TestMasked3DPattern:
     """Test plot_3d_pattern_masked."""
@@ -307,8 +306,12 @@ class TestMasked3DPattern:
         """Custom highlight band should work."""
         theta, phi, gain = _make_grid_data()
         plot_3d_pattern_masked(
-            theta, phi, gain, 2400,
-            theta_highlight_min=70, theta_highlight_max=110,
+            theta,
+            phi,
+            gain,
+            2400,
+            theta_highlight_min=70,
+            theta_highlight_max=110,
             save_path=None,
         )
         plt.close("all")
@@ -327,6 +330,7 @@ class TestMasked3DPattern:
 # TestGenerateMaritimePlots
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateMaritimePlots:
     """Test generate_maritime_plots dispatcher."""
 
@@ -334,9 +338,7 @@ class TestGenerateMaritimePlots:
         """Dispatcher should generate all 6 maritime plot files."""
         theta, phi, gain = _make_grid_data()
         with tempfile.TemporaryDirectory() as tmpdir:
-            generate_maritime_plots(
-                theta, phi, gain, 2400, save_path=tmpdir
-            )
+            generate_maritime_plots(theta, phi, gain, 2400, save_path=tmpdir)
             files = os.listdir(tmpdir)
             # Should have: mercator (full), mercator (zoomed), conical_cuts_polar,
             # goa_, horizon_stats, 3d_masked = 6 files
@@ -360,8 +362,12 @@ class TestGenerateMaritimePlots:
         theta, phi, gain = _make_grid_data()
         with tempfile.TemporaryDirectory() as tmpdir:
             generate_maritime_plots(
-                theta, phi, gain, 2400,
-                theta_min=70, theta_max=110,
+                theta,
+                phi,
+                gain,
+                2400,
+                theta_min=70,
+                theta_max=110,
                 theta_cuts=[75, 85, 95, 105],
                 gain_threshold=-6.0,
                 save_path=tmpdir,
@@ -375,8 +381,12 @@ class TestGenerateMaritimePlots:
         theta, phi, gain = _make_grid_data()
         with tempfile.TemporaryDirectory() as tmpdir:
             generate_maritime_plots(
-                theta, phi, gain, 2400,
-                data_label="Power", data_unit="dBm",
+                theta,
+                phi,
+                gain,
+                2400,
+                data_label="Power",
+                data_unit="dBm",
                 save_path=tmpdir,
             )
             files = os.listdir(tmpdir)
@@ -388,32 +398,39 @@ class TestGenerateMaritimePlots:
 # TestDetectMeasurementType
 # ---------------------------------------------------------------------------
 
+
 class TestDetectMeasurementType:
     """Test detect_measurement_type with maritime filenames."""
 
     def test_mercator_detection(self):
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("mercator_gain_2400MHz.png") == "maritime"
 
     def test_conical_detection(self):
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("conical_cuts_polar_2400MHz.png") == "maritime"
 
     def test_goa_detection(self):
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("goa_2400MHz.png") == "maritime"
 
     def test_horizon_stats_detection(self):
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("horizon_stats_2400MHz.png") == "maritime"
 
     def test_3d_masked_detection(self):
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("3d_masked_2400MHz.png") == "maritime"
 
     def test_existing_types_unchanged(self):
         """Existing detection should still work."""
         from plot_antenna.save import detect_measurement_type
+
         assert detect_measurement_type("polarization_2D_2400MHz.png") == "polarization"
         assert detect_measurement_type("active_trp_2400MHz.png") == "active"
         assert detect_measurement_type("passive_gain_2400MHz.png") == "passive"
