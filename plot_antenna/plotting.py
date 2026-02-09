@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
 plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
-from matplotlib import cm
+from matplotlib import cm, patheffects as pe
 from matplotlib.colors import Normalize
 import numpy as np
 import scipy.interpolate as spi
@@ -580,8 +580,10 @@ def plot_active_3d_data(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
+    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold", ha="center"
+        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -597,7 +599,10 @@ def plot_active_3d_data(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
-    ax.text(0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold", ha="center")
+    ax.text(
+        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
+    )
 
     # Z-axis (blue) - extends in positive Z direction
     ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
@@ -613,7 +618,8 @@ def plot_active_3d_data(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold", ha="center"
+        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Set Title based on power_type with rounded TRP values
@@ -1403,8 +1409,10 @@ def plot_passive_3d_component(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
+    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold", ha="center"
+        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -1420,7 +1428,10 @@ def plot_passive_3d_component(
         arrow_length_ratio=0.5,
         linewidth=2,
     )
-    ax.text(0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold", ha="center")
+    ax.text(
+        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
+    )
 
     # Z-axis (blue) - extends in positive Z direction
     ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
@@ -1436,7 +1447,8 @@ def plot_passive_3d_component(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold", ha="center"
+        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
+        ha="center", path_effects=_label_fx,
     )
 
     # Adjust the view angle for a top-down view
