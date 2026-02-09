@@ -15,16 +15,22 @@
 #define MyAppExeName "RFlect.exe"
 
 [Setup]
+; AppId must stay the same across versions for upgrade detection
 AppId={{E8A3F2B1-9C4D-4E5F-8A6B-7D2C1E3F4A5B}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
 AllowNoIcons=yes
+InfoAfterFile=RELEASE_NOTES.md
+SetupIconFile=smith_logo.ico
+UninstallDisplayIcon={app}\smith_logo.ico
 OutputDir=installer_output
 OutputBaseFilename=RFlect_Installer_{#MyAppVersion}
 Compression=lzma2/ultra64
@@ -32,6 +38,9 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+; Upgrade support
+UsePreviousAppDir=yes
+UpdateUninstallLogAppName=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -41,15 +50,24 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "dist\RFlect.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "__pycache__"
+Source: "smith_logo.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\smith_logo.png"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "settings.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "RELEASE_NOTES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\smith_logo.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\smith_logo.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[InstallDelete]
+; Clean up old versioned executables from pre-v4 installs
+Type: files; Name: "{app}\RFlect_v*.exe"
+
+[UninstallDelete]
+Type: files; Name: "{app}\settings.json"
+Type: filesandordirs; Name: "{app}\assets"

@@ -517,6 +517,107 @@ class AntennaAnalyzer:
 
         return comparison
 
+    def get_horizon_statistics(
+        self,
+        frequency: Optional[float] = None,
+        theta_min: float = 60.0,
+        theta_max: float = 120.0,
+        gain_threshold: float = -3.0,
+    ) -> Dict[str, Any]:
+        """
+        Calculate horizon-band statistics for maritime/on-water applications.
+
+        Returns:
+            Dictionary containing:
+            - min_gain_dB, max_gain_dB, avg_gain_dB: Gain extremes and linear-domain average
+            - coverage_pct: Percentage of horizon band above (peak + threshold)
+            - meg_dB: Mean Effective Gain with sin(theta) weighting
+            - null_depth_dB: Depth of deepest null relative to peak
+            - null_location: (theta, phi) of the null
+            - theta_range: (theta_min, theta_max) used
+        """
+        stats: Dict[str, Any] = {
+            "theta_min": theta_min,
+            "theta_max": theta_max,
+            "gain_threshold_dB": gain_threshold,
+        }
+
+        if self.scan_type == "passive":
+            gain_key = "total_gain"
+            unit = "dBi"
+        else:
+            gain_key = "total_power"
+            unit = "dBm"
+
+        gain_data = self.data.get(gain_key)
+        if gain_data is None:
+            stats["error"] = f"No {gain_key} data available"
+            return stats
+
+        # Get the gain grid for the specified frequency
+        if frequency is not None and self.frequencies:
+            if frequency in self.frequencies:
+                freq_idx = self.frequencies.index(frequency)
+            else:
+                stats["error"] = f"Frequency {frequency} not found"
+                return stats
+        else:
+            freq_idx = 0
+
+        grid_result = self._get_gain_grid(
+            gain_data[:, freq_idx] if gain_data.ndim == 2 else gain_data
+        )
+        if grid_result is None:
+            stats["error"] = "Cannot form 2D gain grid"
+            return stats
+
+        gain_2d, unique_theta, unique_phi = grid_result
+
+        # Extract horizon band
+        mask = (unique_theta >= theta_min) & (unique_theta <= theta_max)
+        horizon_theta = unique_theta[mask]
+        horizon_gain = gain_2d[mask, :]
+
+        if horizon_gain.size == 0:
+            stats["error"] = f"No data in theta range {theta_min}-{theta_max}"
+            return stats
+
+        stats["frequency_MHz"] = frequency if frequency else (self.frequencies[0] if self.frequencies else None)
+        stats["unit"] = unit
+
+        # Min / max / avg (linear-domain average)
+        stats["max_gain_dB"] = float(np.max(horizon_gain))
+        stats["min_gain_dB"] = float(np.min(horizon_gain))
+        lin = 10.0 ** (horizon_gain / 10.0)
+        stats["avg_gain_dB"] = float(10.0 * np.log10(np.mean(lin)))
+
+        # Coverage: % of points above (peak + threshold)
+        coverage_limit = stats["max_gain_dB"] + gain_threshold
+        stats["coverage_pct"] = float(
+            100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
+        )
+
+        # MEG: Mean Effective Gain with sin(theta) weighting
+        theta_rad = np.deg2rad(horizon_theta)
+        sin_weights = np.sin(theta_rad)
+        weighted_lin = lin * sin_weights[:, np.newaxis]
+        total_weight = np.sum(
+            np.tile(sin_weights[:, np.newaxis], (1, horizon_gain.shape[1]))
+        )
+        meg_lin = np.sum(weighted_lin) / total_weight if total_weight > 0 else 0
+        stats["meg_dB"] = float(10.0 * np.log10(meg_lin)) if meg_lin > 0 else None
+
+        # Null detection
+        null_flat_idx = int(np.argmin(horizon_gain))
+        null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, horizon_gain.shape)
+        stats["null_depth_dB"] = float(np.min(horizon_gain) - np.max(horizon_gain))
+        stats["null_location"] = {
+            "theta_deg": float(horizon_theta[null_theta_idx]),
+            "phi_deg": float(unique_phi[null_phi_idx]),
+        }
+
+        return stats
+
     def analyze_all_frequencies(self) -> Dict[str, Any]:
         """
         Analyze gain trends across all measured frequencies.

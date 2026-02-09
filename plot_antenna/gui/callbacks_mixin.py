@@ -42,6 +42,8 @@ from ..plotting import (
     plot_active_3d_data,
     plot_gd_data,
     process_vswr_files,
+    _prepare_gain_grid,
+    generate_maritime_plots,
 )
 from ..groupdelay import process_groupdelay_files
 from .utils import calculate_min_max_parameters, display_parameter_table
@@ -137,6 +139,17 @@ class CallbacksMixin:
         def update_passive_frequency_list(self) -> None: ...
         def add_recent_file(self, filepath: str) -> None: ...
         def update_status(self, message: str) -> None: ...
+
+    # ────────────────────────────────────────────────────────────────────────
+    # MARITIME HELPERS
+    # ────────────────────────────────────────────────────────────────────────
+
+    def _parse_theta_cuts(self):
+        """Parse the comma-separated theta cuts string into a list of floats."""
+        try:
+            return [float(x.strip()) for x in self.horizon_theta_cuts_var.get().split(",") if x.strip()]
+        except (ValueError, AttributeError):
+            return [60, 70, 80, 90, 100, 110, 120]
 
     # ────────────────────────────────────────────────────────────────────────
     # DATA RESET
@@ -808,6 +821,8 @@ class CallbacksMixin:
             message: Text to display in the log
             level: One of "info", "success", "warning", "error"
         """
+        if not hasattr(self, "log_text"):
+            return
         self.log_text.configure(state="normal")
         tag = f"log_{level}"
         self.log_text.insert("end", message + "\n", tag)
@@ -1261,6 +1276,26 @@ class CallbacksMixin:
 
         self.log_message("Active data processed successfully.", level="success")
 
+        # Maritime / Horizon plots (active)
+        if self.maritime_plots_enabled:
+            self.log_message("Generating maritime plots (active)...")
+            generate_maritime_plots(
+                np.rad2deg(theta_angles_rad),
+                np.rad2deg(phi_angles_rad),
+                total_power_dBm_2d,
+                frequency,
+                data_label="Power",
+                data_unit="dBm",
+                theta_min=self.horizon_theta_min.get(),
+                theta_max=self.horizon_theta_max.get(),
+                theta_cuts=self._parse_theta_cuts(),
+                gain_threshold=self.horizon_gain_threshold.get(),
+                axis_mode=self.axis_scale_mode.get(),
+                zmin=self.axis_min.get(),
+                zmax=self.axis_max.get(),
+                save_path=None,
+            )
+
         # Update measurement context for AI awareness
         self._measurement_context["processing_complete"] = True
         self._measurement_context["key_metrics"] = {
@@ -1455,3 +1490,30 @@ class CallbacksMixin:
             zmax=self.axis_max.get(),
             save_path=None,
         )
+
+        # Maritime / Horizon plots (passive)
+        if self.maritime_plots_enabled:
+            self.log_message("Generating maritime plots (passive)...")
+            freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+            unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+                theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
+            )
+            if gain_grid is not None:
+                generate_maritime_plots(
+                    unique_theta,
+                    unique_phi,
+                    gain_grid,
+                    float(self.selected_frequency.get()),
+                    data_label="Gain",
+                    data_unit="dBi",
+                    theta_min=self.horizon_theta_min.get(),
+                    theta_max=self.horizon_theta_max.get(),
+                    theta_cuts=self._parse_theta_cuts(),
+                    gain_threshold=self.horizon_gain_threshold.get(),
+                    axis_mode=self.axis_scale_mode.get(),
+                    zmin=self.axis_min.get(),
+                    zmax=self.axis_max.get(),
+                    save_path=None,
+                )
+            else:
+                self.log_message("Maritime: Could not reshape gain data to 2D grid.", level="warning")
