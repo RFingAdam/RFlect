@@ -248,8 +248,13 @@ def check_matching_files(file_path1, file_path2):
     filename1 = os.path.splitext(os.path.basename(file_path1))[0]
     filename2 = os.path.splitext(os.path.basename(file_path2))[0]
 
-    # Check if filenames match excluding the last 4 characters (polarization part)
-    if filename1[:-4] != filename2[:-4]:
+    # Strip polarization suffixes (HPol/VPol, AP_HPol/AP_VPol, H Pol/V Pol, etc.)
+    import re
+
+    _pol_re = re.compile(r"[_ ]*(AP[_ ]*)?[HV][_ ]*Pol$", re.IGNORECASE)
+    base1 = _pol_re.sub("", filename1)
+    base2 = _pol_re.sub("", filename2)
+    if base1 != base2:
         return False, "File names do not match."
 
     with open(file_path1, "r", encoding="utf-8") as f:
