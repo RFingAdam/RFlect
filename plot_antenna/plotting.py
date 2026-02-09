@@ -3,8 +3,10 @@ import warnings
 from tkinter import messagebox, simpledialog
 
 import matplotlib
+
 matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
+
 plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
 from matplotlib import cm, patheffects as pe
 from matplotlib.colors import Normalize
@@ -582,8 +584,15 @@ def plot_active_3d_data(
     )
     _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        axis_length * 1.08,
+        0,
+        0,
+        "X",
+        color="green",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -600,8 +609,15 @@ def plot_active_3d_data(
         linewidth=2,
     )
     ax.text(
-        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        0,
+        axis_length * 1.08,
+        0,
+        "Y",
+        color="red",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Z-axis (blue) - extends in positive Z direction
@@ -618,8 +634,15 @@ def plot_active_3d_data(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        0,
+        0,
+        axis_length * 1.08,
+        "Z",
+        color="blue",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Set Title based on power_type with rounded TRP values
@@ -1411,8 +1434,15 @@ def plot_passive_3d_component(
     )
     _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
     ax.text(
-        axis_length * 1.08, 0, 0, "X", color="green", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        axis_length * 1.08,
+        0,
+        0,
+        "X",
+        color="green",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Y-axis (red) - extends in positive Y direction
@@ -1429,8 +1459,15 @@ def plot_passive_3d_component(
         linewidth=2,
     )
     ax.text(
-        0, axis_length * 1.08, 0, "Y", color="red", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        0,
+        axis_length * 1.08,
+        0,
+        "Y",
+        color="red",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Z-axis (blue) - extends in positive Z direction
@@ -1447,8 +1484,15 @@ def plot_passive_3d_component(
         linewidth=2,
     )
     ax.text(
-        0, 0, axis_length * 1.08, "Z", color="blue", fontsize=14, fontweight="bold",
-        ha="center", path_effects=_label_fx,
+        0,
+        0,
+        axis_length * 1.08,
+        "Z",
+        color="blue",
+        fontsize=14,
+        fontweight="bold",
+        ha="center",
+        path_effects=_label_fx,
     )
 
     # Adjust the view angle for a top-down view
@@ -2090,9 +2134,7 @@ def plot_mercator_heatmap(
     # Gain summary annotation
     if zoomed:
         mask = (theta_mesh >= theta_min) & (theta_mesh <= theta_max)
-        visible = gain_2d[
-            (theta_deg >= theta_min) & (theta_deg <= theta_max), :
-        ]
+        visible = gain_2d[(theta_deg >= theta_min) & (theta_deg <= theta_max), :]
     else:
         visible = gain_2d
 
@@ -2180,7 +2222,8 @@ def plot_conical_cuts(
         ax.set_theta_direction(-1)
         ax.set_title(
             f"Conical Cuts - {data_label} @ {frequency} MHz",
-            pad=20, fontsize=14,
+            pad=20,
+            fontsize=14,
         )
     else:
         ax.set_xlabel("Phi (degrees)")
@@ -2352,7 +2395,9 @@ def plot_horizon_statistics(
 
     ax_table.set_title(
         f"Horizon Statistics @ {frequency} MHz",
-        fontsize=14, fontweight="bold", pad=20,
+        fontsize=14,
+        fontweight="bold",
+        pad=20,
     )
 
     # Right: mini polar plot at theta=90
@@ -2432,8 +2477,11 @@ def plot_3d_pattern_masked(
         phi_interp = np.linspace(wrapped_phi.min(), wrapped_phi.max(), PHI_RESOLUTION)
         try:
             interp_func = spi.RegularGridInterpolator(
-                (theta_deg, wrapped_phi), wrapped_gain,
-                method="linear", bounds_error=False, fill_value=np.nan,
+                (theta_deg, wrapped_phi),
+                wrapped_gain,
+                method="linear",
+                bounds_error=False,
+                fill_value=np.nan,
             )
             PHI_grid, THETA_grid = np.meshgrid(phi_interp, theta_interp)
             pts = np.column_stack([THETA_grid.ravel(), PHI_grid.ravel()])
@@ -2480,15 +2528,15 @@ def plot_3d_pattern_masked(
     # causing back-surface bleed-through artifacts).
     in_band = (THETA >= theta_highlight_min) & (THETA <= theta_highlight_max)
     gray = np.array([0.82, 0.82, 0.82, 1.0])
-    face_colors[~in_band] = (
-        mask_alpha * face_colors[~in_band] + (1 - mask_alpha) * gray
-    )
+    face_colors[~in_band] = mask_alpha * face_colors[~in_band] + (1 - mask_alpha) * gray
 
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection="3d")
 
     ax.plot_surface(
-        X, Y, Z,
+        X,
+        Y,
+        Z,
         facecolors=face_colors,
         linewidth=0.3,
         antialiased=True,
@@ -2572,47 +2620,79 @@ def generate_maritime_plots(
 
     # 1. Full-range Mercator
     plot_mercator_heatmap(
-        theta_deg, phi_deg, gain_2d, frequency,
-        data_label=data_label, data_unit=data_unit,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        data_label=data_label,
+        data_unit=data_unit,
         save_path=save_path,
     )
 
     # 2. Zoomed Mercator (horizon band)
     plot_mercator_heatmap(
-        theta_deg, phi_deg, gain_2d, frequency,
-        data_label=data_label, data_unit=data_unit,
-        theta_min=theta_min, theta_max=theta_max,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        data_label=data_label,
+        data_unit=data_unit,
+        theta_min=theta_min,
+        theta_max=theta_max,
         save_path=save_path,
     )
 
     # 3. Conical cuts (polar)
     plot_conical_cuts(
-        theta_deg, phi_deg, gain_2d, frequency,
-        theta_cuts=theta_cuts, data_label=data_label,
-        data_unit=data_unit, polar=True, save_path=save_path,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        theta_cuts=theta_cuts,
+        data_label=data_label,
+        data_unit=data_unit,
+        polar=True,
+        save_path=save_path,
     )
 
     # 4. Gain-over-Azimuth (Cartesian)
     plot_gain_over_azimuth(
-        theta_deg, phi_deg, gain_2d, frequency,
-        theta_cuts=theta_cuts, data_label=data_label,
-        data_unit=data_unit, save_path=save_path,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        theta_cuts=theta_cuts,
+        data_label=data_label,
+        data_unit=data_unit,
+        save_path=save_path,
     )
 
     # 5. Horizon statistics
     plot_horizon_statistics(
-        theta_deg, phi_deg, gain_2d, frequency,
-        theta_min=theta_min, theta_max=theta_max,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        theta_min=theta_min,
+        theta_max=theta_max,
         gain_threshold=gain_threshold,
-        data_label=data_label, data_unit=data_unit,
+        data_label=data_label,
+        data_unit=data_unit,
         save_path=save_path,
     )
 
     # 6. 3D masked pattern
     plot_3d_pattern_masked(
-        theta_deg, phi_deg, gain_2d, frequency,
-        theta_highlight_min=theta_min, theta_highlight_max=theta_max,
-        data_label=data_label, data_unit=data_unit,
-        axis_mode=axis_mode, zmin=zmin, zmax=zmax,
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        theta_highlight_min=theta_min,
+        theta_highlight_max=theta_max,
+        data_label=data_label,
+        data_unit=data_unit,
+        axis_mode=axis_mode,
+        zmin=zmin,
+        zmax=zmax,
         save_path=save_path,
     )

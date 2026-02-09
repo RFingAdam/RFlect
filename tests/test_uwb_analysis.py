@@ -31,6 +31,7 @@ from plot_antenna.uwb_analysis import (
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def _make_linear_phase_s21(freq_hz, delay_s=1e-9, magnitude_dB=-3.0):
     """Create an S21 with constant magnitude and linear phase (constant delay)."""
     mag = 10 ** (magnitude_dB / 20.0)
@@ -38,35 +39,42 @@ def _make_linear_phase_s21(freq_hz, delay_s=1e-9, magnitude_dB=-3.0):
     return mag * np.exp(1j * phase)
 
 
-def _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt='RI', z0=50.0):
+def _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt="RI", z0=50.0):
     """Write a minimal .s2p file."""
-    with open(filepath, 'w') as f:
-        f.write(f'! Test touchstone file\n')
-        f.write(f'# GHZ S {fmt} R {z0}\n')
+    with open(filepath, "w") as f:
+        f.write(f"! Test touchstone file\n")
+        f.write(f"# GHZ S {fmt} R {z0}\n")
         for i in range(len(freq_ghz)):
-            if fmt == 'RI':
-                f.write(f'{freq_ghz[i]:.6f} '
-                        f'{s11[i].real:.6f} {s11[i].imag:.6f} '
-                        f'{s21[i].real:.6f} {s21[i].imag:.6f} '
-                        f'{s12[i].real:.6f} {s12[i].imag:.6f} '
-                        f'{s22[i].real:.6f} {s22[i].imag:.6f}\n')
-            elif fmt == 'MA':
-                f.write(f'{freq_ghz[i]:.6f} '
-                        f'{np.abs(s11[i]):.6f} {np.rad2deg(np.angle(s11[i])):.6f} '
-                        f'{np.abs(s21[i]):.6f} {np.rad2deg(np.angle(s21[i])):.6f} '
-                        f'{np.abs(s12[i]):.6f} {np.rad2deg(np.angle(s12[i])):.6f} '
-                        f'{np.abs(s22[i]):.6f} {np.rad2deg(np.angle(s22[i])):.6f}\n')
-            elif fmt == 'DB':
-                f.write(f'{freq_ghz[i]:.6f} '
-                        f'{20*np.log10(np.abs(s11[i])):.6f} {np.rad2deg(np.angle(s11[i])):.6f} '
-                        f'{20*np.log10(np.abs(s21[i])):.6f} {np.rad2deg(np.angle(s21[i])):.6f} '
-                        f'{20*np.log10(np.abs(s12[i])):.6f} {np.rad2deg(np.angle(s12[i])):.6f} '
-                        f'{20*np.log10(np.abs(s22[i])):.6f} {np.rad2deg(np.angle(s22[i])):.6f}\n')
+            if fmt == "RI":
+                f.write(
+                    f"{freq_ghz[i]:.6f} "
+                    f"{s11[i].real:.6f} {s11[i].imag:.6f} "
+                    f"{s21[i].real:.6f} {s21[i].imag:.6f} "
+                    f"{s12[i].real:.6f} {s12[i].imag:.6f} "
+                    f"{s22[i].real:.6f} {s22[i].imag:.6f}\n"
+                )
+            elif fmt == "MA":
+                f.write(
+                    f"{freq_ghz[i]:.6f} "
+                    f"{np.abs(s11[i]):.6f} {np.rad2deg(np.angle(s11[i])):.6f} "
+                    f"{np.abs(s21[i]):.6f} {np.rad2deg(np.angle(s21[i])):.6f} "
+                    f"{np.abs(s12[i]):.6f} {np.rad2deg(np.angle(s12[i])):.6f} "
+                    f"{np.abs(s22[i]):.6f} {np.rad2deg(np.angle(s22[i])):.6f}\n"
+                )
+            elif fmt == "DB":
+                f.write(
+                    f"{freq_ghz[i]:.6f} "
+                    f"{20*np.log10(np.abs(s11[i])):.6f} {np.rad2deg(np.angle(s11[i])):.6f} "
+                    f"{20*np.log10(np.abs(s21[i])):.6f} {np.rad2deg(np.angle(s21[i])):.6f} "
+                    f"{20*np.log10(np.abs(s12[i])):.6f} {np.rad2deg(np.angle(s12[i])):.6f} "
+                    f"{20*np.log10(np.abs(s22[i])):.6f} {np.rad2deg(np.angle(s22[i])):.6f}\n"
+                )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestTouchstoneParser
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestTouchstoneParser:
     """Tests for Touchstone .s2p file parsing."""
@@ -80,76 +88,88 @@ class TestTouchstoneParser:
         s22 = s11.copy()
 
         filepath = str(tmp_path / "test.s2p")
-        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt='RI')
+        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt="RI")
 
         result = parse_touchstone(filepath)
-        np.testing.assert_allclose(result['freq_hz'], freq_ghz * 1e9)
-        np.testing.assert_allclose(result['s21'], s21, atol=1e-5)
-        np.testing.assert_allclose(result['s11'], s11, atol=1e-5)
-        assert result['z0'] == 50.0
+        np.testing.assert_allclose(result["freq_hz"], freq_ghz * 1e9)
+        np.testing.assert_allclose(result["s21"], s21, atol=1e-5)
+        np.testing.assert_allclose(result["s11"], s11, atol=1e-5)
+        assert result["z0"] == 50.0
 
     def test_ma_format(self, tmp_path):
         """Parse MA (Magnitude/Angle) format."""
         freq_ghz = np.array([5.0, 6.0, 7.0])
-        s21 = np.array([0.7 * np.exp(1j * np.deg2rad(-30)),
-                         0.6 * np.exp(1j * np.deg2rad(-60)),
-                         0.5 * np.exp(1j * np.deg2rad(-90))])
-        s11 = np.array([0.1 * np.exp(1j * np.deg2rad(10)),
-                         0.15 * np.exp(1j * np.deg2rad(20)),
-                         0.12 * np.exp(1j * np.deg2rad(15))])
+        s21 = np.array(
+            [
+                0.7 * np.exp(1j * np.deg2rad(-30)),
+                0.6 * np.exp(1j * np.deg2rad(-60)),
+                0.5 * np.exp(1j * np.deg2rad(-90)),
+            ]
+        )
+        s11 = np.array(
+            [
+                0.1 * np.exp(1j * np.deg2rad(10)),
+                0.15 * np.exp(1j * np.deg2rad(20)),
+                0.12 * np.exp(1j * np.deg2rad(15)),
+            ]
+        )
         s12 = s21.copy()
         s22 = s11.copy()
 
         filepath = str(tmp_path / "test_ma.s2p")
-        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt='MA')
+        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt="MA")
 
         result = parse_touchstone(filepath)
-        np.testing.assert_allclose(result['freq_hz'], freq_ghz * 1e9)
-        np.testing.assert_allclose(np.abs(result['s21']), np.abs(s21), atol=1e-4)
-        np.testing.assert_allclose(np.angle(result['s21']), np.angle(s21), atol=1e-3)
+        np.testing.assert_allclose(result["freq_hz"], freq_ghz * 1e9)
+        np.testing.assert_allclose(np.abs(result["s21"]), np.abs(s21), atol=1e-4)
+        np.testing.assert_allclose(np.angle(result["s21"]), np.angle(s21), atol=1e-3)
 
     def test_db_format(self, tmp_path):
         """Parse DB (dB/Angle) format."""
         freq_ghz = np.array([3.0, 4.0, 5.0])
-        s21 = np.array([0.5 * np.exp(1j * np.deg2rad(-45)),
-                         0.4 * np.exp(1j * np.deg2rad(-90)),
-                         0.3 * np.exp(1j * np.deg2rad(-135))])
+        s21 = np.array(
+            [
+                0.5 * np.exp(1j * np.deg2rad(-45)),
+                0.4 * np.exp(1j * np.deg2rad(-90)),
+                0.3 * np.exp(1j * np.deg2rad(-135)),
+            ]
+        )
         s11 = np.array([0.1 + 0j, 0.15 + 0j, 0.12 + 0j])
         s12 = s21.copy()
         s22 = s11.copy()
 
         filepath = str(tmp_path / "test_db.s2p")
-        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt='DB')
+        _write_touchstone(filepath, freq_ghz, s11, s21, s12, s22, fmt="DB")
 
         result = parse_touchstone(filepath)
-        np.testing.assert_allclose(np.abs(result['s21']), np.abs(s21), atol=1e-3)
+        np.testing.assert_allclose(np.abs(result["s21"]), np.abs(s21), atol=1e-3)
 
     def test_frequency_units_mhz(self, tmp_path):
         """Parse file with MHz frequency units."""
         filepath = str(tmp_path / "test_mhz.s2p")
-        with open(filepath, 'w') as f:
-            f.write('# MHZ S RI R 50\n')
-            f.write('1000.0 0.1 0.0 0.5 0.3 0.5 0.3 0.1 0.0\n')
+        with open(filepath, "w") as f:
+            f.write("# MHZ S RI R 50\n")
+            f.write("1000.0 0.1 0.0 0.5 0.3 0.5 0.3 0.1 0.0\n")
         result = parse_touchstone(filepath)
-        np.testing.assert_allclose(result['freq_hz'], [1e9])
+        np.testing.assert_allclose(result["freq_hz"], [1e9])
 
     def test_comments_ignored(self, tmp_path):
         """Comments (! lines) are ignored."""
         filepath = str(tmp_path / "test_comments.s2p")
-        with open(filepath, 'w') as f:
-            f.write('! This is a comment\n')
-            f.write('! Another comment\n')
-            f.write('# GHZ S RI R 50\n')
-            f.write('! Data follows\n')
-            f.write('1.0 0.1 0.0 0.5 0.0 0.5 0.0 0.1 0.0\n')
+        with open(filepath, "w") as f:
+            f.write("! This is a comment\n")
+            f.write("! Another comment\n")
+            f.write("# GHZ S RI R 50\n")
+            f.write("! Data follows\n")
+            f.write("1.0 0.1 0.0 0.5 0.0 0.5 0.0 0.1 0.0\n")
         result = parse_touchstone(filepath)
-        assert len(result['freq_hz']) == 1
+        assert len(result["freq_hz"]) == 1
 
     def test_empty_file_raises(self, tmp_path):
         """Empty file raises ValueError."""
         filepath = str(tmp_path / "empty.s2p")
-        with open(filepath, 'w') as f:
-            f.write('# GHZ S RI R 50\n')
+        with open(filepath, "w") as f:
+            f.write("# GHZ S RI R 50\n")
         with pytest.raises(ValueError, match="No data found"):
             parse_touchstone(filepath)
 
@@ -157,6 +177,7 @@ class TestTouchstoneParser:
 # ──────────────────────────────────────────────────────────────────────────────
 # TestPhaseReconstruction
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestPhaseReconstruction:
     """Tests for phase reconstruction from group delay."""
@@ -214,6 +235,7 @@ class TestPhaseReconstruction:
 # TestBuildComplexS21
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestBuildComplexS21:
     """Tests for building complex S21 from S2VNA data."""
 
@@ -249,6 +271,7 @@ class TestBuildComplexS21:
 # TestPulseGenerators
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestPulseGenerators:
     """Tests for UWB pulse generation functions."""
 
@@ -280,12 +303,13 @@ class TestPulseGenerators:
         pulse = generate_5th_derivative_gaussian(t, sigma=51e-12, center=0.0)
         # H5 is odd, so p(-t) = -p(t)
         n = len(pulse)
-        np.testing.assert_allclose(pulse[:n // 2], -pulse[n // 2 + 1:][::-1], atol=1e-10)
+        np.testing.assert_allclose(pulse[: n // 2], -pulse[n // 2 + 1 :][::-1], atol=1e-10)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestSFF
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestSFF:
     """Tests for System Fidelity Factor computation."""
@@ -302,10 +326,10 @@ class TestSFF:
         delay = 1e-9
         s21 = _make_linear_phase_s21(freq_hz, delay_s=delay, magnitude_dB=0.0)
 
-        result = calculate_sff(freq_hz, s21, pulse_type='gaussian_monocycle')
+        result = calculate_sff(freq_hz, s21, pulse_type="gaussian_monocycle")
 
-        assert result['sff'] > 0.60, f"SFF too low for perfect channel: {result['sff']}"
-        assert result['quality'] in ('Excellent', 'Very Good', 'Good')
+        assert result["sff"] > 0.60, f"SFF too low for perfect channel: {result['sff']}"
+        assert result["quality"] in ("Excellent", "Very Good", "Good")
 
     def test_dispersive_channel_lower_sff(self):
         """Dispersive channel should have lower SFF than all-pass."""
@@ -317,8 +341,8 @@ class TestSFF:
         dispersion = np.exp(1j * 1e-20 * (freq_hz - 6.5e9) ** 2)
         s21_bad = s21_good * dispersion
 
-        sff_good = calculate_sff(freq_hz, s21_good)['sff']
-        sff_bad = calculate_sff(freq_hz, s21_bad)['sff']
+        sff_good = calculate_sff(freq_hz, s21_good)["sff"]
+        sff_bad = calculate_sff(freq_hz, s21_bad)["sff"]
 
         assert sff_bad < sff_good, "Dispersive channel should have lower SFF"
 
@@ -328,28 +352,28 @@ class TestSFF:
         s21 = _make_linear_phase_s21(freq_hz, delay_s=1e-9, magnitude_dB=0.0)
 
         result = calculate_sff(freq_hz, s21)
-        sff = result['sff']
-        quality = result['quality']
+        sff = result["sff"]
+        quality = result["quality"]
 
         if sff >= 0.95:
-            assert quality == 'Excellent'
+            assert quality == "Excellent"
         elif sff >= 0.85:
-            assert quality == 'Very Good'
+            assert quality == "Very Good"
         elif sff >= 0.70:
-            assert quality == 'Good'
+            assert quality == "Good"
         elif sff >= 0.50:
-            assert quality == 'Fair'
+            assert quality == "Fair"
         else:
-            assert quality == 'Poor'
+            assert quality == "Poor"
 
     def test_different_pulse_types(self):
         """SFF should compute for all pulse types without error."""
         freq_hz = np.linspace(3e9, 10e9, 200)
         s21 = _make_linear_phase_s21(freq_hz, delay_s=1e-9, magnitude_dB=-3.0)
 
-        for pt in ('gaussian_monocycle', 'modulated_gaussian', '5th_derivative_gaussian'):
+        for pt in ("gaussian_monocycle", "modulated_gaussian", "5th_derivative_gaussian"):
             result = calculate_sff(freq_hz, s21, pulse_type=pt)
-            assert 0.0 <= result['sff'] <= 1.0, f"SFF out of range for {pt}"
+            assert 0.0 <= result["sff"] <= 1.0, f"SFF out of range for {pt}"
 
     def test_invalid_pulse_type_raises(self):
         """Invalid pulse type should raise ValueError."""
@@ -357,7 +381,7 @@ class TestSFF:
         s21 = _make_linear_phase_s21(freq_hz, delay_s=1e-9)
 
         with pytest.raises(ValueError, match="Unknown pulse type"):
-            calculate_sff(freq_hz, s21, pulse_type='invalid_pulse')
+            calculate_sff(freq_hz, s21, pulse_type="invalid_pulse")
 
     def test_sff_output_keys(self):
         """SFF result should contain all expected keys."""
@@ -366,14 +390,14 @@ class TestSFF:
 
         result = calculate_sff(freq_hz, s21)
 
-        expected_keys = {'sff', 'quality', 'input_pulse', 'output_pulse',
-                         'time_s', 'peak_delay_s'}
+        expected_keys = {"sff", "quality", "input_pulse", "output_pulse", "time_s", "peak_delay_s"}
         assert set(result.keys()) == expected_keys
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestGroupDelayFromS21
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestGroupDelayFromS21:
     """Tests for computing group delay from complex S21."""
@@ -387,7 +411,7 @@ class TestGroupDelayFromS21:
         result = compute_group_delay_from_s21(freq_hz, s21)
 
         # Group delay should be approximately the expected value
-        np.testing.assert_allclose(result['group_delay_s'], delay, rtol=0.01)
+        np.testing.assert_allclose(result["group_delay_s"], delay, rtol=0.01)
 
     def test_zero_variation_linear_phase(self):
         """Linear phase should have near-zero group delay variation."""
@@ -396,12 +420,13 @@ class TestGroupDelayFromS21:
 
         result = compute_group_delay_from_s21(freq_hz, s21)
 
-        assert result['variation_s'] < 1e-12, "Variation should be ~0 for linear phase"
+        assert result["variation_s"] < 1e-12, "Variation should be ~0 for linear phase"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestTransferFunction
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestTransferFunction:
     """Tests for transfer function extraction."""
@@ -414,10 +439,10 @@ class TestTransferFunction:
 
         result = extract_transfer_function(freq_hz, s21, distance_m=distance_m)
 
-        assert 'H_complex' in result
-        assert 'H_mag_dB' in result
-        assert 'H_phase_deg' in result
-        assert len(result['H_complex']) == len(freq_hz)
+        assert "H_complex" in result
+        assert "H_mag_dB" in result
+        assert "H_phase_deg" in result
+        assert len(result["H_complex"]) == len(freq_hz)
 
     def test_output_shapes(self):
         """All outputs should have the same length as input."""
@@ -426,14 +451,15 @@ class TestTransferFunction:
 
         result = extract_transfer_function(freq_hz, s21)
 
-        assert len(result['H_complex']) == 50
-        assert len(result['H_mag_dB']) == 50
-        assert len(result['H_phase_deg']) == 50
+        assert len(result["H_complex"]) == 50
+        assert len(result["H_mag_dB"]) == 50
+        assert len(result["H_phase_deg"]) == 50
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestImpulseResponse
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestImpulseResponse:
     """Tests for impulse response computation."""
@@ -446,11 +472,11 @@ class TestImpulseResponse:
 
         result = compute_impulse_response(freq_hz, H, nfft=4096)
 
-        assert 'time_s' in result
-        assert 'h_t' in result
-        assert result['pulse_width_s'] > 0
+        assert "time_s" in result
+        assert "h_t" in result
+        assert result["pulse_width_s"] > 0
         # Peak should be well-defined
-        assert np.max(np.abs(result['h_t'])) > 0
+        assert np.max(np.abs(result["h_t"])) > 0
 
     def test_output_length(self):
         """Output arrays should have length nfft."""
@@ -460,13 +486,14 @@ class TestImpulseResponse:
         nfft = 2048
         result = compute_impulse_response(freq_hz, H, nfft=nfft)
 
-        assert len(result['time_s']) == nfft
-        assert len(result['h_t']) == nfft
+        assert len(result["time_s"]) == nfft
+        assert len(result["h_t"]) == nfft
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestReturnLoss
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestReturnLoss:
     """Tests for S11/VSWR return loss analysis."""
@@ -479,9 +506,9 @@ class TestReturnLoss:
 
         result = analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0)
 
-        assert result['bandwidth_hz'] > 6e9  # nearly full band
-        assert result['min_s11_dB'] == -15.0
-        assert result['fractional_bandwidth'] > 1.0  # > 100%
+        assert result["bandwidth_hz"] > 6e9  # nearly full band
+        assert result["min_s11_dB"] == -15.0
+        assert result["fractional_bandwidth"] > 1.0  # > 100%
 
     def test_narrowband_antenna(self):
         """Narrowband antenna should have limited bandwidth."""
@@ -490,13 +517,13 @@ class TestReturnLoss:
         s11_dB = -5.0 * np.ones(500)
         center = 250
         width = 25
-        s11_dB[center - width:center + width] = -20.0
+        s11_dB[center - width : center + width] = -20.0
 
         result = analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0)
 
-        assert result['bandwidth_hz'] < 3e9
-        assert result['band_start_hz'] > 3e9
-        assert result['band_stop_hz'] < 10e9
+        assert result["bandwidth_hz"] < 3e9
+        assert result["band_start_hz"] > 3e9
+        assert result["band_stop_hz"] < 10e9
 
     def test_vswr_conversion(self):
         """VSWR should be correctly computed from S11."""
@@ -507,7 +534,7 @@ class TestReturnLoss:
 
         s11_lin = 10 ** (-10.0 / 20.0)
         expected_vswr = (1 + s11_lin) / (1 - s11_lin)
-        np.testing.assert_allclose(result['vswr'], [expected_vswr], rtol=1e-4)
+        np.testing.assert_allclose(result["vswr"], [expected_vswr], rtol=1e-4)
 
     def test_no_match(self):
         """Antenna with S11 above threshold should have zero bandwidth."""
@@ -516,14 +543,15 @@ class TestReturnLoss:
 
         result = analyze_return_loss(freq_hz, s11_dB, threshold_dB=-10.0)
 
-        assert result['bandwidth_hz'] == 0.0
-        assert result['band_start_hz'] == 0.0
-        assert result['band_stop_hz'] == 0.0
+        assert result["bandwidth_hz"] == 0.0
+        assert result["band_start_hz"] == 0.0
+        assert result["band_stop_hz"] == 0.0
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # TestMultiAngleSFF
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestMultiAngleSFF:
     """Tests for multi-angle SFF calculation."""
@@ -534,17 +562,17 @@ class TestMultiAngleSFF:
         s21 = _make_linear_phase_s21(freq_hz, delay_s=1e-9, magnitude_dB=-3.0)
 
         angle_data = [
-            {'angle_deg': 0, 'freq_hz': freq_hz, 's21_complex': s21},
-            {'angle_deg': 90, 'freq_hz': freq_hz, 's21_complex': s21},
-            {'angle_deg': 180, 'freq_hz': freq_hz, 's21_complex': s21},
+            {"angle_deg": 0, "freq_hz": freq_hz, "s21_complex": s21},
+            {"angle_deg": 90, "freq_hz": freq_hz, "s21_complex": s21},
+            {"angle_deg": 180, "freq_hz": freq_hz, "s21_complex": s21},
         ]
 
         result = calculate_sff_vs_angle(angle_data)
 
-        assert len(result['angles']) == 3
-        assert len(result['sff_values']) == 3
-        assert len(result['qualities']) == 3
-        assert 0 <= result['mean_sff'] <= 1.0
+        assert len(result["angles"]) == 3
+        assert len(result["sff_values"]) == 3
+        assert len(result["qualities"]) == 3
+        assert 0 <= result["mean_sff"] <= 1.0
 
     def test_varying_sff_across_angles(self):
         """Different S21 per angle should give different SFF values."""
@@ -555,11 +583,12 @@ class TestMultiAngleSFF:
         s21_bad = s21_good * dispersion
 
         angle_data = [
-            {'angle_deg': 0, 'freq_hz': freq_hz, 's21_complex': s21_good},
-            {'angle_deg': 90, 'freq_hz': freq_hz, 's21_complex': s21_bad},
+            {"angle_deg": 0, "freq_hz": freq_hz, "s21_complex": s21_good},
+            {"angle_deg": 90, "freq_hz": freq_hz, "s21_complex": s21_bad},
         ]
 
         result = calculate_sff_vs_angle(angle_data)
 
-        assert result['sff_values'][0] > result['sff_values'][1], \
-            "Non-dispersive angle should have higher SFF"
+        assert (
+            result["sff_values"][0] > result["sff_values"][1]
+        ), "Non-dispersive angle should have higher SFF"

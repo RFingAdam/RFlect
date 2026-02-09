@@ -127,20 +127,36 @@ class TestAnglesMatch:
     def test_matching_returns_true(self):
         """Identical angle parameters for H and V polarizations should return True"""
         result = angles_match(
-            start_phi_h=0, stop_phi_h=360, inc_phi_h=15,
-            start_theta_h=0, stop_theta_h=180, inc_theta_h=5,
-            start_phi_v=0, stop_phi_v=360, inc_phi_v=15,
-            start_theta_v=0, stop_theta_v=180, inc_theta_v=5,
+            start_phi_h=0,
+            stop_phi_h=360,
+            inc_phi_h=15,
+            start_theta_h=0,
+            stop_theta_h=180,
+            inc_theta_h=5,
+            start_phi_v=0,
+            stop_phi_v=360,
+            inc_phi_v=15,
+            start_theta_v=0,
+            stop_theta_v=180,
+            inc_theta_v=5,
         )
         assert result is True
 
     def test_mismatched_returns_false(self):
         """Different angle parameters should return False"""
         result = angles_match(
-            start_phi_h=0, stop_phi_h=360, inc_phi_h=15,
-            start_theta_h=0, stop_theta_h=180, inc_theta_h=5,
-            start_phi_v=0, stop_phi_v=350, inc_phi_v=10,
-            start_theta_v=0, stop_theta_v=170, inc_theta_v=10,
+            start_phi_h=0,
+            stop_phi_h=360,
+            inc_phi_h=15,
+            start_theta_h=0,
+            stop_theta_h=180,
+            inc_theta_h=5,
+            start_phi_v=0,
+            stop_phi_v=350,
+            inc_phi_v=10,
+            start_theta_v=0,
+            stop_theta_v=170,
+            inc_theta_v=10,
         )
         assert result is False
 
@@ -200,8 +216,8 @@ class TestProcessData:
 
         Returns selected_data, phi_angles_deg, theta_angles_deg.
         """
-        theta_deg = np.arange(0, 181, 15, dtype=float)   # 13 points
-        phi_deg = np.arange(0, 360, 15, dtype=float)      # 24 points
+        theta_deg = np.arange(0, 181, 15, dtype=float)  # 13 points
+        phi_deg = np.arange(0, 360, 15, dtype=float)  # 24 points
         # Deterministic data: outer-product pattern (no randomness)
         selected_data = np.outer(
             np.cos(np.deg2rad(theta_deg)),
@@ -250,14 +266,24 @@ class TestExtrapolatePattern:
             mag_v = [intercept + slope * f - 0.1 * i for i in range(n_points)]
             phase_h = [(-0.5 * f + 10.0 * i) % 360 - 180 for i in range(n_points)]
             phase_v = [(-0.3 * f + 5.0 * i) % 360 - 180 for i in range(n_points)]
-            hpol.append({
-                "frequency": f, "theta": theta, "phi": phi,
-                "mag": mag_h, "phase": phase_h,
-            })
-            vpol.append({
-                "frequency": f, "theta": theta, "phi": phi,
-                "mag": mag_v, "phase": phase_v,
-            })
+            hpol.append(
+                {
+                    "frequency": f,
+                    "theta": theta,
+                    "phi": phi,
+                    "mag": mag_h,
+                    "phase": phase_h,
+                }
+            )
+            vpol.append(
+                {
+                    "frequency": f,
+                    "theta": theta,
+                    "phi": phi,
+                    "mag": mag_v,
+                    "phase": phase_v,
+                }
+            )
         return hpol, vpol
 
     def test_interpolation_accuracy(self):
@@ -327,14 +353,24 @@ class TestExtrapolatePattern:
         for f in freqs:
             # Phase wraps through -180/+180 boundary
             phase = [(170.0 + 5.0 * (f - 700) / 50.0 + i * 30) % 360 - 180 for i in range(n_points)]
-            hpol.append({
-                "frequency": f, "theta": list(range(n_points)), "phi": list(range(n_points)),
-                "mag": [-10.0] * n_points, "phase": phase,
-            })
-            vpol.append({
-                "frequency": f, "theta": list(range(n_points)), "phi": list(range(n_points)),
-                "mag": [-10.0] * n_points, "phase": phase,
-            })
+            hpol.append(
+                {
+                    "frequency": f,
+                    "theta": list(range(n_points)),
+                    "phi": list(range(n_points)),
+                    "mag": [-10.0] * n_points,
+                    "phase": phase,
+                }
+            )
+            vpol.append(
+                {
+                    "frequency": f,
+                    "theta": list(range(n_points)),
+                    "phi": list(range(n_points)),
+                    "mag": [-10.0] * n_points,
+                    "phase": phase,
+                }
+            )
         result = extrapolate_pattern(hpol, vpol, target_frequency=650.0)
         # Just verify it returns finite phases (no NaN from unwrap issues)
         for p in result["hpol"]["phase"]:
