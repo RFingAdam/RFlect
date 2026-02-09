@@ -1,5 +1,38 @@
 # RFlect - Release Notes
 
+## Version 4.1.0 (02/09/2026)
+
+**Maritime antenna plots, Windows installer overhaul, and startup crash fixes.**
+
+### Maritime / Horizon Antenna Visualization
+- **5 new plot types** for on-water and maritime antenna analysis, focusing on the horizon region (theta 60-120 deg):
+  - Mercator heatmap of gain vs azimuth/elevation
+  - Conical cuts at configurable elevation angles
+  - Gain-over-azimuth at horizon
+  - Horizon statistics table (min/max/mean gain, coverage)
+  - 3D radiation pattern with horizon band highlighting
+- Controlled by a settings toggle (off by default) in active/passive settings dialogs
+- `get_horizon_statistics()` added to AntennaAnalyzer and MCP server
+- Integrated into all 4 entry points (View/Save/Bulk Passive/Bulk Active)
+- Desaturation-based 3D masking (avoids depth-sort alpha artifacts)
+- 45 new tests (391 total, 0 regressions)
+
+### Windows Installer Overhaul
+- **App icon**: Smith chart icon on exe, Start Menu shortcuts, desktop shortcut, installer wizard, and uninstall entry
+- **No console window**: Fixed `console=True` in PyInstaller spec — GUI-only with `runw.exe` bootloader
+- **Upgrade handling**: `UsePreviousAppDir=yes` for seamless in-place upgrades; `[InstallDelete]` cleans up old `RFlect_v*.exe` from pre-v4 installs
+- **Release notes**: Shown after install via `InfoAfterFile`
+- **Uninstall cleanup**: Removes settings.json and assets directory
+- **Smaller exe**: Excludes torch, tensorflow, jupyter, sklearn, and other unused packages
+- **Consistent naming**: Release assets use `v` prefix (`RFlect_v4.1.0.exe`, `RFlect_v4.1.0_linux`)
+
+### Bug Fixes
+- **Startup crash fix**: `check_for_updates` no longer crashes when `log_text` widget isn't ready or when network requests fail
+- **Network error handling**: `get_latest_release` catches `RequestException` instead of letting connection errors propagate
+- **Release workflow**: Fixed Inno Setup Action parameters, awk release notes extraction, and YAML parsing
+
+---
+
 ## Version 4.0.0 (02/08/2026) - MAJOR RELEASE
 
 **Complete architecture refactoring, multi-provider AI support, 11 RF engineering fixes, secure API key management, MCP server with 23 tools, UWB analysis suite, and 346 tests.**
