@@ -2217,11 +2217,13 @@ def plot_conical_cuts(
         else:
             ax.plot(phi_deg, cut_gain, color=colors[i], label=f"θ={theta_cut}°", linewidth=1.5)
 
+    theta_range_str = f"θ={theta_cuts[0]}–{theta_cuts[-1]}°"
+
     if polar:
         ax.set_theta_zero_location("N")
         ax.set_theta_direction(-1)
         ax.set_title(
-            f"Conical Cuts - {data_label} @ {frequency} MHz",
+            f"Conical Cuts - {data_label} ({data_unit}) @ {frequency} MHz\n{theta_range_str}",
             pad=20,
             fontsize=14,
         )
@@ -2229,7 +2231,7 @@ def plot_conical_cuts(
         ax.set_xlabel("Phi (degrees)")
         ax.set_ylabel(f"{data_label} ({data_unit})")
         ax.set_title(
-            f"Gain over Azimuth - {data_label} @ {frequency} MHz",
+            f"{data_label} over Azimuth @ {frequency} MHz — {theta_range_str}",
             fontsize=14,
         )
         ax.grid(True, alpha=0.3)
@@ -2260,9 +2262,10 @@ def plot_gain_over_azimuth(
     save_path=None,
 ):
     """
-    Plot Gain-over-Azimuth (Cartesian view of conical cuts) with -3 dB reference.
+    Plot data over Azimuth (Cartesian view of conical cuts) with -3 dB reference.
 
-    Thin wrapper around plot_conical_cuts with polar=False and a dedicated filename.
+    Uses data_label/data_unit to label axes and title correctly for Gain (dBi)
+    or Power (dBm) depending on whether passive or active data is provided.
     """
     if theta_cuts is None:
         theta_cuts = [60, 70, 80, 90, 100, 110, 120]
@@ -2281,9 +2284,25 @@ def plot_gain_over_azimuth(
     ax.axhline(y=-3, color="red", linestyle="--", alpha=0.5, linewidth=1, label="-3 dB ref")
     ax.set_xlabel("Phi (degrees)")
     ax.set_ylabel(f"{data_label} ({data_unit})")
-    ax.set_title(f"Gain over Azimuth @ {frequency} MHz", fontsize=14)
+    theta_range_str = f"θ={theta_cuts[0]}–{theta_cuts[-1]}°"
+    ax.set_title(f"{data_label} over Azimuth @ {frequency} MHz — {theta_range_str}", fontsize=14)
     ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.0), fontsize=8)
     ax.grid(True, alpha=0.3)
+
+    # Summary annotation: max / min / avg across all cuts
+    all_cuts = np.concatenate([gain_2d[np.argmin(np.abs(theta_deg - tc)), :] for tc in theta_cuts])
+    max_v = np.max(all_cuts)
+    min_v = np.min(all_cuts)
+    avg_v = 10 * np.log10(np.mean(10 ** (all_cuts / 10)))
+    summary = f"Max: {max_v:.1f} {data_unit}   Min: {min_v:.1f} {data_unit}   Avg: {avg_v:.1f} {data_unit}"
+    ax.annotate(
+        summary,
+        xy=(0.5, -0.12),
+        xycoords="axes fraction",
+        fontsize=9,
+        ha="center",
+        bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8, boxstyle="round,pad=0.3"),
+    )
 
     plt.tight_layout()
 
@@ -2394,7 +2413,7 @@ def plot_horizon_statistics(
         table[0, j].set_text_props(color="white", fontweight="bold")
 
     ax_table.set_title(
-        f"Horizon Statistics @ {frequency} MHz",
+        f"Horizon {data_label} Statistics @ {frequency} MHz ({data_unit})",
         fontsize=14,
         fontweight="bold",
         pad=20,
@@ -2572,7 +2591,7 @@ def plot_3d_pattern_masked(
 
     ax.view_init(elev=20, azim=-30)
     ax.set_title(
-        f"3D Pattern - Horizon Band {theta_highlight_min}-{theta_highlight_max}° "
+        f"3D {data_label} Pattern — Horizon Band {theta_highlight_min}–{theta_highlight_max}° "
         f"@ {frequency} MHz",
         fontsize=14,
     )
@@ -2655,7 +2674,7 @@ def generate_maritime_plots(
         save_path=save_path,
     )
 
-    # 4. Gain-over-Azimuth (Cartesian)
+    # 4. Data-over-Azimuth (Cartesian) — Gain/dBi for passive, Power/dBm for active
     plot_gain_over_azimuth(
         theta_deg,
         phi_deg,
