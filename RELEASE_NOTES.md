@@ -1,5 +1,17 @@
 # RFlect - Release Notes
 
+## Version 4.1.3 (02/10/2026)
+
+**Patch release — coverage threshold and horizon statistics fixes.**
+
+### Bug Fixes
+- **Coverage threshold reference line**: The -3 dB reference line in conical cuts and GOA plots was hardcoded at `y=-3` on the Y-axis (meaningless for active dBm data). Now drawn relative to peak using the coverage threshold setting, and legend shows the absolute value (e.g., "-3 dB ref (17.5 dBm)")
+- **Configurable threshold**: Changing the coverage threshold setting (e.g., to -6 dB) now applies to the reference line in all maritime Cartesian plots
+- **MEG denominator bug**: Fixed incorrect array shape reference in MEG calculation (`gain_2d.shape[1]` vs `horizon_gain.shape[1]`)
+- **MEG label for active data**: Horizon statistics table now shows "Avg EIRP (sin-θ weighted)" for active power data instead of "MEG" which is only meaningful for passive gain
+
+---
+
 ## Version 4.1.2 (02/10/2026)
 
 **Patch release — maritime plot title corrections.**
