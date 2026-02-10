@@ -1044,7 +1044,13 @@ def batch_process_passive_scans(
     ``save_base`` if provided.
     """
     import os
+
+    import matplotlib.pyplot as plt
+
     from .plotting import plot_2d_passive_data, plot_passive_3d_component
+
+    # Disable interactive mode so figures don't pop up during batch processing
+    plt.ioff()
 
     # Find all HPOL and VPOL files
     files = os.listdir(folder_path)
@@ -1061,6 +1067,7 @@ def batch_process_passive_scans(
 
     if not pairs:
         print(f"No HPOL/VPOL pairs found in {folder_path}.")
+        plt.ion()
         return
 
     for h_path, v_path in pairs:
@@ -1174,6 +1181,9 @@ def batch_process_passive_scans(
                         save_path=maritime_sub,
                     )
 
+    # Re-enable interactive mode after batch processing
+    plt.ion()
+
 
 def batch_process_active_scans(
     folder_path,
@@ -1207,8 +1217,14 @@ def batch_process_active_scans(
       4. Saves results to per‑file subfolders in ``save_base`` if provided.
     """
     import os
+
+    import matplotlib.pyplot as plt
+
     from .plotting import plot_active_2d_data, plot_active_3d_data
     from .calculations import calculate_active_variables
+
+    # Disable interactive mode so figures don't pop up during batch processing
+    plt.ioff()
 
     # Find all TRP files in the folder
     files = os.listdir(folder_path)
@@ -1216,6 +1232,7 @@ def batch_process_active_scans(
 
     if not trp_files:
         print(f"No TRP files found in {folder_path}.")
+        plt.ion()
         return
 
     for trp_file in trp_files:
@@ -1341,3 +1358,6 @@ def batch_process_active_scans(
 
         except Exception as e:
             print(f"  ✗ Error processing {trp_file}: {e}")
+
+    # Re-enable interactive mode after batch processing
+    plt.ion()
