@@ -16,7 +16,7 @@ Features:
 - Professional report generation
 """
 
-__version__ = "4.1.2"
+__version__ = "4.1.3"
 __author__ = "Adam"
 __license__ = "GPL-3.0"
 

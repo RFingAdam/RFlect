@@ -2176,6 +2176,7 @@ def plot_conical_cuts(
     theta_cuts=None,
     data_label="Gain",
     data_unit="dBi",
+    gain_threshold=-3.0,
     polar=True,
     save_path=None,
 ):
@@ -2235,7 +2236,20 @@ def plot_conical_cuts(
             fontsize=14,
         )
         ax.grid(True, alpha=0.3)
-        ax.axhline(y=-3, color="red", linestyle="--", alpha=0.5, linewidth=1, label="-3 dB ref")
+        # Reference line relative to peak using the coverage threshold setting
+        all_cut_data = np.concatenate(
+            [gain_2d[np.argmin(np.abs(theta_deg - tc)), :] for tc in theta_cuts]
+        )
+        peak_val = np.max(all_cut_data)
+        ref_line = peak_val + gain_threshold  # gain_threshold is negative
+        ax.axhline(
+            y=ref_line,
+            color="red",
+            linestyle="--",
+            alpha=0.5,
+            linewidth=1,
+            label=f"{gain_threshold:.0f} dB ref ({ref_line:.1f} {data_unit})",
+        )
 
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.0), fontsize=8)
     ax.grid(True, alpha=0.3)
@@ -2259,6 +2273,7 @@ def plot_gain_over_azimuth(
     theta_cuts=None,
     data_label="Gain",
     data_unit="dBi",
+    gain_threshold=-3.0,
     save_path=None,
 ):
     """
@@ -2281,7 +2296,18 @@ def plot_gain_over_azimuth(
         cut_gain = gain_2d[theta_idx, :]
         ax.plot(phi_deg, cut_gain, color=colors[i], label=f"θ={theta_cut}°", linewidth=1.5)
 
-    ax.axhline(y=-3, color="red", linestyle="--", alpha=0.5, linewidth=1, label="-3 dB ref")
+    # Compute stats across all cuts first (used for ref line and summary)
+    all_cuts = np.concatenate([gain_2d[np.argmin(np.abs(theta_deg - tc)), :] for tc in theta_cuts])
+    peak_val = np.max(all_cuts)
+    ref_line = peak_val + gain_threshold  # gain_threshold is negative
+    ax.axhline(
+        y=ref_line,
+        color="red",
+        linestyle="--",
+        alpha=0.5,
+        linewidth=1,
+        label=f"{gain_threshold:.0f} dB ref ({ref_line:.1f} {data_unit})",
+    )
     ax.set_xlabel("Phi (degrees)")
     ax.set_ylabel(f"{data_label} ({data_unit})")
     theta_range_str = f"θ={theta_cuts[0]}–{theta_cuts[-1]}°"
@@ -2289,12 +2315,10 @@ def plot_gain_over_azimuth(
     ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.0), fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    # Summary annotation: max / min / avg across all cuts
-    all_cuts = np.concatenate([gain_2d[np.argmin(np.abs(theta_deg - tc)), :] for tc in theta_cuts])
-    max_v = np.max(all_cuts)
+    # Summary annotation reusing all_cuts computed above
     min_v = np.min(all_cuts)
     avg_v = 10 * np.log10(np.mean(10 ** (all_cuts / 10)))
-    summary = f"Max: {max_v:.1f} {data_unit}   Min: {min_v:.1f} {data_unit}   Avg: {avg_v:.1f} {data_unit}"
+    summary = f"Max: {peak_val:.1f} {data_unit}   Min: {min_v:.1f} {data_unit}   Avg: {avg_v:.1f} {data_unit}"
     ax.annotate(
         summary,
         xy=(0.5, -0.12),
@@ -2360,14 +2384,13 @@ def plot_horizon_statistics(
     coverage_limit = max_gain + gain_threshold  # threshold is negative
     coverage_pct = 100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
 
-    # MEG: Mean Effective Gain with sin(theta) weighting
+    # MEG: Mean Effective Gain with sin(theta) weighting (passive only)
+    # For active power data, sin-weighted average EIRP is shown instead.
     theta_rad = np.deg2rad(horizon_theta)
     sin_weights = np.sin(theta_rad)
-    # Broadcast sin_weights to match gain shape: (n_horizon_theta, 1) * (n_horizon_theta, n_phi)
+    n_phi = horizon_gain.shape[1]
     weighted_lin = lin * sin_weights[:, np.newaxis]
-    meg_lin = np.sum(weighted_lin) / np.sum(
-        np.tile(sin_weights[:, np.newaxis], (1, gain_2d.shape[1]))
-    )
+    meg_lin = np.sum(weighted_lin) / (np.sum(sin_weights) * n_phi)
     meg_dB = 10 * np.log10(meg_lin) if meg_lin > 0 else float("-inf")
 
     # Null detection: find the minimum point
@@ -2384,12 +2407,21 @@ def plot_horizon_statistics(
     ax_table = fig.add_subplot(gs[0])
     ax_table.axis("off")
 
+    # Label the sin-weighted metric appropriately for gain vs power
+    if data_label == "Gain":
+        meg_label = "MEG (sin-θ weighted)"
+    else:
+        meg_label = "Avg EIRP (sin-θ weighted)"
+
     table_data = [
         ["Max " + data_label, f"{max_gain:.1f} {data_unit}"],
         ["Min " + data_label, f"{min_gain:.1f} {data_unit}"],
         ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
-        ["MEG (sin-θ weighted)", f"{meg_dB:.1f} {data_unit}"],
-        [f"Coverage (>{coverage_limit:.1f} {data_unit})", f"{coverage_pct:.1f}%"],
+        [meg_label, f"{meg_dB:.1f} {data_unit}"],
+        [
+            f"Coverage (>{coverage_limit:.1f} {data_unit})",
+            f"{coverage_pct:.1f}%",
+        ],
         ["Null Depth", f"{null_depth:.1f} dB"],
         ["Null Location", null_location],
         ["Theta Range", f"{theta_min}° - {theta_max}°"],
@@ -2670,6 +2702,7 @@ def generate_maritime_plots(
         theta_cuts=theta_cuts,
         data_label=data_label,
         data_unit=data_unit,
+        gain_threshold=gain_threshold,
         polar=True,
         save_path=save_path,
     )
@@ -2683,6 +2716,7 @@ def generate_maritime_plots(
         theta_cuts=theta_cuts,
         data_label=data_label,
         data_unit=data_unit,
+        gain_threshold=gain_threshold,
         save_path=save_path,
     )
 
