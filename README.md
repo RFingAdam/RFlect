@@ -23,24 +23,15 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
   <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
 </p>
 
-## New in v4.1
-
-- **Maritime/horizon antenna plots** — 5 new plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting. Configurable via settings toggle.
-- **Windows installer overhaul** — Proper app icon on shortcuts, no console window, seamless in-place upgrades, release notes shown after install, and old-version cleanup.
-- **Startup crash fix** — Update checker no longer crashes when network is unavailable or GUI isn't fully initialized.
-- **391 tests** — Up from 346 in v4.0, with 45 new maritime plot tests.
-
 ## New in v4.0
 
 Ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and corrected RF math throughout.
 
-- **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. Every formula verified against IEEE references and real chamber data.
 - **UWB analysis** — System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
 - **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
 - **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
 - **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
 - **MCP server with 23 tools** — Programmatic antenna analysis for Claude Code and other AI assistants, including UWB characterization.
-- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE/LoRa chamber measurements and UWB group delay data.
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 
