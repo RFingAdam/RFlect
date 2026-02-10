@@ -1,5 +1,18 @@
 # RFlect - Release Notes
 
+## Version 4.1.2 (02/10/2026)
+
+**Patch release — maritime plot title corrections.**
+
+### Improvements
+- **Maritime plot titles**: All maritime plot titles now dynamically show "Gain (dBi)" for passive or "Power (dBm)" for active measurements instead of hardcoded "Gain"
+- **Theta range in titles**: Conical cuts and Gain/Power-over-Azimuth plots now display the theta cut range in the title
+- **GOA summary annotation**: Added max/min/avg summary below the Gain/Power-over-Azimuth plot
+- **Horizon statistics title**: Now includes data type and unit (e.g., "Horizon Gain Statistics @ 2400 MHz (dBi)")
+- **3D masked pattern title**: Now shows "3D Gain Pattern" or "3D Power Pattern" based on data type
+
+---
+
 ## Version 4.1.1 (02/09/2026)
 
 **Patch release with 8 bug fixes for v4.1.0.**
