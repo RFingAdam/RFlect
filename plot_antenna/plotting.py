@@ -2456,8 +2456,8 @@ def plot_horizon_statistics(
 
     if data_label == "Gain":
         meg_label = "MEG (sin-θ weighted)"
-        trp_label = "Partial Directivity (horizon)"
-        trp_full_label = "Total Directivity (full sphere)"
+        trp_label = "Integrated Gain (horizon)"
+        trp_full_label = "Integrated Gain (full sphere)"
     else:
         meg_label = "Avg EIRP (sin-θ weighted)"
         trp_label = "Horizon TRP"
@@ -2730,11 +2730,18 @@ def plot_3d_pattern_masked(
         else:
             eff = 0.0
 
+        if data_label == "Gain":
+            trp_h = "Horizon Int. Gain"
+            trp_f = "Full Int. Gain"
+        else:
+            trp_h = "Horizon TRP"
+            trp_f = "Full TRP"
+
         stats_text = (
             f"Horizon Band ({theta_highlight_min}–{theta_highlight_max}°)\n"
             f"Max: {band_max:.1f}  Min: {band_min:.1f}  Avg: {band_avg:.1f} {data_unit}\n"
-            f"Horizon TRP: {trp_horizon:.1f} {data_unit}   "
-            f"Full TRP: {trp_full:.1f} {data_unit}\n"
+            f"{trp_h}: {trp_horizon:.1f} {data_unit}   "
+            f"{trp_f}: {trp_full:.1f} {data_unit}\n"
             f"Horizon Efficiency: {eff:.1f}%"
         )
         ax.text2D(
