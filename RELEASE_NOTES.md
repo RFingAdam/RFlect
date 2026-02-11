@@ -1,5 +1,22 @@
 # RFlect - Release Notes
 
+## Version 4.1.4 (02/11/2026)
+
+**Feature release — horizon band TRP, efficiency calculations, and enhanced maritime statistics.**
+
+### New Features
+- **Horizon TRP**: Integrated radiated power over the horizon band (the "donut" between theta min/max), computed using sin(θ)-weighted numerical integration
+- **Full Sphere TRP**: Total radiated power integrated over the entire measurement sphere for reference
+- **Horizon Efficiency**: Percentage of total radiated power concentrated in the horizon band — the key figure of merit for maritime antennas
+- **3D pattern statistics**: The 3D masked horizon plot now includes an annotation box with max/min/avg, horizon TRP, full TRP, and efficiency
+
+### Improvements
+- **Multi-cut polar plot**: Horizon statistics page now shows 3–5 polar cuts spanning the full horizon band instead of a single θ=90° cut
+- **Enhanced statistics table**: Added Horizon TRP, Full Sphere TRP, and Horizon Efficiency rows with appropriate labels (Gain/Directivity for passive, Power/TRP for active)
+- **Batch processing**: Disabled interactive matplotlib during batch jobs so figure windows no longer briefly pop up and interfere with queuing additional work
+
+---
+
 ## Version 4.1.3 (02/10/2026)
 
 **Patch release — coverage threshold and horizon statistics fixes.**
