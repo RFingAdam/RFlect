@@ -2203,7 +2203,7 @@ def plot_conical_cuts(
     else:
         ax = fig.add_subplot(111)
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(theta_cuts)))
+    colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2289,7 +2289,7 @@ def plot_gain_over_azimuth(
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111)
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(theta_cuts)))
+    colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2338,6 +2338,44 @@ def plot_gain_over_azimuth(
         plt.show()
 
 
+def _compute_partial_trp(theta_deg, phi_deg, gain_2d, theta_min=None, theta_max=None):
+    """
+    Compute TRP (Total Radiated Power) over a partial or full sphere.
+
+    Uses numerical integration with sin(theta) weighting:
+        TRP = ΔΘ·ΔΦ / (4π) · ΣΣ P_linear(θ,φ) · sin(θ)
+
+    Parameters:
+        theta_deg: 1D array of theta angles in degrees
+        phi_deg: 1D array of phi angles in degrees
+        gain_2d: 2D array (n_theta, n_phi) of gain/power in dB scale
+        theta_min: Optional lower bound (degrees). None = use full range.
+        theta_max: Optional upper bound (degrees). None = use full range.
+
+    Returns:
+        TRP in dB (10*log10 of linear TRP), or -inf if no data.
+    """
+    if theta_min is not None and theta_max is not None:
+        mask = (theta_deg >= theta_min) & (theta_deg <= theta_max)
+        sel_theta = theta_deg[mask]
+        sel_gain = gain_2d[mask, :]
+    else:
+        sel_theta = theta_deg
+        sel_gain = gain_2d
+
+    if sel_gain.size == 0:
+        return float("-inf")
+
+    d_theta = np.deg2rad(np.mean(np.diff(sel_theta))) if len(sel_theta) > 1 else np.deg2rad(5.0)
+    d_phi = np.deg2rad(np.mean(np.diff(phi_deg))) if len(phi_deg) > 1 else np.deg2rad(5.0)
+
+    lin = 10 ** (sel_gain / 10)
+    sin_w = np.sin(np.deg2rad(sel_theta))
+    # Integrate: ΔΘ·ΔΦ/(4π) · Σ_θ Σ_φ P(θ,φ)·sin(θ)
+    integrated = d_theta * d_phi / (4 * np.pi) * np.sum(lin * sin_w[:, np.newaxis])
+    return 10 * np.log10(integrated) if integrated > 0 else float("-inf")
+
+
 def plot_horizon_statistics(
     theta_deg,
     phi_deg,
@@ -2374,7 +2412,7 @@ def plot_horizon_statistics(
         print(f"[Maritime] No data in theta range {theta_min}-{theta_max} deg")
         return
 
-    # Statistics
+    # ----- Basic statistics -----
     max_gain = np.max(horizon_gain)
     min_gain = np.min(horizon_gain)
     lin = 10 ** (horizon_gain / 10)
@@ -2384,8 +2422,7 @@ def plot_horizon_statistics(
     coverage_limit = max_gain + gain_threshold  # threshold is negative
     coverage_pct = 100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
 
-    # MEG: Mean Effective Gain with sin(theta) weighting (passive only)
-    # For active power data, sin-weighted average EIRP is shown instead.
+    # Sin-weighted average (MEG for passive, avg EIRP for active)
     theta_rad = np.deg2rad(horizon_theta)
     sin_weights = np.sin(theta_rad)
     n_phi = horizon_gain.shape[1]
@@ -2393,38 +2430,54 @@ def plot_horizon_statistics(
     meg_lin = np.sum(weighted_lin) / (np.sum(sin_weights) * n_phi)
     meg_dB = 10 * np.log10(meg_lin) if meg_lin > 0 else float("-inf")
 
-    # Null detection: find the minimum point
+    # Null detection
     null_flat_idx = np.argmin(horizon_gain)
     null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, horizon_gain.shape)
     null_depth = min_gain - max_gain
     null_location = f"θ={horizon_theta[null_theta_idx]:.0f}°, φ={phi_deg[null_phi_idx]:.0f}°"
 
-    # Create figure with table and mini polar plot
-    fig = plt.figure(figsize=(14, 6))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.5, 1])
+    # ----- TRP / efficiency -----
+    trp_horizon_dB = _compute_partial_trp(
+        theta_deg, phi_deg, gain_2d, theta_min=theta_min, theta_max=theta_max
+    )
+    trp_full_dB = _compute_partial_trp(theta_deg, phi_deg, gain_2d)
+    if trp_full_dB > -100 and trp_horizon_dB > -100:
+        horizon_eff = 10 ** ((trp_horizon_dB - trp_full_dB) / 10) * 100.0
+    else:
+        horizon_eff = 0.0
 
-    # Left: statistics table
+    # ----- Figure: table (left) + multi-cut polar (right) -----
+    fig = plt.figure(figsize=(16, 7))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.4, 1])
+
+    # --- Left: statistics table ---
     ax_table = fig.add_subplot(gs[0])
     ax_table.axis("off")
 
-    # Label the sin-weighted metric appropriately for gain vs power
     if data_label == "Gain":
         meg_label = "MEG (sin-θ weighted)"
+        trp_label = "Partial Directivity (horizon)"
+        trp_full_label = "Total Directivity (full sphere)"
     else:
         meg_label = "Avg EIRP (sin-θ weighted)"
+        trp_label = "Horizon TRP"
+        trp_full_label = "Full Sphere TRP"
 
     table_data = [
         ["Max " + data_label, f"{max_gain:.1f} {data_unit}"],
         ["Min " + data_label, f"{min_gain:.1f} {data_unit}"],
         ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
         [meg_label, f"{meg_dB:.1f} {data_unit}"],
+        [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
+        [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
+        ["Horizon Efficiency", f"{horizon_eff:.1f}%"],
         [
             f"Coverage (>{coverage_limit:.1f} {data_unit})",
             f"{coverage_pct:.1f}%",
         ],
         ["Null Depth", f"{null_depth:.1f} dB"],
         ["Null Location", null_location],
-        ["Theta Range", f"{theta_min}° - {theta_max}°"],
+        ["Theta Range", f"{theta_min}° – {theta_max}°"],
         ["Frequency", f"{frequency} MHz"],
     ]
 
@@ -2437,7 +2490,7 @@ def plot_horizon_statistics(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    table.scale(1, 1.6)
+    table.scale(1, 1.5)
 
     # Style header row
     for j in range(2):
@@ -2451,17 +2504,38 @@ def plot_horizon_statistics(
         pad=20,
     )
 
-    # Right: mini polar plot at theta=90
+    # --- Right: multi-cut polar plot across horizon band ---
     ax_polar = fig.add_subplot(gs[1], projection="polar")
-    theta_90_idx = np.argmin(np.abs(theta_deg - 90))
-    cut_gain = gain_2d[theta_90_idx, :]
+    # Pick 3-5 representative cuts spanning the horizon band
+    band_thetas = np.array(
+        [
+            t
+            for t in [theta_min, (theta_min + 90) / 2, 90, (90 + theta_max) / 2, theta_max]
+            if theta_min <= t <= theta_max
+        ]
+    )
+    # Remove near-duplicates
+    band_thetas = np.unique(np.round(band_thetas, 1))
+    cmap = cm.get_cmap("viridis")
+    colors = cmap(np.linspace(0, 1, len(band_thetas)))
+
     phi_rad = np.deg2rad(phi_deg)
     phi_plot = np.append(phi_rad, phi_rad[0])
-    gain_plot = np.append(cut_gain, cut_gain[0])
-    ax_polar.plot(phi_plot, gain_plot, "b-", linewidth=2)
+
+    for i, tc in enumerate(band_thetas):
+        t_idx = np.argmin(np.abs(theta_deg - tc))
+        cut = gain_2d[t_idx, :]
+        cut_plot = np.append(cut, cut[0])
+        ax_polar.plot(phi_plot, cut_plot, color=colors[i], linewidth=1.5, label=f"θ={tc:.0f}°")
+
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
-    ax_polar.set_title(f"θ=90° Cut", pad=20, fontsize=11)
+    ax_polar.set_title(
+        f"Horizon Cuts ({data_unit})\n{theta_min}°–{theta_max}°",
+        pad=20,
+        fontsize=11,
+    )
+    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.35, 1.0), fontsize=8)
     ax_polar.grid(True, alpha=0.3)
 
     plt.tight_layout()
@@ -2633,6 +2707,45 @@ def plot_3d_pattern_masked(
     mappable.set_array(use_gain)
     cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
     cbar.set_label(f"{data_label} ({data_unit})")
+
+    # ----- Horizon band statistics annotation -----
+    band_mask = (theta_deg >= theta_highlight_min) & (theta_deg <= theta_highlight_max)
+    band_data = gain_2d[band_mask, :]
+    if band_data.size > 0:
+        band_max = np.max(band_data)
+        band_min = np.min(band_data)
+        band_lin = 10 ** (band_data / 10)
+        band_avg = 10 * np.log10(np.mean(band_lin))
+
+        trp_horizon = _compute_partial_trp(
+            theta_deg,
+            phi_deg,
+            gain_2d,
+            theta_min=theta_highlight_min,
+            theta_max=theta_highlight_max,
+        )
+        trp_full = _compute_partial_trp(theta_deg, phi_deg, gain_2d)
+        if trp_full > -100 and trp_horizon > -100:
+            eff = 10 ** ((trp_horizon - trp_full) / 10) * 100.0
+        else:
+            eff = 0.0
+
+        stats_text = (
+            f"Horizon Band ({theta_highlight_min}–{theta_highlight_max}°)\n"
+            f"Max: {band_max:.1f}  Min: {band_min:.1f}  Avg: {band_avg:.1f} {data_unit}\n"
+            f"Horizon TRP: {trp_horizon:.1f} {data_unit}   "
+            f"Full TRP: {trp_full:.1f} {data_unit}\n"
+            f"Horizon Efficiency: {eff:.1f}%"
+        )
+        ax.text2D(
+            0.02,
+            0.02,
+            stats_text,
+            transform=ax.transAxes,
+            fontsize=9,
+            verticalalignment="bottom",
+            bbox=dict(facecolor="white", edgecolor="gray", alpha=0.85, boxstyle="round,pad=0.4"),
+        )
 
     plt.tight_layout()
 
