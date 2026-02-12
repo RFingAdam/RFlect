@@ -284,6 +284,19 @@ class TestFading:
         assert std_db.shape == gain_2d.shape
         assert outage_5pct_db.shape == gain_2d.shape
 
+    def test_apply_statistical_fading_rician_output(self):
+        """Rician fading path should also return correctly-shaped outputs."""
+        theta, phi, gain_2d = _make_isotropic_pattern(n_theta=19, n_phi=37)
+        mean_db, std_db, outage_5pct_db = apply_statistical_fading(
+            gain_2d, theta, phi, fading="rician", K=6.0, realizations=120,
+        )
+        assert mean_db.shape == gain_2d.shape
+        assert std_db.shape == gain_2d.shape
+        assert outage_5pct_db.shape == gain_2d.shape
+        assert np.all(np.isfinite(mean_db))
+        assert np.all(np.isfinite(std_db))
+        assert np.all(np.isfinite(outage_5pct_db))
+
     def test_delay_spread_positive(self):
         """Delay spread should be positive for any environment."""
         ds = delay_spread_estimate(10.0, "indoor")

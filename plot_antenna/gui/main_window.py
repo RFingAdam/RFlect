@@ -55,6 +55,36 @@ from ..config import (
     PAD_SM,
     PAD_MD,
     PAD_LG,
+    LINK_BUDGET_ENABLED,
+    LINK_BUDGET_PROTOCOL_PRESET,
+    LINK_BUDGET_TX_POWER_DBM,
+    LINK_BUDGET_RX_SENSITIVITY_DBM,
+    LINK_BUDGET_RX_GAIN_DBI,
+    LINK_BUDGET_PATH_LOSS_EXP,
+    LINK_BUDGET_MISC_LOSS_DB,
+    LINK_BUDGET_TARGET_RANGE_M,
+    INDOOR_ANALYSIS_ENABLED,
+    INDOOR_ENVIRONMENT,
+    INDOOR_PATH_LOSS_EXP,
+    INDOOR_NUM_WALLS,
+    INDOOR_WALL_MATERIAL,
+    INDOOR_SHADOW_FADING_DB,
+    INDOOR_MAX_DISTANCE_M,
+    FADING_ANALYSIS_ENABLED,
+    FADING_MODEL,
+    FADING_RICIAN_K,
+    FADING_TARGET_RELIABILITY,
+    FADING_REALIZATIONS,
+    MIMO_ANALYSIS_ENABLED,
+    MIMO_SNR_DB,
+    MIMO_FADING_MODEL,
+    MIMO_RICIAN_K,
+    MIMO_XPR_DB,
+    WEARABLE_ANALYSIS_ENABLED,
+    WEARABLE_BODY_POSITIONS,
+    WEARABLE_TX_POWER_MW,
+    WEARABLE_DENSE_DEVICE_COUNT,
+    WEARABLE_ROOM_SIZE_M,
 )
 from ..calculations import extract_passive_frequencies
 
@@ -184,8 +214,8 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         # Set up window close handler
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # Check for updates on startup
-        self.check_for_updates()
+        # Check for updates on startup without blocking initial UI render.
+        self.root.after(500, lambda: self.check_for_updates(silent=True))
 
     def _load_logo(self):
         """Load application logo."""
@@ -560,44 +590,49 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.horizon_theta_cuts_var = tk.StringVar(value="60,70,80,90,100,110,120")
 
         # Link Budget / Range Estimation settings
-        self.link_budget_enabled = False
-        self.lb_protocol_preset = tk.StringVar(value="BLE 1Mbps")
-        self.lb_tx_power = tk.DoubleVar(value=0.0)
-        self.lb_rx_sensitivity = tk.DoubleVar(value=-98.0)
-        self.lb_rx_gain = tk.DoubleVar(value=0.0)
-        self.lb_path_loss_exp = tk.DoubleVar(value=2.0)
-        self.lb_misc_loss = tk.DoubleVar(value=10.0)
-        self.lb_target_range = tk.DoubleVar(value=5.0)
+        self.link_budget_enabled = bool(LINK_BUDGET_ENABLED)
+        self.lb_protocol_preset = tk.StringVar(value=LINK_BUDGET_PROTOCOL_PRESET)
+        self.lb_tx_power = tk.DoubleVar(value=float(LINK_BUDGET_TX_POWER_DBM))
+        self.lb_rx_sensitivity = tk.DoubleVar(value=float(LINK_BUDGET_RX_SENSITIVITY_DBM))
+        self.lb_rx_gain = tk.DoubleVar(value=float(LINK_BUDGET_RX_GAIN_DBI))
+        self.lb_path_loss_exp = tk.DoubleVar(value=float(LINK_BUDGET_PATH_LOSS_EXP))
+        self.lb_misc_loss = tk.DoubleVar(value=float(LINK_BUDGET_MISC_LOSS_DB))
+        self.lb_target_range = tk.DoubleVar(value=float(LINK_BUDGET_TARGET_RANGE_M))
 
         # Indoor Propagation settings
-        self.indoor_analysis_enabled = False
-        self.indoor_environment = tk.StringVar(value="Office")
-        self.indoor_num_walls = tk.IntVar(value=1)
-        self.indoor_wall_material = tk.StringVar(value="drywall")
-        self.indoor_shadow_fading = tk.DoubleVar(value=5.0)
-        self.indoor_max_distance = tk.DoubleVar(value=30.0)
+        self.indoor_analysis_enabled = bool(INDOOR_ANALYSIS_ENABLED)
+        self.indoor_environment = tk.StringVar(value=INDOOR_ENVIRONMENT)
+        self.indoor_path_loss_exp = tk.DoubleVar(value=float(INDOOR_PATH_LOSS_EXP))
+        self.indoor_num_walls = tk.IntVar(value=int(INDOOR_NUM_WALLS))
+        self.indoor_wall_material = tk.StringVar(value=INDOOR_WALL_MATERIAL)
+        self.indoor_shadow_fading = tk.DoubleVar(value=float(INDOOR_SHADOW_FADING_DB))
+        self.indoor_max_distance = tk.DoubleVar(value=float(INDOOR_MAX_DISTANCE_M))
 
         # Multipath Fading Analysis settings
-        self.fading_analysis_enabled = False
-        self.fading_model = tk.StringVar(value="rayleigh")
-        self.fading_rician_k = tk.DoubleVar(value=10.0)
-        self.fading_target_reliability = tk.DoubleVar(value=99.0)
+        self.fading_analysis_enabled = bool(FADING_ANALYSIS_ENABLED)
+        self.fading_model = tk.StringVar(value=FADING_MODEL)
+        self.fading_rician_k = tk.DoubleVar(value=float(FADING_RICIAN_K))
+        self.fading_target_reliability = tk.DoubleVar(value=float(FADING_TARGET_RELIABILITY))
+        self.fading_realizations = tk.IntVar(value=int(FADING_REALIZATIONS))
 
         # MIMO / Diversity Analysis settings
-        self.mimo_analysis_enabled = False
-        self.mimo_snr = tk.DoubleVar(value=20.0)
-        self.mimo_xpr = tk.DoubleVar(value=6.0)
+        self.mimo_analysis_enabled = bool(MIMO_ANALYSIS_ENABLED)
+        self.mimo_snr = tk.DoubleVar(value=float(MIMO_SNR_DB))
+        self.mimo_fading_model = tk.StringVar(value=MIMO_FADING_MODEL)
+        self.mimo_rician_k = tk.DoubleVar(value=float(MIMO_RICIAN_K))
+        self.mimo_xpr = tk.DoubleVar(value=float(MIMO_XPR_DB))
 
         # Wearable / Medical Device settings
-        self.wearable_analysis_enabled = False
+        self.wearable_analysis_enabled = bool(WEARABLE_ANALYSIS_ENABLED)
         self.wearable_positions_var = {
-            pos: tk.BooleanVar(value=True) for pos in ["wrist", "chest", "hip", "head"]
+            pos: tk.BooleanVar(value=(pos in WEARABLE_BODY_POSITIONS))
+            for pos in ["wrist", "chest", "hip", "head"]
         }
-        self.wearable_tx_power_mw = tk.DoubleVar(value=1.0)
-        self.wearable_device_count = tk.IntVar(value=20)
-        self.wearable_room_x = tk.DoubleVar(value=10.0)
-        self.wearable_room_y = tk.DoubleVar(value=10.0)
-        self.wearable_room_z = tk.DoubleVar(value=3.0)
+        self.wearable_tx_power_mw = tk.DoubleVar(value=float(WEARABLE_TX_POWER_MW))
+        self.wearable_device_count = tk.IntVar(value=int(WEARABLE_DENSE_DEVICE_COUNT))
+        self.wearable_room_x = tk.DoubleVar(value=float(WEARABLE_ROOM_SIZE_M[0]))
+        self.wearable_room_y = tk.DoubleVar(value=float(WEARABLE_ROOM_SIZE_M[1]))
+        self.wearable_room_z = tk.DoubleVar(value=float(WEARABLE_ROOM_SIZE_M[2]))
 
         # Configure background
         self.root.config(bg=DARK_BG_COLOR)

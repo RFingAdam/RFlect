@@ -154,6 +154,80 @@ class CallbacksMixin:
         except (ValueError, AttributeError):
             return [60, 70, 80, 90, 100, 110, 120]
 
+    def _collect_advanced_plot_params(self, mimo_gain_data_list=None, mimo_ecc_values=None):
+        """Collect advanced analysis parameters for plot dispatcher calls."""
+        any_enabled = (
+            getattr(self, "link_budget_enabled", False)
+            or getattr(self, "indoor_analysis_enabled", False)
+            or getattr(self, "fading_analysis_enabled", False)
+            or getattr(self, "mimo_analysis_enabled", False)
+            or getattr(self, "wearable_analysis_enabled", False)
+        )
+        if not any_enabled:
+            return None
+
+        indoor_n = (
+            self.indoor_path_loss_exp.get()
+            if hasattr(self, "indoor_path_loss_exp")
+            else self.lb_path_loss_exp.get()
+        )
+
+        params = {
+            "link_budget_enabled": getattr(self, "link_budget_enabled", False),
+            "lb_pt_dbm": self.lb_tx_power.get(),
+            "lb_pr_dbm": self.lb_rx_sensitivity.get(),
+            "lb_gr_dbi": self.lb_rx_gain.get(),
+            "lb_path_loss_exp": self.lb_path_loss_exp.get(),
+            "lb_misc_loss_db": self.lb_misc_loss.get(),
+            "lb_target_range_m": self.lb_target_range.get(),
+            "indoor_enabled": getattr(self, "indoor_analysis_enabled", False),
+            "indoor_environment": self.indoor_environment.get(),
+            "indoor_path_loss_exp": indoor_n,
+            "indoor_n_walls": self.indoor_num_walls.get(),
+            "indoor_wall_material": self.indoor_wall_material.get(),
+            "indoor_shadow_fading_db": self.indoor_shadow_fading.get(),
+            "indoor_max_distance_m": self.indoor_max_distance.get(),
+            "fading_enabled": getattr(self, "fading_analysis_enabled", False),
+            "fading_pr_sensitivity_dbm": self.lb_rx_sensitivity.get(),
+            "fading_pt_dbm": self.lb_tx_power.get(),
+            "fading_target_reliability": self.fading_target_reliability.get(),
+            "fading_model": self.fading_model.get(),
+            "fading_rician_k": self.fading_rician_k.get(),
+            "fading_realizations": (
+                self.fading_realizations.get() if hasattr(self, "fading_realizations") else 1000
+            ),
+            "mimo_enabled": getattr(self, "mimo_analysis_enabled", False),
+            "mimo_snr_db": self.mimo_snr.get(),
+            "mimo_fading_model": (
+                self.mimo_fading_model.get()
+                if hasattr(self, "mimo_fading_model")
+                else self.fading_model.get()
+            ),
+            "mimo_rician_k": (
+                self.mimo_rician_k.get()
+                if hasattr(self, "mimo_rician_k")
+                else self.fading_rician_k.get()
+            ),
+            "mimo_xpr_db": self.mimo_xpr.get(),
+            "wearable_enabled": getattr(self, "wearable_analysis_enabled", False),
+            "wearable_body_positions": [
+                pos for pos, var in self.wearable_positions_var.items()
+                if var.get()
+            ],
+            "wearable_tx_power_mw": self.wearable_tx_power_mw.get(),
+            "wearable_num_devices": self.wearable_device_count.get(),
+            "wearable_room_size": (
+                self.wearable_room_x.get(),
+                self.wearable_room_y.get(),
+                self.wearable_room_z.get(),
+            ),
+        }
+        if mimo_gain_data_list is not None:
+            params["mimo_gain_data_list"] = mimo_gain_data_list
+        if mimo_ecc_values is not None:
+            params["mimo_ecc_values"] = mimo_ecc_values
+        return params
+
     # ────────────────────────────────────────────────────────────────────────
     # DATA RESET
     # ────────────────────────────────────────────────────────────────────────
@@ -1300,13 +1374,10 @@ class CallbacksMixin:
             )
 
         # Advanced analysis plots (active)
-        _any_advanced = (
-            self.link_budget_enabled
-            or self.indoor_analysis_enabled
-            or self.fading_analysis_enabled
-            or self.wearable_analysis_enabled
+        _adv_params = self._collect_advanced_plot_params(
+            mimo_gain_data_list=[total_power_dBm_2d]
         )
-        if _any_advanced:
+        if _adv_params:
             self.log_message("Generating advanced analysis plots (active)...")
             generate_advanced_analysis_plots(
                 np.rad2deg(theta_angles_rad),
@@ -1316,36 +1387,7 @@ class CallbacksMixin:
                 data_label="Power",
                 data_unit="dBm",
                 save_path=None,
-                link_budget_enabled=self.link_budget_enabled,
-                lb_pt_dbm=self.lb_tx_power.get(),
-                lb_pr_dbm=self.lb_rx_sensitivity.get(),
-                lb_gr_dbi=self.lb_rx_gain.get(),
-                lb_path_loss_exp=self.lb_path_loss_exp.get(),
-                lb_misc_loss_db=self.lb_misc_loss.get(),
-                lb_target_range_m=self.lb_target_range.get(),
-                indoor_enabled=self.indoor_analysis_enabled,
-                indoor_environment=self.indoor_environment.get(),
-                indoor_path_loss_exp=self.lb_path_loss_exp.get(),
-                indoor_n_walls=self.indoor_num_walls.get(),
-                indoor_wall_material=self.indoor_wall_material.get(),
-                indoor_shadow_fading_db=self.indoor_shadow_fading.get(),
-                indoor_max_distance_m=self.indoor_max_distance.get(),
-                fading_enabled=self.fading_analysis_enabled,
-                fading_pr_sensitivity_dbm=self.lb_rx_sensitivity.get(),
-                fading_pt_dbm=self.lb_tx_power.get(),
-                fading_target_reliability=self.fading_target_reliability.get(),
-                wearable_enabled=self.wearable_analysis_enabled,
-                wearable_body_positions=[
-                    pos for pos, var in self.wearable_positions_var.items()
-                    if var.get()
-                ],
-                wearable_tx_power_mw=self.wearable_tx_power_mw.get(),
-                wearable_num_devices=self.wearable_device_count.get(),
-                wearable_room_size=(
-                    self.wearable_room_x.get(),
-                    self.wearable_room_y.get(),
-                    self.wearable_room_z.get(),
-                ),
+                **_adv_params,
             )
 
         # Update measurement context for AI awareness
@@ -1575,13 +1617,8 @@ class CallbacksMixin:
                 )
 
         # Advanced analysis plots (passive)
-        _any_advanced_p = (
-            self.link_budget_enabled
-            or self.indoor_analysis_enabled
-            or self.fading_analysis_enabled
-            or self.wearable_analysis_enabled
-        )
-        if _any_advanced_p:
+        _adv_params_p = self._collect_advanced_plot_params()
+        if _adv_params_p:
             self.log_message("Generating advanced analysis plots (passive)...")
             _adv_freq_idx = (
                 self.freq_list.index(float(self.selected_frequency.get()))
@@ -1592,6 +1629,7 @@ class CallbacksMixin:
                 theta_angles_deg, phi_angles_deg, Total_Gain_dB, _adv_freq_idx
             )
             if _adv_grid is not None:
+                _adv_params_p["mimo_gain_data_list"] = [_adv_grid]
                 generate_advanced_analysis_plots(
                     _adv_theta,
                     _adv_phi,
@@ -1600,36 +1638,7 @@ class CallbacksMixin:
                     data_label="Gain",
                     data_unit="dBi",
                     save_path=None,
-                    link_budget_enabled=self.link_budget_enabled,
-                    lb_pt_dbm=self.lb_tx_power.get(),
-                    lb_pr_dbm=self.lb_rx_sensitivity.get(),
-                    lb_gr_dbi=self.lb_rx_gain.get(),
-                    lb_path_loss_exp=self.lb_path_loss_exp.get(),
-                    lb_misc_loss_db=self.lb_misc_loss.get(),
-                    lb_target_range_m=self.lb_target_range.get(),
-                    indoor_enabled=self.indoor_analysis_enabled,
-                    indoor_environment=self.indoor_environment.get(),
-                    indoor_path_loss_exp=self.lb_path_loss_exp.get(),
-                    indoor_n_walls=self.indoor_num_walls.get(),
-                    indoor_wall_material=self.indoor_wall_material.get(),
-                    indoor_shadow_fading_db=self.indoor_shadow_fading.get(),
-                    indoor_max_distance_m=self.indoor_max_distance.get(),
-                    fading_enabled=self.fading_analysis_enabled,
-                    fading_pr_sensitivity_dbm=self.lb_rx_sensitivity.get(),
-                    fading_pt_dbm=self.lb_tx_power.get(),
-                    fading_target_reliability=self.fading_target_reliability.get(),
-                    wearable_enabled=self.wearable_analysis_enabled,
-                    wearable_body_positions=[
-                        pos for pos, var in self.wearable_positions_var.items()
-                        if var.get()
-                    ],
-                    wearable_tx_power_mw=self.wearable_tx_power_mw.get(),
-                    wearable_num_devices=self.wearable_device_count.get(),
-                    wearable_room_size=(
-                        self.wearable_room_x.get(),
-                        self.wearable_room_y.get(),
-                        self.wearable_room_z.get(),
-                    ),
+                    **_adv_params_p,
                 )
             else:
                 self.log_message(
