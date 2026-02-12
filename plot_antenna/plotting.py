@@ -13,7 +13,13 @@ from matplotlib.colors import Normalize
 import numpy as np
 import scipy.interpolate as spi
 
-from .config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
+from .config import (
+    THETA_RESOLUTION,
+    PHI_RESOLUTION,
+    polar_dB_max,
+    polar_dB_min,
+    MIMO_SNR_RANGE_DB,
+)
 from .file_utils import parse_2port_data
 from .calculations import (
     calculate_trp,
@@ -31,15 +37,15 @@ from .calculations import (
     apply_statistical_fading,
     combining_gain,
     mimo_capacity_vs_snr,
+    mean_effective_gain_mimo,
     body_worn_pattern_analysis,
     dense_device_interference,
     PROTOCOL_PRESETS,
     ENVIRONMENT_PRESETS,
 )
 
-# Suppress noisy warnings during batch processing (worker thread + tight_layout)
+# Suppress noisy warnings during batch processing worker threads.
 warnings.filterwarnings("ignore", message="Starting a Matplotlib GUI outside of the main thread")
-warnings.filterwarnings("ignore", message="Tight layout not applied")
 
 
 # _____________Active Plotting Functions___________
@@ -2223,7 +2229,7 @@ def plot_conical_cuts(
     else:
         ax = fig.add_subplot(111)
 
-    colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
+    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2309,7 +2315,7 @@ def plot_gain_over_azimuth(
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111)
 
-    colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
+    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2536,7 +2542,7 @@ def plot_horizon_statistics(
     )
     # Remove near-duplicates
     band_thetas = np.unique(np.round(band_thetas, 1))
-    cmap = cm.get_cmap("viridis")
+    cmap = plt.get_cmap("viridis")
     colors = cmap(np.linspace(0, 1, len(band_thetas)))
 
     phi_rad = np.deg2rad(phi_deg)
@@ -3179,6 +3185,9 @@ def plot_fading_analysis(
     pr_sensitivity_dbm=-98.0,
     pt_dbm=0.0,
     target_reliability=99.0,
+    fading_model="rayleigh",
+    fading_rician_k=10.0,
+    realizations=1000,
     data_label="Gain",
     data_unit="dBi",
     save_path=None,
@@ -3188,6 +3197,11 @@ def plot_fading_analysis(
     and outage probability bar chart.
     """
     is_active = data_label != "Gain"
+    model = str(fading_model).strip().lower()
+    if model not in ("rayleigh", "rician"):
+        model = "rayleigh"
+    k_factor = max(float(fading_rician_k), 0.0)
+    n_realizations = max(int(realizations), 10)
 
     # Peak direction
     peak_idx = np.unravel_index(np.argmax(gain_2d), gain_2d.shape)
@@ -3197,26 +3211,46 @@ def plot_fading_analysis(
     power_range = np.linspace(peak_val - 40, peak_val + 5, 200)
 
     # CDF curves
-    cdf_rayleigh = rayleigh_cdf(power_range, peak_val)
-    cdf_rician_3 = rician_cdf(power_range, peak_val, K_factor=3)
-    cdf_rician_6 = rician_cdf(power_range, peak_val, K_factor=6)
-    cdf_rician_10 = rician_cdf(power_range, peak_val, K_factor=10)
+    if model == "rayleigh":
+        cdf_selected = rayleigh_cdf(power_range, peak_val)
+        cdf_reference = rician_cdf(power_range, peak_val, K_factor=max(k_factor, 1.0))
+        selected_label = "Rayleigh (selected)"
+        reference_label = f"Rician K={max(k_factor, 1.0):.1f}"
+    else:
+        cdf_selected = rician_cdf(power_range, peak_val, K_factor=max(k_factor, 0.1))
+        cdf_reference = rayleigh_cdf(power_range, peak_val)
+        selected_label = f"Rician K={max(k_factor, 0.1):.1f} (selected)"
+        reference_label = "Rayleigh"
 
     # Fade margins for reliability range
     reliability_range = np.linspace(50, 99.99, 100)
-    margin_rayleigh = [fade_margin_for_reliability(r, "rayleigh")
-                       for r in reliability_range]
-    margin_rician_6 = [fade_margin_for_reliability(r, "rician", K=6)
-                       for r in reliability_range]
-    margin_rician_10 = [fade_margin_for_reliability(r, "rician", K=10)
-                        for r in reliability_range]
+    margin_selected = [
+        fade_margin_for_reliability(r, model, K=max(k_factor, 0.1))
+        for r in reliability_range
+    ]
+    if model == "rayleigh":
+        margin_reference = [
+            fade_margin_for_reliability(r, "rician", K=max(k_factor, 1.0))
+            for r in reliability_range
+        ]
+        margin_reference_label = f"Rician K={max(k_factor, 1.0):.1f}"
+    else:
+        margin_reference = [
+            fade_margin_for_reliability(r, "rayleigh")
+            for r in reliability_range
+        ]
+        margin_reference_label = "Rayleigh"
 
     # Monte-Carlo fading at horizon
     theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
-    horizon_slice = gain_2d[theta_90_idx:theta_90_idx + 1, :]
+    horizon_slice = gain_2d[theta_90_idx : theta_90_idx + 1, :]
     mean_db, std_db, p5_db = apply_statistical_fading(
-        horizon_slice, theta_deg[theta_90_idx:theta_90_idx + 1],
-        phi_deg, fading="rayleigh", realizations=500,
+        horizon_slice,
+        theta_deg[theta_90_idx : theta_90_idx + 1],
+        phi_deg,
+        fading=model,
+        K=max(k_factor, 0.1),
+        realizations=n_realizations,
     )
 
     # ---- Figure ----
@@ -3224,13 +3258,11 @@ def plot_fading_analysis(
 
     # --- Top-left: CDF curves ---
     ax = axes[0, 0]
-    ax.semilogy(power_range, 1 - cdf_rayleigh, "r-", linewidth=2, label="Rayleigh (NLOS)")
-    ax.semilogy(power_range, 1 - cdf_rician_3, "b--", linewidth=1.5, label="Rician K=3")
-    ax.semilogy(power_range, 1 - cdf_rician_6, "g--", linewidth=1.5, label="Rician K=6")
-    ax.semilogy(power_range, 1 - cdf_rician_10, "m--", linewidth=1.5, label="Rician K=10")
+    ax.semilogy(power_range, 1 - cdf_selected, "b-", linewidth=2, label=selected_label)
+    ax.semilogy(power_range, 1 - cdf_reference, "k--", linewidth=1.2, label=reference_label)
     ax.axhline(y=0.01, color="gray", linestyle=":", alpha=0.7, label="99% reliability")
     ax.set_xlabel(f"{data_label} ({data_unit})")
-    ax.set_ylabel("P(signal > x) — CCDF")
+    ax.set_ylabel("P(signal > x) - CCDF")
     ax.set_title("Fading CCDF at Peak Direction", fontweight="bold")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3, which="both")
@@ -3238,15 +3270,26 @@ def plot_fading_analysis(
 
     # --- Top-right: Fade Margin vs Reliability ---
     ax = axes[0, 1]
-    ax.plot(reliability_range, margin_rayleigh, "r-", linewidth=2, label="Rayleigh")
-    ax.plot(reliability_range, margin_rician_6, "g--", linewidth=1.5, label="Rician K=6")
-    ax.plot(reliability_range, margin_rician_10, "m--", linewidth=1.5, label="Rician K=10")
+    ax.plot(reliability_range, margin_selected, "b-", linewidth=2, label=selected_label)
+    ax.plot(
+        reliability_range,
+        margin_reference,
+        "k--",
+        linewidth=1.2,
+        label=margin_reference_label,
+    )
     ax.axvline(x=target_reliability, color="gray", linestyle=":", alpha=0.7)
-    target_margin_ray = fade_margin_for_reliability(target_reliability, "rayleigh")
-    ax.plot(target_reliability, target_margin_ray, "ro", markersize=8)
-    ax.annotate(f"{target_margin_ray:.1f} dB",
-                (target_reliability, target_margin_ray),
-                textcoords="offset points", xytext=(10, 5), fontsize=9)
+    target_margin = fade_margin_for_reliability(
+        target_reliability, model, K=max(k_factor, 0.1)
+    )
+    ax.plot(target_reliability, target_margin, "bo", markersize=8)
+    ax.annotate(
+        f"{target_margin:.1f} dB",
+        (target_reliability, target_margin),
+        textcoords="offset points",
+        xytext=(10, 5),
+        fontsize=9,
+    )
     ax.set_xlabel("Reliability (%)")
     ax.set_ylabel("Required Fade Margin (dB)")
     ax.set_title("Fade Margin vs Reliability", fontweight="bold")
@@ -3258,15 +3301,24 @@ def plot_fading_analysis(
     mean_flat = mean_db.flatten()
     std_flat = std_db.flatten()
     p5_flat = p5_db.flatten()
-    ax.fill_between(phi_deg, mean_flat - std_flat, mean_flat + std_flat,
-                     alpha=0.2, color="blue", label="±1σ envelope")
+    ax.fill_between(
+        phi_deg,
+        mean_flat - std_flat,
+        mean_flat + std_flat,
+        alpha=0.2,
+        color="blue",
+        label="+-1 sigma envelope",
+    )
     ax.plot(phi_deg, mean_flat, "b-", linewidth=2, label="Mean (faded)")
-    ax.plot(phi_deg, gain_2d[theta_90_idx, :], "k--", linewidth=1,
-            label="Free-space")
+    ax.plot(phi_deg, gain_2d[theta_90_idx, :], "k--", linewidth=1, label="Free-space")
     ax.plot(phi_deg, p5_flat, "r:", linewidth=1, label="5th percentile")
-    ax.set_xlabel("Azimuth φ (°)")
+    ax.set_xlabel("Azimuth phi (deg)")
     ax.set_ylabel(f"{data_label} ({data_unit})")
-    ax.set_title("Rayleigh Fading Envelope at θ=90°", fontweight="bold")
+    if model == "rician":
+        fade_title = f"Rician Fading Envelope at theta=90 deg (K={max(k_factor, 0.1):.1f})"
+    else:
+        fade_title = "Rayleigh Fading Envelope at theta=90 deg"
+    ax.set_title(f"{fade_title}\n({n_realizations} realizations)", fontweight="bold")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -3274,10 +3326,14 @@ def plot_fading_analysis(
     ax = axes[1, 1]
     horizon_vals = gain_2d[theta_90_idx, :]
     effective_pt = 0.0 if is_active else pt_dbm
-    outage_prob = rayleigh_cdf(
-        np.full_like(horizon_vals, pr_sensitivity_dbm),
-        effective_pt + horizon_vals,
-    )
+    rx_threshold = np.full_like(horizon_vals, pr_sensitivity_dbm)
+    mean_rx = effective_pt + horizon_vals
+    if model == "rician":
+        outage_prob = rician_cdf(rx_threshold, mean_rx, K_factor=max(k_factor, 0.1))
+        outage_title = f"Rician Outage per Azimuth (K={max(k_factor, 0.1):.1f})"
+    else:
+        outage_prob = rayleigh_cdf(rx_threshold, mean_rx)
+        outage_title = "Rayleigh Outage per Azimuth"
     bar_width = np.mean(np.diff(phi_deg)) * 0.8 if len(phi_deg) > 1 else 3.0
     colors_out = []
     for op in outage_prob:
@@ -3287,18 +3343,22 @@ def plot_fading_analysis(
             colors_out.append("#FFC107")
         else:
             colors_out.append("#F44336")
-    ax.bar(phi_deg, outage_prob * 100, width=bar_width,
-           color=colors_out, edgecolor="gray", linewidth=0.3)
+    ax.bar(
+        phi_deg,
+        outage_prob * 100,
+        width=bar_width,
+        color=colors_out,
+        edgecolor="gray",
+        linewidth=0.3,
+    )
     ax.axhline(y=1.0, color="r", linestyle="--", linewidth=1, label="1% outage")
-    ax.set_xlabel("Azimuth φ (°)")
+    ax.set_xlabel("Azimuth phi (deg)")
     ax.set_ylabel("Outage Probability (%)")
-    ax.set_title("Rayleigh Outage per Azimuth (at Rx Sensitivity)",
-                 fontweight="bold")
+    ax.set_title(f"{outage_title}\n(at Rx Sensitivity)", fontweight="bold")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    fig.suptitle(f"Multipath Fading Analysis — {freq_mhz} MHz",
-                 fontsize=14, fontweight="bold")
+    fig.suptitle(f"Multipath Fading Analysis - {freq_mhz} MHz", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
     if save_path:
@@ -3308,9 +3368,6 @@ def plot_fading_analysis(
     else:
         plt.show()
 
-
-# ——— ENHANCED MIMO PLOTS —————————————————————————————————————————
-
 def plot_mimo_analysis(
     ecc_values,
     freq_list,
@@ -3318,32 +3375,51 @@ def plot_mimo_analysis(
     theta_deg,
     phi_deg,
     snr_db=20,
+    snr_range_db=MIMO_SNR_RANGE_DB,
     fading="rayleigh",
     K=10,
+    xpr_db=6.0,
     save_path=None,
 ):
     """
     MIMO analysis: capacity curves, combining gain comparison, pattern overlay.
     """
     _ = freq_list  # reserved for per-frequency analysis in future
+    if ecc_values is None:
+        ecc_values = []
+    if gain_data_list is None:
+        gain_data_list = []
+
     fig = plt.figure(figsize=(18, 6.5))
     fig_gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
 
     # --- Left: Capacity vs SNR ---
     ax_cap = fig.add_subplot(fig_gs[0])
-    ecc_median = float(np.median(ecc_values)) if len(ecc_values) > 0 else 0.3
+    ecc_arr = np.asarray(ecc_values, dtype=float).reshape(-1)
+    ecc_arr = ecc_arr[np.isfinite(ecc_arr)]
+    ecc_median = float(np.median(ecc_arr)) if ecc_arr.size > 0 else 0.3
+    ecc_median = float(np.clip(ecc_median, 0.0, 1.0))
+
+    try:
+        snr_lo, snr_hi = snr_range_db
+    except Exception:
+        snr_lo, snr_hi = -5, 30
+    if snr_lo >= snr_hi:
+        snr_lo, snr_hi = -5, 30
+
     snr_axis, siso_cap, awgn_cap, fading_cap = mimo_capacity_vs_snr(
-        ecc_median, snr_range_db=(-5, 30), fading=fading, K=K,
+        ecc_median,
+        snr_range_db=(snr_lo, snr_hi),
+        fading=fading,
+        K=K,
     )
     ax_cap.plot(snr_axis, siso_cap, "k--", linewidth=1.5, label="SISO")
-    ax_cap.plot(snr_axis, awgn_cap, "b-", linewidth=2, label="2×2 AWGN")
-    ax_cap.plot(snr_axis, fading_cap, "r-", linewidth=2,
-                label=f"2×2 {fading.capitalize()}")
+    ax_cap.plot(snr_axis, awgn_cap, "b-", linewidth=2, label="2x2 AWGN")
+    ax_cap.plot(snr_axis, fading_cap, "r-", linewidth=2, label=f"2x2 {fading.capitalize()}")
     ax_cap.axvline(x=snr_db, color="gray", linestyle=":", alpha=0.7)
     ax_cap.set_xlabel("SNR (dB)")
     ax_cap.set_ylabel("Capacity (b/s/Hz)")
-    ax_cap.set_title(f"Channel Capacity (ECC={ecc_median:.3f})",
-                     fontweight="bold")
+    ax_cap.set_title(f"Channel Capacity (ECC={ecc_median:.3f})", fontweight="bold")
     ax_cap.legend(fontsize=8)
     ax_cap.grid(True, alpha=0.3)
 
@@ -3365,35 +3441,61 @@ def plot_mimo_analysis(
         ax_comb.plot(phi_deg, mrc_imp, "b-", linewidth=2, label="MRC")
         ax_comb.plot(phi_deg, egc_imp, "g--", linewidth=1.5, label="EGC")
         ax_comb.plot(phi_deg, sc_imp, "r:", linewidth=1.5, label="Selection")
-        ax_comb.set_xlabel("Azimuth φ (°)")
+        ax_comb.set_xlabel("Azimuth phi (deg)")
         ax_comb.set_ylabel("Combining Improvement (dB)")
-        ax_comb.set_title("Combining Gain at θ=90°", fontweight="bold")
+        ax_comb.set_title("Combining Gain at theta=90 deg", fontweight="bold")
         ax_comb.legend(fontsize=8)
         ax_comb.grid(True, alpha=0.3)
     else:
-        ax_comb.text(0.5, 0.5, "Requires 2+ antenna\npatterns loaded",
-                     ha="center", va="center", fontsize=12,
-                     transform=ax_comb.transAxes)
+        ax_comb.text(
+            0.5,
+            0.5,
+            "Insufficient element patterns\n(need 2+ patterns)",
+            ha="center",
+            va="center",
+            fontsize=12,
+            transform=ax_comb.transAxes,
+        )
         ax_comb.set_title("Combining Gain", fontweight="bold")
 
     # --- Right: Pattern Correlation (overlaid polar) ---
     ax_polar = fig.add_subplot(fig_gs[2], projection="polar")
-    phi_rad = np.deg2rad(phi_deg)
-    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+    if len(gain_data_list) >= 2:
+        phi_rad = np.deg2rad(phi_deg)
+        theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
 
-    colors_list = ["#4A90E2", "#E63946", "#4CAF50", "#FFC107"]
-    for idx, g2d in enumerate(gain_data_list[:4]):
-        color = colors_list[idx % len(colors_list)]
-        pattern = g2d[theta_90_idx, :]
-        pattern_norm = pattern - np.min(pattern)
-        ax_polar.plot(phi_rad, pattern_norm, color=color, linewidth=1.5,
-                      label=f"Ant {idx + 1}")
+        colors_list = ["#4A90E2", "#E63946", "#4CAF50", "#FFC107"]
+        for idx, g2d in enumerate(gain_data_list[:4]):
+            color = colors_list[idx % len(colors_list)]
+            pattern = g2d[theta_90_idx, :]
+            pattern_norm = pattern - np.min(pattern)
+            ax_polar.plot(phi_rad, pattern_norm, color=color, linewidth=1.5, label=f"Ant {idx + 1}")
+        ax_polar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=8)
+    else:
+        ax_polar.text(
+            0.5,
+            0.5,
+            "Insufficient element patterns\n(need 2+ patterns)",
+            ha="center",
+            va="center",
+            fontsize=11,
+            transform=ax_polar.transAxes,
+        )
 
-    ax_polar.set_title("Pattern Overlay (θ=90°)\nNormalized",
-                       fontweight="bold", pad=15)
+    ax_polar.set_title("Pattern Overlay (theta=90 deg)\nNormalized", fontweight="bold", pad=15)
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
-    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=8)
+
+    if len(gain_data_list) > 0:
+        meg_vals = mean_effective_gain_mimo(gain_data_list, theta_deg, phi_deg, xpr_db=xpr_db)
+        meg_summary = ", ".join([f"A{i + 1}:{v:.1f} dB" for i, v in enumerate(meg_vals[:4])])
+        ax_cap.annotate(
+            f"MEG @ XPR={xpr_db:.1f} dB: {meg_summary}",
+            xy=(0.02, 0.03),
+            xycoords="axes fraction",
+            fontsize=8,
+            bbox=dict(facecolor="white", alpha=0.75, edgecolor="gray"),
+        )
 
     fig.suptitle("MIMO / Diversity Analysis", fontsize=14, fontweight="bold")
     plt.tight_layout()
@@ -3404,9 +3506,6 @@ def plot_mimo_analysis(
         plt.close(fig)
     else:
         plt.show()
-
-
-# ——— WEARABLE / MEDICAL DEVICE PLOTS —————————————————————————————
 
 def plot_wearable_assessment(
     freq_mhz,
@@ -3577,6 +3676,17 @@ def generate_advanced_analysis_plots(
     fading_pr_sensitivity_dbm=-98.0,
     fading_pt_dbm=0.0,
     fading_target_reliability=99.0,
+    fading_model="rayleigh",
+    fading_rician_k=10.0,
+    fading_realizations=1000,
+    # MIMO params
+    mimo_enabled=False,
+    mimo_snr_db=20.0,
+    mimo_fading_model="rayleigh",
+    mimo_rician_k=10.0,
+    mimo_xpr_db=6.0,
+    mimo_ecc_values=None,
+    mimo_gain_data_list=None,
     # Wearable params
     wearable_enabled=False,
     wearable_body_positions=None,
@@ -3590,39 +3700,89 @@ def generate_advanced_analysis_plots(
     """
     if link_budget_enabled:
         plot_link_budget_summary(
-            frequency, gain_2d, theta_deg, phi_deg,
-            pt_dbm=lb_pt_dbm, pr_dbm=lb_pr_dbm, gr_dbi=lb_gr_dbi,
-            path_loss_exp=lb_path_loss_exp, misc_loss_db=lb_misc_loss_db,
+            frequency,
+            gain_2d,
+            theta_deg,
+            phi_deg,
+            pt_dbm=lb_pt_dbm,
+            pr_dbm=lb_pr_dbm,
+            gr_dbi=lb_gr_dbi,
+            path_loss_exp=lb_path_loss_exp,
+            misc_loss_db=lb_misc_loss_db,
             target_range_m=lb_target_range_m,
-            data_label=data_label, data_unit=data_unit, save_path=save_path,
+            data_label=data_label,
+            data_unit=data_unit,
+            save_path=save_path,
         )
 
     if indoor_enabled:
         plot_indoor_coverage_map(
-            frequency, gain_2d, theta_deg, phi_deg,
-            pt_dbm=lb_pt_dbm, pr_sensitivity_dbm=lb_pr_dbm,
-            environment=indoor_environment, path_loss_exp=indoor_path_loss_exp,
-            n_walls=indoor_n_walls, wall_material=indoor_wall_material,
+            frequency,
+            gain_2d,
+            theta_deg,
+            phi_deg,
+            pt_dbm=lb_pt_dbm,
+            pr_sensitivity_dbm=lb_pr_dbm,
+            environment=indoor_environment,
+            path_loss_exp=indoor_path_loss_exp,
+            n_walls=indoor_n_walls,
+            wall_material=indoor_wall_material,
             shadow_fading_db=indoor_shadow_fading_db,
             max_distance_m=indoor_max_distance_m,
-            data_label=data_label, data_unit=data_unit, save_path=save_path,
+            data_label=data_label,
+            data_unit=data_unit,
+            save_path=save_path,
         )
 
     if fading_enabled:
         plot_fading_analysis(
-            frequency, gain_2d, theta_deg, phi_deg,
+            frequency,
+            gain_2d,
+            theta_deg,
+            phi_deg,
             pr_sensitivity_dbm=fading_pr_sensitivity_dbm,
             pt_dbm=fading_pt_dbm,
             target_reliability=fading_target_reliability,
-            data_label=data_label, data_unit=data_unit, save_path=save_path,
+            fading_model=fading_model,
+            fading_rician_k=fading_rician_k,
+            realizations=fading_realizations,
+            data_label=data_label,
+            data_unit=data_unit,
+            save_path=save_path,
+        )
+
+    if mimo_enabled:
+        gain_list = mimo_gain_data_list if mimo_gain_data_list is not None else [gain_2d]
+        if not isinstance(gain_list, (list, tuple)):
+            gain_list = [gain_list]
+        gain_list = [g for g in gain_list if g is not None]
+        if not gain_list:
+            gain_list = [gain_2d]
+
+        plot_mimo_analysis(
+            ecc_values=mimo_ecc_values if mimo_ecc_values is not None else [],
+            freq_list=[frequency],
+            gain_data_list=list(gain_list),
+            theta_deg=theta_deg,
+            phi_deg=phi_deg,
+            snr_db=mimo_snr_db,
+            fading=mimo_fading_model,
+            K=mimo_rician_k,
+            xpr_db=mimo_xpr_db,
+            save_path=save_path,
         )
 
     if wearable_enabled:
         plot_wearable_assessment(
-            frequency, gain_2d, theta_deg, phi_deg,
+            frequency,
+            gain_2d,
+            theta_deg,
+            phi_deg,
             body_positions=wearable_body_positions,
             tx_power_mw=wearable_tx_power_mw,
             num_devices=wearable_num_devices,
             room_size=wearable_room_size,
-            data_label=data_label, data_unit=data_unit, save_path=save_path,
+            data_label=data_label,
+            data_unit=data_unit,
+            save_path=save_path,
         )

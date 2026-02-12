@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import datetime
+import threading
 import webbrowser
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -457,10 +458,17 @@ class ToolsMixin:
             getattr(self, "link_budget_enabled", False)
             or getattr(self, "indoor_analysis_enabled", False)
             or getattr(self, "fading_analysis_enabled", False)
+            or getattr(self, "mimo_analysis_enabled", False)
             or getattr(self, "wearable_analysis_enabled", False)
         )
         if not any_enabled:
             return None
+
+        indoor_n = (
+            self.indoor_path_loss_exp.get()
+            if hasattr(self, "indoor_path_loss_exp")
+            else self.lb_path_loss_exp.get()
+        )
 
         return {
             "link_budget_enabled": getattr(self, "link_budget_enabled", False),
@@ -472,7 +480,7 @@ class ToolsMixin:
             "lb_target_range_m": self.lb_target_range.get(),
             "indoor_enabled": getattr(self, "indoor_analysis_enabled", False),
             "indoor_environment": self.indoor_environment.get(),
-            "indoor_path_loss_exp": self.lb_path_loss_exp.get(),
+            "indoor_path_loss_exp": indoor_n,
             "indoor_n_walls": self.indoor_num_walls.get(),
             "indoor_wall_material": self.indoor_wall_material.get(),
             "indoor_shadow_fading_db": self.indoor_shadow_fading.get(),
@@ -481,6 +489,24 @@ class ToolsMixin:
             "fading_pr_sensitivity_dbm": self.lb_rx_sensitivity.get(),
             "fading_pt_dbm": self.lb_tx_power.get(),
             "fading_target_reliability": self.fading_target_reliability.get(),
+            "fading_model": self.fading_model.get(),
+            "fading_rician_k": self.fading_rician_k.get(),
+            "fading_realizations": (
+                self.fading_realizations.get() if hasattr(self, "fading_realizations") else 1000
+            ),
+            "mimo_enabled": getattr(self, "mimo_analysis_enabled", False),
+            "mimo_snr_db": self.mimo_snr.get(),
+            "mimo_fading_model": (
+                self.mimo_fading_model.get()
+                if hasattr(self, "mimo_fading_model")
+                else self.fading_model.get()
+            ),
+            "mimo_rician_k": (
+                self.mimo_rician_k.get()
+                if hasattr(self, "mimo_rician_k")
+                else self.fading_rician_k.get()
+            ),
+            "mimo_xpr_db": self.mimo_xpr.get(),
             "wearable_enabled": getattr(self, "wearable_analysis_enabled", False),
             "wearable_body_positions": [
                 pos for pos, var in self.wearable_positions_var.items()
@@ -579,7 +605,7 @@ class ToolsMixin:
 
         def _process_worker():
             try:
-                batch_process_passive_scans(
+                summary = batch_process_passive_scans(
                     folder_path=directory,
                     freq_list=freq_list,
                     selected_frequencies=selected_freqs,
@@ -608,22 +634,49 @@ class ToolsMixin:
                     ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
-                self.root.after(0, lambda: _process_done(True, None))
+                self.root.after(0, lambda: _process_done(summary=summary, error_msg=None))
             except Exception as e:
                 err = str(e)
-                self.root.after(0, lambda: _process_done(False, err))
+                self.root.after(0, lambda: _process_done(summary=None, error_msg=err))
 
-        def _process_done(success, error_msg):
+        def _process_done(summary, error_msg):
             progress_bar.stop()
             progress_window.destroy()
-            if success:
-                messagebox.showinfo(
-                    "Success", f"Bulk processing complete. Results saved to {save_base}"
-                )
-            else:
+            if error_msg:
                 messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
+                return
 
-        import threading
+            summary = summary or {}
+            processed = int(summary.get("processed", 0))
+            failed = int(summary.get("failed", 0))
+            skipped = int(summary.get("skipped", 0))
+            total_jobs = int(summary.get("total_jobs", processed + failed + skipped))
+
+            if failed > 0:
+                self.log_message(
+                    f"Bulk passive processing completed with failures: {processed} processed, {failed} failed, {skipped} skipped."
+                )
+                for err in (summary.get("errors") or [])[:3]:
+                    self.log_message(f"Batch error: {err}")
+                messagebox.showwarning(
+                    "Completed with Errors",
+                    "Bulk processing finished with partial failures.\n\n"
+                    f"Processed: {processed}\n"
+                    f"Failed: {failed}\n"
+                    f"Skipped: {skipped}\n"
+                    f"Total Jobs: {total_jobs}\n\n"
+                    f"Results saved to {save_base}",
+                )
+                return
+
+            if processed == 0:
+                messagebox.showwarning(
+                    "No Data Processed",
+                    f"No passive jobs were processed.\n\nResults directory: {save_base}",
+                )
+                return
+
+            messagebox.showinfo("Success", f"Bulk processing complete. Results saved to {save_base}")
 
         threading.Thread(target=_process_worker, daemon=True).start()
 
@@ -671,7 +724,7 @@ class ToolsMixin:
 
         def _process_worker():
             try:
-                batch_process_active_scans(
+                summary = batch_process_active_scans(
                     folder_path=directory,
                     save_base=save_base,
                     interpolate=interpolate,
@@ -697,22 +750,49 @@ class ToolsMixin:
                     ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
-                self.root.after(0, lambda: _process_done(True, None))
+                self.root.after(0, lambda: _process_done(summary=summary, error_msg=None))
             except Exception as e:
                 err = str(e)
-                self.root.after(0, lambda: _process_done(False, err))
+                self.root.after(0, lambda: _process_done(summary=None, error_msg=err))
 
-        def _process_done(success, error_msg):
+        def _process_done(summary, error_msg):
             progress_bar.stop()
             progress_window.destroy()
-            if success:
-                messagebox.showinfo(
-                    "Success", f"Bulk active processing complete. Results saved to {save_base}"
-                )
-            else:
+            if error_msg:
                 messagebox.showerror("Error", f"An error occurred during processing: {error_msg}")
+                return
 
-        import threading
+            summary = summary or {}
+            processed = int(summary.get("processed", 0))
+            failed = int(summary.get("failed", 0))
+            total_files = int(summary.get("total_files", processed + failed))
+
+            if failed > 0:
+                self.log_message(
+                    f"Bulk active processing completed with failures: {processed} processed, {failed} failed."
+                )
+                for err in (summary.get("errors") or [])[:3]:
+                    self.log_message(f"Batch error: {err}")
+                messagebox.showwarning(
+                    "Completed with Errors",
+                    "Bulk active processing finished with partial failures.\n\n"
+                    f"Processed: {processed}\n"
+                    f"Failed: {failed}\n"
+                    f"Total Files: {total_files}\n\n"
+                    f"Results saved to {save_base}",
+                )
+                return
+
+            if processed == 0:
+                messagebox.showwarning(
+                    "No Data Processed",
+                    f"No active files were processed.\n\nResults directory: {save_base}",
+                )
+                return
+
+            messagebox.showinfo(
+                "Success", f"Bulk active processing complete. Results saved to {save_base}"
+            )
 
         threading.Thread(target=_process_worker, daemon=True).start()
 
@@ -1282,29 +1362,66 @@ class ToolsMixin:
         """Open the given URL in the default web browser to download the release."""
         webbrowser.open(url)
 
-    def check_for_updates(self):
-        """Check for software updates."""
-        try:
+    @staticmethod
+    def _parse_version_tuple(version):
+        """Parse version text (e.g. 'v4.2.0') into an integer tuple."""
+        cleaned = str(version).strip().lstrip("vV")
+        if not cleaned:
+            return ()
+        parts = []
+        for token in cleaned.split("."):
+            digits = "".join(ch for ch in token if ch.isdigit())
+            if not digits:
+                break
+            parts.append(int(digits))
+        return tuple(parts)
 
-            def _parse_version(v):
-                """Parse version string like 'v4.2.0' into comparable tuple."""
-                return tuple(int(x) for x in v.lstrip("v").split("."))
+    def _prompt_update_download(self, latest_version, release_url):
+        """Prompt user on the UI thread and optionally open release page."""
+        self.log_message(f"Update Available. A new version {latest_version} is available!")
+        answer = messagebox.askyesno(
+            "Update Available",
+            f"A new version {latest_version} is available! Would you like to download it?",
+        )
+        if answer and release_url:
+            self.download_latest_release(release_url)
 
-            latest_version, release_url = self.get_latest_release()
-            if latest_version and _parse_version(latest_version) > _parse_version(
-                self.CURRENT_VERSION
-            ):
-                self.log_message(f"Update Available. A new version {latest_version} is available!")
+    def _finish_update_check(self):
+        """Clear in-progress flag after a background update check."""
+        self._update_check_in_progress = False
 
-                answer = messagebox.askyesno(
-                    "Update Available",
-                    f"A new version {latest_version} is available! Would you like to download it?",
-                )
+    def check_for_updates(self, silent=False):
+        """Check for software updates without blocking the Tkinter main loop."""
+        if getattr(self, "_update_check_in_progress", False):
+            return
+        self._update_check_in_progress = True
 
-                if answer:
-                    self.download_latest_release(release_url)
-        except Exception:
-            pass  # Never crash on update check
+        def _worker():
+            try:
+                latest_version, release_url = self.get_latest_release()
+                if not latest_version:
+                    return
+
+                latest = self._parse_version_tuple(latest_version)
+                current = self._parse_version_tuple(self.CURRENT_VERSION)
+                if latest and (not current or latest > current):
+                    self.root.after(
+                        0,
+                        lambda: self._prompt_update_download(latest_version, release_url),
+                    )
+                elif not silent:
+                    self.root.after(
+                        0,
+                        lambda: self.log_message(
+                            f"No updates available (current: {self.CURRENT_VERSION})."
+                        ),
+                    )
+            except Exception:
+                pass  # Never crash on update check
+            finally:
+                self.root.after(0, self._finish_update_check)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     # ────────────────────────────────────────────────────────────────────────
     # HOVER EFFECTS

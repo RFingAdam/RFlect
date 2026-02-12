@@ -1025,24 +1025,27 @@ def batch_process_passive_scans(
     advanced_analysis_params=None,
 ):
     """
-    Batch‑process all HPOL/VPOL pairs in a directory.
+    Batch process all HPOL/VPOL pairs in a directory.
 
     Parameters:
         folder_path (str): Directory containing measurement files.
         freq_list (list of float): Full list of available frequencies (MHz).
         selected_frequencies (list of float): Frequencies to process for each pair (MHz).
         cable_loss (float): Cable loss applied to all datasets.
-        datasheet_plots (bool): Whether to generate datasheet‑style plots.
+        datasheet_plots (bool): Whether to generate datasheet-style plots.
         save_base (str or None): Optional directory to write results; a subfolder per pair will be created.
         axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
-        zmin (float): Minimum z‑axis limit when axis_mode='manual'.
-        zmax (float): Maximum z‑axis limit when axis_mode='manual'.
+        zmin (float): Minimum z-axis limit when axis_mode='manual'.
+        zmax (float): Maximum z-axis limit when axis_mode='manual'.
 
     This routine scans ``folder_path`` for files ending in ``AP_HPol.txt`` and
-    ``AP_VPol.txt``.  For each matching pair it computes passive gain data
-    using :func:`calculate_passive_variables` and then generates 2D and 3D plots
-    using :mod:`plotting`.  Results are saved into per‑pair subfolders in
+    ``AP_VPol.txt``. For each matching pair it computes passive gain data and
+    generates 2D and 3D plots. Results are saved into per-pair subfolders in
     ``save_base`` if provided.
+
+    Returns:
+        dict: Summary containing counts and error details:
+            {total_pairs, total_jobs, processed, failed, skipped, errors}
     """
     import os
 
@@ -1053,160 +1056,209 @@ def batch_process_passive_scans(
     # Disable interactive mode so figures don't pop up during batch processing
     plt.ioff()
 
-    # Find all HPOL and VPOL files
-    files = os.listdir(folder_path)
-    hpol_files = [f for f in files if f.endswith("AP_HPol.txt")]
-    vpol_files = [f for f in files if f.endswith("AP_VPol.txt")]
+    summary = {
+        "total_pairs": 0,
+        "total_jobs": 0,
+        "processed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": [],
+    }
 
-    # Match by filename prefix
-    pairs = []
-    for h_file in hpol_files:
-        base = h_file.replace("AP_HPol.txt", "")
-        match = base + "AP_VPol.txt"
-        if match in vpol_files:
-            pairs.append((os.path.join(folder_path, h_file), os.path.join(folder_path, match)))
+    try:
+        # Find all HPOL and VPOL files
+        files = os.listdir(folder_path)
+        hpol_files = [f for f in files if f.endswith("AP_HPol.txt")]
+        vpol_files = [f for f in files if f.endswith("AP_VPol.txt")]
 
-    if not pairs:
-        print(f"No HPOL/VPOL pairs found in {folder_path}.")
-        plt.ion()
-        return
+        # Match by filename prefix
+        pairs = []
+        for h_file in hpol_files:
+            base = h_file.replace("AP_HPol.txt", "")
+            match = base + "AP_VPol.txt"
+            if match in vpol_files:
+                pairs.append((os.path.join(folder_path, h_file), os.path.join(folder_path, match)))
 
-    for h_path, v_path in pairs:
-        print(f"Processing pair: {os.path.basename(h_path)}, {os.path.basename(v_path)}")
-        # Parse both files
-        parsed_h, start_phi_h, stop_phi_h, inc_phi_h, start_theta_h, stop_theta_h, inc_theta_h = (
-            read_passive_file(h_path)
-        )
-        parsed_v, start_phi_v, stop_phi_v, inc_phi_v, start_theta_v, stop_theta_v, inc_theta_v = (
-            read_passive_file(v_path)
-        )
+        summary["total_pairs"] = len(pairs)
+        summary["total_jobs"] = len(pairs) * len(selected_frequencies)
 
-        # Verify angle grids match
-        if not angles_match(
-            start_phi_h,
-            stop_phi_h,
-            inc_phi_h,
-            start_theta_h,
-            stop_theta_h,
-            inc_theta_h,
-            start_phi_v,
-            stop_phi_v,
-            inc_phi_v,
-            start_theta_v,
-            stop_theta_v,
-            inc_theta_v,
-        ):
-            print(f"  Warning: angle mismatch between {h_path} and {v_path}.  Skipping.")
-            continue
+        if not pairs:
+            print(f"No HPOL/VPOL pairs found in {folder_path}.")
+            return summary
 
-        for sel_freq in selected_frequencies:
-            print(f"  Processing frequency {sel_freq} MHz…")
-            # Compute gains for this frequency
-            theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = calculate_passive_variables(
-                parsed_h,
-                parsed_v,
-                cable_loss,
+        for h_path, v_path in pairs:
+            pair_label = f"{os.path.basename(h_path)} | {os.path.basename(v_path)}"
+            print(f"Processing pair: {os.path.basename(h_path)}, {os.path.basename(v_path)}")
+
+            try:
+                # Parse both files
+                (
+                    parsed_h,
+                    start_phi_h,
+                    stop_phi_h,
+                    inc_phi_h,
+                    start_theta_h,
+                    stop_theta_h,
+                    inc_theta_h,
+                ) = read_passive_file(h_path)
+                (
+                    parsed_v,
+                    start_phi_v,
+                    stop_phi_v,
+                    inc_phi_v,
+                    start_theta_v,
+                    stop_theta_v,
+                    inc_theta_v,
+                ) = read_passive_file(v_path)
+            except Exception as e:
+                jobs_for_pair = len(selected_frequencies)
+                summary["failed"] += jobs_for_pair
+                summary["errors"].append(
+                    {"pair": pair_label, "frequency_mhz": None, "error": str(e)}
+                )
+                print(f"  X Error reading pair {pair_label}: {e}")
+                continue
+
+            # Verify angle grids match
+            if not angles_match(
                 start_phi_h,
                 stop_phi_h,
                 inc_phi_h,
                 start_theta_h,
                 stop_theta_h,
                 inc_theta_h,
-                freq_list,
-                sel_freq,
-            )
+                start_phi_v,
+                stop_phi_v,
+                inc_phi_v,
+                start_theta_v,
+                stop_theta_v,
+                inc_theta_v,
+            ):
+                print(f"  Warning: angle mismatch between {h_path} and {v_path}. Skipping.")
+                summary["skipped"] += len(selected_frequencies)
+                continue
 
-            # Create per‑pair/frequency subfolder if requested
-            if save_base:
-                base_name = os.path.splitext(os.path.basename(h_path))[0].replace("AP_HPol", "")
-                subfolder = os.path.join(save_base, f"{base_name}_{sel_freq}MHz")
-                os.makedirs(subfolder, exist_ok=True)
-            else:
-                subfolder = None
-
-            # 2D plots
-            plot_2d_passive_data(
-                theta_deg,
-                phi_deg,
-                v_gain_dB,
-                h_gain_dB,
-                total_gain_dB,
-                freq_list,
-                sel_freq,
-                datasheet_plots,
-                save_path=subfolder,
-            )
-
-            # 3D plots (total, hpol and vpol)
-            for pol in ("total", "hpol", "vpol"):
-                plot_passive_3d_component(
-                    theta_deg,
-                    phi_deg,
-                    h_gain_dB,
-                    v_gain_dB,
-                    total_gain_dB,
-                    freq_list,
-                    sel_freq,
-                    pol,
-                    axis_mode=axis_mode,
-                    zmin=zmin,
-                    zmax=zmax,
-                    save_path=subfolder,
-                )
-
-            # Maritime / Horizon plots
-            if maritime_plots_enabled and subfolder:
-                from .plotting import _prepare_gain_grid, generate_maritime_plots
-
-                freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
-                unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
-                    theta_deg, phi_deg, total_gain_dB, freq_idx
-                )
-                if gain_grid is not None:
-                    maritime_sub = os.path.join(subfolder, "Maritime Plots")
-                    os.makedirs(maritime_sub, exist_ok=True)
-                    generate_maritime_plots(
-                        unique_theta,
-                        unique_phi,
-                        gain_grid,
+            for sel_freq in selected_frequencies:
+                try:
+                    print(f"  Processing frequency {sel_freq} MHz...")
+                    # Compute gains for this frequency
+                    theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = calculate_passive_variables(
+                        parsed_h,
+                        parsed_v,
+                        cable_loss,
+                        start_phi_h,
+                        stop_phi_h,
+                        inc_phi_h,
+                        start_theta_h,
+                        stop_theta_h,
+                        inc_theta_h,
+                        freq_list,
                         sel_freq,
-                        data_label="Gain",
-                        data_unit="dBi",
-                        theta_min=maritime_theta_min,
-                        theta_max=maritime_theta_max,
-                        theta_cuts=maritime_theta_cuts,
-                        gain_threshold=maritime_gain_threshold,
-                        axis_mode=axis_mode,
-                        zmin=zmin,
-                        zmax=zmax,
-                        save_path=maritime_sub,
                     )
 
-            # Advanced analysis plots
-            if advanced_analysis_params and subfolder:
-                from .plotting import _prepare_gain_grid as _pgrid
-                from .plotting import generate_advanced_analysis_plots
+                    # Create per-pair/frequency subfolder if requested
+                    if save_base:
+                        base_name = os.path.splitext(os.path.basename(h_path))[0].replace("AP_HPol", "")
+                        subfolder = os.path.join(save_base, f"{base_name}_{sel_freq}MHz")
+                        os.makedirs(subfolder, exist_ok=True)
+                    else:
+                        subfolder = None
 
-                freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
-                unique_theta, unique_phi, gain_grid = _pgrid(
-                    theta_deg, phi_deg, total_gain_dB, freq_idx
-                )
-                if gain_grid is not None:
-                    adv_sub = os.path.join(subfolder, "Advanced Analysis")
-                    os.makedirs(adv_sub, exist_ok=True)
-                    generate_advanced_analysis_plots(
-                        unique_theta,
-                        unique_phi,
-                        gain_grid,
+                    # 2D plots
+                    plot_2d_passive_data(
+                        theta_deg,
+                        phi_deg,
+                        v_gain_dB,
+                        h_gain_dB,
+                        total_gain_dB,
+                        freq_list,
                         sel_freq,
-                        data_label="Gain",
-                        data_unit="dBi",
-                        save_path=adv_sub,
-                        **advanced_analysis_params,
+                        datasheet_plots,
+                        save_path=subfolder,
                     )
 
-    # Re-enable interactive mode after batch processing
-    plt.ion()
+                    # 3D plots (total, hpol and vpol)
+                    for pol in ("total", "hpol", "vpol"):
+                        plot_passive_3d_component(
+                            theta_deg,
+                            phi_deg,
+                            h_gain_dB,
+                            v_gain_dB,
+                            total_gain_dB,
+                            freq_list,
+                            sel_freq,
+                            pol,
+                            axis_mode=axis_mode,
+                            zmin=zmin,
+                            zmax=zmax,
+                            save_path=subfolder,
+                        )
+
+                    # Maritime / Horizon plots
+                    if maritime_plots_enabled and subfolder:
+                        from .plotting import _prepare_gain_grid, generate_maritime_plots
+
+                        freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
+                        unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+                            theta_deg, phi_deg, total_gain_dB, freq_idx
+                        )
+                        if gain_grid is not None:
+                            maritime_sub = os.path.join(subfolder, "Maritime Plots")
+                            os.makedirs(maritime_sub, exist_ok=True)
+                            generate_maritime_plots(
+                                unique_theta,
+                                unique_phi,
+                                gain_grid,
+                                sel_freq,
+                                data_label="Gain",
+                                data_unit="dBi",
+                                theta_min=maritime_theta_min,
+                                theta_max=maritime_theta_max,
+                                theta_cuts=maritime_theta_cuts,
+                                gain_threshold=maritime_gain_threshold,
+                                axis_mode=axis_mode,
+                                zmin=zmin,
+                                zmax=zmax,
+                                save_path=maritime_sub,
+                            )
+
+                    # Advanced analysis plots
+                    if advanced_analysis_params and subfolder:
+                        from .plotting import _prepare_gain_grid as _pgrid
+                        from .plotting import generate_advanced_analysis_plots
+
+                        freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
+                        unique_theta, unique_phi, gain_grid = _pgrid(
+                            theta_deg, phi_deg, total_gain_dB, freq_idx
+                        )
+                        if gain_grid is not None:
+                            adv_sub = os.path.join(subfolder, "Advanced Analysis")
+                            os.makedirs(adv_sub, exist_ok=True)
+                            adv_kwargs = dict(advanced_analysis_params)
+                            adv_kwargs.setdefault("mimo_gain_data_list", [gain_grid])
+                            generate_advanced_analysis_plots(
+                                unique_theta,
+                                unique_phi,
+                                gain_grid,
+                                sel_freq,
+                                data_label="Gain",
+                                data_unit="dBi",
+                                save_path=adv_sub,
+                                **adv_kwargs,
+                            )
+
+                    summary["processed"] += 1
+                except Exception as e:
+                    summary["failed"] += 1
+                    summary["errors"].append(
+                        {"pair": pair_label, "frequency_mhz": sel_freq, "error": str(e)}
+                    )
+                    print(f"  X Error processing pair {pair_label} at {sel_freq} MHz: {e}")
+
+        return summary
+    finally:
+        # Re-enable interactive mode after batch processing
+        plt.ion()
 
 
 def batch_process_active_scans(
@@ -1224,22 +1276,19 @@ def batch_process_active_scans(
     advanced_analysis_params=None,
 ):
     """
-    Batch‑process all active TRP measurement files in a directory.
+    Batch process all active TRP measurement files in a directory.
 
     Parameters:
         folder_path (str): Directory containing TRP measurement files.
         save_base (str or None): Optional directory to write results; a subfolder per file will be created.
         interpolate (bool): Whether to interpolate 3D plots for smoother visualization.
         axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
-        zmin (float): Minimum z‑axis limit (dBm) when axis_mode='manual'.
-        zmax (float): Maximum z‑axis limit (dBm) when axis_mode='manual'.
+        zmin (float): Minimum z-axis limit (dBm) when axis_mode='manual'.
+        zmax (float): Maximum z-axis limit (dBm) when axis_mode='manual'.
 
-    This routine scans ``folder_path`` for TRP data files (e.g., files ending in ``.txt``).
-    For each file, it:
-      1. Reads and parses the TRP data using :func:`read_active_file`.
-      2. Calculates active variables using :func:`calculate_active_variables`.
-      3. Generates 2D azimuth/elevation cuts and 3D TRP plots.
-      4. Saves results to per‑file subfolders in ``save_base`` if provided.
+    Returns:
+        dict: Summary containing counts and error details:
+            {total_files, processed, failed, errors}
     """
     import os
 
@@ -1251,155 +1300,170 @@ def batch_process_active_scans(
     # Disable interactive mode so figures don't pop up during batch processing
     plt.ioff()
 
-    # Find all TRP files in the folder
-    files = os.listdir(folder_path)
-    trp_files = [f for f in files if f.endswith(".txt") and "TRP" in f.upper()]
+    summary = {
+        "total_files": 0,
+        "processed": 0,
+        "failed": 0,
+        "errors": [],
+    }
 
-    if not trp_files:
-        print(f"No TRP files found in {folder_path}.")
-        plt.ion()
-        return
+    try:
+        # Find all TRP files in the folder
+        files = os.listdir(folder_path)
+        trp_files = [f for f in files if f.endswith(".txt") and "TRP" in f.upper()]
+        summary["total_files"] = len(trp_files)
 
-    for trp_file in trp_files:
-        file_path = os.path.join(folder_path, trp_file)
-        print(f"Processing TRP file: {trp_file}")
+        if not trp_files:
+            print(f"No TRP files found in {folder_path}.")
+            return summary
 
-        try:
-            # Read active file
-            data = read_active_file(file_path)
+        for trp_file in trp_files:
+            file_path = os.path.join(folder_path, trp_file)
+            print(f"Processing TRP file: {trp_file}")
 
-            # Extract data
-            frequency = data["Frequency"]
-            start_phi = data["Start Phi"]
-            start_theta = data["Start Theta"]
-            stop_phi = data["Stop Phi"]
-            stop_theta = data["Stop Theta"]
-            inc_phi = data["Inc Phi"]
-            inc_theta = data["Inc Theta"]
-            h_power_dBm = data["H_Power_dBm"]
-            v_power_dBm = data["V_Power_dBm"]
+            try:
+                # Read active file
+                data = read_active_file(file_path)
 
-            # Calculate active variables
-            active_vars = calculate_active_variables(
-                start_phi,
-                stop_phi,
-                start_theta,
-                stop_theta,
-                inc_phi,
-                inc_theta,
-                h_power_dBm,
-                v_power_dBm,
-            )
+                # Extract data
+                frequency = data["Frequency"]
+                start_phi = data["Start Phi"]
+                start_theta = data["Start Theta"]
+                stop_phi = data["Stop Phi"]
+                stop_theta = data["Stop Theta"]
+                inc_phi = data["Inc Phi"]
+                inc_theta = data["Inc Theta"]
+                h_power_dBm = data["H_Power_dBm"]
+                v_power_dBm = data["V_Power_dBm"]
 
-            # Unpack variables
-            (
-                data_points,
-                theta_angles_deg,
-                phi_angles_deg,
-                theta_angles_rad,
-                phi_angles_rad,
-                total_power_dBm_2d,
-                h_power_dBm_2d,
-                v_power_dBm_2d,
-                phi_angles_deg_plot,
-                phi_angles_rad_plot,
-                total_power_dBm_2d_plot,
-                h_power_dBm_2d_plot,
-                v_power_dBm_2d_plot,
-                total_power_dBm_min,
-                total_power_dBm_nom,
-                h_power_dBm_min,
-                h_power_dBm_nom,
-                v_power_dBm_min,
-                v_power_dBm_nom,
-                TRP_dBm,
-                h_TRP_dBm,
-                v_TRP_dBm,
-            ) = active_vars
+                # Calculate active variables
+                active_vars = calculate_active_variables(
+                    start_phi,
+                    stop_phi,
+                    start_theta,
+                    stop_theta,
+                    inc_phi,
+                    inc_theta,
+                    h_power_dBm,
+                    v_power_dBm,
+                )
 
-            # Create subfolder for this file if save_base is provided
-            if save_base:
-                base_name = os.path.splitext(trp_file)[0]
-                subfolder = os.path.join(save_base, f"{base_name}_{frequency}MHz")
-                os.makedirs(subfolder, exist_ok=True)
-            else:
-                subfolder = None
-
-            # Generate 2D plots
-            plot_active_2d_data(
-                data_points,
-                theta_angles_rad,
-                phi_angles_rad_plot,
-                total_power_dBm_2d_plot,
-                frequency,
-                save_path=subfolder,
-            )
-
-            # Generate 3D plots for total, hpol, and vpol
-            for power_type, power_2d, power_2d_plot in [
-                ("total", total_power_dBm_2d, total_power_dBm_2d_plot),
-                ("hpol", h_power_dBm_2d, h_power_dBm_2d_plot),
-                ("vpol", v_power_dBm_2d, v_power_dBm_2d_plot),
-            ]:
-                plot_active_3d_data(
+                # Unpack variables
+                (
+                    data_points,
                     theta_angles_deg,
                     phi_angles_deg,
-                    power_2d,
+                    theta_angles_rad,
+                    phi_angles_rad,
+                    total_power_dBm_2d,
+                    h_power_dBm_2d,
+                    v_power_dBm_2d,
                     phi_angles_deg_plot,
-                    power_2d_plot,
+                    phi_angles_rad_plot,
+                    total_power_dBm_2d_plot,
+                    h_power_dBm_2d_plot,
+                    v_power_dBm_2d_plot,
+                    total_power_dBm_min,
+                    total_power_dBm_nom,
+                    h_power_dBm_min,
+                    h_power_dBm_nom,
+                    v_power_dBm_min,
+                    v_power_dBm_nom,
+                    TRP_dBm,
+                    h_TRP_dBm,
+                    v_TRP_dBm,
+                ) = active_vars
+
+                # Create subfolder for this file if save_base is provided
+                if save_base:
+                    base_name = os.path.splitext(trp_file)[0]
+                    subfolder = os.path.join(save_base, f"{base_name}_{frequency}MHz")
+                    os.makedirs(subfolder, exist_ok=True)
+                else:
+                    subfolder = None
+
+                # Generate 2D plots
+                plot_active_2d_data(
+                    data_points,
+                    theta_angles_rad,
+                    phi_angles_rad_plot,
+                    total_power_dBm_2d_plot,
                     frequency,
-                    power_type=power_type,
-                    interpolate=interpolate,
-                    axis_mode=axis_mode,
-                    zmin=zmin,
-                    zmax=zmax,
                     save_path=subfolder,
                 )
 
-            # Maritime / Horizon plots
-            if maritime_plots_enabled and subfolder:
-                from .plotting import generate_maritime_plots
+                # Generate 3D plots for total, hpol, and vpol
+                for power_type, power_2d, power_2d_plot in [
+                    ("total", total_power_dBm_2d, total_power_dBm_2d_plot),
+                    ("hpol", h_power_dBm_2d, h_power_dBm_2d_plot),
+                    ("vpol", v_power_dBm_2d, v_power_dBm_2d_plot),
+                ]:
+                    plot_active_3d_data(
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        power_2d,
+                        phi_angles_deg_plot,
+                        power_2d_plot,
+                        frequency,
+                        power_type=power_type,
+                        interpolate=interpolate,
+                        axis_mode=axis_mode,
+                        zmin=zmin,
+                        zmax=zmax,
+                        save_path=subfolder,
+                    )
 
-                maritime_sub = os.path.join(subfolder, "Maritime Plots")
-                os.makedirs(maritime_sub, exist_ok=True)
-                generate_maritime_plots(
-                    theta_angles_deg,
-                    phi_angles_deg,
-                    total_power_dBm_2d,
-                    frequency,
-                    data_label="Power",
-                    data_unit="dBm",
-                    theta_min=maritime_theta_min,
-                    theta_max=maritime_theta_max,
-                    theta_cuts=maritime_theta_cuts,
-                    gain_threshold=maritime_gain_threshold,
-                    axis_mode=axis_mode,
-                    zmin=zmin,
-                    zmax=zmax,
-                    save_path=maritime_sub,
-                )
+                # Maritime / Horizon plots
+                if maritime_plots_enabled and subfolder:
+                    from .plotting import generate_maritime_plots
 
-            # Advanced analysis plots
-            if advanced_analysis_params and subfolder:
-                from .plotting import generate_advanced_analysis_plots
+                    maritime_sub = os.path.join(subfolder, "Maritime Plots")
+                    os.makedirs(maritime_sub, exist_ok=True)
+                    generate_maritime_plots(
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        total_power_dBm_2d,
+                        frequency,
+                        data_label="Power",
+                        data_unit="dBm",
+                        theta_min=maritime_theta_min,
+                        theta_max=maritime_theta_max,
+                        theta_cuts=maritime_theta_cuts,
+                        gain_threshold=maritime_gain_threshold,
+                        axis_mode=axis_mode,
+                        zmin=zmin,
+                        zmax=zmax,
+                        save_path=maritime_sub,
+                    )
 
-                adv_sub = os.path.join(subfolder, "Advanced Analysis")
-                os.makedirs(adv_sub, exist_ok=True)
-                generate_advanced_analysis_plots(
-                    theta_angles_deg,
-                    phi_angles_deg,
-                    total_power_dBm_2d,
-                    frequency,
-                    data_label="Power",
-                    data_unit="dBm",
-                    save_path=adv_sub,
-                    **advanced_analysis_params,
-                )
+                # Advanced analysis plots
+                if advanced_analysis_params and subfolder:
+                    from .plotting import generate_advanced_analysis_plots
 
-            print(f"  ✓ Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")
+                    adv_sub = os.path.join(subfolder, "Advanced Analysis")
+                    os.makedirs(adv_sub, exist_ok=True)
+                    adv_kwargs = dict(advanced_analysis_params)
+                    adv_kwargs.setdefault("mimo_gain_data_list", [total_power_dBm_2d])
+                    generate_advanced_analysis_plots(
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        total_power_dBm_2d,
+                        frequency,
+                        data_label="Power",
+                        data_unit="dBm",
+                        save_path=adv_sub,
+                        **adv_kwargs,
+                    )
 
-        except Exception as e:
-            print(f"  ✗ Error processing {trp_file}: {e}")
+                summary["processed"] += 1
+                print(f"  OK Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")
 
-    # Re-enable interactive mode after batch processing
-    plt.ion()
+            except Exception as e:
+                summary["failed"] += 1
+                summary["errors"].append({"file": trp_file, "error": str(e)})
+                print(f"  X Error processing {trp_file}: {e}")
+
+        return summary
+    finally:
+        # Re-enable interactive mode after batch processing
+        plt.ion()

@@ -1213,11 +1213,25 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
     # ADVANCED ANALYSIS SETTINGS (shared builder for Active & Passive)
     # ────────────────────────────────────────────────────────────────────────
 
+    def _cleanup_advanced_analysis_traces(self):
+        """Remove variable trace handlers registered by the advanced settings UI."""
+        handles = getattr(self, "_advanced_trace_handles", [])
+        for var, mode, trace_id in handles:
+            try:
+                var.trace_remove(mode, trace_id)
+            except Exception:
+                # Ignore stale handles; this cleanup is best-effort.
+                pass
+        self._advanced_trace_handles = []
+
     def _build_advanced_analysis_frames(self, parent, start_row):
         """Build all advanced analysis LabelFrame sections.
 
         Returns the next available row index and a callback to read values.
         """
+        # Ensure we don't accumulate callbacks if settings is reopened repeatedly.
+        self._cleanup_advanced_analysis_traces()
+        self._advanced_trace_handles = []
         row = start_row
 
         # ── Link Budget / Range Estimation ──
@@ -1256,7 +1270,8 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                     self.lb_rx_sensitivity.set(sens)
                 if pwr is not None:
                     self.lb_tx_power.set(pwr)
-        self.lb_protocol_preset.trace_add("write", _on_protocol_change)
+        trace_id = self.lb_protocol_preset.trace_add("write", _on_protocol_change)
+        self._advanced_trace_handles.append((self.lb_protocol_preset, "write", trace_id))
 
         # Tx Power
         tk.Label(lb_frame, text="Tx Power (dBm):", bg=DARK_BG_COLOR,
@@ -1331,14 +1346,21 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             env = self.indoor_environment.get()
             if env in ENVIRONMENT_PRESETS:
                 n, sigma, fading_m, k, walls = ENVIRONMENT_PRESETS[env]
-                self.lb_path_loss_exp.set(n)
+                self.indoor_path_loss_exp.set(n)
                 self.indoor_shadow_fading.set(sigma)
                 self.indoor_num_walls.set(walls)
                 if fading_m != "none":
                     self.fading_model.set(fading_m)
                     if k > 0:
                         self.fading_rician_k.set(float(k))
-        self.indoor_environment.trace_add("write", _on_env_change)
+        trace_id = self.indoor_environment.trace_add("write", _on_env_change)
+        self._advanced_trace_handles.append((self.indoor_environment, "write", trace_id))
+
+        tk.Label(indoor_frame, text="Path Loss Exp (n):", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=2, sticky=tk.W, padx=5)
+        tk.Entry(indoor_frame, textvariable=self.indoor_path_loss_exp, width=8,
+                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+                 insertbackground=LIGHT_TEXT_COLOR).grid(row=1, column=3, padx=5)
 
         # Walls + material
         tk.Label(indoor_frame, text="Walls:", bg=DARK_BG_COLOR,
@@ -1406,6 +1428,57 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         tk.Entry(fading_frame, textvariable=self.fading_target_reliability, width=8,
                  bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
                  insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=2, padx=5)
+
+        tk.Label(fading_frame, text="Realizations:", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=0, sticky=tk.W, padx=5)
+        tk.Spinbox(
+            fading_frame, textvariable=self.fading_realizations,
+            from_=50, to=10000, increment=50, width=8,
+            bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+        ).grid(row=3, column=1, sticky=tk.W, padx=5)
+
+        # ── MIMO / Diversity ──
+        mimo_frame = tk.LabelFrame(
+            parent, text="MIMO / Diversity",
+            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+        )
+        mimo_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
+        row += 1
+
+        self._cb_mimo_var = tk.BooleanVar(
+            value=getattr(self, "mimo_analysis_enabled", False)
+        )
+        tk.Checkbutton(
+            mimo_frame, text="Enable MIMO Analysis",
+            variable=self._cb_mimo_var,
+            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+        ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
+
+        tk.Label(mimo_frame, text="SNR (dB):", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=0, sticky=tk.W, padx=5)
+        tk.Entry(mimo_frame, textvariable=self.mimo_snr, width=8,
+                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+                 insertbackground=LIGHT_TEXT_COLOR).grid(row=1, column=1, padx=5)
+
+        tk.Label(mimo_frame, text="Fading:", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=2, sticky=tk.W, padx=5)
+        ttk.Combobox(
+            mimo_frame, textvariable=self.mimo_fading_model,
+            values=["rayleigh", "rician"], width=12, state="readonly",
+        ).grid(row=1, column=3, sticky=tk.W, padx=5)
+
+        tk.Label(mimo_frame, text="K-factor:", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, sticky=tk.W, padx=5)
+        tk.Entry(mimo_frame, textvariable=self.mimo_rician_k, width=8,
+                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=1, padx=5)
+
+        tk.Label(mimo_frame, text="XPR (dB):", bg=DARK_BG_COLOR,
+                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=2, sticky=tk.W, padx=5)
+        tk.Entry(mimo_frame, textvariable=self.mimo_xpr, width=8,
+                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=3, padx=5)
 
         # ── Wearable / Medical ──
         wear_frame = tk.LabelFrame(
@@ -1475,6 +1548,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         self.link_budget_enabled = self._cb_link_budget_var.get()
         self.indoor_analysis_enabled = self._cb_indoor_var.get()
         self.fading_analysis_enabled = self._cb_fading_var.get()
+        self.mimo_analysis_enabled = self._cb_mimo_var.get()
         self.wearable_analysis_enabled = self._cb_wearable_var.get()
 
     # ────────────────────────────────────────────────────────────────────────
@@ -1521,6 +1595,13 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
         _canvas.bind("<Enter>", _on_enter)
         _canvas.bind("<Leave>", _on_leave)
+
+        def _on_outer_destroy(event):
+            if event.widget is outer_window:
+                _canvas.unbind_all("<MouseWheel>")
+                self._cleanup_advanced_analysis_traces()
+
+        outer_window.bind("<Destroy>", _on_outer_destroy)
 
         _scrollbar.pack(side="right", fill="y")
         _canvas.pack(side="left", fill="both", expand=True)
