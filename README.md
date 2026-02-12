@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.1.4-blue" alt="Version"></a>
+  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.1.5-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License"></a>
   <img src="https://img.shields.io/badge/tests-391%20passing-brightgreen" alt="Tests">
