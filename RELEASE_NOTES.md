@@ -1,5 +1,38 @@
 # RFlect - Release Notes
 
+## Version 4.1.5 (02/11/2026)
+
+**Feature release — advanced RF analysis suite with 5 new analysis modules.**
+
+### New Features: Advanced Antenna Analysis
+
+- **Link Budget / Range Estimation**: Integrated Friis path-loss range calculator using measured antenna gain. Includes protocol presets (BLE, WiFi, LoRa, Zigbee, LTE, NB-IoT) that auto-populate Tx power and Rx sensitivity. Two-panel plot: waterfall bar chart + range-vs-azimuth polar plot with target range overlay.
+- **Indoor Propagation Analysis**: ITU-R P.1238 indoor path loss model with ITU-R P.2040 wall penetration loss. Environment presets (Office, Residential, Hospital, etc.) auto-set path loss exponent, shadow fading, and fading model. Three-panel plot: path loss vs distance, received power heatmap, and coverage range contour.
+- **Multipath Fading Assessment**: Rayleigh and Rician fading CDF models with Monte-Carlo pattern degradation. Four-panel plot: CDF curves, fade margin vs reliability, pattern with fading envelope (mean +/- 1 sigma), and outage probability polar map.
+- **Enhanced MIMO Analysis**: Capacity-vs-SNR curves (SISO, 2x2 AWGN, Rayleigh, Rician), MRC/EGC/Selection combining gain comparison, and Mean Effective Gain with cross-polarization ratio (Taga model). Builds on existing ECC/diversity infrastructure.
+- **Wearable / Medical Device Assessment**: Body-worn pattern analysis across configurable positions (wrist, chest, hip, head) using directional human shadow model. Dense device SINR estimation via Monte-Carlo random placement. SAR exposure screening with FCC/ICNIRP limits. IEEE 802.15.6 WBAN link budget.
+
+### New Features: GUI & Settings
+
+- **Scrollable settings dialogs**: Active and passive settings windows now scroll to accommodate the new analysis sections
+- **Smart presets**: Protocol dropdown auto-fills Tx power, Rx sensitivity; environment dropdown auto-fills path loss exponent, shadow fading, wall count, and fading model
+- **Cross-feature parameter sharing**: Shared parameters (Tx power, fading model, etc.) stay consistent across analysis modules
+
+### Improvements
+
+- **Bulk processing failure reporting**: Per-job/per-file outcome tracking replaces blanket success-on-partial-failure messages
+- **Non-blocking update checker**: Startup update check runs in a background thread — no more GUI freezes on slow networks
+- **Matplotlib deprecation cleanup**: Replaced deprecated `cm.get_cmap` calls for forward compatibility
+
+### Tests
+
+- 450 tests collected (302 passing, 148 skipped), up from 391 in v4.1.0
+- 45 new unit tests for advanced analysis functions (Friis, ITU, CDF, MIMO, wearable)
+- 10 new batch failure regression integration tests
+- Fixture-based parser tests replacing placeholder TODOs
+
+---
+
 ## Version 4.1.4 (02/11/2026)
 
 **Feature release — horizon band TRP, efficiency calculations, and enhanced maritime statistics.**

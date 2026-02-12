@@ -17,6 +17,7 @@ htmlcov/
 build/
 dist/
 debug/
+installer_output/
 *.egg-info/
 .eggs/
 
