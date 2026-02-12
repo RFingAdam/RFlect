@@ -44,6 +44,7 @@ from ..plotting import (
     process_vswr_files,
     _prepare_gain_grid,
     generate_maritime_plots,
+    generate_advanced_analysis_plots,
 )
 from ..groupdelay import process_groupdelay_files
 from .utils import calculate_min_max_parameters, display_parameter_table
@@ -1298,6 +1299,55 @@ class CallbacksMixin:
                 save_path=None,
             )
 
+        # Advanced analysis plots (active)
+        _any_advanced = (
+            self.link_budget_enabled
+            or self.indoor_analysis_enabled
+            or self.fading_analysis_enabled
+            or self.wearable_analysis_enabled
+        )
+        if _any_advanced:
+            self.log_message("Generating advanced analysis plots (active)...")
+            generate_advanced_analysis_plots(
+                np.rad2deg(theta_angles_rad),
+                np.rad2deg(phi_angles_rad),
+                total_power_dBm_2d,
+                frequency,
+                data_label="Power",
+                data_unit="dBm",
+                save_path=None,
+                link_budget_enabled=self.link_budget_enabled,
+                lb_pt_dbm=self.lb_tx_power.get(),
+                lb_pr_dbm=self.lb_rx_sensitivity.get(),
+                lb_gr_dbi=self.lb_rx_gain.get(),
+                lb_path_loss_exp=self.lb_path_loss_exp.get(),
+                lb_misc_loss_db=self.lb_misc_loss.get(),
+                lb_target_range_m=self.lb_target_range.get(),
+                indoor_enabled=self.indoor_analysis_enabled,
+                indoor_environment=self.indoor_environment.get(),
+                indoor_path_loss_exp=self.lb_path_loss_exp.get(),
+                indoor_n_walls=self.indoor_num_walls.get(),
+                indoor_wall_material=self.indoor_wall_material.get(),
+                indoor_shadow_fading_db=self.indoor_shadow_fading.get(),
+                indoor_max_distance_m=self.indoor_max_distance.get(),
+                fading_enabled=self.fading_analysis_enabled,
+                fading_pr_sensitivity_dbm=self.lb_rx_sensitivity.get(),
+                fading_pt_dbm=self.lb_tx_power.get(),
+                fading_target_reliability=self.fading_target_reliability.get(),
+                wearable_enabled=self.wearable_analysis_enabled,
+                wearable_body_positions=[
+                    pos for pos, var in self.wearable_positions_var.items()
+                    if var.get()
+                ],
+                wearable_tx_power_mw=self.wearable_tx_power_mw.get(),
+                wearable_num_devices=self.wearable_device_count.get(),
+                wearable_room_size=(
+                    self.wearable_room_x.get(),
+                    self.wearable_room_y.get(),
+                    self.wearable_room_z.get(),
+                ),
+            )
+
         # Update measurement context for AI awareness
         self._measurement_context["processing_complete"] = True
         self._measurement_context["key_metrics"] = {
@@ -1522,4 +1572,67 @@ class CallbacksMixin:
             else:
                 self.log_message(
                     "Maritime: Could not reshape gain data to 2D grid.", level="warning"
+                )
+
+        # Advanced analysis plots (passive)
+        _any_advanced_p = (
+            self.link_budget_enabled
+            or self.indoor_analysis_enabled
+            or self.fading_analysis_enabled
+            or self.wearable_analysis_enabled
+        )
+        if _any_advanced_p:
+            self.log_message("Generating advanced analysis plots (passive)...")
+            _adv_freq_idx = (
+                self.freq_list.index(float(self.selected_frequency.get()))
+                if self.freq_list
+                else 0
+            )
+            _adv_theta, _adv_phi, _adv_grid = _prepare_gain_grid(
+                theta_angles_deg, phi_angles_deg, Total_Gain_dB, _adv_freq_idx
+            )
+            if _adv_grid is not None:
+                generate_advanced_analysis_plots(
+                    _adv_theta,
+                    _adv_phi,
+                    _adv_grid,
+                    float(self.selected_frequency.get()),
+                    data_label="Gain",
+                    data_unit="dBi",
+                    save_path=None,
+                    link_budget_enabled=self.link_budget_enabled,
+                    lb_pt_dbm=self.lb_tx_power.get(),
+                    lb_pr_dbm=self.lb_rx_sensitivity.get(),
+                    lb_gr_dbi=self.lb_rx_gain.get(),
+                    lb_path_loss_exp=self.lb_path_loss_exp.get(),
+                    lb_misc_loss_db=self.lb_misc_loss.get(),
+                    lb_target_range_m=self.lb_target_range.get(),
+                    indoor_enabled=self.indoor_analysis_enabled,
+                    indoor_environment=self.indoor_environment.get(),
+                    indoor_path_loss_exp=self.lb_path_loss_exp.get(),
+                    indoor_n_walls=self.indoor_num_walls.get(),
+                    indoor_wall_material=self.indoor_wall_material.get(),
+                    indoor_shadow_fading_db=self.indoor_shadow_fading.get(),
+                    indoor_max_distance_m=self.indoor_max_distance.get(),
+                    fading_enabled=self.fading_analysis_enabled,
+                    fading_pr_sensitivity_dbm=self.lb_rx_sensitivity.get(),
+                    fading_pt_dbm=self.lb_tx_power.get(),
+                    fading_target_reliability=self.fading_target_reliability.get(),
+                    wearable_enabled=self.wearable_analysis_enabled,
+                    wearable_body_positions=[
+                        pos for pos, var in self.wearable_positions_var.items()
+                        if var.get()
+                    ],
+                    wearable_tx_power_mw=self.wearable_tx_power_mw.get(),
+                    wearable_num_devices=self.wearable_device_count.get(),
+                    wearable_room_size=(
+                        self.wearable_room_x.get(),
+                        self.wearable_room_y.get(),
+                        self.wearable_room_z.get(),
+                    ),
+                )
+            else:
+                self.log_message(
+                    "Advanced analysis: Could not reshape gain data to 2D grid.",
+                    level="warning",
                 )

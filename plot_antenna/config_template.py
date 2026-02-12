@@ -240,3 +240,72 @@ AI_USE_STRUCTURED_OUTPUT = False  # Enable JSON structured output for consistent
 # When True, enforces schema-based responses (requires schema definition in code)
 # Useful for programmatic parsing but reduces natural language quality
 # RECOMMENDED: Keep False for readable report captions
+
+# ============================================================================
+# LINK BUDGET / RANGE ESTIMATION
+# ============================================================================
+# Integrates measured antenna gain with Friis / log-distance path loss to
+# compute maximum communication range per azimuth direction.
+
+LINK_BUDGET_ENABLED = False
+LINK_BUDGET_PROTOCOL_PRESET = "BLE 1Mbps"  # "Custom", "BLE 1Mbps", "BLE 2Mbps",
+# "BLE Long Range (Coded)", "WiFi 802.11n (MCS0)", "WiFi 802.11ac (MCS0)",
+# "Zigbee / Thread", "LoRa SF12", "LoRa SF7", "LTE Cat-M1", "NB-IoT"
+LINK_BUDGET_TX_POWER_DBM = 0.0            # Transmit power in dBm
+LINK_BUDGET_RX_SENSITIVITY_DBM = -98.0    # Receiver sensitivity in dBm
+LINK_BUDGET_RX_GAIN_DBI = 0.0            # Receive antenna gain in dBi
+LINK_BUDGET_PATH_LOSS_EXP = 2.0          # Path loss exponent (2=free-space, 3=indoor, 4=worst)
+LINK_BUDGET_MISC_LOSS_DB = 10.0          # Cable, mismatch, body loss, etc. in dB
+LINK_BUDGET_TARGET_RANGE_M = 5.0         # Target range for reverse calculations in metres
+
+# ============================================================================
+# INDOOR PROPAGATION ANALYSIS
+# ============================================================================
+# Models indoor propagation effects (ITU-R P.1238) on measured antenna patterns
+# including wall penetration (ITU-R P.2040) and shadow fading.
+
+INDOOR_ANALYSIS_ENABLED = False
+INDOOR_ENVIRONMENT = "Office"             # "Free Space", "Office", "Residential", "Commercial",
+# "Hospital", "Industrial", "Outdoor Urban", "Outdoor LOS"
+INDOOR_PATH_LOSS_EXP = 3.0               # Overridable, auto-set by environment preset
+INDOOR_NUM_WALLS = 1                      # Number of wall obstructions
+INDOOR_WALL_MATERIAL = "drywall"          # drywall, wood, glass, brick, concrete, metal
+INDOOR_SHADOW_FADING_DB = 5.0            # Log-normal shadow fading std deviation (dB)
+INDOOR_MAX_DISTANCE_M = 30.0             # Max range for coverage plots (metres)
+
+# ============================================================================
+# MULTIPATH FADING ANALYSIS
+# ============================================================================
+# Statistical fading models to assess reliability of the measured antenna
+# performance in multipath environments.
+
+FADING_ANALYSIS_ENABLED = False
+FADING_MODEL = "rayleigh"                 # "rayleigh" (NLOS) or "rician" (LOS)
+FADING_RICIAN_K = 10                      # Rician K-factor (linear, LOS/scattered ratio)
+FADING_TARGET_RELIABILITY = 99.0         # Target reliability percentage for fade margin
+FADING_REALIZATIONS = 1000                # Monte-Carlo fading realizations
+
+# ============================================================================
+# MIMO / DIVERSITY ANALYSIS
+# ============================================================================
+# Enhanced MIMO analysis with capacity curves, combining techniques,
+# and pattern-based metrics. Requires ECC analysis to be enabled.
+
+MIMO_ANALYSIS_ENABLED = False
+MIMO_SNR_DB = 20                          # Operating SNR for capacity analysis (dB)
+MIMO_SNR_RANGE_DB = (-5, 30)             # SNR range for capacity-vs-SNR curves
+MIMO_FADING_MODEL = "rayleigh"           # "rayleigh" or "rician" for capacity simulation
+MIMO_RICIAN_K = 10                        # K-factor for Rician MIMO channels
+MIMO_XPR_DB = 6.0                        # Cross-polarization ratio (indoor ~6 dB)
+
+# ============================================================================
+# WEARABLE / MEDICAL DEVICE ANALYSIS
+# ============================================================================
+# Body-worn performance analysis across multiple positions,
+# dense device interference modeling, and SAR screening.
+
+WEARABLE_ANALYSIS_ENABLED = False
+WEARABLE_BODY_POSITIONS = ["wrist", "chest", "hip", "head"]
+WEARABLE_TX_POWER_MW = 1.0               # Transmit power in milliwatts
+WEARABLE_DENSE_DEVICE_COUNT = 20          # Number of nearby co-channel devices
+WEARABLE_ROOM_SIZE_M = (10, 10, 3)       # Room dimensions (L, W, H) in metres
