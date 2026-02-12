@@ -447,6 +447,54 @@ class ToolsMixin:
     # BULK PROCESSING
     # ────────────────────────────────────────────────────────────────────────
 
+    def _collect_advanced_params(self):
+        """Collect advanced analysis parameters into a dict for batch processing.
+
+        Returns None if no advanced features are enabled, otherwise returns a
+        kwargs dict suitable for ``generate_advanced_analysis_plots()``.
+        """
+        any_enabled = (
+            getattr(self, "link_budget_enabled", False)
+            or getattr(self, "indoor_analysis_enabled", False)
+            or getattr(self, "fading_analysis_enabled", False)
+            or getattr(self, "wearable_analysis_enabled", False)
+        )
+        if not any_enabled:
+            return None
+
+        return {
+            "link_budget_enabled": getattr(self, "link_budget_enabled", False),
+            "lb_pt_dbm": self.lb_tx_power.get(),
+            "lb_pr_dbm": self.lb_rx_sensitivity.get(),
+            "lb_gr_dbi": self.lb_rx_gain.get(),
+            "lb_path_loss_exp": self.lb_path_loss_exp.get(),
+            "lb_misc_loss_db": self.lb_misc_loss.get(),
+            "lb_target_range_m": self.lb_target_range.get(),
+            "indoor_enabled": getattr(self, "indoor_analysis_enabled", False),
+            "indoor_environment": self.indoor_environment.get(),
+            "indoor_path_loss_exp": self.lb_path_loss_exp.get(),
+            "indoor_n_walls": self.indoor_num_walls.get(),
+            "indoor_wall_material": self.indoor_wall_material.get(),
+            "indoor_shadow_fading_db": self.indoor_shadow_fading.get(),
+            "indoor_max_distance_m": self.indoor_max_distance.get(),
+            "fading_enabled": getattr(self, "fading_analysis_enabled", False),
+            "fading_pr_sensitivity_dbm": self.lb_rx_sensitivity.get(),
+            "fading_pt_dbm": self.lb_tx_power.get(),
+            "fading_target_reliability": self.fading_target_reliability.get(),
+            "wearable_enabled": getattr(self, "wearable_analysis_enabled", False),
+            "wearable_body_positions": [
+                pos for pos, var in self.wearable_positions_var.items()
+                if var.get()
+            ],
+            "wearable_tx_power_mw": self.wearable_tx_power_mw.get(),
+            "wearable_num_devices": self.wearable_device_count.get(),
+            "wearable_room_size": (
+                self.wearable_room_x.get(),
+                self.wearable_room_y.get(),
+                self.wearable_room_z.get(),
+            ),
+        }
+
     def open_bulk_passive_processing(self):
         """Prompt the user for a directory of HPOL/VPOL files and process them in bulk."""
         directory = filedialog.askdirectory(title="Select Folder Containing HPOL/VPOL Files")
@@ -558,6 +606,7 @@ class ToolsMixin:
                         if hasattr(self, "horizon_gain_threshold")
                         else -3.0
                     ),
+                    advanced_analysis_params=self._collect_advanced_params(),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:
@@ -646,6 +695,7 @@ class ToolsMixin:
                         if hasattr(self, "horizon_gain_threshold")
                         else -3.0
                     ),
+                    advanced_analysis_params=self._collect_advanced_params(),
                 )
                 self.root.after(0, lambda: _process_done(True, None))
             except Exception as e:

@@ -892,3 +892,870 @@ def export_polarization_data(pol_results, output_path, format="csv"):
                         f"{sense_str:>6} "
                         f"{result['cross_pol_discrimination_dB'][i]:10.3f}\n"
                     )
+
+
+# ——— LINK BUDGET & RANGE ESTIMATION ——————————————————————————————
+
+# Protocol presets: {name: (rx_sensitivity_dBm, tx_power_dBm, freq_mhz)}
+PROTOCOL_PRESETS = {
+    "Custom": (None, None, None),
+    "BLE 1Mbps": (-98.0, 0.0, 2450.0),
+    "BLE 2Mbps": (-92.0, 0.0, 2450.0),
+    "BLE Long Range (Coded)": (-103.0, 0.0, 2450.0),
+    "WiFi 802.11n (MCS0)": (-82.0, 20.0, 2450.0),
+    "WiFi 802.11ac (MCS0)": (-82.0, 20.0, 5500.0),
+    "Zigbee / Thread": (-100.0, 0.0, 2450.0),
+    "LoRa SF12": (-137.0, 14.0, 915.0),
+    "LoRa SF7": (-123.0, 14.0, 915.0),
+    "LTE Cat-M1": (-108.0, 23.0, 700.0),
+    "NB-IoT": (-141.0, 23.0, 800.0),
+}
+
+# Environment presets: {name: (path_loss_n, shadow_sigma_dB, fading_model, K_factor, typical_walls)}
+ENVIRONMENT_PRESETS = {
+    "Free Space": (2.0, 0.0, "none", 0, 0),
+    "Office": (3.0, 5.0, "rician", 6, 1),
+    "Residential": (2.8, 4.0, "rician", 4, 1),
+    "Commercial": (2.2, 3.0, "rician", 10, 0),
+    "Hospital": (3.5, 7.0, "rayleigh", 0, 2),
+    "Industrial": (3.0, 8.0, "rayleigh", 0, 1),
+    "Outdoor Urban": (3.5, 6.0, "rayleigh", 0, 0),
+    "Outdoor LOS": (2.0, 2.0, "rician", 15, 0),
+}
+
+
+def free_space_path_loss(freq_mhz, distance_m):
+    """Free-space path loss (Friis) in dB.
+
+    FSPL = 20·log10(d) + 20·log10(f) + 20·log10(4π/c)
+         = 20·log10(d) + 20·log10(f) - 147.55   (d in m, f in Hz)
+
+    Parameters:
+        freq_mhz: frequency in MHz
+        distance_m: distance in metres (must be > 0)
+
+    Returns:
+        Path loss in dB (positive value).
+    """
+    if distance_m <= 0:
+        return 0.0
+    freq_hz = freq_mhz * 1e6
+    return 20 * np.log10(distance_m) + 20 * np.log10(freq_hz) - 147.55
+
+
+def friis_range_estimate(pt_dbm, pr_dbm, gt_dbi, gr_dbi, freq_mhz,
+                         path_loss_exp=2.0, misc_loss_db=0.0):
+    """Solve Friis / log-distance model for maximum range.
+
+    Allowable path loss:
+        PL_max = Pt + Gt + Gr - Pr - L
+
+    Using log-distance model with d0 = 1 m:
+        PL(d) = FSPL(d0) + 10·n·log10(d/d0)
+        d = d0 · 10^((PL_max - FSPL_d0) / (10·n))
+
+    Parameters:
+        pt_dbm: transmit power (dBm)
+        pr_dbm: receiver sensitivity (dBm, negative value)
+        gt_dbi: transmit antenna gain (dBi)
+        gr_dbi: receive antenna gain (dBi)
+        freq_mhz: frequency (MHz)
+        path_loss_exp: path loss exponent n (2.0 = free space)
+        misc_loss_db: additional system losses (dB)
+
+    Returns:
+        Maximum range in metres.
+    """
+    pl_max = pt_dbm + gt_dbi + gr_dbi - pr_dbm - misc_loss_db
+    fspl_d0 = free_space_path_loss(freq_mhz, 1.0)  # FSPL at 1 m
+    if path_loss_exp <= 0:
+        return float("inf")
+    exponent = (pl_max - fspl_d0) / (10.0 * path_loss_exp)
+    return 10.0 ** exponent  # d0 = 1 m, so d = 10^exponent
+
+
+def min_tx_gain_for_range(target_range_m, pt_dbm, pr_dbm, gr_dbi,
+                          freq_mhz, path_loss_exp=2.0, misc_loss_db=0.0):
+    """Solve Friis for minimum Tx antenna gain to achieve target range.
+
+    Parameters:
+        target_range_m: desired range in metres
+        pt_dbm: transmit power (dBm)
+        pr_dbm: receiver sensitivity (dBm)
+        gr_dbi: receive antenna gain (dBi)
+        freq_mhz: frequency (MHz)
+        path_loss_exp: path loss exponent
+        misc_loss_db: additional system losses (dB)
+
+    Returns:
+        Minimum Gt in dBi.
+    """
+    fspl_d0 = free_space_path_loss(freq_mhz, 1.0)
+    pl_at_range = fspl_d0 + 10.0 * path_loss_exp * np.log10(max(target_range_m, 0.01))
+    # Gt = PL + Pr + L - Pt - Gr
+    return pl_at_range + pr_dbm + misc_loss_db - pt_dbm - gr_dbi
+
+
+def link_margin(pt_dbm, gt_dbi, gr_dbi, freq_mhz, distance_m,
+                path_loss_exp=2.0, misc_loss_db=0.0, pr_sensitivity_dbm=-98.0):
+    """Calculate link margin at a given distance.
+
+    Link margin = Pr_received - Pr_sensitivity
+    where Pr_received = Pt + Gt + Gr - PL(d) - L
+
+    Parameters:
+        pt_dbm: transmit power (dBm)
+        gt_dbi: transmit antenna gain (dBi)
+        gr_dbi: receive antenna gain (dBi)
+        freq_mhz: frequency (MHz)
+        distance_m: distance in metres
+        path_loss_exp: path loss exponent
+        misc_loss_db: system losses (dB)
+        pr_sensitivity_dbm: receiver sensitivity (dBm)
+
+    Returns:
+        Link margin in dB (positive = link closes, negative = link fails).
+    """
+    fspl_d0 = free_space_path_loss(freq_mhz, 1.0)
+    pl = fspl_d0 + 10.0 * path_loss_exp * np.log10(max(distance_m, 0.01))
+    pr_received = pt_dbm + gt_dbi + gr_dbi - pl - misc_loss_db
+    return pr_received - pr_sensitivity_dbm
+
+
+def range_vs_azimuth(gain_2d, theta_deg, phi_deg, freq_mhz,
+                     pt_dbm, pr_dbm, gr_dbi,
+                     path_loss_exp=2.0, misc_loss_db=0.0):
+    """Compute maximum range for each azimuth direction at the horizon.
+
+    Uses gain at the theta closest to 90° for each phi.
+
+    Parameters:
+        gain_2d: 2D gain/EIRP array (n_theta, n_phi) in dB
+        theta_deg: 1D theta angles in degrees
+        phi_deg: 1D phi angles in degrees
+        freq_mhz: frequency in MHz
+        pt_dbm: transmit power (dBm). For active (EIRP) data, set to 0.
+        pr_dbm: receiver sensitivity (dBm)
+        gr_dbi: receive antenna gain (dBi)
+        path_loss_exp: path loss exponent
+        misc_loss_db: system losses (dB)
+
+    Returns:
+        range_m: 1D array of max range per phi angle (metres)
+        horizon_gain: 1D array of gain/EIRP at horizon per phi (dB)
+    """
+    # Find theta index closest to 90°
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+    horizon_gain = gain_2d[theta_90_idx, :]
+
+    range_m = np.array([
+        friis_range_estimate(pt_dbm, pr_dbm, g, gr_dbi, freq_mhz,
+                             path_loss_exp, misc_loss_db)
+        for g in horizon_gain
+    ])
+    return range_m, horizon_gain
+
+
+# ——— INDOOR / ENVIRONMENTAL PROPAGATION ——————————————————————————
+
+def log_distance_path_loss(freq_mhz, distance_m, n=2.0, d0=1.0, sigma_db=0.0):
+    """Log-distance path loss model with optional shadow fading margin.
+
+    PL(d) = FSPL(d0) + 10·n·log10(d/d0) + X_sigma
+
+    Parameters:
+        freq_mhz: frequency in MHz
+        distance_m: distance in metres (scalar or array)
+        n: path loss exponent (2.0 = free space, 3.0 = typical indoor)
+        d0: reference distance in metres (default 1 m)
+        sigma_db: shadow fading margin in dB (added to path loss).
+                  For probabilistic use, pass the desired margin
+                  (e.g., 1.28·σ for 90th percentile).
+
+    Returns:
+        Path loss in dB (scalar or array matching distance_m).
+    """
+    distance_m = np.asarray(distance_m, dtype=float)
+    d_safe = np.maximum(distance_m, 0.01)
+    fspl_d0 = free_space_path_loss(freq_mhz, d0)
+    return fspl_d0 + 10.0 * n * np.log10(d_safe / d0) + sigma_db
+
+
+# ITU-R P.1238 distance power loss coefficient N per environment
+_ITU_P1238_N = {
+    # (environment, freq_band_ghz_lower): N
+    "office": {0.9: 33, 1.2: 32, 1.8: 30, 2.4: 28, 5.0: 31},
+    "residential": {0.9: 28, 1.8: 28, 2.4: 28, 5.0: 28},
+    "commercial": {0.9: 22, 1.8: 22, 2.4: 22, 5.0: 22},
+    "hospital": {0.9: 33, 1.8: 30, 2.4: 28, 5.0: 28},
+    "industrial": {0.9: 30, 1.8: 30, 2.4: 30, 5.0: 30},
+}
+
+# ITU-R P.1238 floor penetration loss factor Lf(n_floors) in dB
+_ITU_P1238_LF = {
+    "office": lambda n: 15 + 4 * (n - 1) if n > 0 else 0,
+    "residential": lambda n: 4 * n if n > 0 else 0,
+    "commercial": lambda n: 6 + 3 * (n - 1) if n > 0 else 0,
+    "hospital": lambda n: 15 + 4 * (n - 1) if n > 0 else 0,
+    "industrial": lambda n: 10 + 3 * (n - 1) if n > 0 else 0,
+}
+
+
+def _itu_get_N(environment, freq_mhz):
+    """Look up ITU-R P.1238 distance power loss coefficient N."""
+    env = environment.lower()
+    if env not in _ITU_P1238_N:
+        env = "office"
+    freq_ghz = freq_mhz / 1000.0
+    table = _ITU_P1238_N[env]
+    # Find closest frequency band
+    bands = sorted(table.keys())
+    closest = min(bands, key=lambda b: abs(b - freq_ghz))
+    return table[closest]
+
+
+def itu_indoor_path_loss(freq_mhz, distance_m, n_floors=0,
+                         environment="office"):
+    """ITU-R P.1238 indoor propagation model.
+
+    PL = 20·log10(f_MHz) + N·log10(d) + Lf(n_floors) - 28
+
+    Parameters:
+        freq_mhz: frequency in MHz
+        distance_m: distance in metres (scalar or array)
+        n_floors: number of floors between Tx and Rx
+        environment: 'office', 'residential', 'commercial', 'hospital', 'industrial'
+
+    Returns:
+        Path loss in dB.
+    """
+    distance_m = np.asarray(distance_m, dtype=float)
+    d_safe = np.maximum(distance_m, 0.1)  # P.1238 valid for d > 1m typically
+    N = _itu_get_N(environment, freq_mhz)
+    env = environment.lower() if environment.lower() in _ITU_P1238_LF else "office"
+    Lf = _ITU_P1238_LF[env](n_floors)
+    return 20 * np.log10(freq_mhz) + N * np.log10(d_safe) + Lf - 28
+
+
+# ITU-R P.2040 material penetration loss (dB) at 2.4 GHz baseline
+# Scaled with frequency: loss ∝ sqrt(f/f_ref) approximately
+_WALL_LOSS_DB_2G4 = {
+    "drywall": 3.0,
+    "wood": 4.0,
+    "glass": 2.0,
+    "brick": 8.0,
+    "concrete": 12.0,
+    "metal": 20.0,
+    "reinforced_concrete": 18.0,
+}
+
+
+def wall_penetration_loss(freq_mhz, material="drywall"):
+    """Material penetration loss per ITU-R P.2040 (simplified).
+
+    Loss scales approximately as sqrt(f/2400) from 2.4 GHz reference values.
+
+    Parameters:
+        freq_mhz: frequency in MHz
+        material: wall material ('drywall', 'wood', 'glass', 'brick',
+                  'concrete', 'metal', 'reinforced_concrete')
+
+    Returns:
+        Penetration loss in dB per wall.
+    """
+    mat = material.lower().replace(" ", "_")
+    base_loss = _WALL_LOSS_DB_2G4.get(mat, 5.0)
+    freq_scale = np.sqrt(freq_mhz / 2400.0)
+    return base_loss * freq_scale
+
+
+def apply_indoor_propagation(gain_2d, theta_deg, phi_deg, freq_mhz,
+                             pt_dbm, distance_m, n=3.0, n_walls=1,
+                             wall_material="drywall", sigma_db=0.0):
+    """Apply indoor propagation model to a measured antenna pattern.
+
+    Computes received power at a given distance for every (theta, phi) direction:
+        Pr(θ,φ) = Pt + G(θ,φ) - PL(d) - n_walls·L_wall
+
+    Parameters:
+        gain_2d: 2D gain array (n_theta, n_phi) in dBi
+        theta_deg: 1D theta angles
+        phi_deg: 1D phi angles
+        freq_mhz: frequency in MHz
+        pt_dbm: transmit power in dBm
+        distance_m: distance in metres
+        n: path loss exponent
+        n_walls: number of wall penetrations
+        wall_material: wall material type
+        sigma_db: shadow fading margin in dB
+
+    Returns:
+        received_power_2d: 2D array (n_theta, n_phi) of received power in dBm
+        path_loss_total: total path loss in dB (scalar)
+    """
+    pl = log_distance_path_loss(freq_mhz, distance_m, n=n, sigma_db=sigma_db)
+    wall_loss = n_walls * wall_penetration_loss(freq_mhz, wall_material)
+    path_loss_total = float(pl + wall_loss)
+    received_power_2d = pt_dbm + gain_2d - path_loss_total
+    return received_power_2d, path_loss_total
+
+
+# ——— MULTIPATH FADING MODELS ———————————————————————————————————
+
+def rayleigh_cdf(power_db, mean_power_db=0.0):
+    """Rayleigh fading CDF: probability that received power < x.
+
+    For Rayleigh fading, the power (envelope squared) follows an
+    exponential distribution:
+        P(power < x) = 1 - exp(-x_linear / mean_linear)
+
+    Parameters:
+        power_db: power levels in dB (scalar or array)
+        mean_power_db: mean received power in dB
+
+    Returns:
+        CDF values (probability between 0 and 1).
+    """
+    power_db = np.asarray(power_db, dtype=float)
+    x_lin = 10 ** (power_db / 10.0)
+    mean_lin = 10 ** (mean_power_db / 10.0)
+    return 1.0 - np.exp(-x_lin / mean_lin)
+
+
+def rician_cdf(power_db, mean_power_db=0.0, K_factor=10.0):
+    """Rician fading CDF (Marcum Q-function approximation).
+
+    For Rician fading with K-factor, uses a Gaussian approximation
+    that is accurate for moderate-to-high K:
+        mean = 10·log10((K+1)/exp(K)) + mean_power_dB  (approx)
+        σ ≈ 4.34/sqrt(2K+1) dB
+
+    For exact results, requires scipy.stats, but this approximation
+    is sufficient for engineering analysis and avoids the dependency.
+
+    Parameters:
+        power_db: power levels in dB (scalar or array)
+        mean_power_db: mean received power in dB (without fading)
+        K_factor: Rician K-factor (linear, ratio of LOS to scattered)
+
+    Returns:
+        CDF values (probability between 0 and 1).
+    """
+    power_db = np.asarray(power_db, dtype=float)
+    if K_factor <= 0:
+        return rayleigh_cdf(power_db, mean_power_db)
+
+    # Nakagami-m approximation: m = (K+1)^2 / (2K+1)
+    # For high K, the distribution approaches Gaussian in dB domain
+    # σ_dB ≈ 4.34 / sqrt(2K + 1)
+    sigma_db = 4.34 / np.sqrt(2 * K_factor + 1)
+    # Mean shift due to K-factor (Rician mean power = total power)
+    # No shift needed since mean_power_db already includes LOS component
+    z = (power_db - mean_power_db) / sigma_db
+    return 0.5 * (1.0 + _erf_approx(z / np.sqrt(2)))
+
+
+def _erf_approx(x):
+    """Abramowitz-Stegun approximation of erf(x), max error < 1.5e-7."""
+    x = np.asarray(x, dtype=float)
+    sign = np.sign(x)
+    x = np.abs(x)
+    t = 1.0 / (1.0 + 0.3275911 * x)
+    poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741
+           + t * (-1.453152027 + t * 1.061405429))))
+    result = 1.0 - poly * np.exp(-x * x)
+    return sign * result
+
+
+def fade_margin_for_reliability(reliability_pct, fading="rayleigh", K=10):
+    """Required fade margin (dB) to achieve target reliability.
+
+    Computes the fade margin below the mean power such that the
+    probability of the signal being above (mean - margin) equals
+    the target reliability.
+
+    Parameters:
+        reliability_pct: target reliability percentage (e.g., 99.0)
+        fading: 'rayleigh' or 'rician'
+        K: Rician K-factor (linear), used only if fading='rician'
+
+    Returns:
+        Fade margin in dB (positive value to subtract from link budget).
+    """
+    outage = 1.0 - reliability_pct / 100.0
+    if outage <= 0:
+        return float("inf")
+    if outage >= 1:
+        return 0.0
+
+    if fading == "rayleigh":
+        # Rayleigh: P(power < x) = 1 - exp(-x/mean), solve for x/mean
+        # x/mean = -ln(1 - outage)
+        # In dB: margin = -10·log10(-ln(1-outage))
+        ratio_lin = -np.log(1.0 - outage)
+        return -10.0 * np.log10(ratio_lin)
+    else:  # rician
+        # Use inverse of Gaussian approximation
+        sigma_db = 4.34 / np.sqrt(2 * K + 1)
+        # z such that Φ(z) = outage → z = Φ^(-1)(outage)
+        # Using Beasley-Springer-Moro approximation for inverse normal
+        z = _norm_ppf_approx(outage)
+        return -z * sigma_db  # margin below mean
+
+
+def _norm_ppf_approx(p):
+    """Rational approximation for inverse normal CDF (probit function).
+
+    Accurate to ~4.5e-4 for 0.0001 < p < 0.9999.
+    Uses Abramowitz-Stegun 26.2.23.
+    """
+    if p <= 0:
+        return -10.0
+    if p >= 1:
+        return 10.0
+    if p > 0.5:
+        return -_norm_ppf_approx(1 - p)
+    t = np.sqrt(-2.0 * np.log(p))
+    c0, c1, c2 = 2.515517, 0.802853, 0.010328
+    d1, d2, d3 = 1.432788, 0.189269, 0.001308
+    return -(t - (c0 + c1 * t + c2 * t**2) / (1.0 + d1 * t + d2 * t**2 + d3 * t**3))
+
+
+def apply_statistical_fading(gain_2d, theta_deg, phi_deg,
+                             fading="rayleigh", K=10, realizations=1000):
+    """Apply statistical fading to a measured pattern via Monte-Carlo.
+
+    For each (theta, phi) direction, generates `realizations` fading
+    samples and computes statistics.
+
+    Parameters:
+        gain_2d: 2D gain array (n_theta, n_phi) in dB
+        theta_deg: 1D theta angles
+        phi_deg: 1D phi angles
+        fading: 'rayleigh' or 'rician'
+        K: Rician K-factor (linear)
+        realizations: number of Monte-Carlo trials
+
+    Returns:
+        mean_db: 2D mean gain (dB) per angle
+        std_db: 2D standard deviation (dB) per angle
+        outage_5pct_db: 2D 5th-percentile gain (dB) — worst 5% fade
+    """
+    n_theta, n_phi = gain_2d.shape
+    gain_lin = 10 ** (gain_2d / 10.0)
+
+    if fading == "rayleigh":
+        # Rayleigh: |h|^2 ~ Exp(1), so faded power = gain * |h|^2
+        h_sq = np.random.exponential(1.0, (realizations, n_theta, n_phi))
+    else:
+        # Rician: |h|^2 where h = sqrt(K/(K+1)) + sqrt(1/(K+1))·CN(0,1)
+        mu = np.sqrt(K / (K + 1.0))
+        sigma = np.sqrt(1.0 / (2.0 * (K + 1.0)))
+        h = mu + sigma * (np.random.randn(realizations, n_theta, n_phi)
+                          + 1j * np.random.randn(realizations, n_theta, n_phi))
+        h_sq = np.abs(h) ** 2
+
+    # Faded power: gain_linear × fading_coefficient
+    faded_lin = gain_lin[np.newaxis, :, :] * h_sq
+    faded_db = 10 * np.log10(np.maximum(faded_lin, 1e-20))
+
+    mean_db = np.mean(faded_db, axis=0)
+    std_db = np.std(faded_db, axis=0)
+    outage_5pct_db = np.percentile(faded_db, 5, axis=0)
+
+    return mean_db, std_db, outage_5pct_db
+
+
+def delay_spread_estimate(distance_m, environment="indoor"):
+    """Estimate RMS delay spread for a given environment.
+
+    Based on typical measured values from literature.
+
+    Parameters:
+        distance_m: Tx-Rx distance in metres
+        environment: 'indoor', 'office', 'residential', 'urban', 'suburban'
+
+    Returns:
+        RMS delay spread in nanoseconds.
+    """
+    # Typical base delay spreads (ns) and distance scaling
+    base_spreads = {
+        "indoor": 25.0,
+        "office": 35.0,
+        "residential": 30.0,
+        "hospital": 40.0,
+        "industrial": 50.0,
+        "urban": 200.0,
+        "suburban": 100.0,
+    }
+    env = environment.lower()
+    base = base_spreads.get(env, 35.0)
+    # Delay spread scales roughly as sqrt(distance) for indoor
+    return base * np.sqrt(max(distance_m, 1.0) / 10.0)
+
+
+# ——— ENHANCED MIMO ANALYSIS ——————————————————————————————————————
+
+def envelope_correlation_from_patterns(E1_theta, E1_phi, E2_theta, E2_phi,
+                                       theta_deg, phi_deg):
+    """Compute Envelope Correlation Coefficient from 3D far-field patterns.
+
+    IEEE definition:
+        ρe = |∫∫ (E1θ·E2θ* + E1φ·E2φ*) sinθ dθ dφ|²
+             / (∫∫|E1|² sinθ dθ dφ · ∫∫|E2|² sinθ dθ dφ)
+
+    where E1, E2 are complex E-field components of antennas 1 and 2.
+
+    Parameters:
+        E1_theta, E1_phi: complex E-field components of antenna 1 (n_theta, n_phi)
+        E2_theta, E2_phi: complex E-field components of antenna 2 (n_theta, n_phi)
+        theta_deg: 1D theta angles in degrees
+        phi_deg: 1D phi angles in degrees
+
+    Returns:
+        ECC value (float, 0 to 1).
+    """
+    theta_rad = np.deg2rad(theta_deg)
+    sin_theta = np.sin(theta_rad)
+
+    # Cross-correlation integral
+    integrand_cross = (E1_theta * np.conj(E2_theta) + E1_phi * np.conj(E2_phi))
+    cross = np.sum(integrand_cross * sin_theta[:, np.newaxis])
+
+    # Self-correlation integrals
+    self1 = np.sum((np.abs(E1_theta)**2 + np.abs(E1_phi)**2) * sin_theta[:, np.newaxis])
+    self2 = np.sum((np.abs(E2_theta)**2 + np.abs(E2_phi)**2) * sin_theta[:, np.newaxis])
+
+    denom = self1 * self2
+    if denom == 0:
+        return 1.0  # Degenerate case
+    return float(np.abs(cross)**2 / denom)
+
+
+def combining_gain(gains_db, method="mrc"):
+    """Compute combined output for multi-antenna receiving.
+
+    Parameters:
+        gains_db: 1D array of antenna element gains in dB (one per element)
+        method: 'mrc' (maximal ratio combining),
+                'egc' (equal gain combining),
+                'sc' (selection combining)
+
+    Returns:
+        combined_db: combined output in dB
+        improvement_db: improvement over single best antenna (dB)
+    """
+    gains_lin = 10 ** (np.asarray(gains_db, dtype=float) / 10.0)
+    best_single = np.max(gains_lin)
+
+    if method == "mrc":
+        # MRC: sum of linear powers (optimal when noise is equal)
+        combined_lin = np.sum(gains_lin)
+    elif method == "egc":
+        # EGC: (sum of amplitudes)^2 / N
+        combined_lin = (np.sum(np.sqrt(gains_lin)))**2 / len(gains_lin)
+    elif method == "sc":
+        # SC: select the best branch
+        combined_lin = best_single
+    else:
+        combined_lin = best_single
+
+    combined_db = 10 * np.log10(max(combined_lin, 1e-20))
+    improvement_db = 10 * np.log10(max(combined_lin / best_single, 1e-20))
+    return combined_db, improvement_db
+
+
+def mimo_capacity_vs_snr(ecc, snr_range_db=(-5, 30), num_points=36,
+                         fading="rayleigh", K=10):
+    """Compute MIMO capacity curves over an SNR range.
+
+    Returns capacity for SISO, 2×2 AWGN, and 2×2 fading channels.
+    Uses existing capacity_awgn and capacity_monte_carlo functions.
+
+    Parameters:
+        ecc: envelope correlation coefficient (scalar, 0-1)
+        snr_range_db: (min_snr, max_snr) tuple in dB
+        num_points: number of SNR points
+        fading: 'rayleigh' or 'rician' for Monte-Carlo
+        K: Rician K-factor
+
+    Returns:
+        snr_axis: 1D array of SNR values (dB)
+        siso_cap: 1D SISO capacity (b/s/Hz)
+        awgn_cap: 1D 2×2 AWGN capacity (b/s/Hz)
+        fading_cap: 1D 2×2 fading capacity (b/s/Hz)
+    """
+    snr_axis = np.linspace(snr_range_db[0], snr_range_db[1], num_points)
+    siso_cap = np.log2(1 + 10 ** (snr_axis / 10.0))
+    awgn_cap = np.array([capacity_awgn(ecc, s) for s in snr_axis])
+    fading_cap = np.array([
+        capacity_monte_carlo(ecc, s, fading=fading, K=K, trials=500)
+        for s in snr_axis
+    ])
+    return snr_axis, siso_cap, awgn_cap, fading_cap
+
+
+def mean_effective_gain_mimo(gain_2d_list, theta_deg, phi_deg, xpr_db=6.0):
+    """Compute Mean Effective Gain per antenna element (Taga model).
+
+    MEG accounts for the cross-polarization ratio (XPR) of the
+    propagation environment and the antenna's polarization characteristics.
+
+    For a single-pol measurement:
+        MEG = (1/(2π)) ∫∫ G(θ,φ)·P(θ,φ)·sinθ dθ dφ
+    where P(θ,φ) is the incoming power distribution.
+
+    Simplified uniform environment model:
+        MEG ≈ weighted average gain with sin(θ) weighting.
+        When separate Eθ/Eφ components are available (future),
+        xpr_db weights V vs H: V_weight = XPR/(1+XPR), H_weight = 1/(1+XPR).
+
+    Parameters:
+        gain_2d_list: list of 2D gain arrays (one per antenna element)
+        theta_deg: 1D theta angles
+        phi_deg: 1D phi angles
+        xpr_db: cross-polarization ratio in dB (reserved for V/H decomposition)
+
+    Returns:
+        meg_list: list of MEG values in dB (one per element)
+    """
+    _ = xpr_db  # reserved for future V/H polarization weighting
+    theta_rad = np.deg2rad(theta_deg)
+    sin_w = np.sin(theta_rad)
+    n_phi = len(phi_deg)
+
+    meg_list = []
+    for g2d in gain_2d_list:
+        g_lin = 10 ** (g2d / 10.0)
+        # Uniform azimuth, sin(theta) elevation weighting
+        # XPR scaling: total_weight = XPR/(1+XPR) for V + 1/(1+XPR) for H
+        # For total power: effectively just sin-weighted average
+        weighted = np.sum(g_lin * sin_w[:, np.newaxis])
+        norm = np.sum(sin_w) * n_phi
+        meg_lin = weighted / norm if norm > 0 else 0
+        meg_db = 10 * np.log10(max(meg_lin, 1e-20))
+        meg_list.append(meg_db)
+    return meg_list
+
+
+# ——— WEARABLE / MEDICAL DEVICE ANALYSIS ——————————————————————————
+
+BODY_POSITIONS = {
+    "wrist": {"axis": "+X", "cone_deg": 50, "tissue_cm": 2.0},
+    "chest": {"axis": "-X", "cone_deg": 60, "tissue_cm": 4.0},
+    "hip": {"axis": "-X", "cone_deg": 45, "tissue_cm": 3.5},
+    "head": {"axis": "+Z", "cone_deg": 40, "tissue_cm": 2.5},
+}
+
+
+def body_worn_pattern_analysis(gain_2d, theta_deg, phi_deg, freq_mhz,
+                               body_positions=None):
+    """Analyze antenna pattern across multiple body-worn positions.
+
+    For each position, applies the directional human shadow model and
+    computes TRP and efficiency delta.
+
+    Parameters:
+        gain_2d: 2D gain array (n_theta, n_phi) in dBi
+        theta_deg: 1D theta angles
+        phi_deg: 1D phi angles
+        freq_mhz: frequency in MHz
+        body_positions: list of position names (default: all in BODY_POSITIONS)
+
+    Returns:
+        results: dict keyed by position name, each containing:
+            'pattern': modified 2D gain array
+            'trp_delta_db': change in TRP vs free-space (dB)
+            'peak_delta_db': change in peak gain vs free-space (dB)
+            'avg_gain_db': sin-weighted average gain after shadowing
+    """
+    if body_positions is None:
+        body_positions = list(BODY_POSITIONS.keys())
+
+    theta_rad = np.deg2rad(theta_deg)
+    sin_w = np.sin(theta_rad)
+
+    # Free-space reference
+    g_lin = 10 ** (gain_2d / 10.0)
+    ref_avg = np.sum(g_lin * sin_w[:, np.newaxis]) / (np.sum(sin_w) * len(phi_deg))
+    ref_avg_db = 10 * np.log10(max(ref_avg, 1e-20))
+    ref_peak = np.max(gain_2d)
+
+    results = {}
+    for pos in body_positions:
+        if pos not in BODY_POSITIONS:
+            continue
+        cfg = BODY_POSITIONS[pos]
+
+        # Expand gain_2d to match theta/phi shape if needed
+        theta_2d = np.broadcast_to(theta_deg[:, np.newaxis], gain_2d.shape)
+        phi_2d = np.broadcast_to(phi_deg[np.newaxis, :], gain_2d.shape)
+
+        modified = apply_directional_human_shadow(
+            gain_2d.copy(),
+            theta_2d,
+            phi_2d,
+            freq_mhz,
+            target_axis=cfg["axis"],
+            cone_half_angle_deg=cfg["cone_deg"],
+            tissue_thickness_cm=cfg["tissue_cm"],
+        )
+
+        mod_lin = 10 ** (modified / 10.0)
+        mod_avg = np.sum(mod_lin * sin_w[:, np.newaxis]) / (np.sum(sin_w) * len(phi_deg))
+        mod_avg_db = 10 * np.log10(max(mod_avg, 1e-20))
+
+        results[pos] = {
+            "pattern": modified,
+            "trp_delta_db": mod_avg_db - ref_avg_db,
+            "peak_delta_db": float(np.max(modified)) - ref_peak,
+            "avg_gain_db": mod_avg_db,
+        }
+
+    return results
+
+
+def dense_device_interference(num_devices, tx_power_dbm, freq_mhz,
+                              bandwidth_mhz=2.0, room_size_m=(10, 10, 3)):
+    """Estimate aggregate interference in a dense device deployment.
+
+    Monte-Carlo: places N co-channel devices at random positions in a room
+    and computes interference power at the center.
+
+    Parameters:
+        num_devices: number of interfering devices
+        tx_power_dbm: per-device transmit power (dBm)
+        freq_mhz: frequency (MHz)
+        bandwidth_mhz: channel bandwidth (MHz) — for noise floor calc
+        room_size_m: (length, width, height) in metres
+
+    Returns:
+        avg_interference_dbm: average aggregate interference (dBm)
+        sinr_distribution: 1D array of SINR values (dB) from Monte-Carlo
+        noise_floor_dbm: thermal noise floor (dBm)
+    """
+    n_trials = 500
+    lx, ly, lz = room_size_m
+
+    # Thermal noise floor: kTB
+    noise_floor_dbm = -174 + 10 * np.log10(bandwidth_mhz * 1e6)
+
+    sinr_values = []
+    for _ in range(n_trials):
+        # Random device positions
+        positions = np.column_stack([
+            np.random.uniform(0, lx, num_devices),
+            np.random.uniform(0, ly, num_devices),
+            np.random.uniform(0, lz, num_devices),
+        ])
+        # Receiver at room center
+        rx = np.array([lx / 2, ly / 2, lz / 2])
+        distances = np.linalg.norm(positions - rx, axis=1)
+        distances = np.maximum(distances, 0.1)  # min 10 cm
+
+        # Path loss per device (indoor n=3)
+        pl = np.array([log_distance_path_loss(freq_mhz, d, n=3.0) for d in distances])
+        rx_power = tx_power_dbm - pl  # dBm per device
+
+        # One device is the "desired", rest are interferers
+        # Take closest as desired signal
+        desired_idx = np.argmin(distances)
+        desired_power = rx_power[desired_idx]
+        interferer_mask = np.ones(num_devices, dtype=bool)
+        interferer_mask[desired_idx] = False
+        interference_lin = np.sum(10 ** (rx_power[interferer_mask] / 10.0))
+        noise_lin = 10 ** (noise_floor_dbm / 10.0)
+        sinr = desired_power - 10 * np.log10(interference_lin + noise_lin)
+        sinr_values.append(sinr)
+
+    sinr_distribution = np.array(sinr_values)
+    return float(np.mean(sinr_distribution)), sinr_distribution, noise_floor_dbm
+
+
+def sar_exposure_estimate(tx_power_mw, antenna_gain_dbi, distance_cm,
+                          freq_mhz, tissue_type="muscle"):
+    """Simplified SAR estimation for regulatory screening.
+
+    Uses far-field power density and tissue absorption:
+        S = (Pt · Gt) / (4π·d²)          [W/m²]
+        SAR ≈ σ · S / (ρ · penetration)  [W/kg]
+
+    NOTE: This is an indicative estimate only. Full SAR compliance
+    requires 3D EM simulation per IEC 62209 / IEEE 1528.
+
+    Parameters:
+        tx_power_mw: transmit power in milliwatts
+        antenna_gain_dbi: antenna gain in dBi
+        distance_cm: distance from antenna to tissue surface (cm)
+        freq_mhz: frequency in MHz
+        tissue_type: 'muscle', 'skin', 'fat', 'bone'
+
+    Returns:
+        sar_w_per_kg: estimated SAR (W/kg)
+        fcc_limit: FCC limit for comparison (1.6 W/kg for 1g average)
+        icnirp_limit: ICNIRP limit (2.0 W/kg for 10g average)
+        compliant: True if below both limits (indicative only)
+    """
+    # Tissue density (kg/m³)
+    tissue_props = {
+        "muscle": {"density": 1040, "depth_cm": 2.0},
+        "skin": {"density": 1100, "depth_cm": 0.5},
+        "fat": {"density": 920, "depth_cm": 1.5},
+        "bone": {"density": 1850, "depth_cm": 1.0},
+    }
+    props = tissue_props.get(tissue_type, tissue_props["muscle"])
+    sigma = get_tissue_properties(freq_mhz)[1]
+
+    # Power density at distance
+    gt_lin = 10 ** (antenna_gain_dbi / 10.0)
+    pt_w = tx_power_mw / 1000.0
+    d_m = max(distance_cm / 100.0, 0.001)
+    S = (pt_w * gt_lin) / (4 * np.pi * d_m ** 2)  # W/m²
+
+    # SAR ≈ σ · E² / ρ, and S = E²/(2·η), so SAR ≈ 2·σ·S/ρ
+    # This is the surface SAR, averaged over penetration depth
+    rho = props["density"]
+    sar = 2 * sigma * S / rho  # W/kg (surface estimate)
+
+    fcc_limit = 1.6  # W/kg (1g average)
+    icnirp_limit = 2.0  # W/kg (10g average)
+
+    return sar, fcc_limit, icnirp_limit, bool(sar < fcc_limit and sar < icnirp_limit)
+
+
+def wban_link_budget(tx_power_dbm, freq_mhz, body_channel="on_body",
+                     distance_cm=30):
+    """IEEE 802.15.6 WBAN channel model link budget.
+
+    Simplified path loss models from IEEE 802.15.6 standard.
+
+    Parameters:
+        tx_power_dbm: transmit power in dBm
+        freq_mhz: frequency in MHz
+        body_channel: 'on_body', 'in_body', or 'off_body'
+        distance_cm: distance in cm
+
+    Returns:
+        path_loss_db: estimated path loss (dB)
+        received_power_dbm: estimated received power (dBm)
+    """
+    d_m = max(distance_cm / 100.0, 0.01)
+
+    if body_channel == "on_body":
+        # CM3 model (on-body to on-body): PL = a·log10(d) + b + N
+        # Typical at 2.4 GHz: a=6.6, b=36.1 (from IEEE 802.15.6)
+        a, b = 6.6, 36.1
+        path_loss = a * np.log10(d_m) + b
+    elif body_channel == "in_body":
+        # CM1 model (implant to implant): very high loss
+        # PL ≈ 47.14 + 4.26·f_GHz + 29.0·d_cm
+        f_ghz = freq_mhz / 1000.0
+        d_cm = distance_cm
+        path_loss = 47.14 + 4.26 * f_ghz + 0.29 * d_cm
+    else:  # off_body
+        # CM4 model (on-body to off-body): essentially indoor propagation
+        # Use log-distance with n=2.5 (body-nearby effects)
+        path_loss = free_space_path_loss(freq_mhz, d_m) + 5.0  # +5dB body effect
+
+    received_power = tx_power_dbm - path_loss
+    return float(path_loss), float(received_power)

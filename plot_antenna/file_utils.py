@@ -1022,6 +1022,7 @@ def batch_process_passive_scans(
     maritime_theta_max=120.0,
     maritime_theta_cuts=None,
     maritime_gain_threshold=-3.0,
+    advanced_analysis_params=None,
 ):
     """
     Batch‑process all HPOL/VPOL pairs in a directory.
@@ -1181,6 +1182,29 @@ def batch_process_passive_scans(
                         save_path=maritime_sub,
                     )
 
+            # Advanced analysis plots
+            if advanced_analysis_params and subfolder:
+                from .plotting import _prepare_gain_grid as _pgrid
+                from .plotting import generate_advanced_analysis_plots
+
+                freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
+                unique_theta, unique_phi, gain_grid = _pgrid(
+                    theta_deg, phi_deg, total_gain_dB, freq_idx
+                )
+                if gain_grid is not None:
+                    adv_sub = os.path.join(subfolder, "Advanced Analysis")
+                    os.makedirs(adv_sub, exist_ok=True)
+                    generate_advanced_analysis_plots(
+                        unique_theta,
+                        unique_phi,
+                        gain_grid,
+                        sel_freq,
+                        data_label="Gain",
+                        data_unit="dBi",
+                        save_path=adv_sub,
+                        **advanced_analysis_params,
+                    )
+
     # Re-enable interactive mode after batch processing
     plt.ion()
 
@@ -1197,6 +1221,7 @@ def batch_process_active_scans(
     maritime_theta_max=120.0,
     maritime_theta_cuts=None,
     maritime_gain_threshold=-3.0,
+    advanced_analysis_params=None,
 ):
     """
     Batch‑process all active TRP measurement files in a directory.
@@ -1352,6 +1377,23 @@ def batch_process_active_scans(
                     zmin=zmin,
                     zmax=zmax,
                     save_path=maritime_sub,
+                )
+
+            # Advanced analysis plots
+            if advanced_analysis_params and subfolder:
+                from .plotting import generate_advanced_analysis_plots
+
+                adv_sub = os.path.join(subfolder, "Advanced Analysis")
+                os.makedirs(adv_sub, exist_ok=True)
+                generate_advanced_analysis_plots(
+                    theta_angles_deg,
+                    phi_angles_deg,
+                    total_power_dBm_2d,
+                    frequency,
+                    data_label="Power",
+                    data_unit="dBm",
+                    save_path=adv_sub,
+                    **advanced_analysis_params,
                 )
 
             print(f"  ✓ Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")

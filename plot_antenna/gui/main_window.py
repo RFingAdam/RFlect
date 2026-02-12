@@ -559,6 +559,46 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.horizon_gain_threshold = tk.DoubleVar(value=-3.0)
         self.horizon_theta_cuts_var = tk.StringVar(value="60,70,80,90,100,110,120")
 
+        # Link Budget / Range Estimation settings
+        self.link_budget_enabled = False
+        self.lb_protocol_preset = tk.StringVar(value="BLE 1Mbps")
+        self.lb_tx_power = tk.DoubleVar(value=0.0)
+        self.lb_rx_sensitivity = tk.DoubleVar(value=-98.0)
+        self.lb_rx_gain = tk.DoubleVar(value=0.0)
+        self.lb_path_loss_exp = tk.DoubleVar(value=2.0)
+        self.lb_misc_loss = tk.DoubleVar(value=10.0)
+        self.lb_target_range = tk.DoubleVar(value=5.0)
+
+        # Indoor Propagation settings
+        self.indoor_analysis_enabled = False
+        self.indoor_environment = tk.StringVar(value="Office")
+        self.indoor_num_walls = tk.IntVar(value=1)
+        self.indoor_wall_material = tk.StringVar(value="drywall")
+        self.indoor_shadow_fading = tk.DoubleVar(value=5.0)
+        self.indoor_max_distance = tk.DoubleVar(value=30.0)
+
+        # Multipath Fading Analysis settings
+        self.fading_analysis_enabled = False
+        self.fading_model = tk.StringVar(value="rayleigh")
+        self.fading_rician_k = tk.DoubleVar(value=10.0)
+        self.fading_target_reliability = tk.DoubleVar(value=99.0)
+
+        # MIMO / Diversity Analysis settings
+        self.mimo_analysis_enabled = False
+        self.mimo_snr = tk.DoubleVar(value=20.0)
+        self.mimo_xpr = tk.DoubleVar(value=6.0)
+
+        # Wearable / Medical Device settings
+        self.wearable_analysis_enabled = False
+        self.wearable_positions_var = {
+            pos: tk.BooleanVar(value=True) for pos in ["wrist", "chest", "hip", "head"]
+        }
+        self.wearable_tx_power_mw = tk.DoubleVar(value=1.0)
+        self.wearable_device_count = tk.IntVar(value=20)
+        self.wearable_room_x = tk.DoubleVar(value=10.0)
+        self.wearable_room_y = tk.DoubleVar(value=10.0)
+        self.wearable_room_z = tk.DoubleVar(value=3.0)
+
         # Configure background
         self.root.config(bg=DARK_BG_COLOR)
 

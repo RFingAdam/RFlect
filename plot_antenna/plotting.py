@@ -15,7 +15,27 @@ import scipy.interpolate as spi
 
 from .config import THETA_RESOLUTION, PHI_RESOLUTION, polar_dB_max, polar_dB_min
 from .file_utils import parse_2port_data
-from .calculations import calculate_trp
+from .calculations import (
+    calculate_trp,
+    friis_range_estimate,
+    min_tx_gain_for_range,
+    link_margin,
+    range_vs_azimuth,
+    free_space_path_loss,
+    log_distance_path_loss,
+    wall_penetration_loss,
+    apply_indoor_propagation,
+    rayleigh_cdf,
+    rician_cdf,
+    fade_margin_for_reliability,
+    apply_statistical_fading,
+    combining_gain,
+    mimo_capacity_vs_snr,
+    body_worn_pattern_analysis,
+    dense_device_interference,
+    PROTOCOL_PRESETS,
+    ENVIRONMENT_PRESETS,
+)
 
 # Suppress noisy warnings during batch processing (worker thread + tight_layout)
 warnings.filterwarnings("ignore", message="Starting a Matplotlib GUI outside of the main thread")
@@ -2869,3 +2889,740 @@ def generate_maritime_plots(
         zmax=zmax,
         save_path=save_path,
     )
+
+
+# ——— LINK BUDGET & RANGE ESTIMATION PLOTS ——————————————————————————
+
+def plot_link_budget_summary(
+    freq_mhz,
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    pt_dbm=0.0,
+    pr_dbm=-98.0,
+    gr_dbi=0.0,
+    path_loss_exp=2.0,
+    misc_loss_db=10.0,
+    target_range_m=5.0,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Link budget summary: waterfall chart + range-vs-azimuth polar plot.
+
+    Left panel:  Link budget table showing all parameters and derived values
+    Right panel: Range vs azimuth polar plot at θ=90° (horizon)
+    """
+    _ = data_unit  # kept in signature for API consistency
+    # Determine if active (EIRP) or passive (Gain) data
+    is_active = data_label != "Gain"
+
+    # Get horizon gain/EIRP and range per azimuth
+    range_m, horizon_gain = range_vs_azimuth(
+        gain_2d, theta_deg, phi_deg, freq_mhz,
+        pt_dbm=0.0 if is_active else pt_dbm,  # EIRP already includes Pt
+        pr_dbm=pr_dbm, gr_dbi=gr_dbi,
+        path_loss_exp=path_loss_exp, misc_loss_db=misc_loss_db,
+    )
+
+    peak_gain = float(np.max(horizon_gain))
+    worst_gain = float(np.min(horizon_gain))
+
+    # Peak and worst-case range
+    peak_range = friis_range_estimate(
+        pt_dbm if not is_active else 0.0, pr_dbm, peak_gain, gr_dbi,
+        freq_mhz, path_loss_exp, misc_loss_db,
+    )
+    worst_range = friis_range_estimate(
+        pt_dbm if not is_active else 0.0, pr_dbm, worst_gain, gr_dbi,
+        freq_mhz, path_loss_exp, misc_loss_db,
+    )
+
+    # Min Tx gain for target range
+    min_gt = min_tx_gain_for_range(
+        target_range_m, pt_dbm if not is_active else 0.0,
+        pr_dbm, gr_dbi, freq_mhz, path_loss_exp, misc_loss_db,
+    )
+
+    # Link margin at target range with peak gain
+    margin = link_margin(
+        pt_dbm if not is_active else 0.0, peak_gain, gr_dbi,
+        freq_mhz, target_range_m, path_loss_exp, misc_loss_db, pr_dbm,
+    )
+
+    # FSPL at 1m reference
+    fspl_1m = free_space_path_loss(freq_mhz, 1.0)
+    pl_target = fspl_1m + 10 * path_loss_exp * np.log10(max(target_range_m, 0.01))
+
+    # ---- Figure ----
+    fig = plt.figure(figsize=(16, 7))
+    fig_gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.2])
+
+    # --- Left: Link budget table ---
+    ax_table = fig.add_subplot(fig_gs[0])
+    ax_table.axis("off")
+
+    gt_label = "Peak EIRP" if is_active else "Tx Gain (Gt)"
+    gt_value = f"{peak_gain:.1f} dBm" if is_active else f"{peak_gain:.1f} dBi"
+
+    table_data = []
+    if not is_active:
+        table_data.append(["Tx Power (Pt)", f"{pt_dbm:.1f} dBm"])
+    table_data.extend([
+        [gt_label, gt_value],
+        [f"Path Loss @ {target_range_m:.1f}m", f"-{pl_target:.1f} dB"],
+        ["Misc Losses", f"-{misc_loss_db:.1f} dB"],
+        ["Rx Gain (Gr)", f"{gr_dbi:.1f} dBi"],
+        ["Rx Sensitivity", f"{pr_dbm:.1f} dBm"],
+        ["", ""],
+        ["Link Margin @ target", f"{margin:+.1f} dB"],
+        ["Peak Range", f"{peak_range:.1f} m"],
+        ["Worst-Case Range", f"{worst_range:.1f} m"],
+        ["Min Gt for target range", f"{min_gt:.1f} dBi"],
+        ["Frequency", f"{freq_mhz} MHz"],
+        ["Path Loss Exponent (n)", f"{path_loss_exp}"],
+    ])
+
+    table = ax_table.table(
+        cellText=table_data,
+        colLabels=["Parameter", "Value"],
+        cellLoc="left",
+        loc="center",
+        colWidths=[0.55, 0.45],
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.4)
+
+    for j in range(2):
+        table[0, j].set_facecolor("#4A90E2")
+        table[0, j].set_text_props(color="white", fontweight="bold")
+
+    # Highlight margin row (after the blank separator row)
+    margin_row_idx = len(table_data) - 5  # "Link Margin" row
+    if margin_row_idx > 0:
+        color = "#4CAF50" if margin >= 0 else "#F44336"
+        for j in range(2):
+            table[margin_row_idx, j].set_facecolor(color)
+            table[margin_row_idx, j].set_text_props(color="white", fontweight="bold")
+
+    ax_table.set_title(
+        f"Link Budget Summary — {freq_mhz} MHz",
+        fontsize=13, fontweight="bold", pad=20,
+    )
+
+    # --- Right: Range vs Azimuth polar plot ---
+    ax_polar = fig.add_subplot(fig_gs[1], projection="polar")
+    phi_rad = np.deg2rad(phi_deg)
+
+    # Colour-code by whether range meets target
+    colors = np.where(range_m >= target_range_m, "#4CAF50", "#F44336")
+    bar_width = np.deg2rad(np.mean(np.diff(phi_deg))) if len(phi_deg) > 1 else np.deg2rad(5)
+    ax_polar.bar(phi_rad, range_m, width=bar_width,
+                 color=colors, alpha=0.7, edgecolor="gray", linewidth=0.3)
+
+    # Target range ring
+    target_ring = np.full_like(phi_rad, target_range_m)
+    ax_polar.plot(phi_rad, target_ring, "k--", linewidth=1.5,
+                  label=f"Target: {target_range_m:.0f} m")
+
+    ax_polar.set_title(
+        "Range vs Azimuth (θ=90°)\nGreen = meets target, Red = below",
+        fontsize=11, fontweight="bold", pad=15,
+    )
+    ax_polar.set_theta_zero_location("N")
+    ax_polar.set_theta_direction(-1)
+    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=9)
+
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"link_budget_{freq_mhz}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+# ——— INDOOR PROPAGATION PLOTS ————————————————————————————————————
+
+def plot_indoor_coverage_map(
+    freq_mhz,
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    pt_dbm=0.0,
+    pr_sensitivity_dbm=-98.0,
+    environment="Office",
+    path_loss_exp=3.0,
+    n_walls=1,
+    wall_material="drywall",
+    shadow_fading_db=5.0,
+    max_distance_m=30.0,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Indoor coverage analysis: path loss curves + azimuthal coverage heatmap + range contour.
+    """
+    _ = data_unit  # kept in signature for API consistency
+    is_active = data_label != "Gain"
+    distances = np.linspace(0.5, max_distance_m, 60)
+
+    # Path loss models
+    pl_free = np.array([free_space_path_loss(freq_mhz, d) for d in distances])
+    pl_indoor = log_distance_path_loss(freq_mhz, distances, n=path_loss_exp)
+    wl = wall_penetration_loss(freq_mhz, wall_material)
+    pl_walls = pl_indoor + n_walls * wl
+    pl_shadow = pl_walls + shadow_fading_db
+
+    # Horizon gain per azimuth
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+    horizon_gain = gain_2d[theta_90_idx, :]
+
+    # Received power heatmap: Pr(phi, d) = Pt + G(phi) - PL(d)
+    effective_pt = 0.0 if is_active else pt_dbm
+    pr_map = effective_pt + horizon_gain[np.newaxis, :] - pl_walls[:, np.newaxis]
+
+    # Coverage range per azimuth
+    coverage_range = np.zeros(len(phi_deg))
+    fspl_1m = free_space_path_loss(freq_mhz, 1.0)
+    for i, g in enumerate(horizon_gain):
+        allowed_pl = effective_pt + g - pr_sensitivity_dbm
+        net_pl = allowed_pl - n_walls * wl
+        if path_loss_exp > 0 and net_pl > fspl_1m:
+            coverage_range[i] = 10 ** ((net_pl - fspl_1m) / (10 * path_loss_exp))
+        else:
+            coverage_range[i] = 0.5
+
+    # ---- Figure ----
+    fig = plt.figure(figsize=(18, 6.5))
+    fig_gs = fig.add_gridspec(1, 3, width_ratios=[1, 1.3, 1])
+
+    # --- Left: Path Loss vs Distance ---
+    ax_pl = fig.add_subplot(fig_gs[0])
+    ax_pl.plot(distances, pl_free, "b--", linewidth=1.5, label="Free Space (n=2)")
+    ax_pl.plot(distances, pl_indoor, "g-", linewidth=1.5,
+               label=f"Indoor (n={path_loss_exp})")
+    ax_pl.plot(distances, pl_walls, "r-", linewidth=2,
+               label=f"+ {n_walls}× {wall_material} ({wl:.1f} dB)")
+    ax_pl.plot(distances, pl_shadow, "r:", linewidth=1,
+               label=f"+ {shadow_fading_db:.0f} dB shadow margin")
+    ax_pl.set_xlabel("Distance (m)")
+    ax_pl.set_ylabel("Path Loss (dB)")
+    ax_pl.set_title("Path Loss Models", fontsize=11, fontweight="bold")
+    ax_pl.legend(fontsize=8, loc="upper left")
+    ax_pl.grid(True, alpha=0.3)
+    ax_pl.invert_yaxis()
+
+    # --- Center: Received Power Heatmap ---
+    ax_hm = fig.add_subplot(fig_gs[1])
+    extent = [phi_deg[0], phi_deg[-1], distances[0], distances[-1]]
+    vmin = pr_sensitivity_dbm - 20
+    vmax = float(np.max(pr_map))
+    im = ax_hm.imshow(
+        pr_map, aspect="auto", origin="lower", extent=extent,
+        cmap="RdYlGn", vmin=vmin, vmax=vmax,
+    )
+    ax_hm.contour(
+        phi_deg, distances, pr_map, levels=[pr_sensitivity_dbm],
+        colors=["black"], linewidths=[2], linestyles=["--"],
+    )
+    ax_hm.set_xlabel("Azimuth φ (°)")
+    ax_hm.set_ylabel("Distance (m)")
+    ax_hm.set_title(
+        f"Received Power at Horizon (θ=90°)\n{environment} — {freq_mhz} MHz",
+        fontsize=11, fontweight="bold",
+    )
+    cbar = fig.colorbar(im, ax=ax_hm, shrink=0.8)
+    cbar.set_label("Received Power (dBm)")
+
+    # --- Right: Coverage Range Polar ---
+    ax_polar = fig.add_subplot(fig_gs[2], projection="polar")
+    phi_rad = np.deg2rad(phi_deg)
+    ax_polar.fill(phi_rad, coverage_range, alpha=0.3, color="#4CAF50")
+    ax_polar.plot(phi_rad, coverage_range, "g-", linewidth=2, label="Coverage range")
+    ax_polar.set_title(
+        f"Coverage Range @ {pr_sensitivity_dbm} dBm\n{n_walls}× {wall_material}",
+        fontsize=11, fontweight="bold", pad=15,
+    )
+    ax_polar.set_theta_zero_location("N")
+    ax_polar.set_theta_direction(-1)
+
+    avg_range = np.mean(coverage_range)
+    min_range = np.min(coverage_range)
+    max_range = np.max(coverage_range)
+    summary = f"Avg: {avg_range:.1f}m  Min: {min_range:.1f}m  Max: {max_range:.1f}m"
+    fig.text(0.5, 0.02, summary, ha="center", fontsize=10,
+             bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8,
+                       boxstyle="round,pad=0.3"))
+
+    plt.tight_layout(rect=[0, 0.06, 1, 1])
+
+    if save_path:
+        fname = f"indoor_coverage_{freq_mhz}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+# ——— MULTIPATH FADING PLOTS ——————————————————————————————————————
+
+def plot_fading_analysis(
+    freq_mhz,
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    pr_sensitivity_dbm=-98.0,
+    pt_dbm=0.0,
+    target_reliability=99.0,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Fading analysis: CDF curves, fade margin chart, pattern with fading envelope,
+    and outage probability bar chart.
+    """
+    is_active = data_label != "Gain"
+
+    # Peak direction
+    peak_idx = np.unravel_index(np.argmax(gain_2d), gain_2d.shape)
+    peak_val = gain_2d[peak_idx]
+
+    # Power range for CDF
+    power_range = np.linspace(peak_val - 40, peak_val + 5, 200)
+
+    # CDF curves
+    cdf_rayleigh = rayleigh_cdf(power_range, peak_val)
+    cdf_rician_3 = rician_cdf(power_range, peak_val, K_factor=3)
+    cdf_rician_6 = rician_cdf(power_range, peak_val, K_factor=6)
+    cdf_rician_10 = rician_cdf(power_range, peak_val, K_factor=10)
+
+    # Fade margins for reliability range
+    reliability_range = np.linspace(50, 99.99, 100)
+    margin_rayleigh = [fade_margin_for_reliability(r, "rayleigh")
+                       for r in reliability_range]
+    margin_rician_6 = [fade_margin_for_reliability(r, "rician", K=6)
+                       for r in reliability_range]
+    margin_rician_10 = [fade_margin_for_reliability(r, "rician", K=10)
+                        for r in reliability_range]
+
+    # Monte-Carlo fading at horizon
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+    horizon_slice = gain_2d[theta_90_idx:theta_90_idx + 1, :]
+    mean_db, std_db, p5_db = apply_statistical_fading(
+        horizon_slice, theta_deg[theta_90_idx:theta_90_idx + 1],
+        phi_deg, fading="rayleigh", realizations=500,
+    )
+
+    # ---- Figure ----
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+    # --- Top-left: CDF curves ---
+    ax = axes[0, 0]
+    ax.semilogy(power_range, 1 - cdf_rayleigh, "r-", linewidth=2, label="Rayleigh (NLOS)")
+    ax.semilogy(power_range, 1 - cdf_rician_3, "b--", linewidth=1.5, label="Rician K=3")
+    ax.semilogy(power_range, 1 - cdf_rician_6, "g--", linewidth=1.5, label="Rician K=6")
+    ax.semilogy(power_range, 1 - cdf_rician_10, "m--", linewidth=1.5, label="Rician K=10")
+    ax.axhline(y=0.01, color="gray", linestyle=":", alpha=0.7, label="99% reliability")
+    ax.set_xlabel(f"{data_label} ({data_unit})")
+    ax.set_ylabel("P(signal > x) — CCDF")
+    ax.set_title("Fading CCDF at Peak Direction", fontweight="bold")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3, which="both")
+    ax.set_ylim(1e-4, 1)
+
+    # --- Top-right: Fade Margin vs Reliability ---
+    ax = axes[0, 1]
+    ax.plot(reliability_range, margin_rayleigh, "r-", linewidth=2, label="Rayleigh")
+    ax.plot(reliability_range, margin_rician_6, "g--", linewidth=1.5, label="Rician K=6")
+    ax.plot(reliability_range, margin_rician_10, "m--", linewidth=1.5, label="Rician K=10")
+    ax.axvline(x=target_reliability, color="gray", linestyle=":", alpha=0.7)
+    target_margin_ray = fade_margin_for_reliability(target_reliability, "rayleigh")
+    ax.plot(target_reliability, target_margin_ray, "ro", markersize=8)
+    ax.annotate(f"{target_margin_ray:.1f} dB",
+                (target_reliability, target_margin_ray),
+                textcoords="offset points", xytext=(10, 5), fontsize=9)
+    ax.set_xlabel("Reliability (%)")
+    ax.set_ylabel("Required Fade Margin (dB)")
+    ax.set_title("Fade Margin vs Reliability", fontweight="bold")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # --- Bottom-left: Pattern with fading envelope at horizon ---
+    ax = axes[1, 0]
+    mean_flat = mean_db.flatten()
+    std_flat = std_db.flatten()
+    p5_flat = p5_db.flatten()
+    ax.fill_between(phi_deg, mean_flat - std_flat, mean_flat + std_flat,
+                     alpha=0.2, color="blue", label="±1σ envelope")
+    ax.plot(phi_deg, mean_flat, "b-", linewidth=2, label="Mean (faded)")
+    ax.plot(phi_deg, gain_2d[theta_90_idx, :], "k--", linewidth=1,
+            label="Free-space")
+    ax.plot(phi_deg, p5_flat, "r:", linewidth=1, label="5th percentile")
+    ax.set_xlabel("Azimuth φ (°)")
+    ax.set_ylabel(f"{data_label} ({data_unit})")
+    ax.set_title("Rayleigh Fading Envelope at θ=90°", fontweight="bold")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # --- Bottom-right: Outage probability per azimuth ---
+    ax = axes[1, 1]
+    horizon_vals = gain_2d[theta_90_idx, :]
+    effective_pt = 0.0 if is_active else pt_dbm
+    outage_prob = rayleigh_cdf(
+        np.full_like(horizon_vals, pr_sensitivity_dbm),
+        effective_pt + horizon_vals,
+    )
+    bar_width = np.mean(np.diff(phi_deg)) * 0.8 if len(phi_deg) > 1 else 3.0
+    colors_out = []
+    for op in outage_prob:
+        if op < 0.01:
+            colors_out.append("#4CAF50")
+        elif op < 0.1:
+            colors_out.append("#FFC107")
+        else:
+            colors_out.append("#F44336")
+    ax.bar(phi_deg, outage_prob * 100, width=bar_width,
+           color=colors_out, edgecolor="gray", linewidth=0.3)
+    ax.axhline(y=1.0, color="r", linestyle="--", linewidth=1, label="1% outage")
+    ax.set_xlabel("Azimuth φ (°)")
+    ax.set_ylabel("Outage Probability (%)")
+    ax.set_title("Rayleigh Outage per Azimuth (at Rx Sensitivity)",
+                 fontweight="bold")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    fig.suptitle(f"Multipath Fading Analysis — {freq_mhz} MHz",
+                 fontsize=14, fontweight="bold")
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"fading_analysis_{freq_mhz}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+# ——— ENHANCED MIMO PLOTS —————————————————————————————————————————
+
+def plot_mimo_analysis(
+    ecc_values,
+    freq_list,
+    gain_data_list,
+    theta_deg,
+    phi_deg,
+    snr_db=20,
+    fading="rayleigh",
+    K=10,
+    save_path=None,
+):
+    """
+    MIMO analysis: capacity curves, combining gain comparison, pattern overlay.
+    """
+    _ = freq_list  # reserved for per-frequency analysis in future
+    fig = plt.figure(figsize=(18, 6.5))
+    fig_gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
+
+    # --- Left: Capacity vs SNR ---
+    ax_cap = fig.add_subplot(fig_gs[0])
+    ecc_median = float(np.median(ecc_values)) if len(ecc_values) > 0 else 0.3
+    snr_axis, siso_cap, awgn_cap, fading_cap = mimo_capacity_vs_snr(
+        ecc_median, snr_range_db=(-5, 30), fading=fading, K=K,
+    )
+    ax_cap.plot(snr_axis, siso_cap, "k--", linewidth=1.5, label="SISO")
+    ax_cap.plot(snr_axis, awgn_cap, "b-", linewidth=2, label="2×2 AWGN")
+    ax_cap.plot(snr_axis, fading_cap, "r-", linewidth=2,
+                label=f"2×2 {fading.capitalize()}")
+    ax_cap.axvline(x=snr_db, color="gray", linestyle=":", alpha=0.7)
+    ax_cap.set_xlabel("SNR (dB)")
+    ax_cap.set_ylabel("Capacity (b/s/Hz)")
+    ax_cap.set_title(f"Channel Capacity (ECC={ecc_median:.3f})",
+                     fontweight="bold")
+    ax_cap.legend(fontsize=8)
+    ax_cap.grid(True, alpha=0.3)
+
+    # --- Center: Combining Gain Comparison ---
+    ax_comb = fig.add_subplot(fig_gs[1])
+    if len(gain_data_list) >= 2:
+        theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+        n_phi = len(phi_deg)
+        mrc_imp = np.zeros(n_phi)
+        egc_imp = np.zeros(n_phi)
+        sc_imp = np.zeros(n_phi)
+
+        for i in range(n_phi):
+            element_gains = [g[theta_90_idx, i] for g in gain_data_list]
+            _, mrc_imp[i] = combining_gain(element_gains, method="mrc")
+            _, egc_imp[i] = combining_gain(element_gains, method="egc")
+            _, sc_imp[i] = combining_gain(element_gains, method="sc")
+
+        ax_comb.plot(phi_deg, mrc_imp, "b-", linewidth=2, label="MRC")
+        ax_comb.plot(phi_deg, egc_imp, "g--", linewidth=1.5, label="EGC")
+        ax_comb.plot(phi_deg, sc_imp, "r:", linewidth=1.5, label="Selection")
+        ax_comb.set_xlabel("Azimuth φ (°)")
+        ax_comb.set_ylabel("Combining Improvement (dB)")
+        ax_comb.set_title("Combining Gain at θ=90°", fontweight="bold")
+        ax_comb.legend(fontsize=8)
+        ax_comb.grid(True, alpha=0.3)
+    else:
+        ax_comb.text(0.5, 0.5, "Requires 2+ antenna\npatterns loaded",
+                     ha="center", va="center", fontsize=12,
+                     transform=ax_comb.transAxes)
+        ax_comb.set_title("Combining Gain", fontweight="bold")
+
+    # --- Right: Pattern Correlation (overlaid polar) ---
+    ax_polar = fig.add_subplot(fig_gs[2], projection="polar")
+    phi_rad = np.deg2rad(phi_deg)
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+
+    colors_list = ["#4A90E2", "#E63946", "#4CAF50", "#FFC107"]
+    for idx, g2d in enumerate(gain_data_list[:4]):
+        color = colors_list[idx % len(colors_list)]
+        pattern = g2d[theta_90_idx, :]
+        pattern_norm = pattern - np.min(pattern)
+        ax_polar.plot(phi_rad, pattern_norm, color=color, linewidth=1.5,
+                      label=f"Ant {idx + 1}")
+
+    ax_polar.set_title("Pattern Overlay (θ=90°)\nNormalized",
+                       fontweight="bold", pad=15)
+    ax_polar.set_theta_zero_location("N")
+    ax_polar.set_theta_direction(-1)
+    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=8)
+
+    fig.suptitle("MIMO / Diversity Analysis", fontsize=14, fontweight="bold")
+    plt.tight_layout()
+
+    if save_path:
+        fname = "mimo_analysis.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+# ——— WEARABLE / MEDICAL DEVICE PLOTS —————————————————————————————
+
+def plot_wearable_assessment(
+    freq_mhz,
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    body_positions=None,
+    tx_power_mw=1.0,
+    num_devices=20,
+    room_size=(10, 10, 3),
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """
+    Wearable/medical device assessment: body position comparison,
+    overlaid patterns, and dense device SINR analysis.
+    """
+    if body_positions is None:
+        body_positions = ["wrist", "chest", "hip", "head"]
+
+    # Body-worn analysis
+    bw_results = body_worn_pattern_analysis(
+        gain_2d, theta_deg, phi_deg, freq_mhz, body_positions,
+    )
+
+    # Dense device interference
+    tx_dbm = 10 * np.log10(max(tx_power_mw, 0.001))
+    avg_sinr, sinr_dist, noise_floor = dense_device_interference(
+        num_devices, tx_dbm, freq_mhz, room_size_m=room_size,
+    )
+
+    # ---- Figure ----
+    fig = plt.figure(figsize=(18, 7))
+    fig_gs = fig.add_gridspec(1, 3, width_ratios=[1.3, 1, 1])
+
+    # --- Left: Body position comparison table ---
+    ax_table = fig.add_subplot(fig_gs[0])
+    ax_table.axis("off")
+
+    table_data = []
+    for pos in body_positions:
+        if pos not in bw_results:
+            continue
+        r = bw_results[pos]
+        table_data.append([
+            pos.capitalize(),
+            f"{r['avg_gain_db']:.1f} {data_unit}",
+            f"{r['trp_delta_db']:+.1f} dB",
+            f"{r['peak_delta_db']:+.1f} dB",
+        ])
+
+    # Add free-space reference
+    ref_lin = 10 ** (gain_2d / 10.0)
+    sin_w = np.sin(np.deg2rad(theta_deg))
+    ref_avg = 10 * np.log10(np.sum(ref_lin * sin_w[:, np.newaxis])
+                             / (np.sum(sin_w) * len(phi_deg)))
+    table_data.insert(0, ["Free Space", f"{ref_avg:.1f} {data_unit}", "ref", "ref"])
+
+    table = ax_table.table(
+        cellText=table_data,
+        colLabels=["Position", f"Avg {data_label}", "TRP Δ", "Peak Δ"],
+        cellLoc="center",
+        loc="center",
+        colWidths=[0.25, 0.25, 0.25, 0.25],
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.6)
+
+    for j in range(4):
+        table[0, j].set_facecolor("#4A90E2")
+        table[0, j].set_text_props(color="white", fontweight="bold")
+    for j in range(4):
+        table[1, j].set_facecolor("#E8F0FE")
+
+    ax_table.set_title(
+        f"Body-Worn Performance — {freq_mhz} MHz",
+        fontsize=12, fontweight="bold", pad=20,
+    )
+
+    # --- Center: Overlaid polar patterns ---
+    ax_polar = fig.add_subplot(fig_gs[1], projection="polar")
+    phi_rad = np.deg2rad(phi_deg)
+    theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
+
+    fs_pattern = gain_2d[theta_90_idx, :]
+    ax_polar.plot(phi_rad, fs_pattern - np.min(fs_pattern), "k-",
+                  linewidth=2, label="Free Space")
+
+    colors_pos = {
+        "wrist": "#4A90E2", "chest": "#E63946",
+        "hip": "#4CAF50", "head": "#FFC107",
+    }
+    for pos in body_positions:
+        if pos not in bw_results:
+            continue
+        pattern = bw_results[pos]["pattern"][theta_90_idx, :]
+        ax_polar.plot(phi_rad, pattern - np.min(fs_pattern),
+                      color=colors_pos.get(pos, "gray"),
+                      linewidth=1.5, label=pos.capitalize())
+
+    ax_polar.set_title("Pattern at θ=90°\n(Normalized)", fontweight="bold",
+                       pad=15)
+    ax_polar.set_theta_zero_location("N")
+    ax_polar.set_theta_direction(-1)
+    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.35, 1.15), fontsize=8)
+
+    # --- Right: Dense device SINR distribution ---
+    ax_sinr = fig.add_subplot(fig_gs[2])
+    ax_sinr.hist(sinr_dist, bins=30, color="#4A90E2", edgecolor="white",
+                 alpha=0.8, density=True)
+    ax_sinr.axvline(x=avg_sinr, color="red", linestyle="--", linewidth=2,
+                     label=f"Mean SINR: {avg_sinr:.1f} dB")
+    ax_sinr.axvline(x=0, color="gray", linestyle=":", linewidth=1,
+                     label="0 dB (breakeven)")
+    ax_sinr.set_xlabel("SINR (dB)")
+    ax_sinr.set_ylabel("Probability Density")
+    ax_sinr.set_title(
+        f"Dense Device Coexistence\n{num_devices} devices in "
+        f"{room_size[0]}×{room_size[1]}×{room_size[2]}m",
+        fontweight="bold",
+    )
+    ax_sinr.legend(fontsize=8)
+    ax_sinr.grid(True, alpha=0.3)
+    ax_sinr.annotate(f"Noise floor: {noise_floor:.0f} dBm",
+                     xy=(0.02, 0.95), xycoords="axes fraction", fontsize=8,
+                     bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8))
+
+    plt.tight_layout()
+
+    if save_path:
+        fname = f"wearable_assessment_{freq_mhz}MHz.png"
+        fig.savefig(os.path.join(save_path, fname), dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+# ——— DISPATCHER FOR ADVANCED ANALYSIS PLOTS ——————————————————————
+
+def generate_advanced_analysis_plots(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+    # Link Budget params
+    link_budget_enabled=False,
+    lb_pt_dbm=0.0,
+    lb_pr_dbm=-98.0,
+    lb_gr_dbi=0.0,
+    lb_path_loss_exp=2.0,
+    lb_misc_loss_db=10.0,
+    lb_target_range_m=5.0,
+    # Indoor params
+    indoor_enabled=False,
+    indoor_environment="Office",
+    indoor_path_loss_exp=3.0,
+    indoor_n_walls=1,
+    indoor_wall_material="drywall",
+    indoor_shadow_fading_db=5.0,
+    indoor_max_distance_m=30.0,
+    # Fading params
+    fading_enabled=False,
+    fading_pr_sensitivity_dbm=-98.0,
+    fading_pt_dbm=0.0,
+    fading_target_reliability=99.0,
+    # Wearable params
+    wearable_enabled=False,
+    wearable_body_positions=None,
+    wearable_tx_power_mw=1.0,
+    wearable_num_devices=20,
+    wearable_room_size=(10, 10, 3),
+):
+    """
+    Dispatcher for all advanced analysis plots. Called from callbacks/batch
+    after pattern processing, analogous to generate_maritime_plots().
+    """
+    if link_budget_enabled:
+        plot_link_budget_summary(
+            frequency, gain_2d, theta_deg, phi_deg,
+            pt_dbm=lb_pt_dbm, pr_dbm=lb_pr_dbm, gr_dbi=lb_gr_dbi,
+            path_loss_exp=lb_path_loss_exp, misc_loss_db=lb_misc_loss_db,
+            target_range_m=lb_target_range_m,
+            data_label=data_label, data_unit=data_unit, save_path=save_path,
+        )
+
+    if indoor_enabled:
+        plot_indoor_coverage_map(
+            frequency, gain_2d, theta_deg, phi_deg,
+            pt_dbm=lb_pt_dbm, pr_sensitivity_dbm=lb_pr_dbm,
+            environment=indoor_environment, path_loss_exp=indoor_path_loss_exp,
+            n_walls=indoor_n_walls, wall_material=indoor_wall_material,
+            shadow_fading_db=indoor_shadow_fading_db,
+            max_distance_m=indoor_max_distance_m,
+            data_label=data_label, data_unit=data_unit, save_path=save_path,
+        )
+
+    if fading_enabled:
+        plot_fading_analysis(
+            frequency, gain_2d, theta_deg, phi_deg,
+            pr_sensitivity_dbm=fading_pr_sensitivity_dbm,
+            pt_dbm=fading_pt_dbm,
+            target_reliability=fading_target_reliability,
+            data_label=data_label, data_unit=data_unit, save_path=save_path,
+        )
+
+    if wearable_enabled:
+        plot_wearable_assessment(
+            frequency, gain_2d, theta_deg, phi_deg,
+            body_positions=wearable_body_positions,
+            tx_power_mw=wearable_tx_power_mw,
+            num_devices=wearable_num_devices,
+            room_size=wearable_room_size,
+            data_label=data_label, data_unit=data_unit, save_path=save_path,
+        )
