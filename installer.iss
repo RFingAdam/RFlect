@@ -7,7 +7,7 @@
 
 #define MyAppName "RFlect"
 #ifndef RFLECT_VERSION
-  #define RFLECT_VERSION "4.0.0"
+  #define RFLECT_VERSION "4.1.5"
 #endif
 #define MyAppVersion RFLECT_VERSION
 #define MyAppPublisher "RFingAdam"
