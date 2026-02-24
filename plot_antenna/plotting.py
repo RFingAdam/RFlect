@@ -1808,19 +1808,9 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
         shade=True,
         alpha=0.95,
     )
-    ax1.set_xlabel("X")
-    ax1.set_ylabel("Y")
-    ax1.set_zlabel("Z")
-    ax1.set_title(f"Axial Ratio (3D) @ {frequency} MHz\nRadius = f(AR)", fontsize=14, weight="bold")
     ax1.view_init(elev=20, azim=-30)
-
-    # Make panes transparent
-    ax1.xaxis.pane.fill = False  # type: ignore
-    ax1.yaxis.pane.fill = False  # type: ignore
-    ax1.zaxis.pane.fill = False  # type: ignore
-    ax1.xaxis.pane.set_alpha(0.2)  # type: ignore
-    ax1.yaxis.pane.set_alpha(0.2)  # type: ignore
-    ax1.zaxis.pane.set_alpha(0.2)  # type: ignore
+    _setup_3d_axes(ax1, x, y, z)
+    ax1.set_title(f"Axial Ratio (3D) @ {frequency} MHz\nRadius = f(AR)", fontsize=14, weight="bold")
 
     # Add colorbar
     m = cm.ScalarMappable(cmap="viridis")
@@ -1846,23 +1836,13 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
         shade=True,
         alpha=0.95,
     )
-    ax2.set_xlabel("X")
-    ax2.set_ylabel("Y")
-    ax2.set_zlabel("Z")
+    ax2.view_init(elev=20, azim=-30)
+    _setup_3d_axes(ax2, x, y, z)
     ax2.set_title(
         f"Polarization Sense (3D) @ {frequency} MHz\nRed=LHCP, Blue=RHCP",
         fontsize=14,
         weight="bold",
     )
-    ax2.view_init(elev=20, azim=-30)
-
-    # Make panes transparent
-    ax2.xaxis.pane.fill = False  # type: ignore
-    ax2.yaxis.pane.fill = False  # type: ignore
-    ax2.zaxis.pane.fill = False  # type: ignore
-    ax2.xaxis.pane.set_alpha(0.2)  # type: ignore
-    ax2.yaxis.pane.set_alpha(0.2)  # type: ignore
-    ax2.zaxis.pane.set_alpha(0.2)  # type: ignore
 
     plt.tight_layout()
 
