@@ -26,6 +26,7 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 ## New in v4.1
 
 - **Advanced RF analysis suite** — 5 new analysis modules: Link Budget/Range Estimation (Friis with protocol presets), Indoor Propagation (ITU-R P.1238/P.2040), Multipath Fading (Rayleigh/Rician CDF + Monte-Carlo), Enhanced MIMO (capacity curves, combining gain, MEG), and Wearable/Medical (body-worn patterns, dense device SINR, SAR screening).
+- **Professional 3D antenna plots** — DUT orientation arrows (X=green, Y=red, Z=blue) matching the physical chamber marker, equal aspect ratio, and box-edge labels that are never occluded.
 - **Maritime/horizon antenna plots** — 5 plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting.
 - **Smart presets** — Protocol presets (BLE, WiFi, LoRa, Zigbee, LTE, NB-IoT) and environment presets (Office, Hospital, Industrial, etc.) auto-populate analysis parameters.
 - **Non-blocking update checker** — Startup update check runs in a background thread instead of blocking the GUI.
@@ -35,13 +36,11 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 
 Ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations, and corrected RF math throughout.
 
-- **11 RF engineering fixes** — Corrected diversity gain (Vaughan-Andersen), axial ratio, XPD, TRP integration, HPBW boundary wrapping, and more. Every formula verified against IEEE references and real chamber data.
 - **UWB analysis** — System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
 - **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
 - **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
 - **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
 - **MCP server with 23 tools** — Programmatic antenna analysis for Claude Code and other AI assistants, including UWB characterization.
-- **346 tests** — Up from ~50 in v3.x, with integration tests against real BLE/LoRa chamber measurements and UWB group delay data.
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 
