@@ -412,37 +412,27 @@ def _setup_3d_axes(ax, X, Y, Z):
     ax.set_ylabel("Y", color="red", **_label_kw)
     ax.set_zlabel("Z", color="blue", **_label_kw)  # type: ignore
 
-    # ---- DUT orientation arrows ----
-    # Short arrows from -lim toward the origin, matching the
-    # physical X/Y/Z marker placed on the DUT in the chamber.
-    # Placed on the negative side so they sit in clear air behind
-    # the pattern (antenna patterns have positive radii only).
-    arrow_len = 0.35 * lim   # short — just an orientation hint
-    arrow_start = -lim        # start at the box edge
-    arrow_end = arrow_start + arrow_len  # end partway toward origin
+    # ---- DUT orientation triad ----
+    # A three-arrow tripod anchored at the (-lim, -lim, -lim) corner,
+    # pointing in +X, +Y, +Z — mirrors the physical orientation
+    # marker placed on the DUT in the anechoic chamber.
+    # All three arrows share the same origin so they form a
+    # recognisable XYZ triad from every viewing angle.
+    corner = -lim                   # common origin at the negative corner
+    arrow_len = 0.35 * lim          # short — just an orientation hint
 
     _arrow_spec = [
         # (dx, dy, dz, colour)
-        (1, 0, 0, "green"),   # X
-        (0, 1, 0, "red"),     # Y
-        (0, 0, 1, "blue"),    # Z
+        (1, 0, 0, "green"),   # +X
+        (0, 1, 0, "red"),     # +Y
+        (0, 0, 1, "blue"),    # +Z
     ]
     for dx, dy, dz, colour in _arrow_spec:
-        # Shaft from -lim toward origin
-        ax.plot(
-            [dx * arrow_start, dx * arrow_end],
-            [dy * arrow_start, dy * arrow_end],
-            [dz * arrow_start, dz * arrow_end],
-            color=colour, linewidth=3.0, alpha=0.8, solid_capstyle="round",
-        )
-        # Arrow head pointing toward +direction
-        ah = 0.25 * arrow_len
         ax.quiver(
-            dx * (arrow_end - ah),
-            dy * (arrow_end - ah),
-            dz * (arrow_end - ah),
-            dx * ah, dy * ah, dz * ah,
-            color=colour, arrow_length_ratio=0.6, linewidth=2.5,
+            corner, corner, corner,       # all start at the same corner
+            dx * arrow_len, dy * arrow_len, dz * arrow_len,
+            color=colour, arrow_length_ratio=0.3,
+            linewidth=2.5, alpha=0.9,
         )
 
 
