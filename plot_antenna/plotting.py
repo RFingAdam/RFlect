@@ -351,6 +351,101 @@ def plot_polar_power_pattern(
         plt.show()
 
 
+def _setup_3d_axes(ax, X, Y, Z):
+    """Configure a 3D Axes for antenna pattern display.
+
+    Professional-style 3-D antenna gain plot with DUT orientation:
+
+    * **Equal aspect ratio** via ``set_box_aspect([1,1,1])`` — no
+      axis stretching.
+    * **Symmetric limits** centred on the origin so the pattern sits
+      in the middle of the bounding box.
+    * **Box-edge axis labels** via ``set_xlabel / ylabel / zlabel``
+      — rendered in the 2D overlay layer, never occluded.
+    * **Short origin arrows** that mirror the physical orientation
+      marker used in the anechoic chamber (X green, Y red, Z blue).
+      They extend from the *negative* side of each axis toward the
+      origin so they sit in the empty space behind the pattern and
+      remain visible regardless of view angle.
+
+    Parameters
+    ----------
+    ax : mpl_toolkits.mplot3d.axes3d.Axes3D
+        The 3-D axes to decorate.
+    X, Y, Z : ndarray
+        Cartesian coordinate arrays of the plotted surface.
+    """
+    # ---- Data extent ----
+    max_ext = max(
+        np.nanmax(np.abs(X)),
+        np.nanmax(np.abs(Y)),
+        np.nanmax(np.abs(Z)),
+    )
+
+    # ---- Symmetric limits — centres the pattern in the box ----
+    lim = 1.02 * max_ext
+    ax.set_xlim(-lim, lim)
+    ax.set_ylim(-lim, lim)
+    ax.set_zlim(-lim, lim)
+    ax.set_box_aspect([1, 1, 1])
+
+    # ---- Transparent panes ----
+    ax.xaxis.pane.fill = False  # type: ignore
+    ax.yaxis.pane.fill = False  # type: ignore
+    ax.zaxis.pane.fill = False  # type: ignore
+    ax.xaxis.pane.set_edgecolor("gray")  # type: ignore
+    ax.yaxis.pane.set_edgecolor("gray")  # type: ignore
+    ax.zaxis.pane.set_edgecolor("gray")  # type: ignore
+    ax.xaxis.pane.set_alpha(0.2)  # type: ignore
+    ax.yaxis.pane.set_alpha(0.2)  # type: ignore
+    ax.zaxis.pane.set_alpha(0.2)  # type: ignore
+
+    # ---- Grid + hide tick labels ----
+    ax.grid(True)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])  # type: ignore
+
+    # ---- Box-edge axis labels (2D overlay — never occluded) ----
+    _label_kw = dict(fontsize=14, fontweight="bold", labelpad=2)
+    ax.set_xlabel("X", color="green", **_label_kw)
+    ax.set_ylabel("Y", color="red", **_label_kw)
+    ax.set_zlabel("Z", color="blue", **_label_kw)  # type: ignore
+
+    # ---- DUT orientation arrows ----
+    # Short arrows from -lim toward the origin, matching the
+    # physical X/Y/Z marker placed on the DUT in the chamber.
+    # Placed on the negative side so they sit in clear air behind
+    # the pattern (antenna patterns have positive radii only).
+    arrow_len = 0.35 * lim   # short — just an orientation hint
+    arrow_start = -lim        # start at the box edge
+    arrow_end = arrow_start + arrow_len  # end partway toward origin
+
+    _arrow_spec = [
+        # (dx, dy, dz, colour)
+        (1, 0, 0, "green"),   # X
+        (0, 1, 0, "red"),     # Y
+        (0, 0, 1, "blue"),    # Z
+    ]
+    for dx, dy, dz, colour in _arrow_spec:
+        # Shaft from -lim toward origin
+        ax.plot(
+            [dx * arrow_start, dx * arrow_end],
+            [dy * arrow_start, dy * arrow_end],
+            [dz * arrow_start, dz * arrow_end],
+            color=colour, linewidth=3.0, alpha=0.8, solid_capstyle="round",
+        )
+        # Arrow head pointing toward +direction
+        ah = 0.25 * arrow_len
+        ax.quiver(
+            dx * (arrow_end - ah),
+            dy * (arrow_end - ah),
+            dz * (arrow_end - ah),
+            dx * ah, dy * ah, dz * ah,
+            color=colour, arrow_length_ratio=0.6, linewidth=2.5,
+        )
+
+
 def plot_active_3d_data(
     theta_angles_deg,
     phi_angles_deg,
@@ -489,8 +584,10 @@ def plot_active_3d_data(
 
     # Now plot (use data_interp which is defined in both branches)
     plt.style.use("default")
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(1, 1, 1, projection="3d")
+    # Expand the 3D axes to fill more of the figure
+    fig.subplots_adjust(left=0.0, right=0.88, bottom=0.0, top=0.92)
 
     # Color‐mapping alone obeys manual limits
     if axis_mode == "manual":
@@ -515,161 +612,8 @@ def plot_active_3d_data(
     # Set the view angle
     ax.view_init(elev=20, azim=-30)
 
-    # Make panes transparent so axes show through
-    ax.xaxis.pane.fill = False  # type: ignore
-    ax.yaxis.pane.fill = False  # type: ignore
-    ax.zaxis.pane.fill = False  # type: ignore
-    ax.xaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.yaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.zaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.xaxis.pane.set_alpha(0.2)  # type: ignore
-    ax.yaxis.pane.set_alpha(0.2)  # type: ignore
-    ax.zaxis.pane.set_alpha(0.2)  # type: ignore
-
-    # Remove axis tick labels but retain grid
-    ax.grid(True)
-
-    # Get current ticks and create custom labels (fix matplotlib warning by using set_ticks first)
-    from matplotlib.ticker import FixedLocator
-
-    xticks = ax.get_xticks()
-    yticks = ax.get_yticks()
-    zticks = ax.get_zticks()  # type: ignore
-
-    # Set ticks with FixedLocator before setting labels (fixes matplotlib warning)
-    ax.xaxis.set_major_locator(FixedLocator(xticks))  # type: ignore[arg-type]
-    ax.yaxis.set_major_locator(FixedLocator(yticks))  # type: ignore[arg-type]
-    ax.zaxis.set_major_locator(FixedLocator(zticks))  # type: ignore[attr-defined, arg-type]
-
-    # Now set labels - hide labels near origin for cleaner look
-    ax.set_xticklabels(["" if -1.2 < val < 1.2 else f"{val:.1f}" for val in xticks])
-    ax.set_yticklabels(["" if -1.2 < val < 1.2 else f"{val:.1f}" for val in yticks])
-    ax.set_zticklabels(["" if -1.2 < val < 1.2 else f"{val:.1f}" for val in zticks])  # type: ignore
-    """
-    # Add quiver arrows (axes)
-    # Extract indices corresponding to X, Y, Z directions
-    idx_theta_90 = np.argmin(np.abs(theta_interp - 90))
-    idx_theta_0 = np.argmin(np.abs(theta_interp - 0))
-    idx_phi_0 = np.argmin(np.abs(phi_interp - 0))
-    idx_phi_90 = np.argmin(np.abs(phi_interp - 90))
-
-    # Get starting points for quivers
-    start_x = X[idx_theta_90, idx_phi_0]
-    start_y = Y[idx_theta_90, idx_phi_90]
-    start_z = Z[idx_theta_0, 0]  # phi index can be 0 since theta is 0
-
-    # Ensure starting points are not too close to zero
-    min_offset = 0.05
-    if np.abs(start_z) < min_offset:
-        start_z = min_offset
-
-    # Calculate the distances from each intersection point to the origin
-    dist_x = np.abs(start_x)
-    dist_y = np.abs(start_y)
-    dist_z = np.abs(start_z)
-
-    # Compute quiver lengths such that they don't exceed plot area
-    quiver_length = 0.25 * max(dist_x, dist_y, dist_z)  # Base length for X and Y axes
-    min_quiver_length = 0.1  # Minimum length to ensure visibility
-    quiver_length = max(quiver_length, min_quiver_length)
-
-    # Make Z-axis quiver longer to enhance visibility
-    quiver_length_z = quiver_length * 3.2  # Adjust the factor as needed
-
-    # Plot adjusted quiver arrows
-    ax.quiver(start_x, 0, 0, quiver_length*2.2, 0, 0, color='green', arrow_length_ratio=0.1, zorder=20)  # X-axis
-    ax.quiver(0, start_y, 0, 0, quiver_length*2.4, 0, color='red', arrow_length_ratio=0.1, zorder=20)    # Y-axis
-    ax.quiver(0, 0, start_z, 0, 0, quiver_length_z, color='blue', arrow_length_ratio=0.1, zorder=20)  # Z-axis
-    """
-    # 1) Figure out how large data extends in X, Y, Z so we know how big to draw axes
-    max_dim = max(np.nanmax(np.abs(X)), np.nanmax(np.abs(Y)), np.nanmax(np.abs(Z)))
-    # Make axis arrows extend beyond the data for visibility
-    axis_length = 1.3 * max_dim  # 30% bigger than data
-
-    # 2) Draw coordinate axis arrows using plot3D lines + cone heads for better 3D visibility
-    # Note: zorder doesn't work reliably in 3D, so we use thick lines that extend beyond the pattern
-    # and add text labels at the ends for clarity
-
-    # Arrow head length (fraction of axis length)
-    arrow_head = 0.1 * axis_length
-
-    # X-axis (green) - extends in positive X direction
-    ax.plot(
-        [0, axis_length], [0, 0], [0, 0], color="green", linewidth=2.5, linestyle="-", alpha=0.9
-    )
-    ax.quiver(
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        0,
-        0,
-        color="green",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
-    ax.text(
-        axis_length * 1.08,
-        0,
-        0,
-        "X",
-        color="green",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
-
-    # Y-axis (red) - extends in positive Y direction
-    ax.plot([0, 0], [0, axis_length], [0, 0], color="red", linewidth=2.5, linestyle="-", alpha=0.9)
-    ax.quiver(
-        0,
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        0,
-        color="red",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    ax.text(
-        0,
-        axis_length * 1.08,
-        0,
-        "Y",
-        color="red",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
-
-    # Z-axis (blue) - extends in positive Z direction
-    ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
-    ax.quiver(
-        0,
-        0,
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        color="blue",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    ax.text(
-        0,
-        0,
-        axis_length * 1.08,
-        "Z",
-        color="blue",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
+    # Configure axes: equal aspect, panes, grid, arrows
+    _setup_3d_axes(ax, X, Y, Z)
 
     # Set Title based on power_type with rounded TRP values
     if power_type == "total":
@@ -684,17 +628,15 @@ def plot_active_3d_data(
         plot_title = (
             f"3D Radiation Pattern - {power_type} at {frequency} MHz, TRP = {TRP_dBm:.2f} dBm"
         )
-    ax.set_title(plot_title, fontsize=16)
+    fig.suptitle(plot_title, fontsize=14, y=0.97)
 
     # Add a colorbar
-    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
-    cbar.set_label("Power (dBm)", rotation=270, labelpad=20, fontsize=14)
-    cbar.ax.tick_params(labelsize=12)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.08, shrink=0.65)
+    cbar.set_label("Power (dBm)", rotation=270, labelpad=20, fontsize=12)
+    cbar.ax.tick_params(labelsize=10)
 
-    # Add Max Power to top of Legend
-    ax.text2D(
-        1.12, 0.90, f"{max_eirp_dBm:.2f} dBm", transform=ax.transAxes, fontsize=12, weight="bold"
-    )
+    # Add Max Power to top of colorbar
+    cbar.ax.set_title(f"{max_eirp_dBm:.2f} dBm", fontsize=10, weight="bold", pad=4)
 
     # If save path provided, save the plot
     if save_path:
@@ -1391,18 +1333,11 @@ def plot_passive_3d_component(
 
     # Plotting
     plt.style.use("default")
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(1, 1, 1, projection="3d")
-
-    # Remove axis tick labels but retain grid
-    ax.grid(True)
-    ax.set_xticklabels([])  # Empty labels are fine without FixedLocator
-    ax.set_yticklabels([])
-    ax.set_zticklabels([])  # type: ignore
+    fig.subplots_adjust(left=0.0, right=0.88, bottom=0.0, top=0.92)
 
     # Color-scale respects Manual or Auto limits
-    # Colorbar uses manual limits if selected, otherwise auto
-    # Color‐mapping alone obeys your manual z-limits
     if axis_mode == "manual":
         norm = Normalize(zmin, zmax)
     else:
@@ -1420,110 +1355,10 @@ def plot_passive_3d_component(
         zorder=1,
     )
 
-    # Make panes transparent so axes show through
-    ax.xaxis.pane.fill = False  # type: ignore
-    ax.yaxis.pane.fill = False  # type: ignore
-    ax.zaxis.pane.fill = False  # type: ignore
-    ax.xaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.yaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.zaxis.pane.set_edgecolor("gray")  # type: ignore
-    ax.xaxis.pane.set_alpha(0.2)  # type: ignore
-    ax.yaxis.pane.set_alpha(0.2)  # type: ignore
-    ax.zaxis.pane.set_alpha(0.2)  # type: ignore
+    ax.view_init(elev=20, azim=-30)
 
-    # Calculate axis length based on data extent
-    max_dim = max(np.nanmax(np.abs(X)), np.nanmax(np.abs(Y)), np.nanmax(np.abs(Z)))
-    # Make axis arrows extend beyond the data for visibility
-    axis_length = 1.3 * max_dim  # 30% bigger than data
-
-    # Draw coordinate axis arrows using plot3D lines + markers for better 3D visibility
-    # Note: zorder doesn't work reliably in 3D, so we use thick lines that extend beyond the pattern
-    # and add text labels at the ends for clarity
-
-    # Arrow head length (fraction of axis length)
-    arrow_head = 0.1 * axis_length
-
-    # X-axis (green) - extends in positive X direction
-    ax.plot(
-        [0, axis_length], [0, 0], [0, 0], color="green", linewidth=2.5, linestyle="-", alpha=0.9
-    )
-    ax.quiver(
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        0,
-        0,
-        color="green",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    _label_fx = [pe.withStroke(linewidth=3, foreground="white")]
-    ax.text(
-        axis_length * 1.08,
-        0,
-        0,
-        "X",
-        color="green",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
-
-    # Y-axis (red) - extends in positive Y direction
-    ax.plot([0, 0], [0, axis_length], [0, 0], color="red", linewidth=2.5, linestyle="-", alpha=0.9)
-    ax.quiver(
-        0,
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        0,
-        color="red",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    ax.text(
-        0,
-        axis_length * 1.08,
-        0,
-        "Y",
-        color="red",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
-
-    # Z-axis (blue) - extends in positive Z direction
-    ax.plot([0, 0], [0, 0], [0, axis_length], color="blue", linewidth=2.5, linestyle="-", alpha=0.9)
-    ax.quiver(
-        0,
-        0,
-        axis_length - arrow_head,
-        0,
-        0,
-        arrow_head,
-        color="blue",
-        arrow_length_ratio=0.5,
-        linewidth=2,
-    )
-    ax.text(
-        0,
-        0,
-        axis_length * 1.08,
-        "Z",
-        color="blue",
-        fontsize=14,
-        fontweight="bold",
-        ha="center",
-        path_effects=_label_fx,
-    )
-
-    # Adjust the view angle for a top-down view
-    # ax.view_init(elev=10, azim=-25)
-    ax.view_init(elev=20, azim=-30)  # Tweaking the view angle for a better perspective
+    # Configure axes: equal aspect, panes, grid, arrows
+    _setup_3d_axes(ax, X, Y, Z)
 
     # Set Title
     ax.set_title(plot_title, fontsize=16)
@@ -2681,8 +2516,9 @@ def plot_3d_pattern_masked(
     gray = np.array([0.82, 0.82, 0.82, 1.0])
     face_colors[~in_band] = mask_alpha * face_colors[~in_band] + (1 - mask_alpha) * gray
 
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection="3d")
+    fig.subplots_adjust(left=0.0, right=0.88, bottom=0.0, top=0.92)
 
     ax.plot_surface(
         X,
@@ -2708,20 +2544,10 @@ def plot_3d_pattern_masked(
         ring_z = r_ring * np.cos(t_rad) * np.ones_like(ring_phi)
         ax.plot(ring_x, ring_y, ring_z, color="yellow", linewidth=2, alpha=0.9)
 
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_zticklabels([])
-    ax.grid(True)
-
-    # Transparent panes
-    ax.xaxis.pane.fill = False
-    ax.yaxis.pane.fill = False
-    ax.zaxis.pane.fill = False
-    ax.xaxis.pane.set_alpha(0.2)
-    ax.yaxis.pane.set_alpha(0.2)
-    ax.zaxis.pane.set_alpha(0.2)
-
     ax.view_init(elev=20, azim=-30)
+
+    # Configure axes: equal aspect, panes, grid, arrows
+    _setup_3d_axes(ax, X, Y, Z)
     ax.set_title(
         f"3D {data_label} Pattern — Horizon Band {theta_highlight_min}–{theta_highlight_max}° "
         f"@ {frequency} MHz",
@@ -2969,25 +2795,28 @@ def plot_link_budget_summary(
     ax_table = fig.add_subplot(fig_gs[0])
     ax_table.axis("off")
 
-    gt_label = "Peak EIRP" if is_active else "Tx Gain (Gt)"
+    gt_label = "Peak Horizon EIRP (θ=90°)" if is_active else "Peak Horizon Gain (θ=90°)"
     gt_value = f"{peak_gain:.1f} dBm" if is_active else f"{peak_gain:.1f} dBi"
+
+    min_gt_label = "Min EIRP for target" if is_active else "Min Gt for target range"
+    min_gt_unit = "dBm" if is_active else "dBi"
 
     table_data = []
     if not is_active:
         table_data.append(["Tx Power (Pt)", f"{pt_dbm:.1f} dBm"])
     table_data.extend([
         [gt_label, gt_value],
-        [f"Path Loss @ {target_range_m:.1f}m", f"-{pl_target:.1f} dB"],
-        ["Misc Losses", f"-{misc_loss_db:.1f} dB"],
+        [f"Path Loss @ {target_range_m:.1f}m", f"{-abs(pl_target):.1f} dB"],
+        ["Misc Losses", f"{-abs(misc_loss_db):.1f} dB"],
         ["Rx Gain (Gr)", f"{gr_dbi:.1f} dBi"],
         ["Rx Sensitivity", f"{pr_dbm:.1f} dBm"],
         ["", ""],
         ["Link Margin @ target", f"{margin:+.1f} dB"],
         ["Peak Range", f"{peak_range:.1f} m"],
         ["Worst-Case Range", f"{worst_range:.1f} m"],
-        ["Min Gt for target range", f"{min_gt:.1f} dBi"],
-        ["Frequency", f"{freq_mhz} MHz"],
-        ["Path Loss Exponent (n)", f"{path_loss_exp}"],
+        [min_gt_label, f"{min_gt:.1f} {min_gt_unit}"],
+        ["Frequency", f"{freq_mhz:.1f} MHz"],
+        ["Path Loss Exponent (n)", f"{path_loss_exp:.1f}"],
     ])
 
     table = ax_table.table(
@@ -3005,13 +2834,16 @@ def plot_link_budget_summary(
         table[0, j].set_facecolor("#4A90E2")
         table[0, j].set_text_props(color="white", fontweight="bold")
 
-    # Highlight margin row (after the blank separator row)
-    margin_row_idx = len(table_data) - 5  # "Link Margin" row
-    if margin_row_idx > 0:
+    # Highlight margin row — find explicitly by content rather than fragile offset
+    margin_row_data_idx = next(
+        (i for i, row in enumerate(table_data) if "Link Margin" in row[0]), None
+    )
+    if margin_row_data_idx is not None:
+        margin_row_tbl = margin_row_data_idx + 1  # +1 for header row in table
         color = "#4CAF50" if margin >= 0 else "#F44336"
         for j in range(2):
-            table[margin_row_idx, j].set_facecolor(color)
-            table[margin_row_idx, j].set_text_props(color="white", fontweight="bold")
+            table[margin_row_tbl, j].set_facecolor(color)
+            table[margin_row_tbl, j].set_text_props(color="white", fontweight="bold")
 
     ax_table.set_title(
         f"Link Budget Summary — {freq_mhz} MHz",
@@ -3028,9 +2860,10 @@ def plot_link_budget_summary(
     ax_polar.bar(phi_rad, range_m, width=bar_width,
                  color=colors, alpha=0.7, edgecolor="gray", linewidth=0.3)
 
-    # Target range ring
-    target_ring = np.full_like(phi_rad, target_range_m)
-    ax_polar.plot(phi_rad, target_ring, "k--", linewidth=1.5,
+    # Target range ring — close the loop so the dashed circle is complete
+    phi_rad_closed = np.append(phi_rad, phi_rad[0])
+    target_ring = np.full_like(phi_rad_closed, target_range_m)
+    ax_polar.plot(phi_rad_closed, target_ring, "k--", linewidth=1.5,
                   label=f"Target: {target_range_m:.0f} m")
 
     ax_polar.set_title(
@@ -3039,6 +2872,7 @@ def plot_link_budget_summary(
     )
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
+    ax_polar.set_rlabel_position(67.5)  # move radial labels clear of data
     ax_polar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=9)
 
     plt.tight_layout()
@@ -3078,7 +2912,7 @@ def plot_indoor_coverage_map(
     distances = np.linspace(0.5, max_distance_m, 60)
 
     # Path loss models
-    pl_free = np.array([free_space_path_loss(freq_mhz, d) for d in distances])
+    pl_free = free_space_path_loss(freq_mhz, distances)
     pl_indoor = log_distance_path_loss(freq_mhz, distances, n=path_loss_exp)
     wl = wall_penetration_loss(freq_mhz, wall_material)
     pl_walls = pl_indoor + n_walls * wl
@@ -3088,16 +2922,18 @@ def plot_indoor_coverage_map(
     theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
     horizon_gain = gain_2d[theta_90_idx, :]
 
-    # Received power heatmap: Pr(phi, d) = Pt + G(phi) - PL(d)
+    # Received power heatmap: Pr(phi, d) = Pt + G(phi) - PL(d) - shadow_margin
     effective_pt = 0.0 if is_active else pt_dbm
-    pr_map = effective_pt + horizon_gain[np.newaxis, :] - pl_walls[:, np.newaxis]
+    pl_total = pl_walls + shadow_fading_db  # include shadow fading margin
+    pr_map = effective_pt + horizon_gain[np.newaxis, :] - pl_total[:, np.newaxis]
 
-    # Coverage range per azimuth
+    # Coverage range per azimuth (with shadow fading margin applied)
     coverage_range = np.zeros(len(phi_deg))
     fspl_1m = free_space_path_loss(freq_mhz, 1.0)
+    total_wall_loss = n_walls * wl + shadow_fading_db
     for i, g in enumerate(horizon_gain):
         allowed_pl = effective_pt + g - pr_sensitivity_dbm
-        net_pl = allowed_pl - n_walls * wl
+        net_pl = allowed_pl - total_wall_loss
         if path_loss_exp > 0 and net_pl > fspl_1m:
             coverage_range[i] = 10 ** ((net_pl - fspl_1m) / (10 * path_loss_exp))
         else:
@@ -3113,7 +2949,7 @@ def plot_indoor_coverage_map(
     ax_pl.plot(distances, pl_indoor, "g-", linewidth=1.5,
                label=f"Indoor (n={path_loss_exp})")
     ax_pl.plot(distances, pl_walls, "r-", linewidth=2,
-               label=f"+ {n_walls}× {wall_material} ({wl:.1f} dB)")
+               label=f"+ {n_walls}× {wall_material} ({n_walls * wl:.1f} dB)")
     ax_pl.plot(distances, pl_shadow, "r:", linewidth=1,
                label=f"+ {shadow_fading_db:.0f} dB shadow margin")
     ax_pl.set_xlabel("Distance (m)")
@@ -3125,7 +2961,9 @@ def plot_indoor_coverage_map(
 
     # --- Center: Received Power Heatmap ---
     ax_hm = fig.add_subplot(fig_gs[1])
-    extent = [phi_deg[0], phi_deg[-1], distances[0], distances[-1]]
+    dphi = phi_deg[1] - phi_deg[0] if len(phi_deg) > 1 else 15.0
+    extent = [phi_deg[0] - dphi / 2, phi_deg[-1] + dphi / 2,
+              distances[0], distances[-1]]
     vmin = pr_sensitivity_dbm - 20
     vmax = float(np.max(pr_map))
     im = ax_hm.imshow(
@@ -3147,11 +2985,13 @@ def plot_indoor_coverage_map(
 
     # --- Right: Coverage Range Polar ---
     ax_polar = fig.add_subplot(fig_gs[2], projection="polar")
-    phi_rad = np.deg2rad(phi_deg)
-    ax_polar.fill(phi_rad, coverage_range, alpha=0.3, color="#4CAF50")
-    ax_polar.plot(phi_rad, coverage_range, "g-", linewidth=2, label="Coverage range")
+    phi_rad_closed = np.append(np.deg2rad(phi_deg), np.deg2rad(phi_deg[0]))
+    cr_closed = np.append(coverage_range, coverage_range[0])
+    ax_polar.fill(phi_rad_closed, cr_closed, alpha=0.3, color="#4CAF50")
+    ax_polar.plot(phi_rad_closed, cr_closed, "g-", linewidth=2, label="Coverage range")
     ax_polar.set_title(
-        f"Coverage Range @ {pr_sensitivity_dbm} dBm\n{n_walls}× {wall_material}",
+        f"Coverage Range @ {pr_sensitivity_dbm:.0f} dBm\n"
+        f"{n_walls}× {wall_material} + {shadow_fading_db:.0f} dB shadow margin",
         fontsize=11, fontweight="bold", pad=15,
     )
     ax_polar.set_theta_zero_location("N")
@@ -3188,6 +3028,10 @@ def plot_fading_analysis(
     fading_model="rayleigh",
     fading_rician_k=10.0,
     realizations=1000,
+    target_distance_m=5.0,
+    path_loss_exp=2.0,
+    misc_loss_db=0.0,
+    gr_dbi=0.0,
     data_label="Gain",
     data_unit="dBi",
     save_path=None,
@@ -3195,6 +3039,9 @@ def plot_fading_analysis(
     """
     Fading analysis: CDF curves, fade margin chart, pattern with fading envelope,
     and outage probability bar chart.
+
+    The outage subplot computes received power at ``target_distance_m`` using
+    a log-distance path loss model so results are physically meaningful.
     """
     is_active = data_label != "Gain"
     model = str(fading_model).strip().lower()
@@ -3307,7 +3154,7 @@ def plot_fading_analysis(
         mean_flat + std_flat,
         alpha=0.2,
         color="blue",
-        label="+-1 sigma envelope",
+        label=r"$\pm 1\sigma$ envelope",
     )
     ax.plot(phi_deg, mean_flat, "b-", linewidth=2, label="Mean (faded)")
     ax.plot(phi_deg, gain_2d[theta_90_idx, :], "k--", linewidth=1, label="Free-space")
@@ -3326,18 +3173,24 @@ def plot_fading_analysis(
     ax = axes[1, 1]
     horizon_vals = gain_2d[theta_90_idx, :]
     effective_pt = 0.0 if is_active else pt_dbm
+    # Compute mean received power including path loss at target distance
+    fspl_d0 = free_space_path_loss(freq_mhz, 1.0)
+    pl_at_target = fspl_d0 + 10.0 * path_loss_exp * np.log10(
+        max(target_distance_m, 0.01)
+    )
+    mean_rx = effective_pt + horizon_vals + gr_dbi - pl_at_target - misc_loss_db
     rx_threshold = np.full_like(horizon_vals, pr_sensitivity_dbm)
-    mean_rx = effective_pt + horizon_vals
     if model == "rician":
         outage_prob = rician_cdf(rx_threshold, mean_rx, K_factor=max(k_factor, 0.1))
         outage_title = f"Rician Outage per Azimuth (K={max(k_factor, 0.1):.1f})"
     else:
         outage_prob = rayleigh_cdf(rx_threshold, mean_rx)
         outage_title = "Rayleigh Outage per Azimuth"
+    target_outage_pct = 100.0 - target_reliability
     bar_width = np.mean(np.diff(phi_deg)) * 0.8 if len(phi_deg) > 1 else 3.0
     colors_out = []
     for op in outage_prob:
-        if op < 0.01:
+        if op < target_outage_pct / 100.0:
             colors_out.append("#4CAF50")
         elif op < 0.1:
             colors_out.append("#FFC107")
@@ -3351,15 +3204,21 @@ def plot_fading_analysis(
         edgecolor="gray",
         linewidth=0.3,
     )
-    ax.axhline(y=1.0, color="r", linestyle="--", linewidth=1, label="1% outage")
+    ax.axhline(
+        y=target_outage_pct, color="r", linestyle="--", linewidth=1,
+        label=f"{target_outage_pct:.0g}% outage",
+    )
     ax.set_xlabel("Azimuth phi (deg)")
     ax.set_ylabel("Outage Probability (%)")
-    ax.set_title(f"{outage_title}\n(at Rx Sensitivity)", fontweight="bold")
+    ax.set_title(
+        f"{outage_title}\n(d={target_distance_m:.0f} m, Rx={pr_sensitivity_dbm:.0f} dBm)",
+        fontweight="bold",
+    )
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
     fig.suptitle(f"Multipath Fading Analysis - {freq_mhz} MHz", fontsize=14, fontweight="bold")
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
 
     if save_path:
         fname = f"fading_analysis_{freq_mhz}MHz.png"
@@ -3746,6 +3605,10 @@ def generate_advanced_analysis_plots(
             fading_model=fading_model,
             fading_rician_k=fading_rician_k,
             realizations=fading_realizations,
+            target_distance_m=lb_target_range_m,
+            path_loss_exp=lb_path_loss_exp,
+            misc_loss_db=lb_misc_loss_db,
+            gr_dbi=lb_gr_dbi,
             data_label=data_label,
             data_unit=data_unit,
             save_path=save_path,

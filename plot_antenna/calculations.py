@@ -932,15 +932,16 @@ def free_space_path_loss(freq_mhz, distance_m):
 
     Parameters:
         freq_mhz: frequency in MHz
-        distance_m: distance in metres (must be > 0)
+        distance_m: distance in metres (scalar or array, must be > 0)
 
     Returns:
-        Path loss in dB (positive value).
+        Path loss in dB (positive value, scalar or array matching distance_m).
     """
-    if distance_m <= 0:
-        return 0.0
+    distance_m = np.asarray(distance_m, dtype=float)
+    d_safe = np.maximum(distance_m, 1e-6)
     freq_hz = freq_mhz * 1e6
-    return 20 * np.log10(distance_m) + 20 * np.log10(freq_hz) - 147.55
+    result = 20 * np.log10(d_safe) + 20 * np.log10(freq_hz) - 147.55
+    return float(result) if result.ndim == 0 else result
 
 
 def friis_range_estimate(pt_dbm, pr_dbm, gt_dbi, gr_dbi, freq_mhz,
