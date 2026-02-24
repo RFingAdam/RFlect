@@ -20,9 +20,19 @@
 
 ### Improvements
 
+- **Professional 3D antenna pattern plots**: Shared `_setup_3d_axes()` helper across all 3D routines (active TRP, passive gain, masked horizon) with equal aspect ratio, symmetric limits, and transparent grid panes
+- **DUT orientation markers**: Short coloured arrows (X=green, Y=red, Z=blue) on the negative axis side match the physical orientation marker used in the anechoic chamber, enabling correlation between 3D plots and measured antenna position
+- **3D plot layout**: Tighter figure layout with suptitle, improved colorbar positioning, and max EIRP/gain annotation on the colorbar
 - **Bulk processing failure reporting**: Per-job/per-file outcome tracking replaces blanket success-on-partial-failure messages
 - **Non-blocking update checker**: Startup update check runs in a background thread — no more GUI freezes on slow networks
 - **Matplotlib deprecation cleanup**: Replaced deprecated `cm.get_cmap` calls for forward compatibility
+
+### Bug Fixes
+
+- **Indoor propagation heatmap**: Vectorised `free_space_path_loss()` to accept distance arrays, fixing the indoor propagation heatmap calculation that previously failed on array inputs
+- **Multipath fading outage plot**: Outage probability calculation now correctly includes path loss; previously the fading-only CDF produced unrealistic outage values
+- **Shadow fading heatmap**: Shadow fading sigma is now applied to the indoor propagation heatmap colourmap; previously the shadow fading parameter was accepted but had no visible effect
+- **Link budget margin row**: Fixed hardcoded row index for the margin annotation in the link budget waterfall chart
 
 ### Tests
 
