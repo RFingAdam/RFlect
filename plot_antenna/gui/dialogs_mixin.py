@@ -1236,29 +1236,38 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
         # ── Link Budget / Range Estimation ──
         lb_frame = tk.LabelFrame(
-            parent, text="Link Budget / Range Estimation",
-            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+            parent,
+            text="Link Budget / Range Estimation",
+            bg=DARK_BG_COLOR,
+            fg=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
         )
         lb_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
         row += 1
 
-        self._cb_link_budget_var = tk.BooleanVar(
-            value=getattr(self, "link_budget_enabled", False)
-        )
+        self._cb_link_budget_var = tk.BooleanVar(value=getattr(self, "link_budget_enabled", False))
         tk.Checkbutton(
-            lb_frame, text="Enable Link Budget Analysis",
+            lb_frame,
+            text="Enable Link Budget Analysis",
             variable=self._cb_link_budget_var,
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR,
+            activeforeground=LIGHT_TEXT_COLOR,
         ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
 
         # Protocol preset dropdown
-        tk.Label(lb_frame, text="Protocol:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=0, sticky=tk.W, padx=5)
+        tk.Label(lb_frame, text="Protocol:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=0, sticky=tk.W, padx=5
+        )
         protocol_options = list(PROTOCOL_PRESETS.keys())
         self._lb_protocol_menu = ttk.Combobox(
-            lb_frame, textvariable=self.lb_protocol_preset,
-            values=protocol_options, width=22, state="readonly",
+            lb_frame,
+            textvariable=self.lb_protocol_preset,
+            values=protocol_options,
+            width=22,
+            state="readonly",
         )
         self._lb_protocol_menu.grid(row=1, column=1, columnspan=2, sticky=tk.W, padx=5)
 
@@ -1270,75 +1279,121 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                     self.lb_rx_sensitivity.set(sens)
                 if pwr is not None:
                     self.lb_tx_power.set(pwr)
+
         trace_id = self.lb_protocol_preset.trace_add("write", _on_protocol_change)
         self._advanced_trace_handles.append((self.lb_protocol_preset, "write", trace_id))
 
         # Tx Power
-        tk.Label(lb_frame, text="Tx Power (dBm):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_tx_power, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=1, padx=5)
+        tk.Label(lb_frame, text="Tx Power (dBm):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_tx_power,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=1, padx=5)
 
         # Rx Sensitivity
-        tk.Label(lb_frame, text="Rx Sensitivity (dBm):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=2, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_rx_sensitivity, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=3, padx=5)
+        tk.Label(
+            lb_frame, text="Rx Sensitivity (dBm):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        ).grid(row=2, column=2, sticky=tk.W, padx=5)
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_rx_sensitivity,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=3, padx=5)
 
         # Rx Gain
-        tk.Label(lb_frame, text="Rx Gain (dBi):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=0, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_rx_gain, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=1, padx=5)
+        tk.Label(lb_frame, text="Rx Gain (dBi):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=3, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_rx_gain,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=3, column=1, padx=5)
 
         # Path loss exponent
-        tk.Label(lb_frame, text="Path Loss Exp (n):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=2, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_path_loss_exp, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=3, padx=5)
+        tk.Label(lb_frame, text="Path Loss Exp (n):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=3, column=2, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_path_loss_exp,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=3, column=3, padx=5)
 
         # Misc loss + target range
-        tk.Label(lb_frame, text="Misc Loss (dB):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=4, column=0, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_misc_loss, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=4, column=1, padx=5)
+        tk.Label(lb_frame, text="Misc Loss (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=4, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_misc_loss,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=4, column=1, padx=5)
 
-        tk.Label(lb_frame, text="Target Range (m):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=4, column=2, sticky=tk.W, padx=5)
-        tk.Entry(lb_frame, textvariable=self.lb_target_range, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=4, column=3, padx=5)
+        tk.Label(lb_frame, text="Target Range (m):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=4, column=2, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            lb_frame,
+            textvariable=self.lb_target_range,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=4, column=3, padx=5)
 
         # ── Indoor Propagation ──
         indoor_frame = tk.LabelFrame(
-            parent, text="Indoor Propagation",
-            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+            parent,
+            text="Indoor Propagation",
+            bg=DARK_BG_COLOR,
+            fg=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
         )
         indoor_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
         row += 1
 
-        self._cb_indoor_var = tk.BooleanVar(
-            value=getattr(self, "indoor_analysis_enabled", False)
-        )
+        self._cb_indoor_var = tk.BooleanVar(value=getattr(self, "indoor_analysis_enabled", False))
         tk.Checkbutton(
-            indoor_frame, text="Enable Indoor Analysis",
+            indoor_frame,
+            text="Enable Indoor Analysis",
             variable=self._cb_indoor_var,
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR,
+            activeforeground=LIGHT_TEXT_COLOR,
         ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
 
         # Environment dropdown
-        tk.Label(indoor_frame, text="Environment:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=0, sticky=tk.W, padx=5)
+        tk.Label(indoor_frame, text="Environment:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=0, sticky=tk.W, padx=5
+        )
         env_options = list(ENVIRONMENT_PRESETS.keys())
         self._indoor_env_menu = ttk.Combobox(
-            indoor_frame, textvariable=self.indoor_environment,
-            values=env_options, width=18, state="readonly",
+            indoor_frame,
+            textvariable=self.indoor_environment,
+            values=env_options,
+            width=18,
+            state="readonly",
         )
         self._indoor_env_menu.grid(row=1, column=1, sticky=tk.W, padx=5)
 
@@ -1353,137 +1408,222 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                     self.fading_model.set(fading_m)
                     if k > 0:
                         self.fading_rician_k.set(float(k))
+
         trace_id = self.indoor_environment.trace_add("write", _on_env_change)
         self._advanced_trace_handles.append((self.indoor_environment, "write", trace_id))
 
-        tk.Label(indoor_frame, text="Path Loss Exp (n):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=2, sticky=tk.W, padx=5)
-        tk.Entry(indoor_frame, textvariable=self.indoor_path_loss_exp, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=1, column=3, padx=5)
+        tk.Label(
+            indoor_frame, text="Path Loss Exp (n):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        ).grid(row=1, column=2, sticky=tk.W, padx=5)
+        tk.Entry(
+            indoor_frame,
+            textvariable=self.indoor_path_loss_exp,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=1, column=3, padx=5)
 
         # Walls + material
-        tk.Label(indoor_frame, text="Walls:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, sticky=tk.W, padx=5)
+        tk.Label(indoor_frame, text="Walls:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=0, sticky=tk.W, padx=5
+        )
         tk.Spinbox(
-            indoor_frame, textvariable=self.indoor_num_walls,
-            from_=0, to=10, width=4,
-            bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+            indoor_frame,
+            textvariable=self.indoor_num_walls,
+            from_=0,
+            to=10,
+            width=4,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=2, column=1, sticky=tk.W, padx=5)
 
-        tk.Label(indoor_frame, text="Material:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=2, sticky=tk.W, padx=5)
+        tk.Label(indoor_frame, text="Material:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=2, sticky=tk.W, padx=5
+        )
         wall_options = ["drywall", "wood", "glass", "brick", "concrete", "metal"]
         ttk.Combobox(
-            indoor_frame, textvariable=self.indoor_wall_material,
-            values=wall_options, width=12, state="readonly",
+            indoor_frame,
+            textvariable=self.indoor_wall_material,
+            values=wall_options,
+            width=12,
+            state="readonly",
         ).grid(row=2, column=3, sticky=tk.W, padx=5)
 
         # Shadow fading + max distance
-        tk.Label(indoor_frame, text="Shadow σ (dB):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=0, sticky=tk.W, padx=5)
-        tk.Entry(indoor_frame, textvariable=self.indoor_shadow_fading, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=1, padx=5)
+        tk.Label(indoor_frame, text="Shadow σ (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=3, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            indoor_frame,
+            textvariable=self.indoor_shadow_fading,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=3, column=1, padx=5)
 
-        tk.Label(indoor_frame, text="Max Distance (m):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=2, sticky=tk.W, padx=5)
-        tk.Entry(indoor_frame, textvariable=self.indoor_max_distance, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=3, column=3, padx=5)
+        tk.Label(
+            indoor_frame, text="Max Distance (m):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        ).grid(row=3, column=2, sticky=tk.W, padx=5)
+        tk.Entry(
+            indoor_frame,
+            textvariable=self.indoor_max_distance,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=3, column=3, padx=5)
 
         # ── Multipath Fading ──
         fading_frame = tk.LabelFrame(
-            parent, text="Multipath Fading",
-            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+            parent,
+            text="Multipath Fading",
+            bg=DARK_BG_COLOR,
+            fg=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
         )
         fading_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
         row += 1
 
-        self._cb_fading_var = tk.BooleanVar(
-            value=getattr(self, "fading_analysis_enabled", False)
-        )
+        self._cb_fading_var = tk.BooleanVar(value=getattr(self, "fading_analysis_enabled", False))
         tk.Checkbutton(
-            fading_frame, text="Enable Fading Analysis",
+            fading_frame,
+            text="Enable Fading Analysis",
             variable=self._cb_fading_var,
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR,
+            activeforeground=LIGHT_TEXT_COLOR,
         ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
 
-        tk.Label(fading_frame, text="Model:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=0, sticky=tk.W, padx=5)
+        tk.Label(fading_frame, text="Model:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=0, sticky=tk.W, padx=5
+        )
         ttk.Combobox(
-            fading_frame, textvariable=self.fading_model,
-            values=["rayleigh", "rician"], width=12, state="readonly",
+            fading_frame,
+            textvariable=self.fading_model,
+            values=["rayleigh", "rician"],
+            width=12,
+            state="readonly",
         ).grid(row=1, column=1, sticky=tk.W, padx=5)
 
-        tk.Label(fading_frame, text="K-factor:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=2, sticky=tk.W, padx=5)
-        tk.Entry(fading_frame, textvariable=self.fading_rician_k, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=1, column=3, padx=5)
+        tk.Label(fading_frame, text="K-factor:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=2, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            fading_frame,
+            textvariable=self.fading_rician_k,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=1, column=3, padx=5)
 
-        tk.Label(fading_frame, text="Target Reliability (%):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5)
-        tk.Entry(fading_frame, textvariable=self.fading_target_reliability, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=2, padx=5)
+        tk.Label(
+            fading_frame, text="Target Reliability (%):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
+        ).grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5)
+        tk.Entry(
+            fading_frame,
+            textvariable=self.fading_target_reliability,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=2, padx=5)
 
-        tk.Label(fading_frame, text="Realizations:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=3, column=0, sticky=tk.W, padx=5)
+        tk.Label(fading_frame, text="Realizations:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=3, column=0, sticky=tk.W, padx=5
+        )
         tk.Spinbox(
-            fading_frame, textvariable=self.fading_realizations,
-            from_=50, to=10000, increment=50, width=8,
-            bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+            fading_frame,
+            textvariable=self.fading_realizations,
+            from_=50,
+            to=10000,
+            increment=50,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=3, column=1, sticky=tk.W, padx=5)
 
         # ── MIMO / Diversity ──
         mimo_frame = tk.LabelFrame(
-            parent, text="MIMO / Diversity",
-            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+            parent,
+            text="MIMO / Diversity",
+            bg=DARK_BG_COLOR,
+            fg=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
         )
         mimo_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
         row += 1
 
-        self._cb_mimo_var = tk.BooleanVar(
-            value=getattr(self, "mimo_analysis_enabled", False)
-        )
+        self._cb_mimo_var = tk.BooleanVar(value=getattr(self, "mimo_analysis_enabled", False))
         tk.Checkbutton(
-            mimo_frame, text="Enable MIMO Analysis",
+            mimo_frame,
+            text="Enable MIMO Analysis",
             variable=self._cb_mimo_var,
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR,
+            activeforeground=LIGHT_TEXT_COLOR,
         ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
 
-        tk.Label(mimo_frame, text="SNR (dB):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=0, sticky=tk.W, padx=5)
-        tk.Entry(mimo_frame, textvariable=self.mimo_snr, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=1, column=1, padx=5)
+        tk.Label(mimo_frame, text="SNR (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            mimo_frame,
+            textvariable=self.mimo_snr,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=1, column=1, padx=5)
 
-        tk.Label(mimo_frame, text="Fading:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=1, column=2, sticky=tk.W, padx=5)
+        tk.Label(mimo_frame, text="Fading:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=1, column=2, sticky=tk.W, padx=5
+        )
         ttk.Combobox(
-            mimo_frame, textvariable=self.mimo_fading_model,
-            values=["rayleigh", "rician"], width=12, state="readonly",
+            mimo_frame,
+            textvariable=self.mimo_fading_model,
+            values=["rayleigh", "rician"],
+            width=12,
+            state="readonly",
         ).grid(row=1, column=3, sticky=tk.W, padx=5)
 
-        tk.Label(mimo_frame, text="K-factor:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, sticky=tk.W, padx=5)
-        tk.Entry(mimo_frame, textvariable=self.mimo_rician_k, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=1, padx=5)
+        tk.Label(mimo_frame, text="K-factor:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            mimo_frame,
+            textvariable=self.mimo_rician_k,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=1, padx=5)
 
-        tk.Label(mimo_frame, text="XPR (dB):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=2, sticky=tk.W, padx=5)
-        tk.Entry(mimo_frame, textvariable=self.mimo_xpr, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=3, padx=5)
+        tk.Label(mimo_frame, text="XPR (dB):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=2, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            mimo_frame,
+            textvariable=self.mimo_xpr,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=3, padx=5)
 
         # ── Wearable / Medical ──
         wear_frame = tk.LabelFrame(
-            parent, text="Wearable / Medical",
-            bg=DARK_BG_COLOR, fg=ACCENT_BLUE_COLOR, font=SECTION_HEADER_FONT,
+            parent,
+            text="Wearable / Medical",
+            bg=DARK_BG_COLOR,
+            fg=ACCENT_BLUE_COLOR,
+            font=SECTION_HEADER_FONT,
         )
         wear_frame.grid(row=row, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
         row += 1
@@ -1492,10 +1632,14 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             value=getattr(self, "wearable_analysis_enabled", False)
         )
         tk.Checkbutton(
-            wear_frame, text="Enable Wearable Assessment",
+            wear_frame,
+            text="Enable Wearable Assessment",
             variable=self._cb_wearable_var,
-            bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-            activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            selectcolor=SURFACE_COLOR,
+            activebackground=DARK_BG_COLOR,
+            activeforeground=LIGHT_TEXT_COLOR,
         ).grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
 
         # Body positions checkboxes
@@ -1503,43 +1647,73 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         pos_frame.grid(row=1, column=0, columnspan=4, sticky=tk.W, padx=5)
         for i, (pos, var) in enumerate(self.wearable_positions_var.items()):
             tk.Checkbutton(
-                pos_frame, text=pos.capitalize(), variable=var,
-                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-                activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                pos_frame,
+                text=pos.capitalize(),
+                variable=var,
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                selectcolor=SURFACE_COLOR,
+                activebackground=DARK_BG_COLOR,
+                activeforeground=LIGHT_TEXT_COLOR,
             ).pack(side=tk.LEFT, padx=8)
 
-        tk.Label(wear_frame, text="Tx Power (mW):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=0, sticky=tk.W, padx=5)
-        tk.Entry(wear_frame, textvariable=self.wearable_tx_power_mw, width=8,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).grid(row=2, column=1, padx=5)
+        tk.Label(wear_frame, text="Tx Power (mW):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=0, sticky=tk.W, padx=5
+        )
+        tk.Entry(
+            wear_frame,
+            textvariable=self.wearable_tx_power_mw,
+            width=8,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).grid(row=2, column=1, padx=5)
 
-        tk.Label(wear_frame, text="Nearby Devices:", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).grid(row=2, column=2, sticky=tk.W, padx=5)
+        tk.Label(wear_frame, text="Nearby Devices:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
+            row=2, column=2, sticky=tk.W, padx=5
+        )
         tk.Spinbox(
-            wear_frame, textvariable=self.wearable_device_count,
-            from_=1, to=100, width=5,
-            bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
+            wear_frame,
+            textvariable=self.wearable_device_count,
+            from_=1,
+            to=100,
+            width=5,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
         ).grid(row=2, column=3, sticky=tk.W, padx=5)
 
         # Room size
         room_frame = tk.Frame(wear_frame, bg=DARK_BG_COLOR)
         room_frame.grid(row=3, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2)
-        tk.Label(room_frame, text="Room (m):", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).pack(side=tk.LEFT)
-        tk.Entry(room_frame, textvariable=self.wearable_room_x, width=5,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).pack(side=tk.LEFT, padx=2)
-        tk.Label(room_frame, text="×", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).pack(side=tk.LEFT)
-        tk.Entry(room_frame, textvariable=self.wearable_room_y, width=5,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).pack(side=tk.LEFT, padx=2)
-        tk.Label(room_frame, text="×", bg=DARK_BG_COLOR,
-                 fg=LIGHT_TEXT_COLOR).pack(side=tk.LEFT)
-        tk.Entry(room_frame, textvariable=self.wearable_room_z, width=5,
-                 bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR,
-                 insertbackground=LIGHT_TEXT_COLOR).pack(side=tk.LEFT, padx=2)
+        tk.Label(room_frame, text="Room (m):", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(
+            side=tk.LEFT
+        )
+        tk.Entry(
+            room_frame,
+            textvariable=self.wearable_room_x,
+            width=5,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(room_frame, text="×", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(side=tk.LEFT)
+        tk.Entry(
+            room_frame,
+            textvariable=self.wearable_room_y,
+            width=5,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(room_frame, text="×", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).pack(side=tk.LEFT)
+        tk.Entry(
+            room_frame,
+            textvariable=self.wearable_room_z,
+            width=5,
+            bg=SURFACE_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+            insertbackground=LIGHT_TEXT_COLOR,
+        ).pack(side=tk.LEFT, padx=2)
 
         return row
 
@@ -1566,9 +1740,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
         # Scrollable content area
         _canvas = tk.Canvas(outer_window, bg=DARK_BG_COLOR, highlightthickness=0)
-        _scrollbar = ttk.Scrollbar(
-            outer_window, orient="vertical", command=_canvas.yview
-        )
+        _scrollbar = ttk.Scrollbar(outer_window, orient="vertical", command=_canvas.yview)
         settings_window = tk.Frame(_canvas, bg=DARK_BG_COLOR)
 
         settings_window.bind(
@@ -1577,9 +1749,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
         )
         _cw = _canvas.create_window((0, 0), window=settings_window, anchor="nw")
         _canvas.configure(yscrollcommand=_scrollbar.set)
-        _canvas.bind(
-            "<Configure>", lambda e: _canvas.itemconfig(_cw, width=e.width)
-        )
+        _canvas.bind("<Configure>", lambda e: _canvas.itemconfig(_cw, width=e.width))
 
         def _on_mousewheel(event):
             try:
@@ -1751,9 +1921,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
-            _adv_next_row = self._build_advanced_analysis_frames(
-                settings_window, start_row=5
-            )
+            _adv_next_row = self._build_advanced_analysis_frames(settings_window, start_row=5)
 
             def save_active_settings():
                 self.interpolate_3d_plots = self.interpolate_var.get()
@@ -2068,9 +2236,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
-            _adv_next_row_p = self._build_advanced_analysis_frames(
-                settings_window, start_row=9
-            )
+            _adv_next_row_p = self._build_advanced_analysis_frames(settings_window, start_row=9)
 
             # Save button
             def save_passive_settings():

@@ -30,7 +30,6 @@ from .calculations import (
     free_space_path_loss,
     log_distance_path_loss,
     wall_penetration_loss,
-    apply_indoor_propagation,
     rayleigh_cdf,
     rician_cdf,
     fade_margin_for_reliability,
@@ -40,8 +39,6 @@ from .calculations import (
     mean_effective_gain_mimo,
     body_worn_pattern_analysis,
     dense_device_interference,
-    PROTOCOL_PRESETS,
-    ENVIRONMENT_PRESETS,
 )
 
 # Suppress noisy warnings during batch processing worker threads.
@@ -418,21 +415,27 @@ def _setup_3d_axes(ax, X, Y, Z):
     # marker placed on the DUT in the anechoic chamber.
     # All three arrows share the same origin so they form a
     # recognisable XYZ triad from every viewing angle.
-    corner = -lim                   # common origin at the negative corner
-    arrow_len = 0.35 * lim          # short — just an orientation hint
+    corner = -lim  # common origin at the negative corner
+    arrow_len = 0.35 * lim  # short — just an orientation hint
 
     _arrow_spec = [
         # (dx, dy, dz, colour)
-        (1, 0, 0, "green"),   # +X
-        (0, 1, 0, "red"),     # +Y
-        (0, 0, 1, "blue"),    # +Z
+        (1, 0, 0, "green"),  # +X
+        (0, 1, 0, "red"),  # +Y
+        (0, 0, 1, "blue"),  # +Z
     ]
     for dx, dy, dz, colour in _arrow_spec:
         ax.quiver(
-            corner, corner, corner,       # all start at the same corner
-            dx * arrow_len, dy * arrow_len, dz * arrow_len,
-            color=colour, arrow_length_ratio=0.3,
-            linewidth=2.5, alpha=0.9,
+            corner,
+            corner,
+            corner,  # all start at the same corner
+            dx * arrow_len,
+            dy * arrow_len,
+            dz * arrow_len,
+            color=colour,
+            arrow_length_ratio=0.3,
+            linewidth=2.5,
+            alpha=0.9,
         )
 
 
@@ -1723,8 +1726,6 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
     - frequency: Frequency in MHz
     - save_path: Optional path to save figures
     """
-    from mpl_toolkits.mplot3d import Axes3D
-
     # Interpolate for smoother visualization
     from scipy.interpolate import RegularGridInterpolator
 
@@ -2691,6 +2692,7 @@ def generate_maritime_plots(
 
 # ——— LINK BUDGET & RANGE ESTIMATION PLOTS ——————————————————————————
 
+
 def plot_link_budget_summary(
     freq_mhz,
     gain_2d,
@@ -2718,10 +2720,15 @@ def plot_link_budget_summary(
 
     # Get horizon gain/EIRP and range per azimuth
     range_m, horizon_gain = range_vs_azimuth(
-        gain_2d, theta_deg, phi_deg, freq_mhz,
+        gain_2d,
+        theta_deg,
+        phi_deg,
+        freq_mhz,
         pt_dbm=0.0 if is_active else pt_dbm,  # EIRP already includes Pt
-        pr_dbm=pr_dbm, gr_dbi=gr_dbi,
-        path_loss_exp=path_loss_exp, misc_loss_db=misc_loss_db,
+        pr_dbm=pr_dbm,
+        gr_dbi=gr_dbi,
+        path_loss_exp=path_loss_exp,
+        misc_loss_db=misc_loss_db,
     )
 
     peak_gain = float(np.max(horizon_gain))
@@ -2729,24 +2736,45 @@ def plot_link_budget_summary(
 
     # Peak and worst-case range
     peak_range = friis_range_estimate(
-        pt_dbm if not is_active else 0.0, pr_dbm, peak_gain, gr_dbi,
-        freq_mhz, path_loss_exp, misc_loss_db,
+        pt_dbm if not is_active else 0.0,
+        pr_dbm,
+        peak_gain,
+        gr_dbi,
+        freq_mhz,
+        path_loss_exp,
+        misc_loss_db,
     )
     worst_range = friis_range_estimate(
-        pt_dbm if not is_active else 0.0, pr_dbm, worst_gain, gr_dbi,
-        freq_mhz, path_loss_exp, misc_loss_db,
+        pt_dbm if not is_active else 0.0,
+        pr_dbm,
+        worst_gain,
+        gr_dbi,
+        freq_mhz,
+        path_loss_exp,
+        misc_loss_db,
     )
 
     # Min Tx gain for target range
     min_gt = min_tx_gain_for_range(
-        target_range_m, pt_dbm if not is_active else 0.0,
-        pr_dbm, gr_dbi, freq_mhz, path_loss_exp, misc_loss_db,
+        target_range_m,
+        pt_dbm if not is_active else 0.0,
+        pr_dbm,
+        gr_dbi,
+        freq_mhz,
+        path_loss_exp,
+        misc_loss_db,
     )
 
     # Link margin at target range with peak gain
     margin = link_margin(
-        pt_dbm if not is_active else 0.0, peak_gain, gr_dbi,
-        freq_mhz, target_range_m, path_loss_exp, misc_loss_db, pr_dbm,
+        pt_dbm if not is_active else 0.0,
+        peak_gain,
+        gr_dbi,
+        freq_mhz,
+        target_range_m,
+        path_loss_exp,
+        misc_loss_db,
+        pr_dbm,
     )
 
     # FSPL at 1m reference
@@ -2770,20 +2798,22 @@ def plot_link_budget_summary(
     table_data = []
     if not is_active:
         table_data.append(["Tx Power (Pt)", f"{pt_dbm:.1f} dBm"])
-    table_data.extend([
-        [gt_label, gt_value],
-        [f"Path Loss @ {target_range_m:.1f}m", f"{-abs(pl_target):.1f} dB"],
-        ["Misc Losses", f"{-abs(misc_loss_db):.1f} dB"],
-        ["Rx Gain (Gr)", f"{gr_dbi:.1f} dBi"],
-        ["Rx Sensitivity", f"{pr_dbm:.1f} dBm"],
-        ["", ""],
-        ["Link Margin @ target", f"{margin:+.1f} dB"],
-        ["Peak Range", f"{peak_range:.1f} m"],
-        ["Worst-Case Range", f"{worst_range:.1f} m"],
-        [min_gt_label, f"{min_gt:.1f} {min_gt_unit}"],
-        ["Frequency", f"{freq_mhz:.1f} MHz"],
-        ["Path Loss Exponent (n)", f"{path_loss_exp:.1f}"],
-    ])
+    table_data.extend(
+        [
+            [gt_label, gt_value],
+            [f"Path Loss @ {target_range_m:.1f}m", f"{-abs(pl_target):.1f} dB"],
+            ["Misc Losses", f"{-abs(misc_loss_db):.1f} dB"],
+            ["Rx Gain (Gr)", f"{gr_dbi:.1f} dBi"],
+            ["Rx Sensitivity", f"{pr_dbm:.1f} dBm"],
+            ["", ""],
+            ["Link Margin @ target", f"{margin:+.1f} dB"],
+            ["Peak Range", f"{peak_range:.1f} m"],
+            ["Worst-Case Range", f"{worst_range:.1f} m"],
+            [min_gt_label, f"{min_gt:.1f} {min_gt_unit}"],
+            ["Frequency", f"{freq_mhz:.1f} MHz"],
+            ["Path Loss Exponent (n)", f"{path_loss_exp:.1f}"],
+        ]
+    )
 
     table = ax_table.table(
         cellText=table_data,
@@ -2813,7 +2843,9 @@ def plot_link_budget_summary(
 
     ax_table.set_title(
         f"Link Budget Summary — {freq_mhz} MHz",
-        fontsize=13, fontweight="bold", pad=20,
+        fontsize=13,
+        fontweight="bold",
+        pad=20,
     )
 
     # --- Right: Range vs Azimuth polar plot ---
@@ -2823,18 +2855,22 @@ def plot_link_budget_summary(
     # Colour-code by whether range meets target
     colors = np.where(range_m >= target_range_m, "#4CAF50", "#F44336")
     bar_width = np.deg2rad(np.mean(np.diff(phi_deg))) if len(phi_deg) > 1 else np.deg2rad(5)
-    ax_polar.bar(phi_rad, range_m, width=bar_width,
-                 color=colors, alpha=0.7, edgecolor="gray", linewidth=0.3)
+    ax_polar.bar(
+        phi_rad, range_m, width=bar_width, color=colors, alpha=0.7, edgecolor="gray", linewidth=0.3
+    )
 
     # Target range ring — close the loop so the dashed circle is complete
     phi_rad_closed = np.append(phi_rad, phi_rad[0])
     target_ring = np.full_like(phi_rad_closed, target_range_m)
-    ax_polar.plot(phi_rad_closed, target_ring, "k--", linewidth=1.5,
-                  label=f"Target: {target_range_m:.0f} m")
+    ax_polar.plot(
+        phi_rad_closed, target_ring, "k--", linewidth=1.5, label=f"Target: {target_range_m:.0f} m"
+    )
 
     ax_polar.set_title(
         "Range vs Azimuth (θ=90°)\nGreen = meets target, Red = below",
-        fontsize=11, fontweight="bold", pad=15,
+        fontsize=11,
+        fontweight="bold",
+        pad=15,
     )
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
@@ -2852,6 +2888,7 @@ def plot_link_budget_summary(
 
 
 # ——— INDOOR PROPAGATION PLOTS ————————————————————————————————————
+
 
 def plot_indoor_coverage_map(
     freq_mhz,
@@ -2912,12 +2949,17 @@ def plot_indoor_coverage_map(
     # --- Left: Path Loss vs Distance ---
     ax_pl = fig.add_subplot(fig_gs[0])
     ax_pl.plot(distances, pl_free, "b--", linewidth=1.5, label="Free Space (n=2)")
-    ax_pl.plot(distances, pl_indoor, "g-", linewidth=1.5,
-               label=f"Indoor (n={path_loss_exp})")
-    ax_pl.plot(distances, pl_walls, "r-", linewidth=2,
-               label=f"+ {n_walls}× {wall_material} ({n_walls * wl:.1f} dB)")
-    ax_pl.plot(distances, pl_shadow, "r:", linewidth=1,
-               label=f"+ {shadow_fading_db:.0f} dB shadow margin")
+    ax_pl.plot(distances, pl_indoor, "g-", linewidth=1.5, label=f"Indoor (n={path_loss_exp})")
+    ax_pl.plot(
+        distances,
+        pl_walls,
+        "r-",
+        linewidth=2,
+        label=f"+ {n_walls}× {wall_material} ({n_walls * wl:.1f} dB)",
+    )
+    ax_pl.plot(
+        distances, pl_shadow, "r:", linewidth=1, label=f"+ {shadow_fading_db:.0f} dB shadow margin"
+    )
     ax_pl.set_xlabel("Distance (m)")
     ax_pl.set_ylabel("Path Loss (dB)")
     ax_pl.set_title("Path Loss Models", fontsize=11, fontweight="bold")
@@ -2928,23 +2970,33 @@ def plot_indoor_coverage_map(
     # --- Center: Received Power Heatmap ---
     ax_hm = fig.add_subplot(fig_gs[1])
     dphi = phi_deg[1] - phi_deg[0] if len(phi_deg) > 1 else 15.0
-    extent = [phi_deg[0] - dphi / 2, phi_deg[-1] + dphi / 2,
-              distances[0], distances[-1]]
+    extent = [phi_deg[0] - dphi / 2, phi_deg[-1] + dphi / 2, distances[0], distances[-1]]
     vmin = pr_sensitivity_dbm - 20
     vmax = float(np.max(pr_map))
     im = ax_hm.imshow(
-        pr_map, aspect="auto", origin="lower", extent=extent,
-        cmap="RdYlGn", vmin=vmin, vmax=vmax,
+        pr_map,
+        aspect="auto",
+        origin="lower",
+        extent=extent,
+        cmap="RdYlGn",
+        vmin=vmin,
+        vmax=vmax,
     )
     ax_hm.contour(
-        phi_deg, distances, pr_map, levels=[pr_sensitivity_dbm],
-        colors=["black"], linewidths=[2], linestyles=["--"],
+        phi_deg,
+        distances,
+        pr_map,
+        levels=[pr_sensitivity_dbm],
+        colors=["black"],
+        linewidths=[2],
+        linestyles=["--"],
     )
     ax_hm.set_xlabel("Azimuth φ (°)")
     ax_hm.set_ylabel("Distance (m)")
     ax_hm.set_title(
         f"Received Power at Horizon (θ=90°)\n{environment} — {freq_mhz} MHz",
-        fontsize=11, fontweight="bold",
+        fontsize=11,
+        fontweight="bold",
     )
     cbar = fig.colorbar(im, ax=ax_hm, shrink=0.8)
     cbar.set_label("Received Power (dBm)")
@@ -2958,7 +3010,9 @@ def plot_indoor_coverage_map(
     ax_polar.set_title(
         f"Coverage Range @ {pr_sensitivity_dbm:.0f} dBm\n"
         f"{n_walls}× {wall_material} + {shadow_fading_db:.0f} dB shadow margin",
-        fontsize=11, fontweight="bold", pad=15,
+        fontsize=11,
+        fontweight="bold",
+        pad=15,
     )
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
@@ -2967,9 +3021,14 @@ def plot_indoor_coverage_map(
     min_range = np.min(coverage_range)
     max_range = np.max(coverage_range)
     summary = f"Avg: {avg_range:.1f}m  Min: {min_range:.1f}m  Max: {max_range:.1f}m"
-    fig.text(0.5, 0.02, summary, ha="center", fontsize=10,
-             bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8,
-                       boxstyle="round,pad=0.3"))
+    fig.text(
+        0.5,
+        0.02,
+        summary,
+        ha="center",
+        fontsize=10,
+        bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8, boxstyle="round,pad=0.3"),
+    )
 
     plt.tight_layout(rect=[0, 0.06, 1, 1])
 
@@ -2982,6 +3041,7 @@ def plot_indoor_coverage_map(
 
 
 # ——— MULTIPATH FADING PLOTS ——————————————————————————————————————
+
 
 def plot_fading_analysis(
     freq_mhz,
@@ -3038,8 +3098,7 @@ def plot_fading_analysis(
     # Fade margins for reliability range
     reliability_range = np.linspace(50, 99.99, 100)
     margin_selected = [
-        fade_margin_for_reliability(r, model, K=max(k_factor, 0.1))
-        for r in reliability_range
+        fade_margin_for_reliability(r, model, K=max(k_factor, 0.1)) for r in reliability_range
     ]
     if model == "rayleigh":
         margin_reference = [
@@ -3048,10 +3107,7 @@ def plot_fading_analysis(
         ]
         margin_reference_label = f"Rician K={max(k_factor, 1.0):.1f}"
     else:
-        margin_reference = [
-            fade_margin_for_reliability(r, "rayleigh")
-            for r in reliability_range
-        ]
+        margin_reference = [fade_margin_for_reliability(r, "rayleigh") for r in reliability_range]
         margin_reference_label = "Rayleigh"
 
     # Monte-Carlo fading at horizon
@@ -3092,9 +3148,7 @@ def plot_fading_analysis(
         label=margin_reference_label,
     )
     ax.axvline(x=target_reliability, color="gray", linestyle=":", alpha=0.7)
-    target_margin = fade_margin_for_reliability(
-        target_reliability, model, K=max(k_factor, 0.1)
-    )
+    target_margin = fade_margin_for_reliability(target_reliability, model, K=max(k_factor, 0.1))
     ax.plot(target_reliability, target_margin, "bo", markersize=8)
     ax.annotate(
         f"{target_margin:.1f} dB",
@@ -3141,9 +3195,7 @@ def plot_fading_analysis(
     effective_pt = 0.0 if is_active else pt_dbm
     # Compute mean received power including path loss at target distance
     fspl_d0 = free_space_path_loss(freq_mhz, 1.0)
-    pl_at_target = fspl_d0 + 10.0 * path_loss_exp * np.log10(
-        max(target_distance_m, 0.01)
-    )
+    pl_at_target = fspl_d0 + 10.0 * path_loss_exp * np.log10(max(target_distance_m, 0.01))
     mean_rx = effective_pt + horizon_vals + gr_dbi - pl_at_target - misc_loss_db
     rx_threshold = np.full_like(horizon_vals, pr_sensitivity_dbm)
     if model == "rician":
@@ -3171,7 +3223,10 @@ def plot_fading_analysis(
         linewidth=0.3,
     )
     ax.axhline(
-        y=target_outage_pct, color="r", linestyle="--", linewidth=1,
+        y=target_outage_pct,
+        color="r",
+        linestyle="--",
+        linewidth=1,
         label=f"{target_outage_pct:.0g}% outage",
     )
     ax.set_xlabel("Azimuth phi (deg)")
@@ -3192,6 +3247,7 @@ def plot_fading_analysis(
         plt.close(fig)
     else:
         plt.show()
+
 
 def plot_mimo_analysis(
     ecc_values,
@@ -3332,6 +3388,7 @@ def plot_mimo_analysis(
     else:
         plt.show()
 
+
 def plot_wearable_assessment(
     freq_mhz,
     gain_2d,
@@ -3354,13 +3411,20 @@ def plot_wearable_assessment(
 
     # Body-worn analysis
     bw_results = body_worn_pattern_analysis(
-        gain_2d, theta_deg, phi_deg, freq_mhz, body_positions,
+        gain_2d,
+        theta_deg,
+        phi_deg,
+        freq_mhz,
+        body_positions,
     )
 
     # Dense device interference
     tx_dbm = 10 * np.log10(max(tx_power_mw, 0.001))
     avg_sinr, sinr_dist, noise_floor = dense_device_interference(
-        num_devices, tx_dbm, freq_mhz, room_size_m=room_size,
+        num_devices,
+        tx_dbm,
+        freq_mhz,
+        room_size_m=room_size,
     )
 
     # ---- Figure ----
@@ -3376,18 +3440,19 @@ def plot_wearable_assessment(
         if pos not in bw_results:
             continue
         r = bw_results[pos]
-        table_data.append([
-            pos.capitalize(),
-            f"{r['avg_gain_db']:.1f} {data_unit}",
-            f"{r['trp_delta_db']:+.1f} dB",
-            f"{r['peak_delta_db']:+.1f} dB",
-        ])
+        table_data.append(
+            [
+                pos.capitalize(),
+                f"{r['avg_gain_db']:.1f} {data_unit}",
+                f"{r['trp_delta_db']:+.1f} dB",
+                f"{r['peak_delta_db']:+.1f} dB",
+            ]
+        )
 
     # Add free-space reference
     ref_lin = 10 ** (gain_2d / 10.0)
     sin_w = np.sin(np.deg2rad(theta_deg))
-    ref_avg = 10 * np.log10(np.sum(ref_lin * sin_w[:, np.newaxis])
-                             / (np.sum(sin_w) * len(phi_deg)))
+    ref_avg = 10 * np.log10(np.sum(ref_lin * sin_w[:, np.newaxis]) / (np.sum(sin_w) * len(phi_deg)))
     table_data.insert(0, ["Free Space", f"{ref_avg:.1f} {data_unit}", "ref", "ref"])
 
     table = ax_table.table(
@@ -3409,7 +3474,9 @@ def plot_wearable_assessment(
 
     ax_table.set_title(
         f"Body-Worn Performance — {freq_mhz} MHz",
-        fontsize=12, fontweight="bold", pad=20,
+        fontsize=12,
+        fontweight="bold",
+        pad=20,
     )
 
     # --- Center: Overlaid polar patterns ---
@@ -3418,35 +3485,38 @@ def plot_wearable_assessment(
     theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
 
     fs_pattern = gain_2d[theta_90_idx, :]
-    ax_polar.plot(phi_rad, fs_pattern - np.min(fs_pattern), "k-",
-                  linewidth=2, label="Free Space")
+    ax_polar.plot(phi_rad, fs_pattern - np.min(fs_pattern), "k-", linewidth=2, label="Free Space")
 
     colors_pos = {
-        "wrist": "#4A90E2", "chest": "#E63946",
-        "hip": "#4CAF50", "head": "#FFC107",
+        "wrist": "#4A90E2",
+        "chest": "#E63946",
+        "hip": "#4CAF50",
+        "head": "#FFC107",
     }
     for pos in body_positions:
         if pos not in bw_results:
             continue
         pattern = bw_results[pos]["pattern"][theta_90_idx, :]
-        ax_polar.plot(phi_rad, pattern - np.min(fs_pattern),
-                      color=colors_pos.get(pos, "gray"),
-                      linewidth=1.5, label=pos.capitalize())
+        ax_polar.plot(
+            phi_rad,
+            pattern - np.min(fs_pattern),
+            color=colors_pos.get(pos, "gray"),
+            linewidth=1.5,
+            label=pos.capitalize(),
+        )
 
-    ax_polar.set_title("Pattern at θ=90°\n(Normalized)", fontweight="bold",
-                       pad=15)
+    ax_polar.set_title("Pattern at θ=90°\n(Normalized)", fontweight="bold", pad=15)
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
     ax_polar.legend(loc="upper right", bbox_to_anchor=(1.35, 1.15), fontsize=8)
 
     # --- Right: Dense device SINR distribution ---
     ax_sinr = fig.add_subplot(fig_gs[2])
-    ax_sinr.hist(sinr_dist, bins=30, color="#4A90E2", edgecolor="white",
-                 alpha=0.8, density=True)
-    ax_sinr.axvline(x=avg_sinr, color="red", linestyle="--", linewidth=2,
-                     label=f"Mean SINR: {avg_sinr:.1f} dB")
-    ax_sinr.axvline(x=0, color="gray", linestyle=":", linewidth=1,
-                     label="0 dB (breakeven)")
+    ax_sinr.hist(sinr_dist, bins=30, color="#4A90E2", edgecolor="white", alpha=0.8, density=True)
+    ax_sinr.axvline(
+        x=avg_sinr, color="red", linestyle="--", linewidth=2, label=f"Mean SINR: {avg_sinr:.1f} dB"
+    )
+    ax_sinr.axvline(x=0, color="gray", linestyle=":", linewidth=1, label="0 dB (breakeven)")
     ax_sinr.set_xlabel("SINR (dB)")
     ax_sinr.set_ylabel("Probability Density")
     ax_sinr.set_title(
@@ -3456,9 +3526,13 @@ def plot_wearable_assessment(
     )
     ax_sinr.legend(fontsize=8)
     ax_sinr.grid(True, alpha=0.3)
-    ax_sinr.annotate(f"Noise floor: {noise_floor:.0f} dBm",
-                     xy=(0.02, 0.95), xycoords="axes fraction", fontsize=8,
-                     bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8))
+    ax_sinr.annotate(
+        f"Noise floor: {noise_floor:.0f} dBm",
+        xy=(0.02, 0.95),
+        xycoords="axes fraction",
+        fontsize=8,
+        bbox=dict(facecolor="white", edgecolor="gray", alpha=0.8),
+    )
 
     plt.tight_layout()
 
@@ -3471,6 +3545,7 @@ def plot_wearable_assessment(
 
 
 # ——— DISPATCHER FOR ADVANCED ANALYSIS PLOTS ——————————————————————
+
 
 def generate_advanced_analysis_plots(
     theta_deg,

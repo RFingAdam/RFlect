@@ -509,8 +509,7 @@ class ToolsMixin:
             "mimo_xpr_db": self.mimo_xpr.get(),
             "wearable_enabled": getattr(self, "wearable_analysis_enabled", False),
             "wearable_body_positions": [
-                pos for pos, var in self.wearable_positions_var.items()
-                if var.get()
+                pos for pos, var in self.wearable_positions_var.items() if var.get()
             ],
             "wearable_tx_power_mw": self.wearable_tx_power_mw.get(),
             "wearable_num_devices": self.wearable_device_count.get(),
@@ -676,7 +675,9 @@ class ToolsMixin:
                 )
                 return
 
-            messagebox.showinfo("Success", f"Bulk processing complete. Results saved to {save_base}")
+            messagebox.showinfo(
+                "Success", f"Bulk processing complete. Results saved to {save_base}"
+            )
 
         threading.Thread(target=_process_worker, daemon=True).start()
 
