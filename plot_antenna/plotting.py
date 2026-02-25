@@ -8,7 +8,7 @@ matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
 
 plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
-from matplotlib import cm, patheffects as pe
+from matplotlib import cm
 from matplotlib.colors import Normalize
 import numpy as np
 import scipy.interpolate as spi
@@ -841,10 +841,6 @@ def plot_2d_passive_data(
             max_index_phi = np.argmax(h_gain_dB[:, indices], axis=None)
             max_index_theta = np.argmax(v_gain_dB[:, indices], axis=None)
 
-            # TODO Didn't look like this held the correct freq., so removed from annotation
-            peak_band_phi_freq = freq_array[indices[0]][max_index_phi % len(indices[0])]
-            peak_band_theta_freq = freq_array[indices[0]][max_index_theta % len(indices[0])]
-
             peak_band_phi_gain = h_gain_dB[:, indices].flatten()[max_index_phi]
             peak_band_theta_gain = v_gain_dB[:, indices].flatten()[max_index_theta]
 
@@ -941,7 +937,6 @@ def plot_2d_passive_data(
 
     # Check if save_path is provided
     if datasheet_plots:
-        # TODO Save Individual Gain Plots at Theta=90, Phi=0, Phi=90
         plot_additional_polar_patterns(
             plot_phi_rad, theta_angles_deg, selected_azimuth_freq, selected_frequency, save_path
         )
@@ -1351,18 +1346,18 @@ def plot_passive_3d_component(
     _setup_3d_axes(ax, X, Y, Z)
 
     # Set Title
-    ax.set_title(plot_title, fontsize=16)
+    fig.suptitle(plot_title, fontsize=14, y=0.97)
 
     # Add a colorbar
     mappable = cm.ScalarMappable(norm=norm, cmap=cm.turbo)  # type: ignore
     mappable.set_array(gain_interp)
-    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
-    cbar.set_label("Gain (dBi)", rotation=270, labelpad=20, fontsize=14)
-    cbar.ax.tick_params(labelsize=12)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.08, shrink=0.65)
+    cbar.set_label("Gain (dBi)", rotation=270, labelpad=20, fontsize=12)
+    cbar.ax.tick_params(labelsize=10)
 
-    # Add Max Gain to top of Legend
+    # Add Max Gain to top of colorbar
     max_gain = selected_gain.max()
-    ax.text2D(1.12, 0.90, f"{max_gain:.2f} dBi", transform=ax.transAxes, fontsize=12, weight="bold")
+    cbar.ax.set_title(f"{max_gain:.2f} dBi", fontsize=10, weight="bold", pad=4)
 
     # If Path provided, save otherwise show
     if save_path:
@@ -1795,7 +1790,7 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
     # 1. Axial Ratio in 3D
     ax1 = fig.add_subplot(1, 2, 1, projection="3d")
     # Create colormap
-    cmap_viridis = plt.get_cmap("viridis")
+    cmap_viridis = matplotlib.colormaps.get_cmap("viridis")
     surf1 = ax1.plot_surface(
         x,
         y,
@@ -1823,7 +1818,7 @@ def plot_polarization_3d(theta_deg, phi_deg, ar_db, tilt_deg, sense, frequency, 
     ax2 = fig.add_subplot(1, 2, 2, projection="3d")
     # Color by sense: blue=RHCP, red=LHCP
     sense_colors = np.where(sense_interp > 0, 1, 0)  # 1=LHCP, 0=RHCP
-    cmap_rdbu = plt.get_cmap("RdBu")
+    cmap_rdbu = matplotlib.colormaps.get_cmap("RdBu")
     surf2 = ax2.plot_surface(
         x,
         y,
@@ -2034,7 +2029,7 @@ def plot_conical_cuts(
     else:
         ax = fig.add_subplot(111)
 
-    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
+    colors = matplotlib.colormaps.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2120,7 +2115,7 @@ def plot_gain_over_azimuth(
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111)
 
-    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
+    colors = matplotlib.colormaps.get_cmap("viridis")(np.linspace(0, 1, len(theta_cuts)))
 
     for i, theta_cut in enumerate(theta_cuts):
         theta_idx = np.argmin(np.abs(theta_deg - theta_cut))
@@ -2347,7 +2342,7 @@ def plot_horizon_statistics(
     )
     # Remove near-duplicates
     band_thetas = np.unique(np.round(band_thetas, 1))
-    cmap = plt.get_cmap("viridis")
+    cmap = matplotlib.colormaps.get_cmap("viridis")
     colors = cmap(np.linspace(0, 1, len(band_thetas)))
 
     phi_rad = np.deg2rad(phi_deg)
@@ -2518,16 +2513,17 @@ def plot_3d_pattern_masked(
 
     # Configure axes: equal aspect, panes, grid, arrows
     _setup_3d_axes(ax, X, Y, Z)
-    ax.set_title(
+    fig.suptitle(
         f"3D {data_label} Pattern — Horizon Band {theta_highlight_min}–{theta_highlight_max}° "
         f"@ {frequency} MHz",
         fontsize=14,
+        y=0.97,
     )
 
     # Colorbar
     mappable = cm.ScalarMappable(norm=norm, cmap=cm.turbo)
     mappable.set_array(use_gain)
-    cbar = fig.colorbar(mappable, ax=ax, pad=0.1, shrink=0.75)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.08, shrink=0.65)
     cbar.set_label(f"{data_label} ({data_unit})")
 
     # ----- Horizon band statistics annotation -----

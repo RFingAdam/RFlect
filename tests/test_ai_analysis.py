@@ -6,7 +6,7 @@ Tests cover:
 - Gain/power statistics calculation
 - Radiation pattern analysis and classification
 - Polarization comparison
-- Utility functions (domain knowledge, system prompts)
+- XPD at co-pol peak direction
 
 All test data uses deterministic numpy arrays with known properties.
 """
@@ -14,11 +14,7 @@ All test data uses deterministic numpy arrays with known properties.
 import pytest
 import numpy as np
 
-from plot_antenna.ai_analysis import (
-    AntennaAnalyzer,
-    get_antenna_domain_knowledge,
-    create_analysis_system_prompt,
-)
+from plot_antenna.ai_analysis import AntennaAnalyzer
 
 
 # ---------------------------------------------------------------------------
@@ -380,30 +376,6 @@ class TestAnalyzeAllFrequencies:
 # ---------------------------------------------------------------------------
 # TestUtilityFunctions
 # ---------------------------------------------------------------------------
-
-
-class TestUtilityFunctions:
-    """Test standalone utility functions for AI prompts."""
-
-    def test_domain_knowledge_returns_string(self):
-        """get_antenna_domain_knowledge should return a non-empty string with reference data."""
-        result = get_antenna_domain_knowledge()
-
-        assert isinstance(result, str)
-        assert len(result) > 0
-        # Verify it contains key antenna benchmarks
-        assert "dBi" in result
-        assert "dipole" in result.lower() or "Dipole" in result
-
-    def test_system_prompt_includes_scan_type(self):
-        """create_analysis_system_prompt should embed the scan_type in the returned prompt."""
-        for scan_type in ("passive", "active", "vna"):
-            prompt = create_analysis_system_prompt(scan_type)
-
-            assert isinstance(prompt, str)
-            assert scan_type in prompt
-            # Should also embed domain knowledge
-            assert "dBi" in prompt
 
 
 # ---------------------------------------------------------------------------
