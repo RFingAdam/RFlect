@@ -220,7 +220,7 @@ def sample_data():
 
 ### Test Coverage Goals
 
-- **Current**: 227 tests passing, 22% overall coverage
+- **Current**: 450 tests (302 passing, 148 skipped), 26% overall coverage
 - **Target Overall**: ≥60% coverage
 - **Core modules** (calculations, file_utils): ≥80% coverage
 - **GUI modules**: Best effort (GUI testing is harder)
@@ -368,7 +368,7 @@ RFlect/
 │   ├── templates/
 │   │   └── default.yaml       # Report template
 │   └── README.md
-├── tests/                  # Test suite (227 tests)
+├── tests/                  # Test suite (450 tests)
 │   ├── conftest.py        # Pytest fixtures
 │   ├── test_calculations.py
 │   ├── test_ai_analysis.py
@@ -393,10 +393,10 @@ RFlect/
 
 ### Completed (v4.0.0)
 - ~~HPBW and F/B ratio in pattern analysis~~ (implemented and verified with boundary wrapping fix)
-- ~~Test coverage expansion~~ (227 tests achieved, up from 82; 22% overall coverage)
+- ~~Test coverage expansion~~ (450 tests achieved, up from 82; 26% overall coverage)
 
 ### High Priority
-- 🔴 Increase test coverage toward 60% target (currently 22% with 227 tests)
+- 🔴 Increase test coverage toward 60% target (currently 26% with 450 tests)
 - 🔴 Sidelobe detection and reporting in pattern analysis
 - 🔴 Automated figure insertion in DOCX reports
 - 🔴 System Fidelity Factor calculation (#31)
