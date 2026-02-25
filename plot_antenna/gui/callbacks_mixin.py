@@ -211,8 +211,7 @@ class CallbacksMixin:
             "mimo_xpr_db": self.mimo_xpr.get(),
             "wearable_enabled": getattr(self, "wearable_analysis_enabled", False),
             "wearable_body_positions": [
-                pos for pos, var in self.wearable_positions_var.items()
-                if var.get()
+                pos for pos, var in self.wearable_positions_var.items() if var.get()
             ],
             "wearable_tx_power_mw": self.wearable_tx_power_mw.get(),
             "wearable_num_devices": self.wearable_device_count.get(),
@@ -1374,9 +1373,7 @@ class CallbacksMixin:
             )
 
         # Advanced analysis plots (active)
-        _adv_params = self._collect_advanced_plot_params(
-            mimo_gain_data_list=[total_power_dBm_2d]
-        )
+        _adv_params = self._collect_advanced_plot_params(mimo_gain_data_list=[total_power_dBm_2d])
         if _adv_params:
             self.log_message("Generating advanced analysis plots (active)...")
             generate_advanced_analysis_plots(
@@ -1621,9 +1618,7 @@ class CallbacksMixin:
         if _adv_params_p:
             self.log_message("Generating advanced analysis plots (passive)...")
             _adv_freq_idx = (
-                self.freq_list.index(float(self.selected_frequency.get()))
-                if self.freq_list
-                else 0
+                self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
             )
             _adv_theta, _adv_phi, _adv_grid = _prepare_gain_grid(
                 theta_angles_deg, phi_angles_deg, Total_Gain_dB, _adv_freq_idx

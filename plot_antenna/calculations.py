@@ -944,8 +944,9 @@ def free_space_path_loss(freq_mhz, distance_m):
     return float(result) if result.ndim == 0 else result
 
 
-def friis_range_estimate(pt_dbm, pr_dbm, gt_dbi, gr_dbi, freq_mhz,
-                         path_loss_exp=2.0, misc_loss_db=0.0):
+def friis_range_estimate(
+    pt_dbm, pr_dbm, gt_dbi, gr_dbi, freq_mhz, path_loss_exp=2.0, misc_loss_db=0.0
+):
     """Solve Friis / log-distance model for maximum range.
 
     Allowable path loss:
@@ -972,11 +973,12 @@ def friis_range_estimate(pt_dbm, pr_dbm, gt_dbi, gr_dbi, freq_mhz,
     if path_loss_exp <= 0:
         return float("inf")
     exponent = (pl_max - fspl_d0) / (10.0 * path_loss_exp)
-    return 10.0 ** exponent  # d0 = 1 m, so d = 10^exponent
+    return 10.0**exponent  # d0 = 1 m, so d = 10^exponent
 
 
-def min_tx_gain_for_range(target_range_m, pt_dbm, pr_dbm, gr_dbi,
-                          freq_mhz, path_loss_exp=2.0, misc_loss_db=0.0):
+def min_tx_gain_for_range(
+    target_range_m, pt_dbm, pr_dbm, gr_dbi, freq_mhz, path_loss_exp=2.0, misc_loss_db=0.0
+):
     """Solve Friis for minimum Tx antenna gain to achieve target range.
 
     Parameters:
@@ -997,8 +999,16 @@ def min_tx_gain_for_range(target_range_m, pt_dbm, pr_dbm, gr_dbi,
     return pl_at_range + pr_dbm + misc_loss_db - pt_dbm - gr_dbi
 
 
-def link_margin(pt_dbm, gt_dbi, gr_dbi, freq_mhz, distance_m,
-                path_loss_exp=2.0, misc_loss_db=0.0, pr_sensitivity_dbm=-98.0):
+def link_margin(
+    pt_dbm,
+    gt_dbi,
+    gr_dbi,
+    freq_mhz,
+    distance_m,
+    path_loss_exp=2.0,
+    misc_loss_db=0.0,
+    pr_sensitivity_dbm=-98.0,
+):
     """Calculate link margin at a given distance.
 
     Link margin = Pr_received - Pr_sensitivity
@@ -1023,9 +1033,17 @@ def link_margin(pt_dbm, gt_dbi, gr_dbi, freq_mhz, distance_m,
     return pr_received - pr_sensitivity_dbm
 
 
-def range_vs_azimuth(gain_2d, theta_deg, phi_deg, freq_mhz,
-                     pt_dbm, pr_dbm, gr_dbi,
-                     path_loss_exp=2.0, misc_loss_db=0.0):
+def range_vs_azimuth(
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    freq_mhz,
+    pt_dbm,
+    pr_dbm,
+    gr_dbi,
+    path_loss_exp=2.0,
+    misc_loss_db=0.0,
+):
     """Compute maximum range for each azimuth direction at the horizon.
 
     Uses gain at the theta closest to 90° for each phi.
@@ -1049,15 +1067,17 @@ def range_vs_azimuth(gain_2d, theta_deg, phi_deg, freq_mhz,
     theta_90_idx = np.argmin(np.abs(theta_deg - 90.0))
     horizon_gain = gain_2d[theta_90_idx, :]
 
-    range_m = np.array([
-        friis_range_estimate(pt_dbm, pr_dbm, g, gr_dbi, freq_mhz,
-                             path_loss_exp, misc_loss_db)
-        for g in horizon_gain
-    ])
+    range_m = np.array(
+        [
+            friis_range_estimate(pt_dbm, pr_dbm, g, gr_dbi, freq_mhz, path_loss_exp, misc_loss_db)
+            for g in horizon_gain
+        ]
+    )
     return range_m, horizon_gain
 
 
 # ——— INDOOR / ENVIRONMENTAL PROPAGATION ——————————————————————————
+
 
 def log_distance_path_loss(freq_mhz, distance_m, n=2.0, d0=1.0, sigma_db=0.0):
     """Log-distance path loss model with optional shadow fading margin.
@@ -1115,8 +1135,7 @@ def _itu_get_N(environment, freq_mhz):
     return table[closest]
 
 
-def itu_indoor_path_loss(freq_mhz, distance_m, n_floors=0,
-                         environment="office"):
+def itu_indoor_path_loss(freq_mhz, distance_m, n_floors=0, environment="office"):
     """ITU-R P.1238 indoor propagation model.
 
     PL = 20·log10(f_MHz) + N·log10(d) + Lf(n_floors) - 28
@@ -1170,9 +1189,18 @@ def wall_penetration_loss(freq_mhz, material="drywall"):
     return base_loss * freq_scale
 
 
-def apply_indoor_propagation(gain_2d, theta_deg, phi_deg, freq_mhz,
-                             pt_dbm, distance_m, n=3.0, n_walls=1,
-                             wall_material="drywall", sigma_db=0.0):
+def apply_indoor_propagation(
+    gain_2d,
+    theta_deg,
+    phi_deg,
+    freq_mhz,
+    pt_dbm,
+    distance_m,
+    n=3.0,
+    n_walls=1,
+    wall_material="drywall",
+    sigma_db=0.0,
+):
     """Apply indoor propagation model to a measured antenna pattern.
 
     Computes received power at a given distance for every (theta, phi) direction:
@@ -1202,6 +1230,7 @@ def apply_indoor_propagation(gain_2d, theta_deg, phi_deg, freq_mhz,
 
 
 # ——— MULTIPATH FADING MODELS ———————————————————————————————————
+
 
 def rayleigh_cdf(power_db, mean_power_db=0.0):
     """Rayleigh fading CDF: probability that received power < x.
@@ -1262,8 +1291,9 @@ def _erf_approx(x):
     sign = np.sign(x)
     x = np.abs(x)
     t = 1.0 / (1.0 + 0.3275911 * x)
-    poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741
-           + t * (-1.453152027 + t * 1.061405429))))
+    poly = t * (
+        0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))
+    )
     result = 1.0 - poly * np.exp(-x * x)
     return sign * result
 
@@ -1322,8 +1352,9 @@ def _norm_ppf_approx(p):
     return -(t - (c0 + c1 * t + c2 * t**2) / (1.0 + d1 * t + d2 * t**2 + d3 * t**3))
 
 
-def apply_statistical_fading(gain_2d, theta_deg, phi_deg,
-                             fading="rayleigh", K=10, realizations=1000):
+def apply_statistical_fading(
+    gain_2d, theta_deg, phi_deg, fading="rayleigh", K=10, realizations=1000
+):
     """Apply statistical fading to a measured pattern via Monte-Carlo.
 
     For each (theta, phi) direction, generates `realizations` fading
@@ -1352,8 +1383,10 @@ def apply_statistical_fading(gain_2d, theta_deg, phi_deg,
         # Rician: |h|^2 where h = sqrt(K/(K+1)) + sqrt(1/(K+1))·CN(0,1)
         mu = np.sqrt(K / (K + 1.0))
         sigma = np.sqrt(1.0 / (2.0 * (K + 1.0)))
-        h = mu + sigma * (np.random.randn(realizations, n_theta, n_phi)
-                          + 1j * np.random.randn(realizations, n_theta, n_phi))
+        h = mu + sigma * (
+            np.random.randn(realizations, n_theta, n_phi)
+            + 1j * np.random.randn(realizations, n_theta, n_phi)
+        )
         h_sq = np.abs(h) ** 2
 
     # Faded power: gain_linear × fading_coefficient
@@ -1397,8 +1430,8 @@ def delay_spread_estimate(distance_m, environment="indoor"):
 
 # ——— ENHANCED MIMO ANALYSIS ——————————————————————————————————————
 
-def envelope_correlation_from_patterns(E1_theta, E1_phi, E2_theta, E2_phi,
-                                       theta_deg, phi_deg):
+
+def envelope_correlation_from_patterns(E1_theta, E1_phi, E2_theta, E2_phi, theta_deg, phi_deg):
     """Compute Envelope Correlation Coefficient from 3D far-field patterns.
 
     IEEE definition:
@@ -1420,17 +1453,17 @@ def envelope_correlation_from_patterns(E1_theta, E1_phi, E2_theta, E2_phi,
     sin_theta = np.sin(theta_rad)
 
     # Cross-correlation integral
-    integrand_cross = (E1_theta * np.conj(E2_theta) + E1_phi * np.conj(E2_phi))
+    integrand_cross = E1_theta * np.conj(E2_theta) + E1_phi * np.conj(E2_phi)
     cross = np.sum(integrand_cross * sin_theta[:, np.newaxis])
 
     # Self-correlation integrals
-    self1 = np.sum((np.abs(E1_theta)**2 + np.abs(E1_phi)**2) * sin_theta[:, np.newaxis])
-    self2 = np.sum((np.abs(E2_theta)**2 + np.abs(E2_phi)**2) * sin_theta[:, np.newaxis])
+    self1 = np.sum((np.abs(E1_theta) ** 2 + np.abs(E1_phi) ** 2) * sin_theta[:, np.newaxis])
+    self2 = np.sum((np.abs(E2_theta) ** 2 + np.abs(E2_phi) ** 2) * sin_theta[:, np.newaxis])
 
     denom = self1 * self2
     if denom == 0:
         return 1.0  # Degenerate case
-    return float(np.abs(cross)**2 / denom)
+    return float(np.abs(cross) ** 2 / denom)
 
 
 def combining_gain(gains_db, method="mrc"):
@@ -1454,7 +1487,7 @@ def combining_gain(gains_db, method="mrc"):
         combined_lin = np.sum(gains_lin)
     elif method == "egc":
         # EGC: (sum of amplitudes)^2 / N
-        combined_lin = (np.sum(np.sqrt(gains_lin)))**2 / len(gains_lin)
+        combined_lin = (np.sum(np.sqrt(gains_lin))) ** 2 / len(gains_lin)
     elif method == "sc":
         # SC: select the best branch
         combined_lin = best_single
@@ -1466,8 +1499,7 @@ def combining_gain(gains_db, method="mrc"):
     return combined_db, improvement_db
 
 
-def mimo_capacity_vs_snr(ecc, snr_range_db=(-5, 30), num_points=36,
-                         fading="rayleigh", K=10):
+def mimo_capacity_vs_snr(ecc, snr_range_db=(-5, 30), num_points=36, fading="rayleigh", K=10):
     """Compute MIMO capacity curves over an SNR range.
 
     Returns capacity for SISO, 2×2 AWGN, and 2×2 fading channels.
@@ -1489,10 +1521,9 @@ def mimo_capacity_vs_snr(ecc, snr_range_db=(-5, 30), num_points=36,
     snr_axis = np.linspace(snr_range_db[0], snr_range_db[1], num_points)
     siso_cap = np.log2(1 + 10 ** (snr_axis / 10.0))
     awgn_cap = np.array([capacity_awgn(ecc, s) for s in snr_axis])
-    fading_cap = np.array([
-        capacity_monte_carlo(ecc, s, fading=fading, K=K, trials=500)
-        for s in snr_axis
-    ])
+    fading_cap = np.array(
+        [capacity_monte_carlo(ecc, s, fading=fading, K=K, trials=500) for s in snr_axis]
+    )
     return snr_axis, siso_cap, awgn_cap, fading_cap
 
 
@@ -1549,8 +1580,7 @@ BODY_POSITIONS = {
 }
 
 
-def body_worn_pattern_analysis(gain_2d, theta_deg, phi_deg, freq_mhz,
-                               body_positions=None):
+def body_worn_pattern_analysis(gain_2d, theta_deg, phi_deg, freq_mhz, body_positions=None):
     """Analyze antenna pattern across multiple body-worn positions.
 
     For each position, applies the directional human shadow model and
@@ -1616,8 +1646,9 @@ def body_worn_pattern_analysis(gain_2d, theta_deg, phi_deg, freq_mhz,
     return results
 
 
-def dense_device_interference(num_devices, tx_power_dbm, freq_mhz,
-                              bandwidth_mhz=2.0, room_size_m=(10, 10, 3)):
+def dense_device_interference(
+    num_devices, tx_power_dbm, freq_mhz, bandwidth_mhz=2.0, room_size_m=(10, 10, 3)
+):
     """Estimate aggregate interference in a dense device deployment.
 
     Monte-Carlo: places N co-channel devices at random positions in a room
@@ -1644,11 +1675,13 @@ def dense_device_interference(num_devices, tx_power_dbm, freq_mhz,
     sinr_values = []
     for _ in range(n_trials):
         # Random device positions
-        positions = np.column_stack([
-            np.random.uniform(0, lx, num_devices),
-            np.random.uniform(0, ly, num_devices),
-            np.random.uniform(0, lz, num_devices),
-        ])
+        positions = np.column_stack(
+            [
+                np.random.uniform(0, lx, num_devices),
+                np.random.uniform(0, ly, num_devices),
+                np.random.uniform(0, lz, num_devices),
+            ]
+        )
         # Receiver at room center
         rx = np.array([lx / 2, ly / 2, lz / 2])
         distances = np.linalg.norm(positions - rx, axis=1)
@@ -1673,8 +1706,9 @@ def dense_device_interference(num_devices, tx_power_dbm, freq_mhz,
     return float(np.mean(sinr_distribution)), sinr_distribution, noise_floor_dbm
 
 
-def sar_exposure_estimate(tx_power_mw, antenna_gain_dbi, distance_cm,
-                          freq_mhz, tissue_type="muscle"):
+def sar_exposure_estimate(
+    tx_power_mw, antenna_gain_dbi, distance_cm, freq_mhz, tissue_type="muscle"
+):
     """Simplified SAR estimation for regulatory screening.
 
     Uses far-field power density and tissue absorption:
@@ -1711,7 +1745,7 @@ def sar_exposure_estimate(tx_power_mw, antenna_gain_dbi, distance_cm,
     gt_lin = 10 ** (antenna_gain_dbi / 10.0)
     pt_w = tx_power_mw / 1000.0
     d_m = max(distance_cm / 100.0, 0.001)
-    S = (pt_w * gt_lin) / (4 * np.pi * d_m ** 2)  # W/m²
+    S = (pt_w * gt_lin) / (4 * np.pi * d_m**2)  # W/m²
 
     # SAR ≈ σ · E² / ρ, and S = E²/(2·η), so SAR ≈ 2·σ·S/ρ
     # This is the surface SAR, averaged over penetration depth
@@ -1724,8 +1758,7 @@ def sar_exposure_estimate(tx_power_mw, antenna_gain_dbi, distance_cm,
     return sar, fcc_limit, icnirp_limit, bool(sar < fcc_limit and sar < icnirp_limit)
 
 
-def wban_link_budget(tx_power_dbm, freq_mhz, body_channel="on_body",
-                     distance_cm=30):
+def wban_link_budget(tx_power_dbm, freq_mhz, body_channel="on_body", distance_cm=30):
     """IEEE 802.15.6 WBAN channel model link budget.
 
     Simplified path loss models from IEEE 802.15.6 standard.

@@ -1142,23 +1142,27 @@ def batch_process_passive_scans(
                 try:
                     print(f"  Processing frequency {sel_freq} MHz...")
                     # Compute gains for this frequency
-                    theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = calculate_passive_variables(
-                        parsed_h,
-                        parsed_v,
-                        cable_loss,
-                        start_phi_h,
-                        stop_phi_h,
-                        inc_phi_h,
-                        start_theta_h,
-                        stop_theta_h,
-                        inc_theta_h,
-                        freq_list,
-                        sel_freq,
+                    theta_deg, phi_deg, v_gain_dB, h_gain_dB, total_gain_dB = (
+                        calculate_passive_variables(
+                            parsed_h,
+                            parsed_v,
+                            cable_loss,
+                            start_phi_h,
+                            stop_phi_h,
+                            inc_phi_h,
+                            start_theta_h,
+                            stop_theta_h,
+                            inc_theta_h,
+                            freq_list,
+                            sel_freq,
+                        )
                     )
 
                     # Create per-pair/frequency subfolder if requested
                     if save_base:
-                        base_name = os.path.splitext(os.path.basename(h_path))[0].replace("AP_HPol", "")
+                        base_name = os.path.splitext(os.path.basename(h_path))[0].replace(
+                            "AP_HPol", ""
+                        )
                         subfolder = os.path.join(save_base, f"{base_name}_{sel_freq}MHz")
                         os.makedirs(subfolder, exist_ok=True)
                     else:
