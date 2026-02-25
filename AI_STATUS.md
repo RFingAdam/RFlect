@@ -1,7 +1,7 @@
 # RFlect AI Features - Status & Roadmap
 
-**Last Updated**: February 7, 2026
-**Current Version**: v4.0.0
+**Last Updated**: February 11, 2026
+**Current Version**: v4.1.5
 **Status**: Beta / Enabled in GUI
 
 ---
@@ -158,7 +158,7 @@ If no provider is configured:
 
 ## Roadmap
 
-### v4.0.0 (Current - February 2026)
+### v4.0.0 (February 2026)
 - Complete architecture refactoring (mixin-based GUI)
 - Multi-provider AI support (OpenAI, Anthropic, Ollama)
 - Secure API key management (Fernet encryption, OS keyring, machine-ID binding)
@@ -170,7 +170,26 @@ If no provider is configured:
 - turbo colormap, DPI 300 for saved figures
 - 227 tests, 22% code coverage
 
-### v4.1+ (Planned)
+### v4.1.0-4.1.4 (February 2026)
+- Maritime / horizon antenna plots (5 plot types, configurable theta band)
+- Horizon TRP, efficiency, and enhanced statistics
+- Windows installer overhaul (icon, no console, upgrade handling)
+- Non-blocking update checker (background thread)
+
+### v4.1.5 (Current - February 2026)
+- Advanced RF analysis suite with 5 new modules:
+  - Link Budget / Range Estimation (Friis, protocol presets)
+  - Indoor Propagation (ITU-R P.1238, wall penetration P.2040)
+  - Multipath Fading (Rayleigh/Rician CDF, Monte-Carlo)
+  - Enhanced MIMO (capacity curves, combining gain, MEG with XPR)
+  - Wearable/Medical (body-worn patterns, dense device SINR, SAR screening)
+- Smart presets: protocol and environment dropdowns auto-populate parameters
+- Scrollable settings dialogs for advanced analysis configuration
+- Per-job bulk processing failure reporting
+- 450 tests (302 passing), 26% code coverage
+
+### v4.2+ (Planned)
+- AI datasheet extraction (vision-based parameter extraction from PDF/images)
 - Sidelobe detection and reporting
 - Automated figure insertion in reports
 - Complete branding integration
@@ -178,8 +197,6 @@ If no provider is configured:
 - Enhanced vision integration for all providers
 - Simulation vs measurement comparison
 - AI-powered anomaly detection
-- Multi-antenna system analysis
-- MIMO antenna analysis
 - Integration with electromagnetic simulation tools
 
 ---

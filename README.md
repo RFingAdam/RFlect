@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.1.4-blue" alt="Version"></a>
+  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-4.1.5-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License"></a>
-  <img src="https://img.shields.io/badge/tests-391%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-450-brightgreen" alt="Tests">
 </p>
 
 ---
@@ -22,6 +22,15 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 <p align="center">
   <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
 </p>
+
+## New in v4.1
+
+- **Advanced RF analysis suite** — 5 new analysis modules: Link Budget/Range Estimation (Friis with protocol presets), Indoor Propagation (ITU-R P.1238/P.2040), Multipath Fading (Rayleigh/Rician CDF + Monte-Carlo), Enhanced MIMO (capacity curves, combining gain, MEG), and Wearable/Medical (body-worn patterns, dense device SINR, SAR screening).
+- **Professional 3D antenna plots** — DUT orientation triad (X=green, Y=red, Z=blue) matching the physical chamber marker, equal aspect ratio, box-edge labels that are never occluded, and consistent layout across all four 3D routines.
+- **Maritime/horizon antenna plots** — 5 plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting.
+- **Smart presets** — Protocol presets (BLE, WiFi, LoRa, Zigbee, LTE, NB-IoT) and environment presets (Office, Hospital, Industrial, etc.) auto-populate analysis parameters.
+- **Non-blocking update checker** — Startup update check runs in a background thread instead of blocking the GUI.
+- **448 tests** — Up from 346 in v4.0, with 55+ new tests for advanced analysis, maritime plots, and batch processing.
 
 ## New in v4.0
 
@@ -128,7 +137,7 @@ See [AI_STATUS.md](AI_STATUS.md) for provider details and supported models.
 
 ## MCP Server
 
-RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 23 tools that let AI assistants like Claude Code import your measurements, run analysis, generate reports, and perform UWB characterization programmatically. No GUI required.
+RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 25 tools that let AI assistants like Claude Code import your measurements, run analysis, generate reports, and perform UWB characterization programmatically. No GUI required.
 
 See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
 
@@ -148,7 +157,7 @@ RFlect/
     api_keys.py           #   Secure key storage (keyring + Fernet)
     save.py               #   DOCX report generation
   rflect-mcp/             # MCP server for programmatic access
-  tests/                  # 346 tests (pytest)
+  tests/                  # 450 tests (pytest)
 ```
 
 ## Development
