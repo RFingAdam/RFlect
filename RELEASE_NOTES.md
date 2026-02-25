@@ -1,6 +1,6 @@
 # RFlect - Release Notes
 
-## Version 4.1.5 (02/11/2026)
+## Version 4.1.5 (02/24/2026)
 
 **Feature release — advanced RF analysis suite with 5 new analysis modules.**
 
@@ -21,11 +21,12 @@
 ### Improvements
 
 - **Professional 3D antenna pattern plots**: Shared `_setup_3d_axes()` helper across all 3D routines (active TRP, passive gain, masked horizon) with equal aspect ratio, symmetric limits, and transparent grid panes
-- **DUT orientation markers**: Short coloured arrows (X=green, Y=red, Z=blue) on the negative axis side match the physical orientation marker used in the anechoic chamber, enabling correlation between 3D plots and measured antenna position
-- **3D plot layout**: Tighter figure layout with suptitle, improved colorbar positioning, and max EIRP/gain annotation on the colorbar
+- **DUT orientation triad**: XYZ arrow tripod anchored at the corner of the bounding box (X=green, Y=red, Z=blue) matches the physical orientation marker used in the anechoic chamber, enabling correlation between 3D plots and measured antenna position from any view angle
+- **3D plot layout**: Tighter figure layout with `fig.suptitle()`, improved colorbar positioning, and max EIRP/gain annotation on the colorbar — consistent across all four 3D routines (active, passive, polarization, masked)
 - **Bulk processing failure reporting**: Per-job/per-file outcome tracking replaces blanket success-on-partial-failure messages
 - **Non-blocking update checker**: Startup update check runs in a background thread — no more GUI freezes on slow networks
-- **Matplotlib deprecation cleanup**: Replaced deprecated `cm.get_cmap` calls for forward compatibility
+- **Matplotlib deprecation cleanup**: Replaced all deprecated `plt.get_cmap()` / `cm.get_cmap()` calls with `matplotlib.colormaps.get_cmap()` for forward compatibility
+- **Code cleanup**: Removed unused imports (`patheffects`), dead utility functions in `ai_analysis.py`, stale TODO comments, and unused variables
 
 ### Bug Fixes
 
@@ -36,10 +37,11 @@
 
 ### Tests
 
-- 450 tests collected (302 passing, 148 skipped), up from 391 in v4.1.0
+- 448 tests collected (300 passing, 148 skipped), up from 391 in v4.1.0
 - 45 new unit tests for advanced analysis functions (Friis, ITU, CDF, MIMO, wearable)
 - 10 new batch failure regression integration tests
 - Fixture-based parser tests replacing placeholder TODOs
+- Removed 2 stale tests for deleted utility functions
 
 ---
 

@@ -26,11 +26,11 @@ RFlect takes raw antenna measurement data and turns it into publication-ready 2D
 ## New in v4.1
 
 - **Advanced RF analysis suite** — 5 new analysis modules: Link Budget/Range Estimation (Friis with protocol presets), Indoor Propagation (ITU-R P.1238/P.2040), Multipath Fading (Rayleigh/Rician CDF + Monte-Carlo), Enhanced MIMO (capacity curves, combining gain, MEG), and Wearable/Medical (body-worn patterns, dense device SINR, SAR screening).
-- **Professional 3D antenna plots** — DUT orientation arrows (X=green, Y=red, Z=blue) matching the physical chamber marker, equal aspect ratio, and box-edge labels that are never occluded.
+- **Professional 3D antenna plots** — DUT orientation triad (X=green, Y=red, Z=blue) matching the physical chamber marker, equal aspect ratio, box-edge labels that are never occluded, and consistent layout across all four 3D routines.
 - **Maritime/horizon antenna plots** — 5 plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting.
 - **Smart presets** — Protocol presets (BLE, WiFi, LoRa, Zigbee, LTE, NB-IoT) and environment presets (Office, Hospital, Industrial, etc.) auto-populate analysis parameters.
 - **Non-blocking update checker** — Startup update check runs in a background thread instead of blocking the GUI.
-- **450 tests** — Up from 346 in v4.0, with 55+ new tests for advanced analysis, maritime plots, and batch processing.
+- **448 tests** — Up from 346 in v4.0, with 55+ new tests for advanced analysis, maritime plots, and batch processing.
 
 ## New in v4.0
 
