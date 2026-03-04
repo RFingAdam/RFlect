@@ -65,9 +65,15 @@ class CallbacksMixin:
     cable_loss: tk.StringVar
     datasheet_plots_var: tk.BooleanVar
     min_max_eff_gain_var: tk.BooleanVar
-    axis_scale_mode: tk.StringVar
-    axis_min: tk.DoubleVar
-    axis_max: tk.DoubleVar
+    axis_scale_mode_total: tk.StringVar
+    axis_min_total: tk.DoubleVar
+    axis_max_total: tk.DoubleVar
+    axis_scale_mode_hpol: tk.StringVar
+    axis_min_hpol: tk.DoubleVar
+    axis_max_hpol: tk.DoubleVar
+    axis_scale_mode_vpol: tk.StringVar
+    axis_min_vpol: tk.DoubleVar
+    axis_max_vpol: tk.DoubleVar
     interpolate_3d_plots: bool
     ecc_analysis_enabled: bool
     shadowing_enabled: bool
@@ -1315,9 +1321,9 @@ class CallbacksMixin:
             frequency,
             power_type="total",
             interpolate=self.interpolate_3d_plots,
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_total.get(),
+            zmin=self.axis_min_total.get(),
+            zmax=self.axis_max_total.get(),
         )
 
         # H-pol
@@ -1330,9 +1336,9 @@ class CallbacksMixin:
             frequency,
             power_type="hpol",
             interpolate=self.interpolate_3d_plots,
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_hpol.get(),
+            zmin=self.axis_min_hpol.get(),
+            zmax=self.axis_max_hpol.get(),
         )
 
         # V-pol
@@ -1345,9 +1351,9 @@ class CallbacksMixin:
             frequency,
             power_type="vpol",
             interpolate=self.interpolate_3d_plots,
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_vpol.get(),
+            zmin=self.axis_min_vpol.get(),
+            zmax=self.axis_max_vpol.get(),
         )
 
         self.log_message("Active data processed successfully.", level="success")
@@ -1366,9 +1372,9 @@ class CallbacksMixin:
                 theta_max=self.horizon_theta_max.get(),
                 theta_cuts=self._parse_theta_cuts(),
                 gain_threshold=self.horizon_gain_threshold.get(),
-                axis_mode=self.axis_scale_mode.get(),
-                zmin=self.axis_min.get(),
-                zmax=self.axis_max.get(),
+                axis_mode=self.axis_scale_mode_total.get(),
+                zmin=self.axis_min_total.get(),
+                zmax=self.axis_max_total.get(),
                 save_path=None,
             )
 
@@ -1542,9 +1548,9 @@ class CallbacksMixin:
             self.freq_list,
             float(self.selected_frequency.get()),
             gain_type="total",
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_total.get(),
+            zmin=self.axis_min_total.get(),
+            zmax=self.axis_max_total.get(),
             save_path=None,
             shadowing_enabled=self.shadowing_enabled,
             shadow_direction=self.shadow_direction,
@@ -1560,9 +1566,9 @@ class CallbacksMixin:
             self.freq_list,
             float(self.selected_frequency.get()),
             gain_type="hpol",
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_hpol.get(),
+            zmin=self.axis_min_hpol.get(),
+            zmax=self.axis_max_hpol.get(),
             save_path=None,
         )
 
@@ -1576,9 +1582,9 @@ class CallbacksMixin:
             self.freq_list,
             float(self.selected_frequency.get()),
             gain_type="vpol",
-            axis_mode=self.axis_scale_mode.get(),
-            zmin=self.axis_min.get(),
-            zmax=self.axis_max.get(),
+            axis_mode=self.axis_scale_mode_vpol.get(),
+            zmin=self.axis_min_vpol.get(),
+            zmax=self.axis_max_vpol.get(),
             save_path=None,
         )
 
@@ -1603,9 +1609,9 @@ class CallbacksMixin:
                     theta_max=self.horizon_theta_max.get(),
                     theta_cuts=self._parse_theta_cuts(),
                     gain_threshold=self.horizon_gain_threshold.get(),
-                    axis_mode=self.axis_scale_mode.get(),
-                    zmin=self.axis_min.get(),
-                    zmax=self.axis_max.get(),
+                    axis_mode=self.axis_scale_mode_total.get(),
+                    zmin=self.axis_min_total.get(),
+                    zmax=self.axis_max_total.get(),
                     save_path=None,
                 )
             else:

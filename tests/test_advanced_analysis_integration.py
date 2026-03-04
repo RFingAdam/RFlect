@@ -33,9 +33,15 @@ class _CallbacksHarness(CallbacksMixin):
     def __init__(self):
         self.TRP_file_path = "dummy_trp.txt"
         self.interpolate_3d_plots = False
-        self.axis_scale_mode = DummyVar("auto")
-        self.axis_min = DummyVar(-20.0)
-        self.axis_max = DummyVar(6.0)
+        self.axis_scale_mode_total = DummyVar("auto")
+        self.axis_min_total = DummyVar(-20.0)
+        self.axis_max_total = DummyVar(10.0)
+        self.axis_scale_mode_hpol = DummyVar("auto")
+        self.axis_min_hpol = DummyVar(-25.0)
+        self.axis_max_hpol = DummyVar(5.0)
+        self.axis_scale_mode_vpol = DummyVar("auto")
+        self.axis_min_vpol = DummyVar(-25.0)
+        self.axis_max_vpol = DummyVar(10.0)
         self.maritime_plots_enabled = False
         self.horizon_theta_min = DummyVar(60.0)
         self.horizon_theta_max = DummyVar(120.0)

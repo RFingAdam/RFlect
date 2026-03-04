@@ -19,6 +19,17 @@ This template provides neutral/generic branding by default.
 
 interpolate_3d_plots = True  # Default value, can be set to False to disable interpolation
 
+# 3D Axis Scaling — per plot type (auto | manual)
+AXIS_SCALE_MODE_TOTAL = "auto"
+AXIS_MIN_TOTAL = -20.0
+AXIS_MAX_TOTAL = 10.0
+AXIS_SCALE_MODE_HPOL = "auto"
+AXIS_MIN_HPOL = -25.0
+AXIS_MAX_HPOL = 5.0
+AXIS_SCALE_MODE_VPOL = "auto"
+AXIS_MIN_VPOL = -25.0
+AXIS_MAX_VPOL = 10.0
+
 # 3D Plotting Interpolation Resolution for viewing plots (lower for better performance)
 PHI_RESOLUTION = 120  # default 360 = 1deg spacing
 THETA_RESOLUTION = 60  # default 180 - 1deg spacing

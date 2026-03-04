@@ -80,9 +80,15 @@ class AIChatMixin:
     vpol_file_path: Optional[str]
     TRP_file_path: Optional[str]
     datasheet_plots_var: tk.BooleanVar
-    axis_scale_mode: tk.StringVar
-    axis_min: tk.DoubleVar
-    axis_max: tk.DoubleVar
+    axis_scale_mode_total: tk.StringVar
+    axis_min_total: tk.DoubleVar
+    axis_max_total: tk.DoubleVar
+    axis_scale_mode_hpol: tk.StringVar
+    axis_min_hpol: tk.DoubleVar
+    axis_max_hpol: tk.DoubleVar
+    axis_scale_mode_vpol: tk.StringVar
+    axis_min_vpol: tk.DoubleVar
+    axis_max_vpol: tk.DoubleVar
     data_points: Any
     theta_angles_rad: Any
     phi_angles_rad: Any
@@ -1078,10 +1084,12 @@ You can call these functions to help answer user questions:
                     f"[AI Debug] Data arrays: theta={theta_angles_deg is not None}, phi={phi_angles_deg is not None}, h={h_gain_dB is not None}, v={v_gain_dB is not None}, total={total_gain_dB is not None}, hpol_ff={hpol_far_field is not None}, vpol_ff={vpol_far_field is not None}"
                 )
 
-                # Get axis mode settings
-                axis_mode = getattr(self, "axis_scale_mode", None)
-                zmin_var = getattr(self, "axis_min", None)
-                zmax_var = getattr(self, "axis_max", None)
+                # Get per-type axis mode settings
+                _type_map = {"total": "total", "hpol": "hpol", "vpol": "vpol"}
+                _suffix = _type_map.get(component, "total")
+                axis_mode = getattr(self, f"axis_scale_mode_{_suffix}", None)
+                zmin_var = getattr(self, f"axis_min_{_suffix}", None)
+                zmax_var = getattr(self, f"axis_max_{_suffix}", None)
 
                 if all(
                     x is not None
@@ -1229,10 +1237,13 @@ You can call these functions to help answer user questions:
                 phi_angles_deg_plot = getattr(self, "phi_angles_deg_plot", None)
                 total_power_dBm_2d_plot = getattr(self, "total_power_dBm_2d_plot", None)
 
-                # Get axis settings
-                axis_mode = getattr(self, "axis_mode", None)
-                zmin_var = getattr(self, "zmin_var", None)
-                zmax_var = getattr(self, "zmax_var", None)
+                # Get per-type axis settings
+                _suffix = {"total": "total", "hpol": "hpol", "vpol": "vpol"}.get(
+                    component, "total"
+                )
+                axis_mode = getattr(self, f"axis_scale_mode_{_suffix}", None)
+                zmin_var = getattr(self, f"axis_min_{_suffix}", None)
+                zmax_var = getattr(self, f"axis_max_{_suffix}", None)
 
                 if all(
                     x is not None for x in [theta_angles_deg, phi_angles_deg, total_power_dBm_2d]

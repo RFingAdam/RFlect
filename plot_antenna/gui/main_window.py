@@ -571,10 +571,18 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         )
         self.btn_settings.pack(side=tk.RIGHT, padx=(WIDGET_GAP, 0))
 
-        # 3D plotting settings
-        self.axis_scale_mode = tk.StringVar(value="auto")
-        self.axis_min = tk.DoubleVar(value=-20.0)
-        self.axis_max = tk.DoubleVar(value=6.0)
+        # 3D plotting settings — per plot type
+        self.axis_scale_mode_total = tk.StringVar(value="auto")
+        self.axis_min_total = tk.DoubleVar(value=-20.0)
+        self.axis_max_total = tk.DoubleVar(value=10.0)
+
+        self.axis_scale_mode_hpol = tk.StringVar(value="auto")
+        self.axis_min_hpol = tk.DoubleVar(value=-25.0)
+        self.axis_max_hpol = tk.DoubleVar(value=5.0)
+
+        self.axis_scale_mode_vpol = tk.StringVar(value="auto")
+        self.axis_min_vpol = tk.DoubleVar(value=-25.0)
+        self.axis_max_vpol = tk.DoubleVar(value=10.0)
 
         # Human shadowing settings
         self.shadowing_enabled = False

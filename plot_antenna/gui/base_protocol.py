@@ -61,9 +61,15 @@ class AntennaPlotGUIProtocol(Protocol):
     cable_loss: tk.StringVar
 
     # Settings variables
-    axis_scale_mode: tk.StringVar
-    axis_min: tk.DoubleVar
-    axis_max: tk.DoubleVar
+    axis_scale_mode_total: tk.StringVar
+    axis_min_total: tk.DoubleVar
+    axis_max_total: tk.DoubleVar
+    axis_scale_mode_hpol: tk.StringVar
+    axis_min_hpol: tk.DoubleVar
+    axis_max_hpol: tk.DoubleVar
+    axis_scale_mode_vpol: tk.StringVar
+    axis_min_vpol: tk.DoubleVar
+    axis_max_vpol: tk.DoubleVar
     datasheet_plots_var: tk.BooleanVar
     min_max_vswr_var: tk.BooleanVar
     min_max_eff_gain_var: tk.BooleanVar
