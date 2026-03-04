@@ -68,9 +68,15 @@ class ToolsMixin:
     freq_list: List[float]
     cable_loss: tk.StringVar
     datasheet_plots_var: tk.BooleanVar
-    axis_scale_mode: tk.StringVar
-    axis_min: tk.DoubleVar
-    axis_max: tk.DoubleVar
+    axis_scale_mode_total: tk.StringVar
+    axis_min_total: tk.DoubleVar
+    axis_max_total: tk.DoubleVar
+    axis_scale_mode_hpol: tk.StringVar
+    axis_min_hpol: tk.DoubleVar
+    axis_max_hpol: tk.DoubleVar
+    axis_scale_mode_vpol: tk.StringVar
+    axis_min_vpol: tk.DoubleVar
+    axis_max_vpol: tk.DoubleVar
     interpolate_3d_plots: bool
     hpol_file_path: Optional[str]
     vpol_file_path: Optional[str]
@@ -581,10 +587,24 @@ class ToolsMixin:
             bool(self.datasheet_plots_var.get()) if hasattr(self, "datasheet_plots_var") else False
         )
 
-        # Axis scaling settings
-        axis_mode = self.axis_scale_mode.get() if hasattr(self, "axis_scale_mode") else "auto"
-        zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15
-        zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15
+        # Per-type axis scaling settings
+        scale_settings = {
+            "total": (
+                self.axis_scale_mode_total.get() if hasattr(self, "axis_scale_mode_total") else "auto",
+                float(self.axis_min_total.get()) if hasattr(self, "axis_min_total") else -20.0,
+                float(self.axis_max_total.get()) if hasattr(self, "axis_max_total") else 10.0,
+            ),
+            "hpol": (
+                self.axis_scale_mode_hpol.get() if hasattr(self, "axis_scale_mode_hpol") else "auto",
+                float(self.axis_min_hpol.get()) if hasattr(self, "axis_min_hpol") else -25.0,
+                float(self.axis_max_hpol.get()) if hasattr(self, "axis_max_hpol") else 5.0,
+            ),
+            "vpol": (
+                self.axis_scale_mode_vpol.get() if hasattr(self, "axis_scale_mode_vpol") else "auto",
+                float(self.axis_min_vpol.get()) if hasattr(self, "axis_min_vpol") else -25.0,
+                float(self.axis_max_vpol.get()) if hasattr(self, "axis_max_vpol") else 10.0,
+            ),
+        }
 
         # Invoke batch processing with progress feedback
         progress_window = tk.Toplevel(self.root)
@@ -611,9 +631,7 @@ class ToolsMixin:
                     cable_loss=cable_loss,
                     datasheet_plots=datasheet_plots,
                     save_base=save_base,
-                    axis_mode=axis_mode,
-                    zmin=zmin,
-                    zmax=zmax,
+                    scale_settings=scale_settings,
                     maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
                     maritime_theta_min=(
                         self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0
@@ -702,10 +720,24 @@ class ToolsMixin:
         # Get interpolation setting
         interpolate = self.interpolate_3d_plots if hasattr(self, "interpolate_3d_plots") else True
 
-        # Axis scaling settings
-        axis_mode = self.axis_scale_mode.get() if hasattr(self, "axis_scale_mode") else "auto"
-        zmin = float(self.axis_min.get()) if hasattr(self, "axis_min") else -15.0
-        zmax = float(self.axis_max.get()) if hasattr(self, "axis_max") else 15.0
+        # Per-type axis scaling settings
+        scale_settings = {
+            "total": (
+                self.axis_scale_mode_total.get() if hasattr(self, "axis_scale_mode_total") else "auto",
+                float(self.axis_min_total.get()) if hasattr(self, "axis_min_total") else -20.0,
+                float(self.axis_max_total.get()) if hasattr(self, "axis_max_total") else 10.0,
+            ),
+            "hpol": (
+                self.axis_scale_mode_hpol.get() if hasattr(self, "axis_scale_mode_hpol") else "auto",
+                float(self.axis_min_hpol.get()) if hasattr(self, "axis_min_hpol") else -25.0,
+                float(self.axis_max_hpol.get()) if hasattr(self, "axis_max_hpol") else 5.0,
+            ),
+            "vpol": (
+                self.axis_scale_mode_vpol.get() if hasattr(self, "axis_scale_mode_vpol") else "auto",
+                float(self.axis_min_vpol.get()) if hasattr(self, "axis_min_vpol") else -25.0,
+                float(self.axis_max_vpol.get()) if hasattr(self, "axis_max_vpol") else 10.0,
+            ),
+        }
 
         # Invoke batch processing with progress feedback
         progress_window = tk.Toplevel(self.root)
@@ -729,9 +761,7 @@ class ToolsMixin:
                     folder_path=directory,
                     save_base=save_base,
                     interpolate=interpolate,
-                    axis_mode=axis_mode,
-                    zmin=zmin,
-                    zmax=zmax,
+                    scale_settings=scale_settings,
                     maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
                     maritime_theta_min=(
                         self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0
@@ -1151,9 +1181,11 @@ class ToolsMixin:
                 self.TRP_file_path,
                 cable_loss,
                 self.datasheet_plots_var.get(),
-                self.axis_scale_mode.get(),
-                self.axis_min.get(),
-                self.axis_max.get(),
+                scale_settings={
+                    "total": (self.axis_scale_mode_total.get(), self.axis_min_total.get(), self.axis_max_total.get()),
+                    "hpol": (self.axis_scale_mode_hpol.get(), self.axis_min_hpol.get(), self.axis_max_hpol.get()),
+                    "vpol": (self.axis_scale_mode_vpol.get(), self.axis_min_vpol.get(), self.axis_max_vpol.get()),
+                },
                 word=False,
                 maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
             )

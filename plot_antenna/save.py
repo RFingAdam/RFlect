@@ -1694,13 +1694,18 @@ def save_to_results_folder(
     active_path,
     cable_loss,
     datasheet_plots,
-    axis_mode,
-    zmin,
-    zmax,
+    scale_settings=None,
     word=False,
     logo_path=None,
     maritime_plots_enabled=False,
 ):  # Initialize the GUI
+    # Unpack per-type 3D scale settings
+    if scale_settings is None:
+        scale_settings = {}
+    _s_total = scale_settings.get("total", ("auto", -20.0, 10.0))
+    _s_hpol = scale_settings.get("hpol", ("auto", -25.0, 5.0))
+    _s_vpol = scale_settings.get("vpol", ("auto", -25.0, 10.0))
+
     root = Tk()
     root.withdraw()  # Hide the main window
 
@@ -1826,9 +1831,9 @@ def save_to_results_folder(
             frequency,
             power_type="total",
             interpolate=True,
-            axis_mode=axis_mode,
-            zmin=zmin,
-            zmax=zmax,
+            axis_mode=_s_total[0],
+            zmin=_s_total[1],
+            zmax=_s_total[2],
             save_path=three_d_data_path,
         )
 
@@ -1842,9 +1847,9 @@ def save_to_results_folder(
             frequency,
             power_type="hpol",
             interpolate=True,
-            axis_mode=axis_mode,
-            zmin=zmin,
-            zmax=zmax,
+            axis_mode=_s_hpol[0],
+            zmin=_s_hpol[1],
+            zmax=_s_hpol[2],
             save_path=three_d_data_path,
         )
 
@@ -1858,9 +1863,9 @@ def save_to_results_folder(
             frequency,
             power_type="vpol",
             interpolate=True,
-            axis_mode=axis_mode,
-            zmin=zmin,
-            zmax=zmax,
+            axis_mode=_s_vpol[0],
+            zmin=_s_vpol[1],
+            zmax=_s_vpol[2],
             save_path=three_d_data_path,
         )
 
@@ -1956,7 +1961,9 @@ def save_to_results_folder(
         )
 
         print("Plotting 3D Passive Data...")
+        _pol_scale = {"total": _s_total, "hpol": _s_hpol, "vpol": _s_vpol}
         for pol in ("total", "hpol", "vpol"):
+            _ps = _pol_scale[pol]
             plot_passive_3d_component(
                 theta_angles_deg,
                 phi_angles_deg,
@@ -1966,9 +1973,9 @@ def save_to_results_folder(
                 freq_list,
                 selected_frequency,
                 gain_type=pol,
-                axis_mode=axis_mode,
-                zmin=zmin,
-                zmax=zmax,
+                axis_mode=_ps[0],
+                zmin=_ps[1],
+                zmax=_ps[2],
                 save_path=user_selected_frequency_path,
             )
 

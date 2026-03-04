@@ -76,9 +76,15 @@ class DialogsMixin:
     scan_type: tk.StringVar
     passive_scan_type: tk.StringVar
     interpolate_3d_plots: bool
-    axis_scale_mode: tk.StringVar
-    axis_min: tk.DoubleVar
-    axis_max: tk.DoubleVar
+    axis_scale_mode_total: tk.StringVar
+    axis_min_total: tk.DoubleVar
+    axis_max_total: tk.DoubleVar
+    axis_scale_mode_hpol: tk.StringVar
+    axis_min_hpol: tk.DoubleVar
+    axis_max_hpol: tk.DoubleVar
+    axis_scale_mode_vpol: tk.StringVar
+    axis_min_vpol: tk.DoubleVar
+    axis_max_vpol: tk.DoubleVar
     datasheet_plots_var: tk.BooleanVar
     min_max_eff_gain_var: tk.BooleanVar
     min_max_vswr_var: tk.BooleanVar
@@ -1797,54 +1803,46 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 activeforeground=LIGHT_TEXT_COLOR,
             ).grid(row=1, column=0, sticky=tk.W, padx=20)
 
-            # Manual / auto Z-axis
+            # Per-type 3D Z-axis scaling
             tk.Label(
                 settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
             ).grid(row=2, column=0, sticky=tk.W, padx=20)
-            tk.Radiobutton(
-                settings_window,
-                text="Auto",
-                variable=self.axis_scale_mode,
-                value="auto",
-                bg=DARK_BG_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                selectcolor=SURFACE_COLOR,
-                activebackground=DARK_BG_COLOR,
-                activeforeground=LIGHT_TEXT_COLOR,
-            ).grid(row=2, column=1, sticky=tk.W)
-            tk.Radiobutton(
-                settings_window,
-                text="Manual",
-                variable=self.axis_scale_mode,
-                value="manual",
-                bg=DARK_BG_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                selectcolor=SURFACE_COLOR,
-                activebackground=DARK_BG_COLOR,
-                activeforeground=LIGHT_TEXT_COLOR,
-            ).grid(row=2, column=2, sticky=tk.W)
-            tk.Label(settings_window, text="Min dBm:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=3, column=0, sticky=tk.W, padx=20
-            )
-            tk.Entry(
-                settings_window,
-                textvariable=self.axis_min,
-                width=6,
-                bg=SURFACE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                insertbackground=LIGHT_TEXT_COLOR,
-            ).grid(row=3, column=1)
-            tk.Label(settings_window, text="Max dBm:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR).grid(
-                row=3, column=2, sticky=tk.W
-            )
-            tk.Entry(
-                settings_window,
-                textvariable=self.axis_max,
-                width=6,
-                bg=SURFACE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                insertbackground=LIGHT_TEXT_COLOR,
-            ).grid(row=3, column=3)
+            # Column headers
+            for ci, hdr in enumerate(["Mode", "Min", "Max"], start=1):
+                tk.Label(
+                    settings_window, text=hdr, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                ).grid(row=2, column=ci, sticky=tk.W)
+
+            _scale_rows = [
+                ("Total:", self.axis_scale_mode_total, self.axis_min_total, self.axis_max_total),
+                ("H-Pol:", self.axis_scale_mode_hpol, self.axis_min_hpol, self.axis_max_hpol),
+                ("V-Pol:", self.axis_scale_mode_vpol, self.axis_min_vpol, self.axis_max_vpol),
+            ]
+            for idx, (lbl, mode_var, min_var, max_var) in enumerate(_scale_rows):
+                r = 3 + idx
+                tk.Label(
+                    settings_window, text=lbl, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=0, sticky=tk.W, padx=30)
+                _mode_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
+                _mode_frame.grid(row=r, column=1, sticky=tk.W)
+                tk.Radiobutton(
+                    _mode_frame, text="Auto", variable=mode_var, value="auto",
+                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                ).pack(side=tk.LEFT)
+                tk.Radiobutton(
+                    _mode_frame, text="Man", variable=mode_var, value="manual",
+                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                ).pack(side=tk.LEFT)
+                tk.Entry(
+                    settings_window, textvariable=min_var, width=6,
+                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=2)
+                tk.Entry(
+                    settings_window, textvariable=max_var, width=6,
+                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=3)
 
             # Maritime / Horizon plot settings
             maritime_frame = tk.LabelFrame(
@@ -2023,10 +2021,10 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 selectcolor=SURFACE_COLOR,
                 activebackground=DARK_BG_COLOR,
                 activeforeground=LIGHT_TEXT_COLOR,
-            ).grid(row=6, column=0, sticky=tk.W, padx=20)
+            ).grid(row=8, column=0, sticky=tk.W, padx=20)
             tk.Label(
                 settings_window, text="Shadow Direction:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-            ).grid(row=6, column=1, sticky=tk.E)
+            ).grid(row=8, column=1, sticky=tk.E)
             self.shadow_direction_var = tk.StringVar(value=getattr(self, "shadow_direction", "-X"))
             ttk.Combobox(
                 settings_window,
@@ -2034,65 +2032,47 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 values=["+X", "-X"],
                 width=4,
                 state="readonly",
-            ).grid(row=6, column=2)
+            ).grid(row=8, column=2)
 
-            # 3-D axis controls (shared with Active logic)
-            self.lbl_axis = tk.Label(
-                settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-            )
-            self.rb_axis_auto = tk.Radiobutton(
-                settings_window,
-                text="Auto",
-                variable=self.axis_scale_mode,
-                value="auto",
-                bg=DARK_BG_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                selectcolor=SURFACE_COLOR,
-                activebackground=DARK_BG_COLOR,
-                activeforeground=LIGHT_TEXT_COLOR,
-            )
-            self.rb_axis_man = tk.Radiobutton(
-                settings_window,
-                text="Manual",
-                variable=self.axis_scale_mode,
-                value="manual",
-                bg=DARK_BG_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                selectcolor=SURFACE_COLOR,
-                activebackground=DARK_BG_COLOR,
-                activeforeground=LIGHT_TEXT_COLOR,
-            )
-            self.lbl_min_dbi = tk.Label(
-                settings_window, text="Min dBi:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-            )
-            self.ent_min_dbi = tk.Entry(
-                settings_window,
-                textvariable=self.axis_min,
-                width=6,
-                bg=SURFACE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                insertbackground=LIGHT_TEXT_COLOR,
-            )
-            self.lbl_max_dbi = tk.Label(
-                settings_window, text="Max dBi:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR
-            )
-            self.ent_max_dbi = tk.Entry(
-                settings_window,
-                textvariable=self.axis_max,
-                width=6,
-                bg=SURFACE_COLOR,
-                fg=LIGHT_TEXT_COLOR,
-                insertbackground=LIGHT_TEXT_COLOR,
-            )
+            # Per-type 3D Z-axis scaling
+            tk.Label(
+                settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+            ).grid(row=3, column=0, sticky=tk.W, padx=20)
+            for ci, hdr in enumerate(["Mode", "Min", "Max"], start=1):
+                tk.Label(
+                    settings_window, text=hdr, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                ).grid(row=3, column=ci, sticky=tk.W)
 
-            # put them in the grid now (we'll hide some later)
-            self.lbl_axis.grid(row=3, column=0, sticky=tk.W, padx=20)
-            self.rb_axis_auto.grid(row=3, column=1, sticky=tk.W)
-            self.rb_axis_man.grid(row=3, column=2, sticky=tk.W)
-            self.lbl_min_dbi.grid(row=4, column=0, sticky=tk.W, padx=20)
-            self.ent_min_dbi.grid(row=4, column=1)
-            self.lbl_max_dbi.grid(row=4, column=2, sticky=tk.W)
-            self.ent_max_dbi.grid(row=4, column=3)
+            _scale_rows = [
+                ("Total:", self.axis_scale_mode_total, self.axis_min_total, self.axis_max_total),
+                ("H-Pol:", self.axis_scale_mode_hpol, self.axis_min_hpol, self.axis_max_hpol),
+                ("V-Pol:", self.axis_scale_mode_vpol, self.axis_min_vpol, self.axis_max_vpol),
+            ]
+            for idx, (lbl, mode_var, min_var, max_var) in enumerate(_scale_rows):
+                r = 4 + idx
+                tk.Label(
+                    settings_window, text=lbl, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=0, sticky=tk.W, padx=30)
+                _mode_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
+                _mode_frame.grid(row=r, column=1, sticky=tk.W)
+                tk.Radiobutton(
+                    _mode_frame, text="Auto", variable=mode_var, value="auto",
+                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                ).pack(side=tk.LEFT)
+                tk.Radiobutton(
+                    _mode_frame, text="Man", variable=mode_var, value="manual",
+                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                ).pack(side=tk.LEFT)
+                tk.Entry(
+                    settings_window, textvariable=min_var, width=6,
+                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=2)
+                tk.Entry(
+                    settings_window, textvariable=max_var, width=6,
+                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                ).grid(row=r, column=3)
 
             # Extrapolation controls (VPOL/HPOL only)
             extrap_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
@@ -2139,7 +2119,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 state=tk.NORMAL if has_files else tk.DISABLED,
             )
             extrap_btn.pack(side=tk.LEFT)
-            extrap_frame.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
+            extrap_frame.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
 
             # Helper to show / hide controls depending on radio-selection
             def refresh_passive_ui():
@@ -2153,8 +2133,8 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 else:  # VPOL/HPOL
                     self.cb_min_max_eff_gain.grid_remove()
                     self.cb_datasheet_plots.grid(row=2, column=0, sticky=tk.W, padx=20)
-                    self.cb_ecc_analysis.grid(row=5, column=0, sticky=tk.W, padx=20)
-                    extrap_frame.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
+                    self.cb_ecc_analysis.grid(row=7, column=0, sticky=tk.W, padx=20)
+                    extrap_frame.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=20, pady=5)
 
             # first run + connect
             refresh_passive_ui()
@@ -2169,7 +2149,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 fg=ACCENT_BLUE_COLOR,
                 font=SECTION_HEADER_FONT,
             )
-            maritime_frame_p.grid(row=8, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
+            maritime_frame_p.grid(row=10, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
 
             self.cb_maritime_var = tk.BooleanVar(
                 value=getattr(self, "maritime_plots_enabled", False)
@@ -2236,7 +2216,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
-            _adv_next_row_p = self._build_advanced_analysis_frames(settings_window, start_row=9)
+            _adv_next_row_p = self._build_advanced_analysis_frames(settings_window, start_row=11)
 
             # Save button
             def save_passive_settings():

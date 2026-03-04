@@ -1014,9 +1014,7 @@ def batch_process_passive_scans(
     cable_loss=0.0,
     datasheet_plots=False,
     save_base=None,
-    axis_mode="auto",
-    zmin: float = -15.0,
-    zmax: float = 15.0,
+    scale_settings=None,
     maritime_plots_enabled=False,
     maritime_theta_min=60.0,
     maritime_theta_max=120.0,
@@ -1034,9 +1032,8 @@ def batch_process_passive_scans(
         cable_loss (float): Cable loss applied to all datasets.
         datasheet_plots (bool): Whether to generate datasheet-style plots.
         save_base (str or None): Optional directory to write results; a subfolder per pair will be created.
-        axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
-        zmin (float): Minimum z-axis limit when axis_mode='manual'.
-        zmax (float): Maximum z-axis limit when axis_mode='manual'.
+        scale_settings (dict or None): Per-type 3D scale as
+            {"total": (mode, min, max), "hpol": (...), "vpol": (...)}.
 
     This routine scans ``folder_path`` for files ending in ``AP_HPol.txt`` and
     ``AP_VPol.txt``. For each matching pair it computes passive gain data and
@@ -1048,6 +1045,12 @@ def batch_process_passive_scans(
             {total_pairs, total_jobs, processed, failed, skipped, errors}
     """
     import os
+
+    if scale_settings is None:
+        scale_settings = {}
+    _s_total = scale_settings.get("total", ("auto", -20.0, 10.0))
+    _s_hpol = scale_settings.get("hpol", ("auto", -25.0, 5.0))
+    _s_vpol = scale_settings.get("vpol", ("auto", -25.0, 10.0))
 
     import matplotlib.pyplot as plt
 
@@ -1182,7 +1185,9 @@ def batch_process_passive_scans(
                     )
 
                     # 3D plots (total, hpol and vpol)
+                    _pol_scale = {"total": _s_total, "hpol": _s_hpol, "vpol": _s_vpol}
                     for pol in ("total", "hpol", "vpol"):
+                        _ps = _pol_scale[pol]
                         plot_passive_3d_component(
                             theta_deg,
                             phi_deg,
@@ -1192,9 +1197,9 @@ def batch_process_passive_scans(
                             freq_list,
                             sel_freq,
                             pol,
-                            axis_mode=axis_mode,
-                            zmin=zmin,
-                            zmax=zmax,
+                            axis_mode=_ps[0],
+                            zmin=_ps[1],
+                            zmax=_ps[2],
                             save_path=subfolder,
                         )
 
@@ -1220,9 +1225,9 @@ def batch_process_passive_scans(
                                 theta_max=maritime_theta_max,
                                 theta_cuts=maritime_theta_cuts,
                                 gain_threshold=maritime_gain_threshold,
-                                axis_mode=axis_mode,
-                                zmin=zmin,
-                                zmax=zmax,
+                                axis_mode=_s_total[0],
+                                zmin=_s_total[1],
+                                zmax=_s_total[2],
                                 save_path=maritime_sub,
                             )
 
@@ -1269,9 +1274,7 @@ def batch_process_active_scans(
     folder_path,
     save_base=None,
     interpolate=True,
-    axis_mode="auto",
-    zmin: float = -15.0,
-    zmax: float = 15.0,
+    scale_settings=None,
     maritime_plots_enabled=False,
     maritime_theta_min=60.0,
     maritime_theta_max=120.0,
@@ -1286,15 +1289,20 @@ def batch_process_active_scans(
         folder_path (str): Directory containing TRP measurement files.
         save_base (str or None): Optional directory to write results; a subfolder per file will be created.
         interpolate (bool): Whether to interpolate 3D plots for smoother visualization.
-        axis_mode (str): 'auto' or 'manual' axis scaling for 3D plots.
-        zmin (float): Minimum z-axis limit (dBm) when axis_mode='manual'.
-        zmax (float): Maximum z-axis limit (dBm) when axis_mode='manual'.
+        scale_settings (dict or None): Per-type 3D scale as
+            {"total": (mode, min, max), "hpol": (...), "vpol": (...)}.
 
     Returns:
         dict: Summary containing counts and error details:
             {total_files, processed, failed, errors}
     """
     import os
+
+    if scale_settings is None:
+        scale_settings = {}
+    _s_total = scale_settings.get("total", ("auto", -20.0, 10.0))
+    _s_hpol = scale_settings.get("hpol", ("auto", -25.0, 5.0))
+    _s_vpol = scale_settings.get("vpol", ("auto", -25.0, 10.0))
 
     import matplotlib.pyplot as plt
 
@@ -1397,11 +1405,17 @@ def batch_process_active_scans(
                 )
 
                 # Generate 3D plots for total, hpol, and vpol
+                _pol_scale = {
+                    "total": _s_total,
+                    "hpol": _s_hpol,
+                    "vpol": _s_vpol,
+                }
                 for power_type, power_2d, power_2d_plot in [
                     ("total", total_power_dBm_2d, total_power_dBm_2d_plot),
                     ("hpol", h_power_dBm_2d, h_power_dBm_2d_plot),
                     ("vpol", v_power_dBm_2d, v_power_dBm_2d_plot),
                 ]:
+                    _s = _pol_scale[power_type]
                     plot_active_3d_data(
                         theta_angles_deg,
                         phi_angles_deg,
@@ -1411,9 +1425,9 @@ def batch_process_active_scans(
                         frequency,
                         power_type=power_type,
                         interpolate=interpolate,
-                        axis_mode=axis_mode,
-                        zmin=zmin,
-                        zmax=zmax,
+                        axis_mode=_s[0],
+                        zmin=_s[1],
+                        zmax=_s[2],
                         save_path=subfolder,
                     )
 
@@ -1434,9 +1448,9 @@ def batch_process_active_scans(
                         theta_max=maritime_theta_max,
                         theta_cuts=maritime_theta_cuts,
                         gain_threshold=maritime_gain_threshold,
-                        axis_mode=axis_mode,
-                        zmin=zmin,
-                        zmax=zmax,
+                        axis_mode=_s_total[0],
+                        zmin=_s_total[1],
+                        zmax=_s_total[2],
                         save_path=maritime_sub,
                     )
 
