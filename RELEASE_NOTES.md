@@ -1,5 +1,25 @@
 # RFlect - Release Notes
 
+## Version 4.1.6 (03/04/2026)
+
+**Feature release — per-plot-type 3D colorbar scaling.**
+
+### New Features
+
+- **Independent 3D colorbar scaling**: Total Power/Gain, H-Pol, and V-Pol 3D plots now have separate Auto/Manual scale controls with independent Min/Max ranges. Enables consistent visual comparison across frequencies by locking each plot type to a fixed colorbar range (e.g., Total [-20, 10], H-Pol [-25, 5], V-Pol [-25, 10])
+- **Per-type scale UI**: Both active and passive settings dialogs display a compact 3-row layout (Total / H-Pol / V-Pol) with Auto/Manual radio buttons and Min/Max entry fields per row
+
+### Improvements
+
+- Per-type scale settings propagate through all code paths: interactive viewing, batch processing, save-to-folder, and AI chat 3D plot generation
+- Config template includes per-type defaults (`AXIS_SCALE_MODE_TOTAL`, `AXIS_MIN_TOTAL`, etc.)
+
+### Bug Fixes
+
+- **Active settings row overlap**: H-Pol and V-Pol scale rows were hidden behind the maritime settings frame due to grid row collision
+
+---
+
 ## Version 4.1.5 (02/24/2026)
 
 **Feature release — advanced RF analysis suite with 5 new analysis modules.**
