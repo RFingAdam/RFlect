@@ -1852,7 +1852,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 fg=ACCENT_BLUE_COLOR,
                 font=SECTION_HEADER_FONT,
             )
-            maritime_frame.grid(row=4, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
+            maritime_frame.grid(row=6, column=0, columnspan=4, sticky="ew", padx=15, pady=5)
 
             self.cb_maritime_var = tk.BooleanVar(
                 value=getattr(self, "maritime_plots_enabled", False)
@@ -1919,7 +1919,7 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
-            _adv_next_row = self._build_advanced_analysis_frames(settings_window, start_row=5)
+            _adv_next_row = self._build_advanced_analysis_frames(settings_window, start_row=7)
 
             def save_active_settings():
                 self.interpolate_3d_plots = self.interpolate_var.get()
