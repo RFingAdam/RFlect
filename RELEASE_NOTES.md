@@ -1,5 +1,15 @@
 # RFlect - Release Notes
 
+## Version 4.1.7 (03/05/2026)
+
+**Patch release — improved horizon efficiency metric.**
+
+### Improvements
+
+- **Horizon Efficiency metric**: Replaced the raw TRP power ratio (which showed a misleading 69.7% for a band covering 50% of the sphere) with a traditional dB metric: sin-weighted average gain in the horizon band minus the full-sphere sin-weighted average. Positive values mean the antenna favors the horizon; 0 dB = isotropic distribution. The raw power-in-band percentage is retained in parentheses for traceability.
+
+---
+
 ## Version 4.1.6 (03/04/2026)
 
 **Feature release — per-plot-type 3D colorbar scaling.**
