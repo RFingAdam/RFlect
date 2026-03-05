@@ -2273,6 +2273,19 @@ def plot_horizon_statistics(
     else:
         horizon_eff = 0.0
 
+    # Full-sphere sin-weighted average for relative efficiency
+    full_lin = 10 ** (gain_2d / 10)
+    full_theta_rad = np.deg2rad(theta_deg)
+    full_sin_w = np.sin(full_theta_rad)
+    full_n_phi = gain_2d.shape[1]
+    full_meg_lin = np.sum(full_lin * full_sin_w[:, np.newaxis]) / (
+        np.sum(full_sin_w) * full_n_phi
+    )
+    full_meg_dB = 10 * np.log10(full_meg_lin) if full_meg_lin > 0 else float("-inf")
+
+    # Horizon efficiency: how much the horizon band exceeds the full-sphere average
+    horizon_eff_dB = meg_dB - full_meg_dB
+
     # ----- Figure: table (left) + multi-cut polar (right) -----
     fig = plt.figure(figsize=(16, 7))
     gs = fig.add_gridspec(1, 2, width_ratios=[1.4, 1])
@@ -2297,7 +2310,7 @@ def plot_horizon_statistics(
         [meg_label, f"{meg_dB:.1f} {data_unit}"],
         [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
         [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
-        ["Horizon Efficiency", f"{horizon_eff:.1f}%"],
+        ["Horizon Efficiency", f"{horizon_eff_dB:+.1f} dB ({horizon_eff:.1f}% of TRP in band)"],
         [
             f"Coverage (>{coverage_limit:.1f} {data_unit})",
             f"{coverage_pct:.1f}%",
