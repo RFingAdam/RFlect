@@ -341,8 +341,7 @@ class TestMasked3DPattern:
         texts = [text.get_text() for text in fig.axes[0].texts]
         joined = "\n".join(texts)
         assert "Maritime Band" in joined
-        assert "Sphere Avg" in joined
-        assert "Maritime Adv" in joined
+        assert "Full-Sphere" in joined
         plt.close("all")
 
 

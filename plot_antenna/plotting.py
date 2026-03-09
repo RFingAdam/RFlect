@@ -2248,13 +2248,8 @@ def plot_horizon_statistics(
     max_gain = band_stats["max_dB"]
     min_gain = band_stats["min_dB"]
     avg_gain = band_stats["avg_dB"]
-    band_avg_dB = band_stats["band_avg_dB"]
-    full_avg_dB = band_stats["full_avg_dB"]
     trp_horizon_dB = band_stats["band_trp_dB"]
     trp_full_dB = band_stats["full_trp_dB"]
-    band_power_pct = band_stats["band_power_pct"]
-    solid_angle_pct = band_stats["solid_angle_pct"]
-    advantage_dB = band_stats["band_advantage_dB"]
     coverage_pct = band_stats["coverage_pct"]
     coverage_limit = band_stats["coverage_threshold_dB"]
     null_depth = band_stats["null_depth_dB"]
@@ -2272,32 +2267,18 @@ def plot_horizon_statistics(
     ax_table.axis("off")
 
     if data_label == "Gain":
-        band_avg_label = "Maritime Avg Gain (sin-theta)"
-        full_avg_label = "Full-Sphere Avg Gain"
-        advantage_label = "Maritime Gain Advantage"
-        trp_label = "Integrated Gain (band)"
-        trp_full_label = "Integrated Gain (full sphere)"
-        full_avg_value = (
-            f"{full_avg_dB:.1f} {data_unit} ({band_stats['full_avg_linear'] * 100.0:.1f}% eff.)"
-        )
+        trp_label = "Maritime Integrated Gain"
+        trp_full_label = "Full-Sphere Integrated Gain"
     else:
-        band_avg_label = "Maritime Avg EIRP (sin-theta)"
-        full_avg_label = "Full-Sphere Avg EIRP"
-        advantage_label = "Maritime EIRP Advantage"
         trp_label = "Maritime TRP"
         trp_full_label = "Full-Sphere TRP"
-        full_avg_value = f"{full_avg_dB:.1f} {data_unit}"
 
     table_data = [
         ["Max " + data_label, f"{max_gain:.1f} {data_unit}"],
         ["Min " + data_label, f"{min_gain:.1f} {data_unit}"],
         ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
-        [band_avg_label, f"{band_avg_dB:.1f} {data_unit}"],
-        [full_avg_label, full_avg_value],
-        [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
         [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
-        ["Band Power Share", f"{band_power_pct:.1f}% of total (iso area {solid_angle_pct:.1f}%)"],
-        [advantage_label, f"{advantage_dB:+.1f} dB vs sphere avg"],
+        [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
         [
             f"Coverage (>{coverage_limit:.1f} {data_unit})",
             f"{coverage_pct:.1f}%",
@@ -2541,26 +2522,18 @@ def plot_3d_pattern_masked(
 
     if band_stats is not None:
         if data_label == "Gain":
-            band_avg_label = "Band Avg Gain"
-            full_avg_label = "Sphere Avg Gain"
-            band_trp_label = "Band Int. Gain"
-            full_trp_label = "Full Int. Gain"
+            band_trp_label = "Maritime Int. Gain"
+            full_trp_label = "Full-Sphere Int. Gain"
         else:
-            band_avg_label = "Band Avg EIRP"
-            full_avg_label = "Sphere Avg EIRP"
-            band_trp_label = "Band TRP"
-            full_trp_label = "Full TRP"
+            band_trp_label = "Maritime TRP"
+            full_trp_label = "Full-Sphere TRP"
 
         stats_text = (
             f"Maritime Band ({theta_highlight_min:.0f}-{theta_highlight_max:.0f} deg)\n"
             f"Max: {band_stats['max_dB']:.1f}  Min: {band_stats['min_dB']:.1f}  "
             f"Avg: {band_stats['avg_dB']:.1f} {data_unit}\n"
-            f"{band_avg_label}: {band_stats['band_avg_dB']:.1f} {data_unit}   "
-            f"{full_avg_label}: {band_stats['full_avg_dB']:.1f} {data_unit}\n"
-            f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}   "
-            f"{full_trp_label}: {band_stats['full_trp_dB']:.1f} {data_unit}\n"
-            f"Band Share: {band_stats['band_power_pct']:.1f}% (iso {band_stats['solid_angle_pct']:.1f}%)   "
-            f"Maritime Adv: {band_stats['band_advantage_dB']:+.1f} dB"
+            f"{full_trp_label}: {band_stats['full_trp_dB']:.1f} {data_unit}   "
+            f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}"
         )
         ax.text2D(
             0.02,
