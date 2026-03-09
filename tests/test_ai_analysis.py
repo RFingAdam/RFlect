@@ -587,6 +587,12 @@ class TestAntennaAnalyzerHorizon:
             "avg_gain_dB",
             "coverage_pct",
             "meg_dB",
+            "full_meg_dB",
+            "horizon_efficiency_dB",
+            "horizon_power_pct",
+            "solid_angle_pct",
+            "trp_horizon_dB",
+            "trp_full_dB",
             "null_depth_dB",
             "null_location",
         }
@@ -619,6 +625,8 @@ class TestAntennaAnalyzerHorizon:
 
         assert result["meg_dB"] is not None
         assert np.isfinite(result["meg_dB"])
+        assert result["full_meg_dB"] is not None
+        assert np.isfinite(result["full_meg_dB"])
 
     def test_horizon_null_detection(self):
         """Null depth should be negative (null is below peak)."""

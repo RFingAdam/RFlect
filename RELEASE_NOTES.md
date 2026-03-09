@@ -1,5 +1,22 @@
 # RFlect - Release Notes
 
+## Version 4.1.8 (03/09/2026)
+
+**Patch release - maritime engineering metrics unified across plots and processing tools.**
+
+### Improvements
+
+- **Shared maritime band math**: Added a common spherical-band statistics helper so maritime metrics use one definition everywhere: full-sphere average, maritime-band average, band power share, and maritime advantage in dB versus the full-sphere average.
+- **Maritime plots updated**: The maritime statistics table and masked 3D plot now show the engineering metrics that matter for on-water use: full-sphere average, maritime-band average, band TRP/integrated gain, raw band power share, isotropic area baseline, and maritime advantage.
+- **Processing summaries updated**: Interactive processing, batch processing, and MCP bulk tools now report the usual full-sphere metric first (TRP for active, efficiency/full-sphere average gain for passive) and then the maritime-band equivalent.
+
+### Tests
+
+- Added direct unit coverage for the shared maritime-band calculations.
+- Added regression coverage for maritime plot labels/annotations and active-process maritime summary logging.
+
+---
+
 ## Version 4.1.7 (03/05/2026)
 
 **Patch release — improved horizon efficiency metric.**

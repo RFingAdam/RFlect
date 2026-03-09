@@ -419,7 +419,17 @@ def get_horizon_statistics(
         output += f"Max {unit}: {_fmt(result.get('max_gain_dB'))} {unit}\n"
         output += f"Min {unit}: {_fmt(result.get('min_gain_dB'))} {unit}\n"
         output += f"Avg {unit} (linear): {_fmt(result.get('avg_gain_dB'))} {unit}\n"
-        output += f"MEG (sin-θ weighted): {_fmt(result.get('meg_dB'))} {unit}\n\n"
+        output += f"Band Avg (sin-theta): {_fmt(result.get('meg_dB'))} {unit}\n"
+        output += f"Full-Sphere Avg: {_fmt(result.get('full_meg_dB'))} {unit}\n"
+        output += (
+            f"Maritime Advantage: {_fmt(result.get('horizon_efficiency_dB'), '.1f')} dB vs sphere avg\n"
+        )
+        output += (
+            f"Band Power Share: {_fmt(result.get('horizon_power_pct'), '.1f')}% "
+            f"(iso area {_fmt(result.get('solid_angle_pct'), '.1f')}%)\n"
+        )
+        output += f"Band TRP: {_fmt(result.get('trp_horizon_dB'))} {unit}\n"
+        output += f"Full-Sphere TRP: {_fmt(result.get('trp_full_dB'))} {unit}\n\n"
 
         output += f"Coverage (>{_fmt(result.get('max_gain_dB', 0) + gain_threshold)} {unit}): "
         output += f"{_fmt(result.get('coverage_pct'), '.1f')}%\n"

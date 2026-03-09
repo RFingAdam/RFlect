@@ -31,6 +31,7 @@ from ..calculations import (
     determine_polarization,
     calculate_passive_variables,
     calculate_active_variables,
+    calculate_spherical_band_statistics,
     extrapolate_pattern,
     apply_directional_human_shadow,
     angles_match,
@@ -1236,6 +1237,65 @@ class CallbacksMixin:
         self.update_status("Ready")
         self.update_visibility()
 
+    def _get_maritime_band_settings(self):
+        """Return configured maritime theta range and coverage threshold."""
+        theta_min = self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0
+        theta_max = self.horizon_theta_max.get() if hasattr(self, "horizon_theta_max") else 120.0
+        gain_threshold = (
+            self.horizon_gain_threshold.get() if hasattr(self, "horizon_gain_threshold") else -3.0
+        )
+        return theta_min, theta_max, gain_threshold
+
+    def _compute_maritime_band_stats(self, theta_deg, phi_deg, gain_2d):
+        """Compute maritime-band metrics using the current GUI settings."""
+        theta_min, theta_max, gain_threshold = self._get_maritime_band_settings()
+        try:
+            return calculate_spherical_band_statistics(
+                gain_2d,
+                theta_deg,
+                phi_deg,
+                theta_min=theta_min,
+                theta_max=theta_max,
+                gain_threshold=gain_threshold,
+            )
+        except ValueError as exc:
+            self.log_message(f"Maritime summary unavailable: {exc}", level="warning")
+            return None
+
+    def _log_maritime_band_summary(self, band_stats, data_label="Gain", data_unit="dBi"):
+        """Write a concise engineering summary for the selected maritime band."""
+        theta_min = band_stats["theta_min"]
+        theta_max = band_stats["theta_max"]
+        band_desc = f"{theta_min:.0f}-{theta_max:.0f} deg"
+
+        if data_label == "Gain":
+            self.log_message(
+                f"Full-sphere avg gain (efficiency): {band_stats['full_avg_dB']:.2f} {data_unit} "
+                f"({band_stats['full_avg_linear'] * 100.0:.1f}%)"
+            )
+            self.log_message(
+                f"Maritime avg gain ({band_desc}): {band_stats['band_avg_dB']:.2f} {data_unit}"
+            )
+        else:
+            self.log_message(f"Full-sphere TRP: {band_stats['full_trp_dB']:.2f} {data_unit}")
+            self.log_message(
+                f"Maritime TRP ({band_desc}): {band_stats['band_trp_dB']:.2f} {data_unit}"
+            )
+            self.log_message(
+                f"Full-sphere avg EIRP: {band_stats['full_avg_dB']:.2f} {data_unit}"
+            )
+            self.log_message(
+                f"Maritime avg EIRP ({band_desc}): {band_stats['band_avg_dB']:.2f} {data_unit}"
+            )
+
+        self.log_message(
+            f"Maritime advantage: {band_stats['band_advantage_dB']:+.2f} dB vs sphere avg"
+        )
+        self.log_message(
+            f"Band power share: {band_stats['band_power_pct']:.1f}% of total "
+            f"(iso area {band_stats['solid_angle_pct']:.1f}%)"
+        )
+
     def _process_active_data(self):
         """Process and display active measurement data."""
         data = read_active_file(self.TRP_file_path)
@@ -1306,6 +1366,12 @@ class CallbacksMixin:
             v_TRP_dBm,
         ) = active_variables
 
+        maritime_stats = self._compute_maritime_band_stats(
+            theta_angles_deg,
+            phi_angles_deg,
+            total_power_dBm_2d,
+        )
+
         # Plot 2D data
         plot_active_2d_data(
             data_points, theta_angles_rad, phi_angles_rad_plot, total_power_dBm_2d_plot, frequency
@@ -1357,13 +1423,15 @@ class CallbacksMixin:
         )
 
         self.log_message("Active data processed successfully.", level="success")
+        if maritime_stats is not None:
+            self._log_maritime_band_summary(maritime_stats, data_label="Power", data_unit="dBm")
 
         # Maritime / Horizon plots (active)
         if self.maritime_plots_enabled:
             self.log_message("Generating maritime plots (active)...")
             generate_maritime_plots(
-                np.rad2deg(theta_angles_rad),
-                np.rad2deg(phi_angles_rad),
+                theta_angles_deg,
+                phi_angles_deg,
                 total_power_dBm_2d,
                 frequency,
                 data_label="Power",
@@ -1400,6 +1468,14 @@ class CallbacksMixin:
             "Min Power": f"{np.min(total_power_dBm_2d):.1f} dBm",
             "TRP": f"{TRP_dBm:.1f} dBm",
         }
+        if maritime_stats is not None:
+            self._measurement_context["key_metrics"].update(
+                {
+                    "Sphere Avg EIRP": f"{maritime_stats['full_avg_dB']:.1f} dBm",
+                    "Maritime Avg EIRP": f"{maritime_stats['band_avg_dB']:.1f} dBm",
+                    "Maritime Advantage": f"{maritime_stats['band_advantage_dB']:+.1f} dB",
+                }
+            )
         self._measurement_context["data_shape"] = f"{data_points} points"
 
     def _process_passive_data(self):
@@ -1526,6 +1602,25 @@ class CallbacksMixin:
             self.log_message(f"After Shadowing : {eff_after_dB:.2f} dB")
             self.log_message(f"Delta Efficiency : {delta_dB:+.2f} dB")
 
+        maritime_stats = None
+        freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+            theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
+        )
+        if gain_grid is not None:
+            maritime_stats = self._compute_maritime_band_stats(unique_theta, unique_phi, gain_grid)
+            self._log_maritime_band_summary(maritime_stats, data_label="Gain", data_unit="dBi")
+            if self._measurement_context.get("key_metrics") is not None:
+                self._measurement_context["key_metrics"].update(
+                    {
+                        "Sphere Avg Gain": f"{maritime_stats['full_avg_dB']:.1f} dBi",
+                        "Maritime Avg Gain": f"{maritime_stats['band_avg_dB']:.1f} dBi",
+                        "Maritime Advantage": f"{maritime_stats['band_advantage_dB']:+.1f} dB",
+                    }
+                )
+        else:
+            self.log_message("Maritime summary unavailable: could not reshape gain data to 2D.", level="warning")
+
         # Plot 2D and 3D passive data
         plot_2d_passive_data(
             theta_angles_deg,
@@ -1591,12 +1686,6 @@ class CallbacksMixin:
         # Maritime / Horizon plots (passive)
         if self.maritime_plots_enabled:
             self.log_message("Generating maritime plots (passive)...")
-            freq_idx = (
-                self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
-            )
-            unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
-                theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
-            )
             if gain_grid is not None:
                 generate_maritime_plots(
                     unique_theta,

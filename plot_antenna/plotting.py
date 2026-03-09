@@ -23,6 +23,8 @@ from .config import (
 from .file_utils import parse_2port_data
 from .calculations import (
     calculate_trp,
+    calculate_partial_trp,
+    calculate_spherical_band_statistics,
     friis_range_estimate,
     min_tx_gain_for_range,
     link_margin,
@@ -2230,61 +2232,36 @@ def plot_horizon_statistics(
         data_unit: Unit string
         save_path: Optional path to save figure
     """
-    # Extract horizon band
-    mask = (theta_deg >= theta_min) & (theta_deg <= theta_max)
-    horizon_theta = theta_deg[mask]
-    horizon_gain = gain_2d[mask, :]
-
-    if horizon_gain.size == 0:
+    try:
+        band_stats = calculate_spherical_band_statistics(
+            gain_2d,
+            theta_deg,
+            phi_deg,
+            theta_min=theta_min,
+            theta_max=theta_max,
+            gain_threshold=gain_threshold,
+        )
+    except ValueError:
         print(f"[Maritime] No data in theta range {theta_min}-{theta_max} deg")
         return
 
-    # ----- Basic statistics -----
-    max_gain = np.max(horizon_gain)
-    min_gain = np.min(horizon_gain)
-    lin = 10 ** (horizon_gain / 10)
-    avg_gain = 10 * np.log10(np.mean(lin))
-
-    # Coverage: % of points above (peak + threshold)
-    coverage_limit = max_gain + gain_threshold  # threshold is negative
-    coverage_pct = 100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
-
-    # Sin-weighted average (MEG for passive, avg EIRP for active)
-    theta_rad = np.deg2rad(horizon_theta)
-    sin_weights = np.sin(theta_rad)
-    n_phi = horizon_gain.shape[1]
-    weighted_lin = lin * sin_weights[:, np.newaxis]
-    meg_lin = np.sum(weighted_lin) / (np.sum(sin_weights) * n_phi)
-    meg_dB = 10 * np.log10(meg_lin) if meg_lin > 0 else float("-inf")
-
-    # Null detection
-    null_flat_idx = np.argmin(horizon_gain)
-    null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, horizon_gain.shape)
-    null_depth = min_gain - max_gain
-    null_location = f"θ={horizon_theta[null_theta_idx]:.0f}°, φ={phi_deg[null_phi_idx]:.0f}°"
-
-    # ----- TRP / efficiency -----
-    trp_horizon_dB = _compute_partial_trp(
-        theta_deg, phi_deg, gain_2d, theta_min=theta_min, theta_max=theta_max
+    max_gain = band_stats["max_dB"]
+    min_gain = band_stats["min_dB"]
+    avg_gain = band_stats["avg_dB"]
+    band_avg_dB = band_stats["band_avg_dB"]
+    full_avg_dB = band_stats["full_avg_dB"]
+    trp_horizon_dB = band_stats["band_trp_dB"]
+    trp_full_dB = band_stats["full_trp_dB"]
+    band_power_pct = band_stats["band_power_pct"]
+    solid_angle_pct = band_stats["solid_angle_pct"]
+    advantage_dB = band_stats["band_advantage_dB"]
+    coverage_pct = band_stats["coverage_pct"]
+    coverage_limit = band_stats["coverage_threshold_dB"]
+    null_depth = band_stats["null_depth_dB"]
+    null_location = band_stats["null_location"]
+    null_location_text = (
+        f"theta={null_location['theta_deg']:.0f} deg, phi={null_location['phi_deg']:.0f} deg"
     )
-    trp_full_dB = _compute_partial_trp(theta_deg, phi_deg, gain_2d)
-    if trp_full_dB > -100 and trp_horizon_dB > -100:
-        horizon_eff = 10 ** ((trp_horizon_dB - trp_full_dB) / 10) * 100.0
-    else:
-        horizon_eff = 0.0
-
-    # Full-sphere sin-weighted average for relative efficiency
-    full_lin = 10 ** (gain_2d / 10)
-    full_theta_rad = np.deg2rad(theta_deg)
-    full_sin_w = np.sin(full_theta_rad)
-    full_n_phi = gain_2d.shape[1]
-    full_meg_lin = np.sum(full_lin * full_sin_w[:, np.newaxis]) / (
-        np.sum(full_sin_w) * full_n_phi
-    )
-    full_meg_dB = 10 * np.log10(full_meg_lin) if full_meg_lin > 0 else float("-inf")
-
-    # Horizon efficiency: how much the horizon band exceeds the full-sphere average
-    horizon_eff_dB = meg_dB - full_meg_dB
 
     # ----- Figure: table (left) + multi-cut polar (right) -----
     fig = plt.figure(figsize=(16, 7))
@@ -2295,29 +2272,39 @@ def plot_horizon_statistics(
     ax_table.axis("off")
 
     if data_label == "Gain":
-        meg_label = "MEG (sin-θ weighted)"
-        trp_label = "Integrated Gain (horizon)"
+        band_avg_label = "Maritime Avg Gain (sin-theta)"
+        full_avg_label = "Full-Sphere Avg Gain"
+        advantage_label = "Maritime Gain Advantage"
+        trp_label = "Integrated Gain (band)"
         trp_full_label = "Integrated Gain (full sphere)"
+        full_avg_value = (
+            f"{full_avg_dB:.1f} {data_unit} ({band_stats['full_avg_linear'] * 100.0:.1f}% eff.)"
+        )
     else:
-        meg_label = "Avg EIRP (sin-θ weighted)"
-        trp_label = "Horizon TRP"
-        trp_full_label = "Full Sphere TRP"
+        band_avg_label = "Maritime Avg EIRP (sin-theta)"
+        full_avg_label = "Full-Sphere Avg EIRP"
+        advantage_label = "Maritime EIRP Advantage"
+        trp_label = "Maritime TRP"
+        trp_full_label = "Full-Sphere TRP"
+        full_avg_value = f"{full_avg_dB:.1f} {data_unit}"
 
     table_data = [
         ["Max " + data_label, f"{max_gain:.1f} {data_unit}"],
         ["Min " + data_label, f"{min_gain:.1f} {data_unit}"],
         ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
-        [meg_label, f"{meg_dB:.1f} {data_unit}"],
+        [band_avg_label, f"{band_avg_dB:.1f} {data_unit}"],
+        [full_avg_label, full_avg_value],
         [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
         [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
-        ["Horizon Efficiency", f"{horizon_eff_dB:+.1f} dB ({horizon_eff:.1f}% of TRP in band)"],
+        ["Band Power Share", f"{band_power_pct:.1f}% of total (iso area {solid_angle_pct:.1f}%)"],
+        [advantage_label, f"{advantage_dB:+.1f} dB vs sphere avg"],
         [
             f"Coverage (>{coverage_limit:.1f} {data_unit})",
             f"{coverage_pct:.1f}%",
         ],
         ["Null Depth", f"{null_depth:.1f} dB"],
-        ["Null Location", null_location],
-        ["Theta Range", f"{theta_min}° – {theta_max}°"],
+        ["Null Location", null_location_text],
+        ["Theta Range", f"{theta_min} deg - {theta_max} deg"],
         ["Frequency", f"{frequency} MHz"],
     ]
 
@@ -2338,7 +2325,7 @@ def plot_horizon_statistics(
         table[0, j].set_text_props(color="white", fontweight="bold")
 
     ax_table.set_title(
-        f"Horizon {data_label} Statistics @ {frequency} MHz ({data_unit})",
+        f"Maritime Band {data_label} Statistics @ {frequency} MHz ({data_unit})",
         fontsize=14,
         fontweight="bold",
         pad=20,
@@ -2371,7 +2358,7 @@ def plot_horizon_statistics(
     ax_polar.set_theta_zero_location("N")
     ax_polar.set_theta_direction(-1)
     ax_polar.set_title(
-        f"Horizon Cuts ({data_unit})\n{theta_min}°–{theta_max}°",
+        f"Azimuth Cuts Across Maritime Band ({data_unit})\n{theta_min:.0f}-{theta_max:.0f} deg",
         pad=20,
         fontsize=11,
     )
@@ -2528,7 +2515,7 @@ def plot_3d_pattern_masked(
     # Configure axes: equal aspect, panes, grid, arrows
     _setup_3d_axes(ax, X, Y, Z)
     fig.suptitle(
-        f"3D {data_label} Pattern — Horizon Band {theta_highlight_min}–{theta_highlight_max}° "
+        f"3D {data_label} Pattern - Maritime Band {theta_highlight_min}-{theta_highlight_max} deg "
         f"@ {frequency} MHz",
         fontsize=14,
         y=0.97,
@@ -2540,48 +2527,47 @@ def plot_3d_pattern_masked(
     cbar = fig.colorbar(mappable, ax=ax, pad=0.08, shrink=0.65)
     cbar.set_label(f"{data_label} ({data_unit})")
 
-    # ----- Horizon band statistics annotation -----
-    band_mask = (theta_deg >= theta_highlight_min) & (theta_deg <= theta_highlight_max)
-    band_data = gain_2d[band_mask, :]
-    if band_data.size > 0:
-        band_max = np.max(band_data)
-        band_min = np.min(band_data)
-        band_lin = 10 ** (band_data / 10)
-        band_avg = 10 * np.log10(np.mean(band_lin))
-
-        trp_horizon = _compute_partial_trp(
+    # ----- Maritime band statistics annotation -----
+    try:
+        band_stats = calculate_spherical_band_statistics(
+            gain_2d,
             theta_deg,
             phi_deg,
-            gain_2d,
             theta_min=theta_highlight_min,
             theta_max=theta_highlight_max,
         )
-        trp_full = _compute_partial_trp(theta_deg, phi_deg, gain_2d)
-        if trp_full > -100 and trp_horizon > -100:
-            eff = 10 ** ((trp_horizon - trp_full) / 10) * 100.0
-        else:
-            eff = 0.0
+    except ValueError:
+        band_stats = None
 
+    if band_stats is not None:
         if data_label == "Gain":
-            trp_h = "Horizon Int. Gain"
-            trp_f = "Full Int. Gain"
+            band_avg_label = "Band Avg Gain"
+            full_avg_label = "Sphere Avg Gain"
+            band_trp_label = "Band Int. Gain"
+            full_trp_label = "Full Int. Gain"
         else:
-            trp_h = "Horizon TRP"
-            trp_f = "Full TRP"
+            band_avg_label = "Band Avg EIRP"
+            full_avg_label = "Sphere Avg EIRP"
+            band_trp_label = "Band TRP"
+            full_trp_label = "Full TRP"
 
         stats_text = (
-            f"Horizon Band ({theta_highlight_min}–{theta_highlight_max}°)\n"
-            f"Max: {band_max:.1f}  Min: {band_min:.1f}  Avg: {band_avg:.1f} {data_unit}\n"
-            f"{trp_h}: {trp_horizon:.1f} {data_unit}   "
-            f"{trp_f}: {trp_full:.1f} {data_unit}\n"
-            f"Horizon Efficiency: {eff:.1f}%"
+            f"Maritime Band ({theta_highlight_min:.0f}-{theta_highlight_max:.0f} deg)\n"
+            f"Max: {band_stats['max_dB']:.1f}  Min: {band_stats['min_dB']:.1f}  "
+            f"Avg: {band_stats['avg_dB']:.1f} {data_unit}\n"
+            f"{band_avg_label}: {band_stats['band_avg_dB']:.1f} {data_unit}   "
+            f"{full_avg_label}: {band_stats['full_avg_dB']:.1f} {data_unit}\n"
+            f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}   "
+            f"{full_trp_label}: {band_stats['full_trp_dB']:.1f} {data_unit}\n"
+            f"Band Share: {band_stats['band_power_pct']:.1f}% (iso {band_stats['solid_angle_pct']:.1f}%)   "
+            f"Maritime Adv: {band_stats['band_advantage_dB']:+.1f} dB"
         )
         ax.text2D(
             0.02,
             0.02,
             stats_text,
             transform=ax.transAxes,
-            fontsize=9,
+            fontsize=8.5,
             verticalalignment="bottom",
             bbox=dict(facecolor="white", edgecolor="gray", alpha=0.85, boxstyle="round,pad=0.4"),
         )

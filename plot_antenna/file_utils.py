@@ -1,4 +1,8 @@
-from .calculations import angles_match, calculate_passive_variables
+from .calculations import (
+    angles_match,
+    calculate_passive_variables,
+    calculate_spherical_band_statistics,
+)
 
 import os
 import numpy as np
@@ -1054,7 +1058,7 @@ def batch_process_passive_scans(
 
     import matplotlib.pyplot as plt
 
-    from .plotting import plot_2d_passive_data, plot_passive_3d_component
+    from .plotting import _prepare_gain_grid, plot_2d_passive_data, plot_passive_3d_component
 
     # Disable interactive mode so figures don't pop up during batch processing
     plt.ioff()
@@ -1066,6 +1070,7 @@ def batch_process_passive_scans(
         "failed": 0,
         "skipped": 0,
         "errors": [],
+        "results": [],
     }
 
     try:
@@ -1203,14 +1208,18 @@ def batch_process_passive_scans(
                             save_path=subfolder,
                         )
 
+                    freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
+                    unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
+                        theta_deg,
+                        phi_deg,
+                        total_gain_dB,
+                        freq_idx,
+                    )
+
                     # Maritime / Horizon plots
                     if maritime_plots_enabled and subfolder:
-                        from .plotting import _prepare_gain_grid, generate_maritime_plots
+                        from .plotting import generate_maritime_plots
 
-                        freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
-                        unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
-                            theta_deg, phi_deg, total_gain_dB, freq_idx
-                        )
                         if gain_grid is not None:
                             maritime_sub = os.path.join(subfolder, "Maritime Plots")
                             os.makedirs(maritime_sub, exist_ok=True)
@@ -1236,19 +1245,21 @@ def batch_process_passive_scans(
                         from .plotting import _prepare_gain_grid as _pgrid
                         from .plotting import generate_advanced_analysis_plots
 
-                        freq_idx = freq_list.index(sel_freq) if sel_freq in freq_list else 0
-                        unique_theta, unique_phi, gain_grid = _pgrid(
-                            theta_deg, phi_deg, total_gain_dB, freq_idx
+                        adv_theta, adv_phi, adv_gain_grid = _pgrid(
+                            theta_deg,
+                            phi_deg,
+                            total_gain_dB,
+                            freq_idx,
                         )
-                        if gain_grid is not None:
+                        if adv_gain_grid is not None:
                             adv_sub = os.path.join(subfolder, "Advanced Analysis")
                             os.makedirs(adv_sub, exist_ok=True)
                             adv_kwargs = dict(advanced_analysis_params)
-                            adv_kwargs.setdefault("mimo_gain_data_list", [gain_grid])
+                            adv_kwargs.setdefault("mimo_gain_data_list", [adv_gain_grid])
                             generate_advanced_analysis_plots(
-                                unique_theta,
-                                unique_phi,
-                                gain_grid,
+                                adv_theta,
+                                adv_phi,
+                                adv_gain_grid,
                                 sel_freq,
                                 data_label="Gain",
                                 data_unit="dBi",
@@ -1256,7 +1267,48 @@ def batch_process_passive_scans(
                                 **adv_kwargs,
                             )
 
+                    maritime_stats = None
+                    if gain_grid is not None:
+                        try:
+                            maritime_stats = calculate_spherical_band_statistics(
+                                gain_grid,
+                                unique_theta,
+                                unique_phi,
+                                theta_min=maritime_theta_min,
+                                theta_max=maritime_theta_max,
+                                gain_threshold=maritime_gain_threshold,
+                            )
+                        except ValueError:
+                            maritime_stats = None
+
                     summary["processed"] += 1
+                    result_row = {
+                        "pair": pair_label,
+                        "frequency_mhz": float(sel_freq),
+                    }
+                    if maritime_stats is not None:
+                        result_row.update(
+                            {
+                                "full_avg_dB": maritime_stats["full_avg_dB"],
+                                "full_efficiency_pct": maritime_stats["full_avg_linear"] * 100.0,
+                                "band_avg_dB": maritime_stats["band_avg_dB"],
+                                "band_advantage_dB": maritime_stats["band_advantage_dB"],
+                                "band_power_pct": maritime_stats["band_power_pct"],
+                                "solid_angle_pct": maritime_stats["solid_angle_pct"],
+                            }
+                        )
+                    summary["results"].append(result_row)
+
+                    if maritime_stats is not None:
+                        print(
+                            f"  OK Completed {pair_label} at {sel_freq} MHz "
+                            f"(Eff={maritime_stats['full_avg_dB']:.2f} dBi / "
+                            f"{maritime_stats['full_avg_linear'] * 100.0:.1f}%, "
+                            f"Maritime Avg={maritime_stats['band_avg_dB']:.2f} dBi, "
+                            f"Maritime={maritime_stats['band_advantage_dB']:+.2f} dB)"
+                        )
+                    else:
+                        print(f"  OK Completed {pair_label} at {sel_freq} MHz")
                 except Exception as e:
                     summary["failed"] += 1
                     summary["errors"].append(
@@ -1317,6 +1369,7 @@ def batch_process_active_scans(
         "processed": 0,
         "failed": 0,
         "errors": [],
+        "results": [],
     }
 
     try:
@@ -1473,8 +1526,45 @@ def batch_process_active_scans(
                         **adv_kwargs,
                     )
 
+                try:
+                    maritime_stats = calculate_spherical_band_statistics(
+                        total_power_dBm_2d,
+                        theta_angles_deg,
+                        phi_angles_deg,
+                        theta_min=maritime_theta_min,
+                        theta_max=maritime_theta_max,
+                        gain_threshold=maritime_gain_threshold,
+                    )
+                except ValueError:
+                    maritime_stats = None
+
                 summary["processed"] += 1
-                print(f"  OK Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")
+                result_row = {
+                    "file": trp_file,
+                    "frequency_mhz": float(frequency),
+                    "trp_dBm": float(TRP_dBm),
+                }
+                if maritime_stats is not None:
+                    result_row.update(
+                        {
+                            "full_avg_dB": maritime_stats["full_avg_dB"],
+                            "band_avg_dB": maritime_stats["band_avg_dB"],
+                            "band_advantage_dB": maritime_stats["band_advantage_dB"],
+                            "band_power_pct": maritime_stats["band_power_pct"],
+                            "solid_angle_pct": maritime_stats["solid_angle_pct"],
+                        }
+                    )
+                summary["results"].append(result_row)
+
+                if maritime_stats is not None:
+                    print(
+                        f"  OK Completed {trp_file} at {frequency} MHz "
+                        f"(TRP={TRP_dBm:.2f} dBm, Sphere Avg={maritime_stats['full_avg_dB']:.2f} dBm, "
+                        f"Maritime Avg={maritime_stats['band_avg_dB']:.2f} dBm, "
+                        f"Maritime={maritime_stats['band_advantage_dB']:+.2f} dB)"
+                    )
+                else:
+                    print(f"  OK Completed {trp_file} at {frequency} MHz (TRP={TRP_dBm:.2f} dBm)")
 
             except Exception as e:
                 summary["failed"] += 1

@@ -21,6 +21,7 @@ from plot_antenna.calculations import (
     capacity_awgn,
     capacity_monte_carlo,
     angles_match,
+    calculate_spherical_band_statistics,
     calculate_trp,
     process_data,
     extrapolate_pattern,
@@ -205,7 +206,43 @@ class TestCalculateTRP:
 
 
 # ---------------------------------------------------------------------------
-# 6. TestProcessData
+# 6. TestCalculateSphericalBandStatistics
+# ---------------------------------------------------------------------------
+class TestCalculateSphericalBandStatistics:
+    """Tests for maritime/on-water band statistics."""
+
+    @staticmethod
+    def _make_uniform_grid():
+        theta_deg = np.arange(0, 181, 15, dtype=float)
+        phi_deg = np.arange(0, 360, 15, dtype=float)
+        pattern_dB = np.zeros((len(theta_deg), len(phi_deg)), dtype=float)
+        return theta_deg, phi_deg, pattern_dB
+
+    def test_uniform_pattern_matches_isotropic_baseline(self):
+        """Uniform patterns should show 0 dB maritime advantage."""
+        theta_deg, phi_deg, pattern_dB = self._make_uniform_grid()
+        stats = calculate_spherical_band_statistics(pattern_dB, theta_deg, phi_deg)
+
+        assert stats["full_avg_dB"] == pytest.approx(0.0, abs=1e-9)
+        assert stats["band_avg_dB"] == pytest.approx(0.0, abs=1e-9)
+        assert stats["band_advantage_dB"] == pytest.approx(0.0, abs=1e-9)
+        assert stats["band_power_pct"] == pytest.approx(stats["solid_angle_pct"], abs=1e-9)
+
+    def test_band_favored_pattern_has_positive_maritime_advantage(self):
+        """Patterns concentrated near the horizon should exceed isotropic fill."""
+        theta_deg, phi_deg, pattern_dB = self._make_uniform_grid()
+        band_mask = (theta_deg >= 60.0) & (theta_deg <= 120.0)
+        pattern_dB[band_mask, :] = 6.0
+
+        stats = calculate_spherical_band_statistics(pattern_dB, theta_deg, phi_deg)
+
+        assert stats["band_advantage_dB"] > 0
+        assert stats["band_power_pct"] > stats["solid_angle_pct"]
+        assert stats["band_avg_dB"] > stats["full_avg_dB"]
+
+
+# ---------------------------------------------------------------------------
+# 7. TestProcessData
 # ---------------------------------------------------------------------------
 class TestProcessData:
     """Tests for process_data (FFT-based far-field processing)."""

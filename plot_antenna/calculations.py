@@ -39,6 +39,156 @@ def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi):
     return TRP_dBm
 
 
+def calculate_partial_trp(pattern_dB_2d, theta_deg, phi_deg, theta_min=None, theta_max=None):
+    """
+    Integrate gain/power over a partial or full sphere using sin(theta) weighting.
+
+    The input is unit-agnostic as long as ``pattern_dB_2d`` is in a logarithmic
+    power domain (for example dBi or dBm).
+    """
+    pattern_dB_2d = np.asarray(pattern_dB_2d, dtype=float)
+    theta_deg = np.asarray(theta_deg, dtype=float)
+    phi_deg = np.asarray(phi_deg, dtype=float)
+
+    if pattern_dB_2d.ndim != 2:
+        raise ValueError("pattern_dB_2d must be a 2D array")
+    if pattern_dB_2d.shape != (len(theta_deg), len(phi_deg)):
+        raise ValueError("pattern_dB_2d shape must match theta_deg x phi_deg")
+
+    if theta_min is not None and theta_max is not None:
+        mask = (theta_deg >= theta_min) & (theta_deg <= theta_max)
+        sel_theta = theta_deg[mask]
+        sel_pattern = pattern_dB_2d[mask, :]
+    else:
+        sel_theta = theta_deg
+        sel_pattern = pattern_dB_2d
+
+    if sel_pattern.size == 0:
+        return float("-inf")
+
+    d_theta = np.deg2rad(np.mean(np.diff(sel_theta))) if len(sel_theta) > 1 else np.deg2rad(5.0)
+    d_phi = np.deg2rad(np.mean(np.diff(phi_deg))) if len(phi_deg) > 1 else np.deg2rad(5.0)
+
+    pattern_lin = 10 ** (sel_pattern / 10.0)
+    sin_theta = np.sin(np.deg2rad(sel_theta))
+    integrated_lin = d_theta * d_phi / (4.0 * np.pi) * np.sum(pattern_lin * sin_theta[:, np.newaxis])
+    return 10.0 * np.log10(integrated_lin) if integrated_lin > 0 else float("-inf")
+
+
+def calculate_spherical_band_statistics(
+    pattern_dB_2d,
+    theta_deg,
+    phi_deg,
+    theta_min=60.0,
+    theta_max=120.0,
+    gain_threshold=-3.0,
+):
+    """
+    Calculate engineering statistics for a theta-limited spherical band.
+
+    Returns both raw power share and the band-average advantage over the full
+    sphere. The latter is the most useful maritime/on-water metric because it is
+    simultaneously:
+
+    - average band gain/power versus full-sphere average
+    - the band's concentration above an isotropic fill of the same solid angle
+    """
+    pattern_dB_2d = np.asarray(pattern_dB_2d, dtype=float)
+    theta_deg = np.asarray(theta_deg, dtype=float)
+    phi_deg = np.asarray(phi_deg, dtype=float)
+
+    if pattern_dB_2d.ndim != 2:
+        raise ValueError("pattern_dB_2d must be a 2D array")
+    if pattern_dB_2d.shape != (len(theta_deg), len(phi_deg)):
+        raise ValueError("pattern_dB_2d shape must match theta_deg x phi_deg")
+    if theta_min > theta_max:
+        raise ValueError("theta_min must be less than or equal to theta_max")
+
+    band_mask = (theta_deg >= theta_min) & (theta_deg <= theta_max)
+    band_theta = theta_deg[band_mask]
+    band_pattern = pattern_dB_2d[band_mask, :]
+
+    if band_pattern.size == 0:
+        raise ValueError(f"No data in theta range {theta_min}-{theta_max} deg")
+
+    band_pattern_lin = 10 ** (band_pattern / 10.0)
+    full_pattern_lin = 10 ** (pattern_dB_2d / 10.0)
+
+    max_db = float(np.max(band_pattern))
+    min_db = float(np.min(band_pattern))
+    avg_db = float(10.0 * np.log10(np.mean(band_pattern_lin)))
+
+    coverage_threshold_db = max_db + gain_threshold
+    coverage_pct = float(100.0 * np.sum(band_pattern >= coverage_threshold_db) / band_pattern.size)
+
+    band_sin = np.sin(np.deg2rad(band_theta))
+    full_sin = np.sin(np.deg2rad(theta_deg))
+    band_weight_sum = float(np.sum(band_sin) * band_pattern.shape[1])
+    full_weight_sum = float(np.sum(full_sin) * pattern_dB_2d.shape[1])
+
+    band_avg_linear = float(np.sum(band_pattern_lin * band_sin[:, np.newaxis]) / max(band_weight_sum, 1e-20))
+    full_avg_linear = float(
+        np.sum(full_pattern_lin * full_sin[:, np.newaxis]) / max(full_weight_sum, 1e-20)
+    )
+    band_avg_dB = float(10.0 * np.log10(max(band_avg_linear, 1e-20)))
+    full_avg_dB = float(10.0 * np.log10(max(full_avg_linear, 1e-20)))
+
+    band_advantage_ratio = float(band_avg_linear / max(full_avg_linear, 1e-20))
+    band_advantage_dB = float(10.0 * np.log10(max(band_advantage_ratio, 1e-20)))
+    band_advantage_pct = float(100.0 * band_advantage_ratio)
+
+    band_trp_dB = float(
+        calculate_partial_trp(
+            pattern_dB_2d,
+            theta_deg,
+            phi_deg,
+            theta_min=theta_min,
+            theta_max=theta_max,
+        )
+    )
+    full_trp_dB = float(calculate_partial_trp(pattern_dB_2d, theta_deg, phi_deg))
+    if np.isfinite(full_trp_dB) and np.isfinite(band_trp_dB):
+        band_power_ratio = float(10 ** ((band_trp_dB - full_trp_dB) / 10.0))
+        band_power_pct = float(100.0 * band_power_ratio)
+    else:
+        band_power_ratio = 0.0
+        band_power_pct = 0.0
+
+    solid_angle_ratio = float(band_weight_sum / max(full_weight_sum, 1e-20))
+    solid_angle_pct = float(100.0 * solid_angle_ratio)
+
+    null_flat_idx = int(np.argmin(band_pattern))
+    null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, band_pattern.shape)
+
+    return {
+        "theta_min": float(theta_min),
+        "theta_max": float(theta_max),
+        "coverage_threshold_dB": coverage_threshold_db,
+        "max_dB": max_db,
+        "min_dB": min_db,
+        "avg_dB": avg_db,
+        "coverage_pct": coverage_pct,
+        "band_avg_dB": band_avg_dB,
+        "band_avg_linear": band_avg_linear,
+        "full_avg_dB": full_avg_dB,
+        "full_avg_linear": full_avg_linear,
+        "band_advantage_dB": band_advantage_dB,
+        "band_advantage_ratio": band_advantage_ratio,
+        "band_advantage_pct": band_advantage_pct,
+        "band_trp_dB": band_trp_dB,
+        "full_trp_dB": full_trp_dB,
+        "band_power_ratio": band_power_ratio,
+        "band_power_pct": band_power_pct,
+        "solid_angle_ratio": solid_angle_ratio,
+        "solid_angle_pct": solid_angle_pct,
+        "null_depth_dB": float(min_db - max_db),
+        "null_location": {
+            "theta_deg": float(band_theta[null_theta_idx]),
+            "phi_deg": float(phi_deg[null_phi_idx]),
+        },
+    }
+
+
 def calculate_active_variables(
     start_phi, stop_phi, start_theta, stop_theta, inc_phi, inc_theta, h_power_dBm, v_power_dBm
 ):
