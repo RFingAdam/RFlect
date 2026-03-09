@@ -1292,6 +1292,8 @@ def batch_process_passive_scans(
                                 "full_avg_dB": maritime_stats["full_avg_dB"],
                                 "full_efficiency_pct": maritime_stats["full_avg_linear"] * 100.0,
                                 "band_avg_dB": maritime_stats["band_avg_dB"],
+                                "band_trp_dB": maritime_stats["band_trp_dB"],
+                                "full_trp_dB": maritime_stats["full_trp_dB"],
                                 "band_advantage_dB": maritime_stats["band_advantage_dB"],
                                 "band_power_pct": maritime_stats["band_power_pct"],
                                 "solid_angle_pct": maritime_stats["solid_angle_pct"],
@@ -1549,6 +1551,8 @@ def batch_process_active_scans(
                         {
                             "full_avg_dB": maritime_stats["full_avg_dB"],
                             "band_avg_dB": maritime_stats["band_avg_dB"],
+                            "band_trp_dB": maritime_stats["band_trp_dB"],
+                            "full_trp_dB": maritime_stats["full_trp_dB"],
                             "band_advantage_dB": maritime_stats["band_advantage_dB"],
                             "band_power_pct": maritime_stats["band_power_pct"],
                             "solid_angle_pct": maritime_stats["solid_angle_pct"],
