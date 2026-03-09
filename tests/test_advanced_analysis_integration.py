@@ -417,6 +417,95 @@ def test_callbacks_active_forwarding_passes_full_advanced_params(monkeypatch):
     assert len(kwargs["mimo_gain_data_list"]) == 1
 
 
+def test_callbacks_active_logs_maritime_engineering_summary(monkeypatch):
+    harness = _CallbacksHarness()
+    theta = np.array([0.0, 60.0, 90.0, 120.0, 180.0])
+    phi = np.array([0.0, 180.0, 360.0])
+    theta_rad = np.deg2rad(theta)
+    phi_rad = np.deg2rad(phi)
+    grid = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [6.0, 6.0, 6.0],
+            [6.0, 6.0, 6.0],
+            [6.0, 6.0, 6.0],
+            [0.0, 0.0, 0.0],
+        ]
+    )
+
+    log_messages = []
+    harness.log_message = lambda message, level="info": log_messages.append((message, level))
+
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.read_active_file",
+        lambda _path: {
+            "Frequency": 2450.0,
+            "Start Phi": 0.0,
+            "Start Theta": 0.0,
+            "Stop Phi": 360.0,
+            "Stop Theta": 180.0,
+            "Inc Phi": 180.0,
+            "Inc Theta": 60.0,
+            "Calculated TRP(dBm)": 0.0,
+            "Theta_Angles_Deg": theta,
+            "Phi_Angles_Deg": phi,
+            "H_Power_dBm": grid,
+            "V_Power_dBm": np.full_like(grid, -100.0),
+        },
+    )
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.calculate_active_variables",
+        lambda *args, **kwargs: (
+            grid.size,
+            theta,
+            phi,
+            theta_rad,
+            phi_rad,
+            grid,
+            grid,
+            grid,
+            phi,
+            phi_rad,
+            grid,
+            grid,
+            grid,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            3.0,
+            2.0,
+            1.0,
+        ),
+    )
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.plot_active_2d_data",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.plot_active_3d_data",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.generate_maritime_plots",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "plot_antenna.gui.callbacks_mixin.generate_advanced_analysis_plots",
+        lambda *args, **kwargs: None,
+    )
+
+    harness._process_active_data()
+
+    joined = "\n".join(message for message, _level in log_messages)
+    assert "Full-sphere TRP" in joined
+    assert "Full-sphere avg EIRP" in joined
+    assert "Maritime avg EIRP" in joined
+    assert "Maritime advantage" in joined
+
+
 def test_batch_passive_forwarding_injects_mimo_gain_data(monkeypatch, tmp_path):
     theta, phi, grid = _simple_grid(n_theta=3, n_phi=3)
     base_dir = tmp_path / "in"

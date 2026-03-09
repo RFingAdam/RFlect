@@ -287,6 +287,14 @@ class TestHorizonStatistics:
         plot_horizon_statistics(theta, phi, uniform_gain, 2400, gain_threshold=-3.0, save_path=None)
         plt.close("all")
 
+    def test_table_uses_maritime_engineering_labels(self):
+        """Statistics table title should reflect maritime band terminology."""
+        theta, phi, gain = _make_grid_data()
+        plot_horizon_statistics(theta, phi, gain, 2400, save_path=None)
+        fig = plt.gcf()
+        assert fig.axes[0].get_title().startswith("Maritime Band")
+        plt.close("all")
+
 
 # ---------------------------------------------------------------------------
 # TestMasked3DPattern
@@ -324,6 +332,18 @@ class TestMasked3DPattern:
             files = os.listdir(tmpdir)
             assert any("3d_masked" in f for f in files)
             plt.close("all")
+
+    def test_annotation_reports_band_and_sphere_metrics(self):
+        """3D annotation should show both maritime band and full-sphere metrics."""
+        theta, phi, gain = _make_grid_data()
+        plot_3d_pattern_masked(theta, phi, gain, 2400, save_path=None)
+        fig = plt.gcf()
+        texts = [text.get_text() for text in fig.axes[0].texts]
+        joined = "\n".join(texts)
+        assert "Maritime Band" in joined
+        assert "Sphere Avg" in joined
+        assert "Maritime Adv" in joined
+        plt.close("all")
 
 
 # ---------------------------------------------------------------------------

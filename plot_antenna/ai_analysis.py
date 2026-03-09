@@ -14,6 +14,8 @@ Status: EXPERIMENTAL
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 
+from .calculations import calculate_spherical_band_statistics
+
 
 class AntennaAnalyzer:
     """
@@ -573,48 +575,37 @@ class AntennaAnalyzer:
 
         gain_2d, unique_theta, unique_phi = grid_result
 
-        # Extract horizon band
-        mask = (unique_theta >= theta_min) & (unique_theta <= theta_max)
-        horizon_theta = unique_theta[mask]
-        horizon_gain = gain_2d[mask, :]
-
-        if horizon_gain.size == 0:
-            stats["error"] = f"No data in theta range {theta_min}-{theta_max}"
-            return stats
-
         stats["frequency_MHz"] = (
             frequency if frequency else (self.frequencies[0] if self.frequencies else None)
         )
         stats["unit"] = unit
 
-        # Min / max / avg (linear-domain average)
-        stats["max_gain_dB"] = float(np.max(horizon_gain))
-        stats["min_gain_dB"] = float(np.min(horizon_gain))
-        lin = 10.0 ** (horizon_gain / 10.0)
-        stats["avg_gain_dB"] = float(10.0 * np.log10(np.mean(lin)))
+        try:
+            band_stats = calculate_spherical_band_statistics(
+                gain_2d,
+                unique_theta,
+                unique_phi,
+                theta_min=theta_min,
+                theta_max=theta_max,
+                gain_threshold=gain_threshold,
+            )
+        except ValueError as exc:
+            stats["error"] = str(exc)
+            return stats
 
-        # Coverage: % of points above (peak + threshold)
-        coverage_limit = stats["max_gain_dB"] + gain_threshold
-        stats["coverage_pct"] = float(
-            100.0 * np.sum(horizon_gain >= coverage_limit) / horizon_gain.size
-        )
-
-        # MEG: Mean Effective Gain with sin(theta) weighting
-        theta_rad = np.deg2rad(horizon_theta)
-        sin_weights = np.sin(theta_rad)
-        weighted_lin = lin * sin_weights[:, np.newaxis]
-        total_weight = np.sum(np.tile(sin_weights[:, np.newaxis], (1, horizon_gain.shape[1])))
-        meg_lin = np.sum(weighted_lin) / total_weight if total_weight > 0 else 0
-        stats["meg_dB"] = float(10.0 * np.log10(meg_lin)) if meg_lin > 0 else None
-
-        # Null detection
-        null_flat_idx = int(np.argmin(horizon_gain))
-        null_theta_idx, null_phi_idx = np.unravel_index(null_flat_idx, horizon_gain.shape)
-        stats["null_depth_dB"] = float(np.min(horizon_gain) - np.max(horizon_gain))
-        stats["null_location"] = {
-            "theta_deg": float(horizon_theta[null_theta_idx]),
-            "phi_deg": float(unique_phi[null_phi_idx]),
-        }
+        stats["max_gain_dB"] = band_stats["max_dB"]
+        stats["min_gain_dB"] = band_stats["min_dB"]
+        stats["avg_gain_dB"] = band_stats["avg_dB"]
+        stats["coverage_pct"] = band_stats["coverage_pct"]
+        stats["meg_dB"] = band_stats["band_avg_dB"]
+        stats["full_meg_dB"] = band_stats["full_avg_dB"]
+        stats["horizon_efficiency_dB"] = band_stats["band_advantage_dB"]
+        stats["horizon_power_pct"] = band_stats["band_power_pct"]
+        stats["solid_angle_pct"] = band_stats["solid_angle_pct"]
+        stats["trp_horizon_dB"] = band_stats["band_trp_dB"]
+        stats["trp_full_dB"] = band_stats["full_trp_dB"]
+        stats["null_depth_dB"] = band_stats["null_depth_dB"]
+        stats["null_location"] = band_stats["null_location"]
 
         return stats
 

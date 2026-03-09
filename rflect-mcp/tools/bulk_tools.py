@@ -75,7 +75,7 @@ def register_bulk_tools(mcp):
 
             from plot_antenna.file_utils import batch_process_passive_scans
 
-            batch_process_passive_scans(
+            summary_data = batch_process_passive_scans(
                 folder_path=folder_path,
                 freq_list=freq_list,
                 selected_frequencies=selected_frequencies,
@@ -92,6 +92,15 @@ def register_bulk_tools(mcp):
             summary += f"Frequencies processed: {selected_frequencies} MHz\n"
             summary += f"Cable loss: {cable_loss} dB\n"
             summary += f"Output: {output_dir}\n"
+            for row in summary_data.get("results", []):
+                if row.get("band_advantage_dB") is not None:
+                    summary += (
+                        f"\n{row['frequency_mhz']:.1f} MHz: "
+                        f"eff={row['full_avg_dB']:.2f} dBi "
+                        f"({row['full_efficiency_pct']:.1f}%), "
+                        f"maritime avg={row['band_avg_dB']:.2f} dBi, "
+                        f"maritime={row['band_advantage_dB']:+.2f} dB"
+                    )
 
             return summary
 
@@ -132,7 +141,7 @@ def register_bulk_tools(mcp):
 
             from plot_antenna.file_utils import batch_process_active_scans
 
-            batch_process_active_scans(
+            summary_data = batch_process_active_scans(
                 folder_path=folder_path,
                 save_base=output_dir,
                 interpolate=interpolate,
@@ -145,6 +154,15 @@ def register_bulk_tools(mcp):
                 summary += f"  - {f}\n"
             summary += f"Interpolation: {'Yes' if interpolate else 'No'}\n"
             summary += f"Output: {output_dir}\n"
+            for row in summary_data.get("results", []):
+                if row.get("band_advantage_dB") is not None:
+                    summary += (
+                        f"\n{row['file']} @ {row['frequency_mhz']:.1f} MHz: "
+                        f"TRP={row['trp_dBm']:.2f} dBm, "
+                        f"sphere avg={row['full_avg_dB']:.2f} dBm, "
+                        f"maritime avg={row['band_avg_dB']:.2f} dBm, "
+                        f"maritime={row['band_advantage_dB']:+.2f} dB"
+                    )
 
             return summary
 
