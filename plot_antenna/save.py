@@ -1698,6 +1698,7 @@ def save_to_results_folder(
     word=False,
     logo_path=None,
     maritime_plots_enabled=False,
+    conducted_power_dBm=None,
 ):  # Initialize the GUI
     # Unpack per-type 3D scale settings
     if scale_settings is None:
@@ -1882,6 +1883,7 @@ def save_to_results_folder(
                 frequency,
                 data_label="Power",
                 data_unit="dBm",
+                conducted_power_dBm=conducted_power_dBm,
                 save_path=maritime_path,
             )
 
@@ -1997,6 +1999,7 @@ def save_to_results_folder(
                     selected_frequency,
                     data_label="Gain",
                     data_unit="dBi",
+                    conducted_power_dBm=conducted_power_dBm,
                     save_path=maritime_path,
                 )
 

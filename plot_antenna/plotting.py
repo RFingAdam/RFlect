@@ -2215,6 +2215,7 @@ def plot_horizon_statistics(
     gain_threshold=-3.0,
     data_label="Gain",
     data_unit="dBi",
+    conducted_power_dBm=None,
     save_path=None,
 ):
     """
@@ -2279,6 +2280,19 @@ def plot_horizon_statistics(
         ["Avg " + data_label + " (linear)", f"{avg_gain:.1f} {data_unit}"],
         [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
         [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
+    ]
+
+    # Add efficiency rows when conducted power is provided
+    if conducted_power_dBm is not None:
+        table_data.append(["Conducted Power", f"{conducted_power_dBm:.1f} dBm"])
+        full_eff_dB = trp_full_dB - conducted_power_dBm
+        full_eff_pct = 10 ** (full_eff_dB / 10) * 100.0
+        table_data.append(["Total Efficiency", f"{full_eff_dB:+.1f} dB ({full_eff_pct:.1f}%)"])
+        mar_eff_dB = trp_horizon_dB - conducted_power_dBm
+        mar_eff_pct = 10 ** (mar_eff_dB / 10) * 100.0
+        table_data.append(["Maritime Efficiency", f"{mar_eff_dB:+.1f} dB ({mar_eff_pct:.1f}%)"])
+
+    table_data += [
         [
             f"Coverage (>{coverage_limit:.1f} {data_unit})",
             f"{coverage_pct:.1f}%",
@@ -2370,6 +2384,7 @@ def plot_3d_pattern_masked(
     axis_mode="auto",
     zmin=-15,
     zmax=15,
+    conducted_power_dBm=None,
     save_path=None,
 ):
     """
@@ -2535,6 +2550,12 @@ def plot_3d_pattern_masked(
             f"{full_trp_label}: {band_stats['full_trp_dB']:.1f} {data_unit}   "
             f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}"
         )
+        if conducted_power_dBm is not None:
+            _full_eff = 10 ** ((band_stats['full_trp_dB'] - conducted_power_dBm) / 10) * 100
+            _mar_eff = 10 ** ((band_stats['band_trp_dB'] - conducted_power_dBm) / 10) * 100
+            stats_text += (
+                f"\nTotal Eff: {_full_eff:.1f}%   Maritime Eff: {_mar_eff:.1f}%"
+            )
         ax.text2D(
             0.02,
             0.02,
@@ -2569,6 +2590,7 @@ def generate_maritime_plots(
     axis_mode="auto",
     zmin=-15.0,
     zmax=15.0,
+    conducted_power_dBm=None,
     save_path=None,
 ):
     """
@@ -2642,6 +2664,7 @@ def generate_maritime_plots(
         gain_threshold=gain_threshold,
         data_label=data_label,
         data_unit=data_unit,
+        conducted_power_dBm=conducted_power_dBm,
         save_path=save_path,
     )
 
@@ -2658,6 +2681,7 @@ def generate_maritime_plots(
         axis_mode=axis_mode,
         zmin=zmin,
         zmax=zmax,
+        conducted_power_dBm=conducted_power_dBm,
         save_path=save_path,
     )
 

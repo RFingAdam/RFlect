@@ -1918,6 +1918,23 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
+            tk.Label(
+                maritime_frame, text="Conducted Power (dBm):",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+            ).grid(row=4, column=0, columnspan=2, sticky=tk.W, padx=5)
+            tk.Entry(
+                maritime_frame,
+                textvariable=self.conducted_power_dBm,
+                width=8,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=4, column=2, padx=5, pady=2)
+            tk.Label(
+                maritime_frame, text="(optional, for efficiency)",
+                bg=DARK_BG_COLOR, fg="#A0A0A0", font=("Arial", 9),
+            ).grid(row=4, column=3, sticky=tk.W)
+
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
             _adv_next_row = self._build_advanced_analysis_frames(settings_window, start_row=7)
 
@@ -2214,6 +2231,23 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 fg=LIGHT_TEXT_COLOR,
                 insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
+
+            tk.Label(
+                maritime_frame_p, text="Conducted Power (dBm):",
+                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+            ).grid(row=4, column=0, columnspan=2, sticky=tk.W, padx=5)
+            tk.Entry(
+                maritime_frame_p,
+                textvariable=self.conducted_power_dBm,
+                width=8,
+                bg=SURFACE_COLOR,
+                fg=LIGHT_TEXT_COLOR,
+                insertbackground=LIGHT_TEXT_COLOR,
+            ).grid(row=4, column=2, padx=5, pady=2)
+            tk.Label(
+                maritime_frame_p, text="(optional, for efficiency)",
+                bg=DARK_BG_COLOR, fg="#A0A0A0", font=("Arial", 9),
+            ).grid(row=4, column=3, sticky=tk.W)
 
             # Advanced analysis settings (Link Budget, Indoor, Fading, Wearable)
             _adv_next_row_p = self._build_advanced_analysis_frames(settings_window, start_row=11)

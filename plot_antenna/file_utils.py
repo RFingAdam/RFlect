@@ -1024,6 +1024,7 @@ def batch_process_passive_scans(
     maritime_theta_max=120.0,
     maritime_theta_cuts=None,
     maritime_gain_threshold=-3.0,
+    conducted_power_dBm=None,
     advanced_analysis_params=None,
 ):
     """
@@ -1237,6 +1238,7 @@ def batch_process_passive_scans(
                                 axis_mode=_s_total[0],
                                 zmin=_s_total[1],
                                 zmax=_s_total[2],
+                                conducted_power_dBm=conducted_power_dBm,
                                 save_path=maritime_sub,
                             )
 
@@ -1334,6 +1336,7 @@ def batch_process_active_scans(
     maritime_theta_max=120.0,
     maritime_theta_cuts=None,
     maritime_gain_threshold=-3.0,
+    conducted_power_dBm=None,
     advanced_analysis_params=None,
 ):
     """
@@ -1506,6 +1509,7 @@ def batch_process_active_scans(
                         axis_mode=_s_total[0],
                         zmin=_s_total[1],
                         zmax=_s_total[2],
+                        conducted_power_dBm=conducted_power_dBm,
                         save_path=maritime_sub,
                     )
 
