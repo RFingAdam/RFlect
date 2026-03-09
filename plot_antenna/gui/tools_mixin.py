@@ -649,6 +649,9 @@ class ToolsMixin:
                         if hasattr(self, "horizon_gain_threshold")
                         else -3.0
                     ),
+                    conducted_power_dBm=(
+                        self._get_conducted_power() if hasattr(self, "_get_conducted_power") else None
+                    ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
                 self.root.after(0, lambda: _process_done(summary=summary, error_msg=None))
@@ -778,6 +781,9 @@ class ToolsMixin:
                         self.horizon_gain_threshold.get()
                         if hasattr(self, "horizon_gain_threshold")
                         else -3.0
+                    ),
+                    conducted_power_dBm=(
+                        self._get_conducted_power() if hasattr(self, "_get_conducted_power") else None
                     ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
@@ -1188,6 +1194,7 @@ class ToolsMixin:
                 },
                 word=False,
                 maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
+                conducted_power_dBm=self._get_conducted_power() if hasattr(self, '_get_conducted_power') else None,
             )
 
         except ValueError as ve:

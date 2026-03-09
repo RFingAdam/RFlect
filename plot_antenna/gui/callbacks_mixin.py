@@ -161,6 +161,14 @@ class CallbacksMixin:
         except (ValueError, AttributeError):
             return [60, 70, 80, 90, 100, 110, 120]
 
+    def _get_conducted_power(self):
+        """Parse optional conducted power entry. Returns float or None."""
+        try:
+            val = self.conducted_power_dBm.get().strip()
+            return float(val) if val else None
+        except (ValueError, AttributeError):
+            return None
+
     def _collect_advanced_plot_params(self, mimo_gain_data_list=None, mimo_ecc_values=None):
         """Collect advanced analysis parameters for plot dispatcher calls."""
         any_enabled = (
@@ -1443,6 +1451,7 @@ class CallbacksMixin:
                 axis_mode=self.axis_scale_mode_total.get(),
                 zmin=self.axis_min_total.get(),
                 zmax=self.axis_max_total.get(),
+                conducted_power_dBm=self._get_conducted_power(),
                 save_path=None,
             )
 
@@ -1701,6 +1710,7 @@ class CallbacksMixin:
                     axis_mode=self.axis_scale_mode_total.get(),
                     zmin=self.axis_min_total.get(),
                     zmax=self.axis_max_total.get(),
+                    conducted_power_dBm=self._get_conducted_power(),
                     save_path=None,
                 )
             else:

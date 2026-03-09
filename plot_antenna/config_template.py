@@ -48,6 +48,7 @@ HORIZON_THETA_MIN = 60.0
 HORIZON_THETA_MAX = 120.0
 HORIZON_THETA_CUTS = [60, 70, 80, 90, 100, 110, 120]
 HORIZON_COVERAGE_THRESHOLD = -3.0  # dB below peak for coverage calculation
+CONDUCTED_POWER_DBM = None  # Optional: conducted power in dBm for efficiency calculation
 
 # ============================================================================
 # GUI SETTINGS
