@@ -3,6 +3,7 @@ from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = ['anthropic', 'PIL._tkinter_finder']
 hiddenimports += collect_submodules('scipy')
+hiddenimports += collect_submodules('tkinter')
 
 
 a = Analysis(
