@@ -597,6 +597,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.horizon_gain_threshold = tk.DoubleVar(value=-3.0)
         self.horizon_theta_cuts_var = tk.StringVar(value="60,70,80,90,100,110,120")
         self.conducted_power_dBm = tk.StringVar(value="")  # empty = not provided
+        self.conducted_power_csv_path = tk.StringVar(value="")  # CSV file for per-freq values
 
         # Link Budget / Range Estimation settings
         self.link_budget_enabled = bool(LINK_BUDGET_ENABLED)

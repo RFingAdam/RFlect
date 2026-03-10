@@ -9,6 +9,7 @@ This mixin provides the main data processing callbacks:
 
 from __future__ import annotations
 
+import csv
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -168,6 +169,53 @@ class CallbacksMixin:
             return float(val) if val else None
         except (ValueError, AttributeError):
             return None
+
+    def _load_conducted_power_csv(self):
+        """Load per-frequency conducted power from CSV file.
+
+        Expected CSV format (header row optional):
+            Frequency_MHz, Conducted_Power_dBm
+            2412, -5.2
+            2437, -5.0
+            5180, -3.8
+
+        Returns dict {freq_mhz: power_dBm} or None if no CSV configured.
+        """
+        try:
+            csv_path = self.conducted_power_csv_path.get().strip()
+            if not csv_path:
+                return None
+            power_map = {}
+            with open(csv_path, "r", newline="") as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) < 2:
+                        continue
+                    freq_str, power_str = row[0].strip(), row[1].strip()
+                    # Skip header rows
+                    try:
+                        freq = float(freq_str)
+                        power = float(power_str)
+                    except ValueError:
+                        continue
+                    power_map[freq] = power
+            return power_map if power_map else None
+        except OSError as e:
+            if hasattr(self, "log_message"):
+                self.log_message(f"Warning: Could not read conducted power CSV: {e}", level="warning")
+            return None
+        except AttributeError:
+            return None
+
+    def _get_conducted_power_for_batch(self):
+        """Return conducted power data for batch processing.
+
+        Priority: CSV file (per-freq dict) > manual entry (single float) > None.
+        """
+        csv_map = self._load_conducted_power_csv()
+        if csv_map:
+            return csv_map
+        return self._get_conducted_power()
 
     def _collect_advanced_plot_params(self, mimo_gain_data_list=None, mimo_ecc_values=None):
         """Collect advanced analysis parameters for plot dispatcher calls."""
@@ -1710,7 +1758,7 @@ class CallbacksMixin:
                     axis_mode=self.axis_scale_mode_total.get(),
                     zmin=self.axis_min_total.get(),
                     zmax=self.axis_max_total.get(),
-                    conducted_power_dBm=self._get_conducted_power(),
+                    conducted_power_dBm=None,  # Not applicable for passive/VNA measurements
                     save_path=None,
                 )
             else:

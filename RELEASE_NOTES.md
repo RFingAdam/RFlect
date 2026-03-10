@@ -1,19 +1,19 @@
 # RFlect - Release Notes
 
-## Version 4.1.8 (03/09/2026)
+## Version 4.1.8 (03/10/2026)
 
-**Patch release - maritime engineering metrics unified across plots and processing tools.**
+**Patch release — maritime metrics, conducted power CSV, and table layout improvements.**
+
+### New Features
+
+- **Per-frequency conducted power CSV**: Batch processing now accepts a CSV file mapping frequency (MHz) to conducted power (dBm), enabling per-frequency efficiency calculations across bulk runs. Single-file processing continues to use the manual settings entry.
+- **Maritime Power Fraction**: New pattern-only metric showing what percentage of total radiated power falls in the maritime band (50% = isotropic baseline). Always displayed, no conducted power required.
 
 ### Improvements
 
-- **Shared maritime band math**: Added a common spherical-band statistics helper so maritime metrics use one definition everywhere: full-sphere average, maritime-band average, band power share, and maritime advantage in dB versus the full-sphere average.
-- **Maritime plots updated**: The maritime statistics table and masked 3D plot now show the engineering metrics that matter for on-water use: full-sphere average, maritime-band average, band TRP/integrated gain, raw band power share, isotropic area baseline, and maritime advantage.
-- **Processing summaries updated**: Interactive processing, batch processing, and MCP bulk tools now report the usual full-sphere metric first (TRP for active, efficiency/full-sphere average gain for passive) and then the maritime-band equivalent.
-
-### Tests
-
-- Added direct unit coverage for the shared maritime-band calculations.
-- Added regression coverage for maritime plot labels/annotations and active-process maritime summary logging.
+- **Maritime stats table**: Larger fonts (13pt body, 14pt header, 16pt title), taller rows, and dynamic figure height so all rows display without manual window resizing.
+- **Unified maritime band math**: Shared spherical-band statistics helper ensures consistent metrics across all plot surfaces and batch processing.
+- **Efficiency rows**: Total Efficiency and Maritime Efficiency shown when conducted power is provided, alongside the new Maritime Power Fraction.
 
 ---
 

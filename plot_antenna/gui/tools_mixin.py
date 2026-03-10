@@ -649,9 +649,7 @@ class ToolsMixin:
                         if hasattr(self, "horizon_gain_threshold")
                         else -3.0
                     ),
-                    conducted_power_dBm=(
-                        self._get_conducted_power() if hasattr(self, "_get_conducted_power") else None
-                    ),
+                    conducted_power_dBm=None,  # Not applicable for passive/VNA measurements
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
                 self.root.after(0, lambda: _process_done(summary=summary, error_msg=None))
@@ -783,7 +781,7 @@ class ToolsMixin:
                         else -3.0
                     ),
                     conducted_power_dBm=(
-                        self._get_conducted_power() if hasattr(self, "_get_conducted_power") else None
+                        self._get_conducted_power_for_batch() if hasattr(self, "_get_conducted_power_for_batch") else None
                     ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )

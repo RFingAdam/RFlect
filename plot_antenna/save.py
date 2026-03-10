@@ -1999,7 +1999,7 @@ def save_to_results_folder(
                     selected_frequency,
                     data_label="Gain",
                     data_unit="dBi",
-                    conducted_power_dBm=conducted_power_dBm,
+                    conducted_power_dBm=None,  # Not applicable for passive/VNA measurements
                     save_path=maritime_path,
                 )
 

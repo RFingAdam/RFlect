@@ -2260,7 +2260,14 @@ def plot_horizon_statistics(
     )
 
     # ----- Figure: table (left) + multi-cut polar (right) -----
-    fig = plt.figure(figsize=(16, 7))
+    # Dynamic height: extra rows for fraction + efficiency
+    _n_extra = 0
+    if np.isfinite(trp_horizon_dB) and np.isfinite(trp_full_dB):
+        _n_extra += 1  # Maritime Power Fraction
+    if conducted_power_dBm is not None:
+        _n_extra += 3  # Conducted Power + Total Eff + Maritime Eff
+    _fig_h = 8 + _n_extra * 0.45
+    fig = plt.figure(figsize=(16, _fig_h))
     gs = fig.add_gridspec(1, 2, width_ratios=[1.4, 1])
 
     # --- Left: statistics table ---
@@ -2281,6 +2288,12 @@ def plot_horizon_statistics(
         [trp_full_label, f"{trp_full_dB:.1f} {data_unit}"],
         [trp_label, f"{trp_horizon_dB:.1f} {data_unit}"],
     ]
+
+    # Maritime power fraction (pattern-only metric, always shown)
+    if np.isfinite(trp_horizon_dB) and np.isfinite(trp_full_dB):
+        mar_frac_dB = trp_horizon_dB - trp_full_dB
+        mar_frac_pct = 10 ** (mar_frac_dB / 10) * 100.0
+        table_data.append(["Maritime Power Fraction", f"{mar_frac_pct:.1f}%"])
 
     # Add efficiency rows when conducted power is provided
     if conducted_power_dBm is not None:
@@ -2311,17 +2324,17 @@ def plot_horizon_statistics(
         colWidths=[0.55, 0.45],
     )
     table.auto_set_font_size(False)
-    table.set_fontsize(10)
-    table.scale(1, 1.5)
+    table.set_fontsize(13)
+    table.scale(1, 1.8)
 
     # Style header row
     for j in range(2):
         table[0, j].set_facecolor("#4A90E2")
-        table[0, j].set_text_props(color="white", fontweight="bold")
+        table[0, j].set_text_props(color="white", fontweight="bold", fontsize=14)
 
     ax_table.set_title(
         f"Maritime Band {data_label} Statistics @ {frequency} MHz ({data_unit})",
-        fontsize=14,
+        fontsize=16,
         fontweight="bold",
         pad=20,
     )
@@ -2355,12 +2368,13 @@ def plot_horizon_statistics(
     ax_polar.set_title(
         f"Azimuth Cuts Across Maritime Band ({data_unit})\n{theta_min:.0f}-{theta_max:.0f} deg",
         pad=20,
-        fontsize=11,
+        fontsize=13,
     )
-    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.35, 1.0), fontsize=8)
+    ax_polar.legend(loc="upper right", bbox_to_anchor=(1.35, 1.0), fontsize=9)
     ax_polar.grid(True, alpha=0.3)
+    ax_polar.tick_params(labelsize=11)
 
-    plt.tight_layout()
+    fig.tight_layout(rect=(0.0, 0.0, 0.93, 0.95))
 
     if save_path:
         fname = f"horizon_stats_{frequency}MHz.png"
@@ -2550,11 +2564,19 @@ def plot_3d_pattern_masked(
             f"{full_trp_label}: {band_stats['full_trp_dB']:.1f} {data_unit}   "
             f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}"
         )
+        # Maritime power fraction (pattern-only metric)
+        _frac_dB = band_stats['band_trp_dB'] - band_stats['full_trp_dB']
+        if np.isfinite(_frac_dB):
+            _frac_pct = 10 ** (_frac_dB / 10) * 100
+            stats_text += f"\nMaritime Power Fraction: {_frac_pct:.1f}%"
         if conducted_power_dBm is not None:
-            _full_eff = 10 ** ((band_stats['full_trp_dB'] - conducted_power_dBm) / 10) * 100
-            _mar_eff = 10 ** ((band_stats['band_trp_dB'] - conducted_power_dBm) / 10) * 100
+            _full_eff_dB = band_stats['full_trp_dB'] - conducted_power_dBm
+            _mar_eff_dB = band_stats['band_trp_dB'] - conducted_power_dBm
+            _full_eff = 10 ** (_full_eff_dB / 10) * 100
+            _mar_eff = 10 ** (_mar_eff_dB / 10) * 100
             stats_text += (
-                f"\nTotal Eff: {_full_eff:.1f}%   Maritime Eff: {_mar_eff:.1f}%"
+                f"\nTotal Eff: {_full_eff_dB:+.1f} dB ({_full_eff:.1f}%)"
+                f"   Maritime Eff: {_mar_eff_dB:+.1f} dB ({_mar_eff:.1f}%)"
             )
         ax.text2D(
             0.02,
