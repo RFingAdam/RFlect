@@ -1008,6 +1008,49 @@ def generate_active_cal_file(
 
 
 # --------------------------------------------------------------------------
+# Conducted power lookup helper
+# --------------------------------------------------------------------------
+
+
+def _resolve_conducted_power(conducted_power_dBm, frequency_mhz):
+    """Resolve conducted power for a specific frequency.
+
+    Parameters
+    ----------
+    conducted_power_dBm : float, dict, or None
+        - None → return None (no conducted power)
+        - float → return that value for every frequency
+        - dict  → {freq_mhz: power_dBm} lookup; uses nearest-frequency match
+    frequency_mhz : float
+        The frequency to look up.
+
+    Returns
+    -------
+    float or None
+    """
+    if conducted_power_dBm is None:
+        return None
+    if isinstance(conducted_power_dBm, (int, float)):
+        return float(conducted_power_dBm)
+    if isinstance(conducted_power_dBm, dict):
+        if not conducted_power_dBm:
+            return None
+        # Exact match first
+        if frequency_mhz in conducted_power_dBm:
+            return conducted_power_dBm[frequency_mhz]
+        # Nearest-frequency match (handles minor rounding differences)
+        nearest = min(conducted_power_dBm.keys(), key=lambda f: abs(f - frequency_mhz))
+        if abs(nearest - frequency_mhz) < 1.0:  # within 1 MHz tolerance
+            return conducted_power_dBm[nearest]
+        print(
+            f"[Maritime] No conducted power CSV entry within 1 MHz of {frequency_mhz} MHz "
+            f"(nearest: {nearest} MHz). Efficiency skipped for this frequency."
+        )
+        return None  # no close match found
+    return None
+
+
+# --------------------------------------------------------------------------
 # Bulk passive scan processing
 # --------------------------------------------------------------------------
 # NOTE: plotting imports happen inside the function to avoid circular imports.
@@ -1238,7 +1281,7 @@ def batch_process_passive_scans(
                                 axis_mode=_s_total[0],
                                 zmin=_s_total[1],
                                 zmax=_s_total[2],
-                                conducted_power_dBm=conducted_power_dBm,
+                                conducted_power_dBm=None,  # Not applicable for passive/VNA measurements
                                 save_path=maritime_sub,
                             )
 
@@ -1509,7 +1552,7 @@ def batch_process_active_scans(
                         axis_mode=_s_total[0],
                         zmin=_s_total[1],
                         zmax=_s_total[2],
-                        conducted_power_dBm=conducted_power_dBm,
+                        conducted_power_dBm=_resolve_conducted_power(conducted_power_dBm, frequency),
                         save_path=maritime_sub,
                     )
 

@@ -76,6 +76,8 @@ class AntennaPlotGUIProtocol(Protocol):
     cb_groupdelay_sff_var: tk.BooleanVar
     cb_shadowing_var: tk.BooleanVar
     shadow_direction_var: tk.StringVar
+    conducted_power_dBm: tk.StringVar
+    conducted_power_csv_path: tk.StringVar
 
     # ────────────────────────────────────────────────────────────────────────
     # File Paths

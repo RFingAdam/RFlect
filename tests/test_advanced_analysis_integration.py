@@ -92,6 +92,8 @@ class _CallbacksHarness(CallbacksMixin):
         self.wearable_room_y = DummyVar(8.0)
         self.wearable_room_z = DummyVar(3.0)
 
+        self.conducted_power_dBm = DummyVar("")
+        self.conducted_power_csv_path = DummyVar("")
         self._measurement_context = {"processing_complete": False, "key_metrics": {}}
 
     def log_message(self, message: str, level: str = "info") -> None:
