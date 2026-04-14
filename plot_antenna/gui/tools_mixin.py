@@ -1332,8 +1332,12 @@ class ToolsMixin:
                 self.hpol_file_path = second_file
                 self.vpol_file_path = first_file
 
-            # Check if File names match and data is consistent between files
-            match, message = check_matching_files(self.hpol_file_path, self.vpol_file_path)
+            # Reference gain-standard HPol/VPol pair is measured with the antenna
+            # physically rotated 90° between polarizations, so Axis1 angles
+            # legitimately differ — disable strict angle matching for this flow.
+            match, message = check_matching_files(
+                self.hpol_file_path, self.vpol_file_path, strict_angles=False
+            )
             if not match:
                 self.log_message(f"Error: {message}")
                 return
@@ -1345,22 +1349,16 @@ class ToolsMixin:
             self.btn_settings.pack_forget()
             self.btn_import.pack_forget()
 
-            self.log_message("Active Chamber Calibration File Created Successfully.")
+            self.log_message(
+                "Reference files validated — click 'Generate Calibration File' to produce the output."
+            )
 
             # Create the new button if it doesn't exist, or just show it if it does
             if not hasattr(self, "convert_files_button"):
                 self.convert_files_button = tk.Button(
                     self.actions_frame,
                     text="Generate Calibration File",
-                    command=lambda: generate_active_cal_file(
-                        self.power_measurement,
-                        self.BLPA_HORN_GAIN_STD,
-                        self.hpol_file_path,
-                        self.vpol_file_path,
-                        float(self.cable_loss.get()),
-                        self.freq_list,
-                        callback=self.update_visibility,
-                    ),
+                    command=self._run_active_cal_generation,
                     bg=ACCENT_BLUE_COLOR,
                     fg=LIGHT_TEXT_COLOR,
                     font=BUTTON_FONT,
@@ -1373,6 +1371,38 @@ class ToolsMixin:
                 self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
             else:
                 self.convert_files_button.pack(side=tk.LEFT, padx=WIDGET_GAP)
+
+    def _run_active_cal_generation(self):
+        """Run generate_active_cal_file with GUI error handling and result logging."""
+        try:
+            result = generate_active_cal_file(
+                self.power_measurement,
+                self.BLPA_HORN_GAIN_STD,
+                self.hpol_file_path,
+                self.vpol_file_path,
+                float(self.cable_loss.get()),
+                self.freq_list,
+                callback=self.update_visibility,
+            )
+        except Exception as exc:
+            self.log_message(f"Error generating calibration file: {exc}")
+            return
+
+        if not result:
+            self.log_message("Calibration file generated.")
+            return
+
+        if result["rows_written"] == 0:
+            self.log_message(
+                "Error: no frequencies produced valid calibration data. "
+                "Check that the power, gain-standard, HPol and VPol files share overlapping frequencies."
+            )
+            return
+
+        self.log_message(
+            f"Calibration file generated: {result['output_path']} "
+            f"({result['rows_written']} frequencies written, {result['rows_missing']} missing)."
+        )
 
     # ────────────────────────────────────────────────────────────────────────
     # UPDATE CHECKING
