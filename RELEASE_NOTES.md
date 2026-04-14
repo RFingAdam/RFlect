@@ -1,5 +1,30 @@
 # RFlect - Release Notes
 
+## Version 4.1.9 (04/14/2026)
+
+**Patch release — restores the Active Chamber Calibration routine.**
+
+### Bug Fixes
+
+- **Active Chamber Calibration**: Tools → Active Chamber Calibration was always rejecting valid reference-antenna file pairs with `Error: The selected files have mismatched angle data.`, preventing chamber operators from regenerating calibration files. Regression introduced in the v4.3.0-era `check_matching_files` rewrite, which compared `Axis1`/`Axis2` angle headers between HPol and VPol. That check is correct for passive scans but wrong for active-cal references, where the gain-standard antenna is physically rotated 90° between polarizations (HPol measures at Axis1=0°, VPol at Axis1=90°) so the angle headers legitimately differ.
+
+### Improvements
+
+- **`check_matching_files` gains a `strict_angles` parameter** (default `True`, preserving all passive-scan callers). Active Chamber Calibration passes `strict_angles=False` to allow the H/V angle offset inherent to the measurement.
+- **`generate_active_cal_file` now returns a result dict** with output paths and row counts so the GUI can surface meaningful feedback.
+- **Clearer GUI feedback in the active-cal flow**: the premature "…Created Successfully" log that fired before the user clicked *Generate Calibration File* is replaced with `Reference files validated — click 'Generate Calibration File' to produce the output.`; the generate button now logs the output path, number of frequencies written, and how many frequencies were missing (e.g., outside the gain-standard's calibrated bands). Exceptions during generation are caught and logged instead of being silently swallowed by Tk.
+
+### Verification
+
+- Regenerating a 2024 BLPA 690-2700 MHz calibration with the restored routine matches the archived 2024 cal file to 0.0000 dB across all 252 frequencies.
+- 2026 reference files produce a valid cal file; 151 of 403 frequencies correctly route to the Missing Data section because they fall in the BLPA-19 gain standard's uncalibrated bands (960–1500 MHz, 1610–1710 MHz, 2170–2300 MHz gaps).
+
+### Tests
+
+- 3 new tests in `tests/test_active_calibration.py` covering: strict-mode rejection of the active-cal pair (preserves passive-scan contract), relaxed-mode acceptance, and end-to-end cal-file generation.
+
+---
+
 ## Version 4.1.8 (03/10/2026)
 
 **Patch release — maritime metrics, conducted power CSV, and table layout improvements.**
