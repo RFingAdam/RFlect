@@ -230,8 +230,15 @@ def parse_passive_file(content):
 
 
 # Checks for matching data between two passive scan files HPOL and VPOL to ensure they are from the same dataset
-def check_matching_files(file_path1, file_path2):
-    """Verify that two passive measurement files have matching parameters."""
+def check_matching_files(file_path1, file_path2, strict_angles: bool = True):
+    """Verify that two polarization-pair measurement files have matching parameters.
+
+    strict_angles: When True (default, used for passive scans) the Axis1/Axis2
+    Start/Stop/Increment headers must match between HPol and VPol. Set False for
+    active-calibration reference scans, where the gain-standard antenna is
+    physically rotated 90° between H-pol and V-pol so Axis1 angles legitimately
+    differ.
+    """
 
     def _extract_params(content_lines):
         freq = None
@@ -269,8 +276,7 @@ def check_matching_files(file_path1, file_path2):
     freq1, angles1 = _extract_params(content1)
     freq2, angles2 = _extract_params(content2)
 
-    # Angle configurations must match for passive pair files
-    if angles1 != angles2:
+    if strict_angles and angles1 != angles2:
         return False, "The selected files have mismatched angle data."
 
     return True, ""
@@ -1002,9 +1008,19 @@ def generate_active_cal_file(
         for freq in missing_data["Frequency"]:
             file.write(f"{freq} MHz\n")
 
+    rows_written = int(len(df_filtered))
+    rows_missing = int(df["Frequency"].size - rows_written)
+
     # Callback to update visibility in the GUI
     if callback:
         callback()
+
+    return {
+        "output_path": output_path,
+        "summary_path": summary_path,
+        "rows_written": rows_written,
+        "rows_missing": rows_missing,
+    }
 
 
 # --------------------------------------------------------------------------
