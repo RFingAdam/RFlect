@@ -1,0 +1,16 @@
+Calibration Summary
+
+Date: 01-15-24
+Time: 10:30:00
+
+Power Measurement File: C:/fixtures/power_file.txt
+Gain Standard File: C:/fixtures/gain_std.txt
+HPol File: C:/fixtures/ref_hpol.txt
+VPol File: C:/fixtures/ref_vpol.txt
+Output File: C:/fixtures/cal_baseline.txt
+Frequency Range: 700.0 MHz - 1600.0 MHz
+
+Missing Data Frequencies:
+965.0 MHz
+970.0 MHz
+975.0 MHz

@@ -706,6 +706,9 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         tools_menu.add_command(
             label="Active Chamber Calibration", command=self.open_active_chamber_cal
         )
+        tools_menu.add_command(
+            label="Calibration Drift History...", command=self.open_cal_drift_dialog
+        )
         tools_menu.add_separator()
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
 

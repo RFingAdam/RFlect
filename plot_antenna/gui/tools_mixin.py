@@ -1404,6 +1404,15 @@ class ToolsMixin:
             f"({result['rows_written']} frequencies written, {result['rows_missing']} missing)."
         )
 
+    def open_cal_drift_dialog(self):
+        """Open the Calibration Drift History dialog."""
+        from .cal_drift_dialog import CalDriftDialog
+
+        try:
+            CalDriftDialog(self.root, logger=self.log_message)
+        except Exception as exc:
+            self.log_message(f"Error opening Calibration Drift History: {exc}")
+
     # ────────────────────────────────────────────────────────────────────────
     # UPDATE CHECKING
     # ────────────────────────────────────────────────────────────────────────

@@ -30,6 +30,7 @@ from tools.analysis_tools import register_analysis_tools
 from tools.report_tools import register_report_tools
 from tools.bulk_tools import register_bulk_tools
 from tools.uwb_tools import register_uwb_tools
+from tools.cal_drift_tools import register_cal_drift_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -40,6 +41,7 @@ register_analysis_tools(mcp)
 register_report_tools(mcp)
 register_bulk_tools(mcp)
 register_uwb_tools(mcp)
+register_cal_drift_tools(mcp)
 
 
 @mcp.resource("rflect://status")
@@ -84,6 +86,14 @@ UWB ANALYSIS TOOLS:
 - calculate_sff_from_files(file_paths, pulse_type, min_freq_ghz, max_freq_ghz) - System Fidelity Factor
 - analyze_uwb_channel(file_path, distance_m) - Full UWB channel characterization
 - get_impedance_bandwidth(file_path, threshold_dB) - S11 impedance bandwidth
+
+CALIBRATION DRIFT TOOLS:
+- cal_drift_ingest(directory) - Walk a directory of archived TRP Cal files and record each
+- cal_drift_list_runs(antenna, band) - List recorded calibration runs
+- cal_drift_compare(baseline_run_id, current_run_id) - Per-frequency ΔdB + consistency diff
+- cal_drift_report(baseline_run_id, current_run_id, output_path, format) - Export markdown/pdf/png
+- cal_drift_history_dir() - Get the currently-active history directory
+- cal_drift_set_history_dir(directory) - Set/persist a new history directory
 """
 
 
