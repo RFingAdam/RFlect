@@ -21,6 +21,9 @@ installer_output/
 *.egg-info/
 .eggs/
 
+# MkDocs build output
+site/
+
 # Virtual environments
 .venv/
 venv_clean/

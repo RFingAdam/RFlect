@@ -419,7 +419,7 @@ RFlect/
 
 - **Issues**: https://github.com/RFingAdam/RFlect/issues
 - **Discussions**: https://github.com/RFingAdam/RFlect/discussions
-- **AI Features**: See [AI_STATUS.md](AI_STATUS.md)
+- **AI Features**: See [AI_STATUS.md](https://github.com/RFingAdam/RFlect/blob/main/AI_STATUS.md)
 
 ---
 
