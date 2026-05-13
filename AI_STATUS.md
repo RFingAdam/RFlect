@@ -1,200 +1,178 @@
-# RFlect AI Features - Status & Roadmap
+# RFlect AI Features — Status & Roadmap
 
-**Last Updated**: February 11, 2026
-**Current Version**: v4.1.5
-**Status**: Beta / Enabled in GUI
+**Last Updated**: May 12, 2026
+**Current Version**: v4.2.0
+**Status**: Beta / Enabled in GUI and MCP
 
 ---
 
 ## Overview
 
-RFlect includes experimental AI-powered features for intelligent antenna analysis. A unified provider abstraction (`llm_provider.py`) supports **OpenAI**, **Anthropic (Claude)**, and **Ollama (local models)**, giving users flexibility in choosing a backend.
+RFlect ships AI-powered features for intelligent antenna analysis. A unified provider abstraction (`plot_antenna/llm_provider.py`) supports **OpenAI**, **Anthropic (Claude)**, and **Ollama (local models)**, so users can choose between cloud and on-prem inference without changing the rest of the toolchain.
+
+There are two integration surfaces:
+
+1. **In-GUI** — AI Chat Assistant + AI-powered report generation, accessible from the desktop app.
+2. **MCP server** — `rflect-mcp/server.py` exposes 34 tools an AI agent (Claude Code, Cline, etc.) can call programmatically.
 
 ## What Works
 
 ### 1. AI Chat Assistant
 **Status**: ~85% Complete
 
-**Working Features**:
-- Real-time conversational analysis of antenna measurements
-- Function calling to analyze loaded data
+- Real-time conversational analysis of loaded measurements
+- Function calling: `get_gain_statistics`, `analyze_pattern`, `compare_polarizations`, `generate_2d_plot`, `generate_3d_plot`
 - Rich context awareness (loaded files, frequencies, data shape, key metrics)
-- Quick-action buttons (Gain Stats, Pattern, Polarization, All Freqs)
-- Multi-turn conversations with history
-- Multi-provider support: OpenAI, Anthropic, Ollama
-
-**Functions Available**:
-- `get_gain_statistics()` - Min/max/avg gain calculations
-- `analyze_pattern()` - Pattern characteristics (nulls, beamwidth, F/B ratio)
-- `compare_polarizations()` - HPOL vs VPOL comparison
-- `generate_2d_plot()` - 2D pattern descriptions
-- `generate_3d_plot()` - 3D pattern descriptions
+- Quick-action buttons in the GUI (Gain Stats, Pattern, Polarization, All Freqs)
+- Multi-turn history, multi-provider support
 
 ### 2. AI-Powered Report Generation
 **Status**: ~90% Complete
 
-**Working Features**:
-- Executive summary generation based on measurements
+- Executive summary generation from loaded measurements
 - Automatic gain statistics insertion
 - Pattern type classification
-- Basic design recommendations
 - Vision-capable plot analysis (provider-dependent)
-- Uses unified provider abstraction (same providers as chat)
+- Uses the same unified provider abstraction as the chat assistant
 
-**What Needs Work**:
+**Pending**:
 - Custom branding integration (partially implemented)
-- Multi-frequency comparison tables (missing)
-- Automated figure captioning (not integrated with plotting.py)
-- Compliance checklist generation (FCC, CE marks - not implemented)
+- Multi-frequency comparison tables
+- Automated figure captioning
+- Compliance checklist generation (FCC, CE)
 
-### 3. Multi-Provider Support (NEW in v4.0.0)
+### 3. Multi-Provider Support (since v4.0.0)
 **Status**: Complete
 
-| Provider | Tool Calling | Vision | Notes |
-|----------|-------------|--------|-------|
-| **OpenAI** | GPT-4 (Chat Completions) + GPT-5 (Responses API) | GPT-4o+ | Default provider |
-| **Anthropic** | Claude Messages API | All Claude models | Via Tools → Manage API Keys |
-| **Ollama** | llama3.1+, qwen2.5+ | llava, llama3.2-vision | Local, no API key needed |
+| Provider  | Tool Calling                              | Vision                | Notes                       |
+|-----------|-------------------------------------------|-----------------------|-----------------------------|
+| OpenAI    | GPT-4 (Chat Completions) + GPT-5 (Responses API) | GPT-4o+        | Default                     |
+| Anthropic | Claude Messages API                       | All Claude models     | Via Tools → Manage API Keys |
+| Ollama    | llama3.1+, qwen2.5+                       | llava, llama3.2-vision | Local, no API key needed   |
 
 ### 4. Secure API Key Management
 **Status**: Complete
 
-**Working Features**:
-- **Fernet AES-128 encryption** with PBKDF2 key derivation (480K iterations)
-- **Machine-ID based encryption key**: `/etc/machine-id` (Linux), `IOPlatformUUID` (macOS), `MachineGuid` (Windows) replacing MAC-based derivation
-- OS keyring integration (Windows Credential Manager, macOS Keychain)
+- Fernet AES-128 encryption with PBKDF2 key derivation (600K iterations)
+- Machine-ID based encryption key (`/etc/machine-id`, `IOPlatformUUID`, `MachineGuid`)
+- OS keyring integration (Credential Manager, Keychain)
 - Restrictive file permissions (chmod 600 / Windows ACL)
-- Multi-provider tabbed dialog (OpenAI, Anthropic, Ollama)
-- Key validation via "Test Connection" button (threaded to prevent GUI freeze)
-- Keys stored in `_key_cache` dict instead of `os.environ` (prevents env pollution)
-- Legacy base64 auto-migration from v4.0.0
-- GUI-based key management (Tools → Manage API Keys)
+- Keys stored in `_key_cache` dict instead of `os.environ`
+
+### 5. MCP Server (34 tools)
+**Status**: Complete
+
+| Category       | Count | Examples                                                                          |
+|----------------|-------|-----------------------------------------------------------------------------------|
+| Import         | 6     | `import_antenna_file`, `import_antenna_folder`, `import_passive_pair`             |
+| Analysis       | 5     | `analyze_pattern`, `get_gain_statistics`, `compare_polarizations`                 |
+| Reports        | 3     | `generate_report`, `preview_report`, `get_report_options`                         |
+| Bulk           | 5     | `bulk_process_passive`, `bulk_process_active`, `list_measurement_files`           |
+| UWB            | 3     | `calculate_sff_from_files`, `analyze_uwb_channel`, `get_impedance_bandwidth`      |
+| Calibration Drift | 8 | `cal_drift_ingest`, `cal_drift_compare`, `cal_drift_report`, `cal_drift_set_setup_group` |
+| Orchestration  | 1     | `process_folder` *(new in v4.2.0)*                                                |
+| Misc           | 3     | `get_measurement_details`, `validate_file_pair`, `convert_to_cst`                 |
+
+#### `process_folder` (v4.2.0)
+
+A single entry point that scans a folder, picks the right workflow (passive HPOL/VPOL pair, active TRP, cal-drift archive, or UWB sweep), runs it, and optionally produces a DOCX report. Replaces the previous `list → bulk → analyze → report` chain that MCP clients had to script manually.
+
+```
+process_folder(folder_path, intent='auto'|'passive'|'active'|'cal_drift'|'uwb',
+               report=False, freqs=None, report_path=None)
+```
+
+Auto-detect priority: `cal_drift > passive > active > uwb`. Mixed folders proceed with the winner and surface a `mixed_intents_detected` warning. The tool never raises — every failure mode (missing folder, no match, partial pair, per-file UWB error, report write failure) returns as a structured warning.
 
 ---
 
 ## Known Limitations
 
-1. **Pattern Analysis**
-   - HPBW and F/B ratio implemented and verified (boundary wrapping fix, IEEE-validated TRP)
-   - No sidelobe level detection or symmetry analysis
-   - Pattern classification limited to 3 categories
-
-2. **Function Calling Compatibility**
-   - Works with all major model families
-   - Older Ollama models may have limited tool support
-
-3. **Ollama Vision**
-   - Only vision-capable models (llava, llama3.2-vision, gemma3) support plot analysis
-   - Other Ollama models use text-only mode
+1. **Pattern Analysis** — HPBW and F/B ratio implemented and verified (boundary wrapping + IEEE-validated TRP). No sidelobe-level detection or symmetry analysis yet. Pattern classification limited to 3 categories.
+2. **Function Calling Compatibility** — works across all major model families. Older Ollama models may have limited tool support.
+3. **Ollama Vision** — only vision-capable models (llava, llama3.2-vision, gemma3) support plot analysis; others fall back to text-only.
 
 ---
 
 ## Architecture
 
-### Core Modules
-
 ```
 plot_antenna/
-├── llm_provider.py         # Unified provider abstraction (OpenAI, Anthropic, Ollama)
+├── llm_provider.py         # Unified provider abstraction
 ├── ai_analysis.py          # Pure analysis logic (GUI-independent)
 │   └── AntennaAnalyzer     # Reusable analysis class
 ├── gui/
-│   └── ai_chat_mixin.py   # AI chat GUI integration
-├── save.py                 # Report generation (uses llm_provider)
+│   └── ai_chat_mixin.py    # AI chat GUI integration
+├── save.py                 # Report generation
 └── api_keys.py             # Secure key management
-```
 
-### MCP Server
-
-```
 rflect-mcp/
-├── server.py                    # FastMCP server
-├── tools/
-│   ├── import_tools.py         # import_antenna_file(), import_antenna_folder(),
-│   │                           # import_passive_pair(), import_active_processed()
-│   ├── analysis_tools.py       # Uses ai_analysis.AntennaAnalyzer
-│   ├── report_tools.py         # generate_report() with YAML template engine
-│   └── bulk_tools.py           # Batch processing & CST conversion
-├── templates/
-│   └── default.yaml            # Report template definition
-├── requirements.txt
-└── README.md
+├── server.py
+└── tools/
+    ├── import_tools.py
+    ├── analysis_tools.py
+    ├── report_tools.py
+    ├── bulk_tools.py
+    ├── uwb_tools.py
+    ├── cal_drift_tools.py
+    └── orchestration.py    # process_folder (v4.2.0)
 ```
-
-**Capabilities**: AI agents (Claude Code, Cline) can:
-- Import antenna data programmatically
-- Run analysis via MCP tools (gain stats, pattern, polarization)
-- Generate DOCX reports with AI summaries
-- Batch process entire measurement folders
-- Validate and convert file formats (CST .ffs)
 
 ---
 
 ## Configuration
 
-### Enabling AI Features
+### Enabling AI
 
-AI features are **optional** and require one of:
-1. **OpenAI**: API key configured via Tools → Manage API Keys
-2. **Anthropic**: `ANTHROPIC_API_KEY` environment variable set
-3. **Ollama**: Ollama running locally (no API key needed)
+Pick one provider:
+1. **OpenAI** — API key via Tools → Manage API Keys
+2. **Anthropic** — `ANTHROPIC_API_KEY` env var
+3. **Ollama** — running locally, no key required
 
-Select provider via: Tools → AI Settings
+Select provider via Tools → AI Settings.
 
-### Disabling AI Features
+### Disabling AI
 
 If no provider is configured:
-- AI Chat Assistant menu item is hidden
-- "Generate Report with AI" falls back to template-only mode
-- Core RFlect functionality works normally
+- AI Chat menu item is hidden
+- `Generate Report with AI` falls back to template-only mode
+- Core RFlect functionality continues to work normally
 
 ### Models Supported
 
-**OpenAI**: GPT-4o-mini (default), GPT-4o, GPT-5-nano, GPT-5-mini, GPT-5.2
-**Anthropic**: Claude Sonnet, Claude Opus
-**Ollama**: llama3.1, qwen2.5, mistral, llava (vision), and more
+- **OpenAI**: GPT-4o-mini (default), GPT-4o, GPT-5-nano, GPT-5-mini, GPT-5.2
+- **Anthropic**: Claude Sonnet, Claude Opus
+- **Ollama**: llama3.1, qwen2.5, mistral, llava (vision), and more
 
 ---
 
 ## Roadmap
 
-### v4.0.0 (February 2026)
-- Complete architecture refactoring (mixin-based GUI)
-- Multi-provider AI support (OpenAI, Anthropic, Ollama)
-- Secure API key management (Fernet encryption, OS keyring, machine-ID binding)
-- AI analysis engine: AntennaAnalyzer with HPBW, F/B ratio, batch analysis
-- 11 RF engineering formula fixes (diversity gain, axial ratio, XPD, TRP, HPBW)
-- MCP server with 20 tools (import, analysis, report, bulk processing)
-- Full GUI dark theme, WCAG AA contrast, keyboard shortcuts
-- LLM timeout/retry hardening, provider-aware error messages
-- turbo colormap, DPI 300 for saved figures
-- 227 tests, 22% code coverage
+### Shipped — v4.0.0 (Feb 2026)
+- Architecture refactor (mixin-based GUI)
+- Multi-provider AI (OpenAI, Anthropic, Ollama)
+- Secure API-key management (Fernet, OS keyring, machine-ID binding)
+- AntennaAnalyzer with HPBW, F/B ratio, batch analysis
+- 11 RF engineering formula fixes
+- MCP server with 20 tools
 
-### v4.1.0-4.1.4 (February 2026)
-- Maritime / horizon antenna plots (5 plot types, configurable theta band)
-- Horizon TRP, efficiency, and enhanced statistics
-- Windows installer overhaul (icon, no console, upgrade handling)
-- Non-blocking update checker (background thread)
+### Shipped — v4.1.x (Feb–Apr 2026)
+- Maritime / horizon antenna plots (5 plot types)
+- Advanced RF analysis suite (Link Budget, ITU-R, Multipath, MIMO, Wearable/SAR)
+- Calibration drift tracker with cross-epoch comparison
+- Active Chamber Calibration regression fix
 
-### v4.1.5 (Current - February 2026)
-- Advanced RF analysis suite with 5 new modules:
-  - Link Budget / Range Estimation (Friis, protocol presets)
-  - Indoor Propagation (ITU-R P.1238, wall penetration P.2040)
-  - Multipath Fading (Rayleigh/Rician CDF, Monte-Carlo)
-  - Enhanced MIMO (capacity curves, combining gain, MEG with XPR)
-  - Wearable/Medical (body-worn patterns, dense device SINR, SAR screening)
-- Smart presets: protocol and environment dropdowns auto-populate parameters
-- Scrollable settings dialogs for advanced analysis configuration
-- Per-job bulk processing failure reporting
-- 450 tests (302 passing), 26% code coverage
+### Shipped — v4.2.0 (May 2026)
+- `process_folder` MCP orchestrator (single-call folder workflows)
+- UWB analysis helper extracted from MCP wrapper for reuse
+- MCP server expanded to 34 tools
 
-### v4.2+ (Planned)
+### Planned — v4.3+
 - AI datasheet extraction (vision-based parameter extraction from PDF/images)
 - Sidelobe detection and reporting
 - Automated figure insertion in reports
 - Complete branding integration
 - Multi-frequency comparison tables
-- Enhanced vision integration for all providers
 - Simulation vs measurement comparison
 - AI-powered anomaly detection
 - Integration with electromagnetic simulation tools
@@ -206,7 +184,6 @@ If no provider is configured:
 ### Testing AI Features
 
 ```python
-# Example: Using AntennaAnalyzer directly
 from plot_antenna.ai_analysis import AntennaAnalyzer
 
 data = {
@@ -214,48 +191,40 @@ data = {
     'theta': theta_angles,
     'total_gain': gain_array,
     'h_gain': h_pol_array,
-    'v_gain': v_pol_array
+    'v_gain': v_pol_array,
 }
 
 analyzer = AntennaAnalyzer(
     measurement_data=data,
     scan_type='passive',
-    frequencies=[2400, 2450, 2500]
+    frequencies=[2400, 2450, 2500],
 )
 
-# Get statistics
-stats = analyzer.get_gain_statistics(frequency=2400)
-print(f"Max gain: {stats['max_gain_dBi']:.2f} dBi")
-
-# Analyze pattern
-pattern = analyzer.analyze_pattern(frequency=2400)
-print(f"Pattern type: {pattern['pattern_type']}")
-
-# Compare polarizations
-comparison = analyzer.compare_polarizations(frequency=2400)
-print(f"XPD: {comparison['avg_xpd_dB']:.1f} dB")
+print(analyzer.get_gain_statistics(frequency=2400))
+print(analyzer.analyze_pattern(frequency=2400))
+print(analyzer.compare_polarizations(frequency=2400))
 ```
 
 ### Adding New Analysis Functions
 
-1. Add function to `AntennaAnalyzer` class in `ai_analysis.py`
-2. Update `ai_chat_mixin.py` to expose function to AI
-3. Add tests to `tests/test_ai_analysis.py`
-4. Add MCP wrapper in `rflect-mcp/tools/analysis_tools.py`
-5. Update this document with status
+1. Add function to `AntennaAnalyzer` in `ai_analysis.py`
+2. Expose to the chat assistant via `gui/ai_chat_mixin.py`
+3. Add tests under `tests/test_ai_analysis.py`
+4. Wrap as an MCP tool under `rflect-mcp/tools/analysis_tools.py`
+5. Update this document
 
 ### Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](https://github.com/RFingAdam/RFlect/blob/main/CONTRIBUTING.md).
 
 ---
 
 ## Support
 
-**Issues**: https://github.com/RFingAdam/RFlect/issues
-**Discussions**: https://github.com/RFingAdam/RFlect/discussions
+- **Issues**: https://github.com/RFingAdam/RFlect/issues
+- **Discussions**: https://github.com/RFingAdam/RFlect/discussions
 
-For AI feature-specific issues, please tag with `ai` label.
+Tag AI-feature issues with `ai`.
 
 ---
 

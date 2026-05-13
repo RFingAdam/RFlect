@@ -1,0 +1,118 @@
+site_name: RFlect
+site_description: The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.
+site_url: https://rfingadam.github.io/RFlect/
+repo_url: https://github.com/RFingAdam/RFlect
+repo_name: RFingAdam/RFlect
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024-2026 RFingAdam
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - include-markdown
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/RFingAdam/RFlect
+      name: RFlect on GitHub
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Install: getting-started/install.md
+      - Quickstart: getting-started/quickstart.md
+      - Concepts: getting-started/concepts.md
+  - Hardware:
+      - Chambers: hardware/chambers.md
+      - File Formats: hardware/file-formats.md
+      - Instruments: hardware/instruments.md
+  - User Guide:
+      - Active TRP: user-guide/active-trp.md
+      - Passive Gain: user-guide/passive-gain.md
+      - S11 / Impedance: user-guide/s11-impedance.md
+      - Group Delay: user-guide/group-delay.md
+      - UWB / SFF: user-guide/uwb-sff.md
+      - Polarization: user-guide/polarization.md
+      - Maritime / Horizon: user-guide/maritime-horizon.md
+      - Advanced RF: user-guide/advanced-rf.md
+      - Cal Drift: user-guide/cal-drift.md
+  - MCP:
+      - Overview: mcp/overview.md
+      - Installation: mcp/installation.md
+      - Tools Reference: mcp/tools-reference.md
+      - Recipes: mcp/recipes.md
+      - Troubleshooting: mcp/troubleshooting.md
+  - AI:
+      - Overview: ai/overview.md
+      - Status: ai/status.md
+      - Providers: ai/providers.md
+      - Chat: ai/chat.md
+      - Reports: ai/reports.md
+  - Reference:
+      - CLI: reference/cli.md
+      - API: reference/api.md
+      - Glossary: reference/glossary.md
+  - Contributing: contributing.md
