@@ -319,7 +319,9 @@ class TestMIMO:
         """Selection combining picks the best branch."""
         gains = np.array([5.0, 0.0, -3.0])
         combined, improvement = combining_gain(gains, method="sc")
-        assert combined == 5.0
+        # combining_gain returns linear → dB conversion which introduces
+        # float rounding on some numpy/python builds (4.999... vs 5.0).
+        assert combined == pytest.approx(5.0, abs=1e-9)
 
     def test_mimo_capacity_vs_snr_shape(self):
         """Capacity curve returns (snr, siso_cap, awgn_cap, fading_cap)."""
