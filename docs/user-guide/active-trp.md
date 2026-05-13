@@ -2,6 +2,8 @@
 
 Total Radiated Power workflow for an active (transmitting) DUT.
 
+![Active 2D azimuth cuts](../assets/screenshots/active_2d.png){ .rflect-screenshot }
+
 ## What you need
 
 - A WTL `.txt` file with H/V power per ($\theta$, $\phi$) cell

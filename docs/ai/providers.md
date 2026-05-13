@@ -2,6 +2,8 @@
 
 RFlect supports three providers through a unified abstraction. Pick one (or none — AI is optional).
 
+![API key management dialog](../assets/screenshots/api_keys.png){ .rflect-screenshot }
+
 ## OpenAI
 
 - Default provider

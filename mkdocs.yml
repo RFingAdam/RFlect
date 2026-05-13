@@ -8,6 +8,8 @@ copyright: Copyright &copy; 2024-2026 RFingAdam
 
 theme:
   name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
   features:
     - navigation.tabs
     - navigation.sections
@@ -15,28 +17,37 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
     - search.suggest
     - search.highlight
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - toc.follow
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
-      accent: indigo
+      accent: cyan
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
-      accent: indigo
+      accent: cyan
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
   icon:
     repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
 
 plugins:
   - search
@@ -62,9 +73,11 @@ markdown_extensions:
       custom_checkbox: true
 
 extra:
+  generator: false
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/RFingAdam/RFlect
+      name: RFlect on GitHub
 
 nav:
   - Home: index.md

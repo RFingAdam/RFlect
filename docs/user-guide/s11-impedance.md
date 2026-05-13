@@ -2,6 +2,8 @@
 
 Return-loss and bandwidth analysis from VNA `.csv` or Touchstone `.s2p` files.
 
+![VNA / S-parameter results](../assets/screenshots/vna.png){ .rflect-screenshot }
+
 ## What you need
 
 - A 2-port (or 1-port) VNA capture with S11 in dB

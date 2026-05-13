@@ -2,6 +2,8 @@
 
 Gain, efficiency, directivity, and polarization analysis from HPOL + VPOL chamber pairs.
 
+![Passive 3D pattern with turbo colormap](../assets/screenshots/passive_3d.png){ .rflect-screenshot }
+
 ## What you need
 
 - A WTL HPOL `.txt` file (`*_HPol.txt`)
@@ -25,6 +27,18 @@ Gain, efficiency, directivity, and polarization analysis from HPOL + VPOL chambe
 | Directivity                     | Peak gain − average gain                               |
 | Axial Ratio / Tilt Angle / XPD  | Polarization-ellipse metrics (see [Polarization](polarization.md)) |
 | Sense (RHCP/LHCP)               | From phase-difference $\delta$ between $E_\theta$, $E_\phi$ |
+
+## 2D azimuth cuts
+
+![Passive 2D azimuth cuts](../assets/screenshots/passive_2d.png){ .rflect-screenshot }
+
+## 1D efficiency vs frequency
+
+![Passive 1D efficiency vs frequency](../assets/screenshots/passive_1d.png){ .rflect-screenshot }
+
+## Datasheet output
+
+![Datasheet 1D plot](../assets/screenshots/datasheet_1d.png){ .rflect-screenshot }
 
 ## Math conventions
 
