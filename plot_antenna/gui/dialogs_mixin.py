@@ -1823,7 +1823,10 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             # Column headers
             for ci, hdr in enumerate(["Mode", "Min", "Max"], start=1):
                 tk.Label(
-                    settings_window, text=hdr, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    text=hdr,
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 ).grid(row=2, column=ci, sticky=tk.W)
 
             _scale_rows = [
@@ -1834,27 +1837,50 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             for idx, (lbl, mode_var, min_var, max_var) in enumerate(_scale_rows):
                 r = 3 + idx
                 tk.Label(
-                    settings_window, text=lbl, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    text=lbl,
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=0, sticky=tk.W, padx=30)
                 _mode_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
                 _mode_frame.grid(row=r, column=1, sticky=tk.W)
                 tk.Radiobutton(
-                    _mode_frame, text="Auto", variable=mode_var, value="auto",
-                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                    _mode_frame,
+                    text="Auto",
+                    variable=mode_var,
+                    value="auto",
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR,
+                    activeforeground=LIGHT_TEXT_COLOR,
                 ).pack(side=tk.LEFT)
                 tk.Radiobutton(
-                    _mode_frame, text="Man", variable=mode_var, value="manual",
-                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                    _mode_frame,
+                    text="Man",
+                    variable=mode_var,
+                    value="manual",
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR,
+                    activeforeground=LIGHT_TEXT_COLOR,
                 ).pack(side=tk.LEFT)
                 tk.Entry(
-                    settings_window, textvariable=min_var, width=6,
-                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    textvariable=min_var,
+                    width=6,
+                    bg=SURFACE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    insertbackground=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=2)
                 tk.Entry(
-                    settings_window, textvariable=max_var, width=6,
-                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    textvariable=max_var,
+                    width=6,
+                    bg=SURFACE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    insertbackground=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=3)
 
             # Maritime / Horizon plot settings
@@ -1932,8 +1958,10 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             ).grid(row=3, column=1, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
             tk.Label(
-                maritime_frame, text="Conducted Power (dBm):",
-                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                text="Conducted Power (dBm):",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
             ).grid(row=4, column=0, columnspan=2, sticky=tk.W, padx=5)
             tk.Entry(
                 maritime_frame,
@@ -1944,14 +1972,19 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
                 insertbackground=LIGHT_TEXT_COLOR,
             ).grid(row=4, column=2, padx=5, pady=2)
             tk.Label(
-                maritime_frame, text="(single freq)",
-                bg=DARK_BG_COLOR, fg="#A0A0A0", font=("Arial", 9),
+                maritime_frame,
+                text="(single freq)",
+                bg=DARK_BG_COLOR,
+                fg="#A0A0A0",
+                font=("Arial", 9),
             ).grid(row=4, column=3, sticky=tk.W)
 
             # CSV file for per-frequency conducted power (batch processing)
             tk.Label(
-                maritime_frame, text="Per-Freq CSV:",
-                bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                maritime_frame,
+                text="Per-Freq CSV:",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
             ).grid(row=5, column=0, sticky=tk.W, padx=5)
             csv_entry = tk.Entry(
                 maritime_frame,
@@ -2089,11 +2122,17 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
 
             # Per-type 3D Z-axis scaling
             tk.Label(
-                settings_window, text="3-D Z-Axis Scale:", bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                settings_window,
+                text="3-D Z-Axis Scale:",
+                bg=DARK_BG_COLOR,
+                fg=LIGHT_TEXT_COLOR,
             ).grid(row=3, column=0, sticky=tk.W, padx=20)
             for ci, hdr in enumerate(["Mode", "Min", "Max"], start=1):
                 tk.Label(
-                    settings_window, text=hdr, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    text=hdr,
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 ).grid(row=3, column=ci, sticky=tk.W)
 
             _scale_rows = [
@@ -2104,27 +2143,50 @@ AI_GENERATE_REASONING_SUMMARY = {reasoning_summary_var.get()}
             for idx, (lbl, mode_var, min_var, max_var) in enumerate(_scale_rows):
                 r = 4 + idx
                 tk.Label(
-                    settings_window, text=lbl, bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    text=lbl,
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=0, sticky=tk.W, padx=30)
                 _mode_frame = tk.Frame(settings_window, bg=DARK_BG_COLOR)
                 _mode_frame.grid(row=r, column=1, sticky=tk.W)
                 tk.Radiobutton(
-                    _mode_frame, text="Auto", variable=mode_var, value="auto",
-                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                    _mode_frame,
+                    text="Auto",
+                    variable=mode_var,
+                    value="auto",
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR,
+                    activeforeground=LIGHT_TEXT_COLOR,
                 ).pack(side=tk.LEFT)
                 tk.Radiobutton(
-                    _mode_frame, text="Man", variable=mode_var, value="manual",
-                    bg=DARK_BG_COLOR, fg=LIGHT_TEXT_COLOR, selectcolor=SURFACE_COLOR,
-                    activebackground=DARK_BG_COLOR, activeforeground=LIGHT_TEXT_COLOR,
+                    _mode_frame,
+                    text="Man",
+                    variable=mode_var,
+                    value="manual",
+                    bg=DARK_BG_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    selectcolor=SURFACE_COLOR,
+                    activebackground=DARK_BG_COLOR,
+                    activeforeground=LIGHT_TEXT_COLOR,
                 ).pack(side=tk.LEFT)
                 tk.Entry(
-                    settings_window, textvariable=min_var, width=6,
-                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    textvariable=min_var,
+                    width=6,
+                    bg=SURFACE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    insertbackground=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=2)
                 tk.Entry(
-                    settings_window, textvariable=max_var, width=6,
-                    bg=SURFACE_COLOR, fg=LIGHT_TEXT_COLOR, insertbackground=LIGHT_TEXT_COLOR,
+                    settings_window,
+                    textvariable=max_var,
+                    width=6,
+                    bg=SURFACE_COLOR,
+                    fg=LIGHT_TEXT_COLOR,
+                    insertbackground=LIGHT_TEXT_COLOR,
                 ).grid(row=r, column=3)
 
             # Extrapolation controls (VPOL/HPOL only)

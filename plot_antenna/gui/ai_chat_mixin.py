@@ -1238,9 +1238,7 @@ You can call these functions to help answer user questions:
                 total_power_dBm_2d_plot = getattr(self, "total_power_dBm_2d_plot", None)
 
                 # Get per-type axis settings
-                _suffix = {"total": "total", "hpol": "hpol", "vpol": "vpol"}.get(
-                    component, "total"
-                )
+                _suffix = {"total": "total", "hpol": "hpol", "vpol": "vpol"}.get(component, "total")
                 axis_mode = getattr(self, f"axis_scale_mode_{_suffix}", None)
                 zmin_var = getattr(self, f"axis_min_{_suffix}", None)
                 zmax_var = getattr(self, f"axis_max_{_suffix}", None)

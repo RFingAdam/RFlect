@@ -22,6 +22,91 @@ from plot_antenna.uwb_analysis import (
 from plot_antenna.file_utils import parse_2port_data, parse_touchstone_to_dataframe
 
 
+def _analyze_uwb_channel_dict(
+    file_path: str,
+    distance_m: float = 1.0,
+    pulse_type: str = "gaussian_monocycle",
+) -> dict:
+    """Pure-Python UWB channel analysis returning a structured dict.
+
+    Shared by the `analyze_uwb_channel` MCP tool (which wraps this as JSON)
+    and the `process_folder` orchestrator. Returns `{"error": "..."}` on
+    failure instead of raising.
+    """
+    if not os.path.exists(file_path):
+        return {"error": f"File not found: {file_path}"}
+
+    if file_path.lower().endswith('.s2p'):
+        ts = parse_touchstone(file_path)
+        freq = ts['freq_hz']
+        s21_complex = ts['s21']
+        s11 = ts['s11']
+        s11_dB = 20.0 * np.log10(np.maximum(np.abs(s11), 1e-30))
+    else:
+        df = parse_2port_data(file_path)
+        freq = df["! Stimulus(Hz)"].values
+
+        has_s21_dB = "S21(dB)" in df.columns or "S12(dB)" in df.columns
+        has_gd = "S21(s)" in df.columns or "S12(s)" in df.columns
+
+        if not has_s21_dB:
+            return {"error": "File missing S21(dB) column."}
+
+        s21_dB_arr = df[("S21(dB)" if "S21(dB)" in df.columns else "S12(dB)")].values
+
+        if has_gd:
+            gd = df[("S21(s)" if "S21(s)" in df.columns else "S12(s)")].values
+            s21_complex = build_complex_s21_from_s2vna(freq, s21_dB_arr, gd)
+        else:
+            s21_complex = 10 ** (s21_dB_arr / 20.0) + 0j
+
+        s11_dB = df["S11(dB)"].values if "S11(dB)" in df.columns else None
+
+    analysis: dict = {}
+
+    sff_result = calculate_sff(freq, s21_complex, pulse_type=pulse_type)
+    analysis["sff"] = {
+        "value": sff_result['sff'],
+        "quality": sff_result['quality'],
+        "peak_delay_ns": sff_result['peak_delay_s'] * 1e9,
+    }
+
+    gd_result = compute_group_delay_from_s21(freq, s21_complex)
+    analysis["group_delay"] = {
+        "mean_ns": float(np.mean(gd_result['group_delay_s'])) * 1e9,
+        "variation_ps": gd_result['variation_s'] * 1e12,
+        "distance_error_cm": gd_result['distance_error_m'] * 100,
+    }
+
+    tf_result = extract_transfer_function(freq, s21_complex, distance_m=distance_m)
+    analysis["transfer_function"] = {
+        "mag_range_dB": [float(np.min(tf_result['H_mag_dB'])),
+                         float(np.max(tf_result['H_mag_dB']))],
+        "flatness_dB": float(np.ptp(tf_result['H_mag_dB'])),
+    }
+
+    ir_result = compute_impulse_response(freq, tf_result['H_complex'])
+    analysis["impulse_response"] = {
+        "pulse_width_ps": ir_result['pulse_width_s'] * 1e12,
+        "ringing_dB": ir_result['ringing_dB'],
+    }
+
+    if s11_dB is not None:
+        rl_result = analyze_return_loss(freq, s11_dB)
+        analysis["return_loss"] = {
+            "min_s11_dB": rl_result['min_s11_dB'],
+            "bandwidth_mhz": rl_result['bandwidth_hz'] / 1e6,
+            "band_start_ghz": rl_result['band_start_hz'] / 1e9,
+            "band_stop_ghz": rl_result['band_stop_hz'] / 1e9,
+            "fractional_bandwidth_pct": rl_result['fractional_bandwidth'] * 100,
+        }
+
+    analysis["frequency_range_ghz"] = [float(freq[0] / 1e9), float(freq[-1] / 1e9)]
+    analysis["num_points"] = len(freq)
+
+    return analysis
+
+
 def register_uwb_tools(mcp):
     """Register UWB analysis tools with the MCP server."""
 
@@ -134,83 +219,10 @@ def register_uwb_tools(mcp):
         Returns:
             JSON string with comprehensive channel analysis.
         """
-        if not os.path.exists(file_path):
-            return json.dumps({"error": f"File not found: {file_path}"})
-
-        if file_path.lower().endswith('.s2p'):
-            ts = parse_touchstone(file_path)
-            freq = ts['freq_hz']
-            s21_complex = ts['s21']
-            s11 = ts['s11']
-            s11_dB = 20.0 * np.log10(np.maximum(np.abs(s11), 1e-30))
-        else:
-            df = parse_2port_data(file_path)
-            freq = df["! Stimulus(Hz)"].values
-
-            has_s21_dB = "S21(dB)" in df.columns or "S12(dB)" in df.columns
-            has_gd = "S21(s)" in df.columns or "S12(s)" in df.columns
-
-            if not has_s21_dB:
-                return json.dumps({"error": "File missing S21(dB) column."})
-
-            s21_dB_arr = df[("S21(dB)" if "S21(dB)" in df.columns else "S12(dB)")].values
-
-            if has_gd:
-                gd = df[("S21(s)" if "S21(s)" in df.columns else "S12(s)")].values
-                s21_complex = build_complex_s21_from_s2vna(freq, s21_dB_arr, gd)
-            else:
-                s21_complex = 10 ** (s21_dB_arr / 20.0) + 0j
-
-            s11_dB = df["S11(dB)"].values if "S11(dB)" in df.columns else None
-
-        analysis = {}
-
-        # SFF
-        sff_result = calculate_sff(freq, s21_complex, pulse_type=pulse_type)
-        analysis["sff"] = {
-            "value": sff_result['sff'],
-            "quality": sff_result['quality'],
-            "peak_delay_ns": sff_result['peak_delay_s'] * 1e9,
-        }
-
-        # Group delay
-        gd_result = compute_group_delay_from_s21(freq, s21_complex)
-        analysis["group_delay"] = {
-            "mean_ns": float(np.mean(gd_result['group_delay_s'])) * 1e9,
-            "variation_ps": gd_result['variation_s'] * 1e12,
-            "distance_error_cm": gd_result['distance_error_m'] * 100,
-        }
-
-        # Transfer function
-        tf_result = extract_transfer_function(freq, s21_complex, distance_m=distance_m)
-        analysis["transfer_function"] = {
-            "mag_range_dB": [float(np.min(tf_result['H_mag_dB'])),
-                             float(np.max(tf_result['H_mag_dB']))],
-            "flatness_dB": float(np.ptp(tf_result['H_mag_dB'])),
-        }
-
-        # Impulse response
-        ir_result = compute_impulse_response(freq, tf_result['H_complex'])
-        analysis["impulse_response"] = {
-            "pulse_width_ps": ir_result['pulse_width_s'] * 1e12,
-            "ringing_dB": ir_result['ringing_dB'],
-        }
-
-        # S11/VSWR (if available)
-        if s11_dB is not None:
-            rl_result = analyze_return_loss(freq, s11_dB)
-            analysis["return_loss"] = {
-                "min_s11_dB": rl_result['min_s11_dB'],
-                "bandwidth_mhz": rl_result['bandwidth_hz'] / 1e6,
-                "band_start_ghz": rl_result['band_start_hz'] / 1e9,
-                "band_stop_ghz": rl_result['band_stop_hz'] / 1e9,
-                "fractional_bandwidth_pct": rl_result['fractional_bandwidth'] * 100,
-            }
-
-        analysis["frequency_range_ghz"] = [float(freq[0] / 1e9), float(freq[-1] / 1e9)]
-        analysis["num_points"] = len(freq)
-
-        return json.dumps(analysis, indent=2)
+        return json.dumps(
+            _analyze_uwb_channel_dict(file_path, distance_m=distance_m, pulse_type=pulse_type),
+            indent=2,
+        )
 
     @mcp.tool()
     def get_impedance_bandwidth(

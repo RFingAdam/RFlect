@@ -1,5 +1,27 @@
 # RFlect - Release Notes
 
+## Version 4.2.0 (05/12/2026)
+
+**Feature release — single-call folder orchestration for MCP clients.**
+
+### New Features
+
+- **`process_folder` MCP tool**: one entry point that scans a directory, picks the right workflow (passive HPOL/VPOL pair, active TRP, cal-drift archive, or UWB S-parameter sweep), runs it, and optionally generates a DOCX report. Replaces the previous "list → bulk → analyze → report" chain that Claude / Cline / other MCP clients had to script manually.
+  - Signature: `process_folder(folder_path, intent='auto', report=False, freqs=None, report_path=None)`.
+  - Auto-detect priority: `cal_drift > passive > active > uwb`. Mixed folders proceed with the winner and surface a `mixed_intents_detected` warning.
+  - Never raises — all failure modes (missing folder, no matching files, partial pairs, per-file UWB failures, report write errors) return as structured `warnings[]` entries so the caller can decide how to react.
+
+### Internals
+
+- **`_analyze_uwb_channel_dict` extracted from `analyze_uwb_channel`** so both the existing MCP tool and the new orchestrator share the same code path. No behavior change to `analyze_uwb_channel`.
+- **`register_orchestration_tools(mcp)`** added to `rflect-mcp/tools/orchestration.py` and wired into `rflect-mcp/server.py`.
+
+### Tests
+
+- 9 new tests in `tests/test_mcp_process_folder.py` covering intent detection (folder-not-found, invalid-intent, no-match, mixed-intents priority), explicit intents (passive/active/uwb monkey-patched), real-delegate cal-drift end-to-end, and report-failure isolation.
+
+---
+
 ## Version 4.1.9 (04/14/2026)
 
 **Patch release — restores the Active Chamber Calibration routine.**

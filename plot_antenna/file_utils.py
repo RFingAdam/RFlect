@@ -1015,12 +1015,31 @@ def generate_active_cal_file(
     if callback:
         callback()
 
-    return {
+    result = {
         "output_path": output_path,
         "summary_path": summary_path,
         "rows_written": rows_written,
         "rows_missing": rows_missing,
     }
+
+    try:
+        from . import cal_drift
+
+        cal_drift.record_run(
+            cal_result=result,
+            power_file=power_measurement_file,
+            gain_std_file=gain_standard_file,
+            hpol_ref_file=hpol_file,
+            vpol_ref_file=vpol_file,
+        )
+    except Exception as drift_exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Cal-drift history record failed (cal generation succeeded): %s", drift_exc
+        )
+
+    return result
 
 
 # --------------------------------------------------------------------------
@@ -1568,7 +1587,9 @@ def batch_process_active_scans(
                         axis_mode=_s_total[0],
                         zmin=_s_total[1],
                         zmax=_s_total[2],
-                        conducted_power_dBm=_resolve_conducted_power(conducted_power_dBm, frequency),
+                        conducted_power_dBm=_resolve_conducted_power(
+                            conducted_power_dBm, frequency
+                        ),
                         save_path=maritime_sub,
                     )
 

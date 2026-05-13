@@ -1,0 +1,29 @@
+Howland Wireless Test Lab  Ver: V7.0.2
+Date: 4/14/2026
+Time: 9:53 AM
+File Name: C:\wtl data files\BLPA 690-2700 HPol AP_HPol.txt
+File Type: Multi-Frequency
+
+Antenna Pattern Test
+Signal Generator & Power Meter MeasurementHorizontal Polarization
+__________________
+
+Device Under Test (DUT):
+DUT Test Position: Free Space
+
+Test Setup File: N/A
+Test Type: Discrete Test
+Test Duration: 2:31
+Test Comments:
+
+
+Axis2 HPOL Antenna: Horn Antenna
+Axis1 Antenna: Device Under Test
+
+Signal Source: Rohde & Schwarz SMV03 Signal Generator
+Output Level: 0.00 dBm
+Modulation: CW
+Frequency Count: 10
+Start Frequency: 700.000 MHz
+Stop Frequency: 1600.000 MHz
+HPOL Receiver: Rohde & Schwarz NRX Power Meter Sensor A
