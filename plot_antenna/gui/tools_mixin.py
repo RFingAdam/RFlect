@@ -590,17 +590,29 @@ class ToolsMixin:
         # Per-type axis scaling settings
         scale_settings = {
             "total": (
-                self.axis_scale_mode_total.get() if hasattr(self, "axis_scale_mode_total") else "auto",
+                (
+                    self.axis_scale_mode_total.get()
+                    if hasattr(self, "axis_scale_mode_total")
+                    else "auto"
+                ),
                 float(self.axis_min_total.get()) if hasattr(self, "axis_min_total") else -20.0,
                 float(self.axis_max_total.get()) if hasattr(self, "axis_max_total") else 10.0,
             ),
             "hpol": (
-                self.axis_scale_mode_hpol.get() if hasattr(self, "axis_scale_mode_hpol") else "auto",
+                (
+                    self.axis_scale_mode_hpol.get()
+                    if hasattr(self, "axis_scale_mode_hpol")
+                    else "auto"
+                ),
                 float(self.axis_min_hpol.get()) if hasattr(self, "axis_min_hpol") else -25.0,
                 float(self.axis_max_hpol.get()) if hasattr(self, "axis_max_hpol") else 5.0,
             ),
             "vpol": (
-                self.axis_scale_mode_vpol.get() if hasattr(self, "axis_scale_mode_vpol") else "auto",
+                (
+                    self.axis_scale_mode_vpol.get()
+                    if hasattr(self, "axis_scale_mode_vpol")
+                    else "auto"
+                ),
                 float(self.axis_min_vpol.get()) if hasattr(self, "axis_min_vpol") else -25.0,
                 float(self.axis_max_vpol.get()) if hasattr(self, "axis_max_vpol") else 10.0,
             ),
@@ -724,17 +736,29 @@ class ToolsMixin:
         # Per-type axis scaling settings
         scale_settings = {
             "total": (
-                self.axis_scale_mode_total.get() if hasattr(self, "axis_scale_mode_total") else "auto",
+                (
+                    self.axis_scale_mode_total.get()
+                    if hasattr(self, "axis_scale_mode_total")
+                    else "auto"
+                ),
                 float(self.axis_min_total.get()) if hasattr(self, "axis_min_total") else -20.0,
                 float(self.axis_max_total.get()) if hasattr(self, "axis_max_total") else 10.0,
             ),
             "hpol": (
-                self.axis_scale_mode_hpol.get() if hasattr(self, "axis_scale_mode_hpol") else "auto",
+                (
+                    self.axis_scale_mode_hpol.get()
+                    if hasattr(self, "axis_scale_mode_hpol")
+                    else "auto"
+                ),
                 float(self.axis_min_hpol.get()) if hasattr(self, "axis_min_hpol") else -25.0,
                 float(self.axis_max_hpol.get()) if hasattr(self, "axis_max_hpol") else 5.0,
             ),
             "vpol": (
-                self.axis_scale_mode_vpol.get() if hasattr(self, "axis_scale_mode_vpol") else "auto",
+                (
+                    self.axis_scale_mode_vpol.get()
+                    if hasattr(self, "axis_scale_mode_vpol")
+                    else "auto"
+                ),
                 float(self.axis_min_vpol.get()) if hasattr(self, "axis_min_vpol") else -25.0,
                 float(self.axis_max_vpol.get()) if hasattr(self, "axis_max_vpol") else 10.0,
             ),
@@ -781,7 +805,9 @@ class ToolsMixin:
                         else -3.0
                     ),
                     conducted_power_dBm=(
-                        self._get_conducted_power_for_batch() if hasattr(self, "_get_conducted_power_for_batch") else None
+                        self._get_conducted_power_for_batch()
+                        if hasattr(self, "_get_conducted_power_for_batch")
+                        else None
                     ),
                     advanced_analysis_params=self._collect_advanced_params(),
                 )
@@ -1186,13 +1212,27 @@ class ToolsMixin:
                 cable_loss,
                 self.datasheet_plots_var.get(),
                 scale_settings={
-                    "total": (self.axis_scale_mode_total.get(), self.axis_min_total.get(), self.axis_max_total.get()),
-                    "hpol": (self.axis_scale_mode_hpol.get(), self.axis_min_hpol.get(), self.axis_max_hpol.get()),
-                    "vpol": (self.axis_scale_mode_vpol.get(), self.axis_min_vpol.get(), self.axis_max_vpol.get()),
+                    "total": (
+                        self.axis_scale_mode_total.get(),
+                        self.axis_min_total.get(),
+                        self.axis_max_total.get(),
+                    ),
+                    "hpol": (
+                        self.axis_scale_mode_hpol.get(),
+                        self.axis_min_hpol.get(),
+                        self.axis_max_hpol.get(),
+                    ),
+                    "vpol": (
+                        self.axis_scale_mode_vpol.get(),
+                        self.axis_min_vpol.get(),
+                        self.axis_max_vpol.get(),
+                    ),
                 },
                 word=False,
                 maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
-                conducted_power_dBm=self._get_conducted_power() if hasattr(self, '_get_conducted_power') else None,
+                conducted_power_dBm=(
+                    self._get_conducted_power() if hasattr(self, "_get_conducted_power") else None
+                ),
             )
 
         except ValueError as ve:
@@ -1403,6 +1443,15 @@ class ToolsMixin:
             f"Calibration file generated: {result['output_path']} "
             f"({result['rows_written']} frequencies written, {result['rows_missing']} missing)."
         )
+
+    def open_cal_drift_dialog(self):
+        """Open the Calibration Drift History dialog."""
+        from .cal_drift_dialog import CalDriftDialog
+
+        try:
+            CalDriftDialog(self.root, logger=self.log_message)
+        except Exception as exc:
+            self.log_message(f"Error opening Calibration Drift History: {exc}")
 
     # ────────────────────────────────────────────────────────────────────────
     # UPDATE CHECKING

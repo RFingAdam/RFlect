@@ -202,7 +202,9 @@ class CallbacksMixin:
             return power_map if power_map else None
         except OSError as e:
             if hasattr(self, "log_message"):
-                self.log_message(f"Warning: Could not read conducted power CSV: {e}", level="warning")
+                self.log_message(
+                    f"Warning: Could not read conducted power CSV: {e}", level="warning"
+                )
             return None
         except AttributeError:
             return None
@@ -1337,9 +1339,7 @@ class CallbacksMixin:
             self.log_message(
                 f"Maritime TRP ({band_desc}): {band_stats['band_trp_dB']:.2f} {data_unit}"
             )
-            self.log_message(
-                f"Full-sphere avg EIRP: {band_stats['full_avg_dB']:.2f} {data_unit}"
-            )
+            self.log_message(f"Full-sphere avg EIRP: {band_stats['full_avg_dB']:.2f} {data_unit}")
             self.log_message(
                 f"Maritime avg EIRP ({band_desc}): {band_stats['band_avg_dB']:.2f} {data_unit}"
             )
@@ -1660,7 +1660,9 @@ class CallbacksMixin:
             self.log_message(f"Delta Efficiency : {delta_dB:+.2f} dB")
 
         maritime_stats = None
-        freq_idx = self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        freq_idx = (
+            self.freq_list.index(float(self.selected_frequency.get())) if self.freq_list else 0
+        )
         unique_theta, unique_phi, gain_grid = _prepare_gain_grid(
             theta_angles_deg, phi_angles_deg, Total_Gain_dB, freq_idx
         )
@@ -1676,7 +1678,9 @@ class CallbacksMixin:
                     }
                 )
         else:
-            self.log_message("Maritime summary unavailable: could not reshape gain data to 2D.", level="warning")
+            self.log_message(
+                "Maritime summary unavailable: could not reshape gain data to 2D.", level="warning"
+            )
 
         # Plot 2D and 3D passive data
         plot_2d_passive_data(

@@ -2565,13 +2565,13 @@ def plot_3d_pattern_masked(
             f"{band_trp_label}: {band_stats['band_trp_dB']:.1f} {data_unit}"
         )
         # Maritime power fraction (pattern-only metric)
-        _frac_dB = band_stats['band_trp_dB'] - band_stats['full_trp_dB']
+        _frac_dB = band_stats["band_trp_dB"] - band_stats["full_trp_dB"]
         if np.isfinite(_frac_dB):
             _frac_pct = 10 ** (_frac_dB / 10) * 100
             stats_text += f"\nMaritime Power Fraction: {_frac_pct:.1f}%"
         if conducted_power_dBm is not None:
-            _full_eff_dB = band_stats['full_trp_dB'] - conducted_power_dBm
-            _mar_eff_dB = band_stats['band_trp_dB'] - conducted_power_dBm
+            _full_eff_dB = band_stats["full_trp_dB"] - conducted_power_dBm
+            _mar_eff_dB = band_stats["band_trp_dB"] - conducted_power_dBm
             _full_eff = 10 ** (_full_eff_dB / 10) * 100
             _mar_eff = 10 ** (_mar_eff_dB / 10) * 100
             stats_text += (

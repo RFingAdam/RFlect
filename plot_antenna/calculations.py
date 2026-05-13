@@ -71,7 +71,9 @@ def calculate_partial_trp(pattern_dB_2d, theta_deg, phi_deg, theta_min=None, the
 
     pattern_lin = 10 ** (sel_pattern / 10.0)
     sin_theta = np.sin(np.deg2rad(sel_theta))
-    integrated_lin = d_theta * d_phi / (4.0 * np.pi) * np.sum(pattern_lin * sin_theta[:, np.newaxis])
+    integrated_lin = (
+        d_theta * d_phi / (4.0 * np.pi) * np.sum(pattern_lin * sin_theta[:, np.newaxis])
+    )
     return 10.0 * np.log10(integrated_lin) if integrated_lin > 0 else float("-inf")
 
 
@@ -126,7 +128,9 @@ def calculate_spherical_band_statistics(
     band_weight_sum = float(np.sum(band_sin) * band_pattern.shape[1])
     full_weight_sum = float(np.sum(full_sin) * pattern_dB_2d.shape[1])
 
-    band_avg_linear = float(np.sum(band_pattern_lin * band_sin[:, np.newaxis]) / max(band_weight_sum, 1e-20))
+    band_avg_linear = float(
+        np.sum(band_pattern_lin * band_sin[:, np.newaxis]) / max(band_weight_sum, 1e-20)
+    )
     full_avg_linear = float(
         np.sum(full_pattern_lin * full_sin[:, np.newaxis]) / max(full_weight_sum, 1e-20)
     )

@@ -2,9 +2,20 @@
 Pytest configuration and shared fixtures for RFlect tests
 """
 
+import os
 import pytest
 import numpy as np
 from pathlib import Path
+
+
+@pytest.fixture(autouse=True)
+def _isolate_cal_drift_history(tmp_path_factory, monkeypatch):
+    """Route cal_drift.record_run() into a per-session tmp dir so the
+    auto-capture hook in generate_active_cal_file() never pollutes the
+    user's real history."""
+    sess = tmp_path_factory.mktemp("cal_drift_session")
+    monkeypatch.setenv("RFLECT_CAL_DRIFT_DIR", str(sess))
+    yield
 
 
 @pytest.fixture
