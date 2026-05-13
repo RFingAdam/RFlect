@@ -2,6 +2,8 @@
 
 Group delay vs frequency, derived from S21 phase or read directly from an S2VNA capture.
 
+![Group delay analysis](../assets/screenshots/group_delay.png){ .rflect-screenshot }
+
 ## What you need
 
 - A 2-port VNA capture: Touchstone `.s2p` or S2VNA `.csv` with `S21(s)` column
