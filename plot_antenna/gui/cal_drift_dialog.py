@@ -101,9 +101,7 @@ class CalDriftDialog:
         ttk.Button(btn_frame, text="Change History Folder…", command=self._change_history_dir).pack(
             side=tk.LEFT, padx=2
         )
-        ttk.Button(btn_frame, text="Refresh", command=self._refresh_runs).pack(
-            side=tk.LEFT, padx=2
-        )
+        ttk.Button(btn_frame, text="Refresh", command=self._refresh_runs).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="Compare", command=self._compare_selected).pack(
             side=tk.RIGHT, padx=2
         )
@@ -119,14 +117,20 @@ class CalDriftDialog:
         self.notebook = ttk.Notebook(frame)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
-        self.stats_tree = self._make_tree(self.notebook, ("metric", "h", "v"),
-                                           ("Metric", "H-Pol", "V-Pol"))
-        self.consistency_tree = self._make_tree(self.notebook, ("field", "state", "baseline", "current"),
-                                                 ("Field", "State", "Baseline", "Current"))
-        self.audit_tree = self._make_tree(self.notebook, ("kind", "freqs"),
-                                           ("Change", "Frequencies (MHz)"))
-        self.delta_tree = self._make_tree(self.notebook, ("freq", "dh", "dv"),
-                                           ("Freq (MHz)", "Δ H (dB)", "Δ V (dB)"))
+        self.stats_tree = self._make_tree(
+            self.notebook, ("metric", "h", "v"), ("Metric", "H-Pol", "V-Pol")
+        )
+        self.consistency_tree = self._make_tree(
+            self.notebook,
+            ("field", "state", "baseline", "current"),
+            ("Field", "State", "Baseline", "Current"),
+        )
+        self.audit_tree = self._make_tree(
+            self.notebook, ("kind", "freqs"), ("Change", "Frequencies (MHz)")
+        )
+        self.delta_tree = self._make_tree(
+            self.notebook, ("freq", "dh", "dv"), ("Freq (MHz)", "Δ H (dB)", "Δ V (dB)")
+        )
 
         self.notebook.add(self.stats_tree.master, text="Summary")
         self.notebook.add(self.consistency_tree.master, text="Consistency")
@@ -150,8 +154,7 @@ class CalDriftDialog:
         self.right_frame = ttk.Frame(parent)
         parent.add(self.right_frame, weight=2)
 
-        header = ttk.Label(self.right_frame, text="Drift plot",
-                           font=("TkDefaultFont", 11, "bold"))
+        header = ttk.Label(self.right_frame, text="Drift plot", font=("TkDefaultFont", 11, "bold"))
         header.pack(anchor="w", padx=4, pady=(2, 4))
 
         self.plot_container = ttk.Frame(self.right_frame)
@@ -165,8 +168,9 @@ class CalDriftDialog:
         ttk.Button(btn_frame, text="Export PDF…", command=lambda: self._export("pdf")).pack(
             side=tk.LEFT, padx=2
         )
-        ttk.Button(btn_frame, text="Export Markdown…",
-                   command=lambda: self._export("markdown")).pack(side=tk.LEFT, padx=2)
+        ttk.Button(
+            btn_frame, text="Export Markdown…", command=lambda: self._export("markdown")
+        ).pack(side=tk.LEFT, padx=2)
 
     # ──────────────────────────────────────────────────────────────────
     # Data loading
@@ -221,10 +225,8 @@ class CalDriftDialog:
             return
         self.tree.selection_set(iid)
         menu = tk.Menu(self.top, tearoff=0)
-        menu.add_command(label="Set as Baseline",
-                         command=lambda: self._set_role(iid, "baseline"))
-        menu.add_command(label="Set as Current",
-                         command=lambda: self._set_role(iid, "current"))
+        menu.add_command(label="Set as Baseline", command=lambda: self._set_role(iid, "baseline"))
+        menu.add_command(label="Set as Current", command=lambda: self._set_role(iid, "current"))
         menu.add_separator()
         menu.add_command(label="Edit setup group…", command=lambda: self._edit_setup_group(iid))
         menu.add_command(label="Edit notes…", command=lambda: self._edit_notes(iid))
@@ -329,8 +331,7 @@ class CalDriftDialog:
         if not self.baseline_run_id or not self.current_run_id:
             messagebox.showinfo(
                 "Select runs",
-                "Right-click two runs to mark them as Baseline and Current, "
-                "then click Compare.",
+                "Right-click two runs to mark them as Baseline and Current, " "then click Compare.",
                 parent=self.top,
             )
             return
@@ -384,14 +385,20 @@ class CalDriftDialog:
         appeared = result.missing_audit["appeared_in_current"]
         disappeared = result.missing_audit["disappeared_in_current"]
         self.audit_tree.insert(
-            "", "end",
-            values=(f"Appeared in current ({len(appeared)})",
-                    ", ".join(f"{f:.1f}" for f in appeared[:50]) or "(none)"),
+            "",
+            "end",
+            values=(
+                f"Appeared in current ({len(appeared)})",
+                ", ".join(f"{f:.1f}" for f in appeared[:50]) or "(none)",
+            ),
         )
         self.audit_tree.insert(
-            "", "end",
-            values=(f"Disappeared from current ({len(disappeared)})",
-                    ", ".join(f"{f:.1f}" for f in disappeared[:50]) or "(none)"),
+            "",
+            "end",
+            values=(
+                f"Disappeared from current ({len(disappeared)})",
+                ", ".join(f"{f:.1f}" for f in disappeared[:50]) or "(none)",
+            ),
         )
 
         # Raw deltas (cap at 1000 rows for UI perf)

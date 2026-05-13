@@ -342,7 +342,11 @@ def history_dir() -> Path:
     else:
         settings = _read_user_settings()
         configured = settings.get("cal_drift_dir")
-        p = Path(os.path.expanduser(configured)) if configured else (_user_data_dir() / _DEFAULT_HISTORY_SUBDIR)
+        p = (
+            Path(os.path.expanduser(configured))
+            if configured
+            else (_user_data_dir() / _DEFAULT_HISTORY_SUBDIR)
+        )
     p.mkdir(parents=True, exist_ok=True)
     (p / "points").mkdir(parents=True, exist_ok=True)
     return p
@@ -619,9 +623,7 @@ def import_historical_dir(
         return result
 
     cal_files = [
-        p
-        for p in root_p.rglob("TRP Cal *.txt")
-        if not p.name.startswith("TRP Cal Summary")
+        p for p in root_p.rglob("TRP Cal *.txt") if not p.name.startswith("TRP Cal Summary")
     ]
     total = len(cal_files)
     for i, cal in enumerate(cal_files, start=1):
@@ -655,7 +657,7 @@ def import_historical_dir(
 
 def _find_matching_summary(cal_file: Path) -> Optional[Path]:
     """Find the 'TRP Cal Summary *.txt' paired with a TRP Cal file."""
-    want_suffix = cal_file.name[len("TRP Cal "):]
+    want_suffix = cal_file.name[len("TRP Cal ") :]
     candidate = cal_file.parent / f"TRP Cal Summary {want_suffix}"
     if candidate.exists():
         return candidate
@@ -797,15 +799,13 @@ def compute_drift(baseline_run_id: str, current_run_id: str) -> DriftResult:
     if base_meta is None or cur_meta is None:
         raise ValueError(f"Unknown run_id(s): {baseline_run_id}, {current_run_id}")
 
-    base = load_points(baseline_run_id).rename(
-        columns={"hpol_dbm": "base_h", "vpol_dbm": "base_v"}
-    )
-    cur = load_points(current_run_id).rename(
-        columns={"hpol_dbm": "cur_h", "vpol_dbm": "cur_v"}
-    )
+    base = load_points(baseline_run_id).rename(columns={"hpol_dbm": "base_h", "vpol_dbm": "base_v"})
+    cur = load_points(current_run_id).rename(columns={"hpol_dbm": "cur_h", "vpol_dbm": "cur_v"})
 
-    merged = pd.merge(base, cur, on="freq_mhz", how="outer").sort_values("freq_mhz").reset_index(
-        drop=True
+    merged = (
+        pd.merge(base, cur, on="freq_mhz", how="outer")
+        .sort_values("freq_mhz")
+        .reset_index(drop=True)
     )
     merged["d_h"] = merged["cur_h"] - merged["base_h"]
     merged["d_v"] = merged["cur_v"] - merged["base_v"]
@@ -867,8 +867,14 @@ def render_delta_plot(result: DriftResult, out_path: Optional[str | os.PathLike]
         ax.plot(freq, d, color="#1976d2", linewidth=1.0)
         mask = np.abs(d) > _OUTLIER_DB
         if mask.any():
-            ax.scatter(freq[mask], d[mask], color="#d32f2f", s=18, zorder=3,
-                       label=f"|Δ| > {_OUTLIER_DB} dB")
+            ax.scatter(
+                freq[mask],
+                d[mask],
+                color="#d32f2f",
+                s=18,
+                zorder=3,
+                label=f"|Δ| > {_OUTLIER_DB} dB",
+            )
             ax.legend(loc="upper right", fontsize=8)
         ax.set_ylabel(f"{pol} Δ (dB)")
         ax.grid(True, alpha=0.3)
@@ -906,14 +912,22 @@ def export_markdown(result: DriftResult, out_path: str | os.PathLike) -> None:
             f"{s['max_abs']:.3f} | {s['pct_gt_0_5']:.1f} | {s['pct_gt_1']:.1f} |"
         )
 
-    lines += ["", "## Method consistency", "", "| Field | State | Baseline | Current |", "|-------|-------|----------|---------|"]
+    lines += [
+        "",
+        "## Method consistency",
+        "",
+        "| Field | State | Baseline | Current |",
+        "|-------|-------|----------|---------|",
+    ]
     for k, v in result.consistency.items():
         lines.append(f"| {k} | {v['state']} | {v['baseline']} | {v['current']} |")
 
     lines += ["", "## Frequency audit", ""]
     audit = result.missing_audit
     lines.append(f"- Appeared in current (not in baseline): {len(audit['appeared_in_current'])}")
-    lines.append(f"- Disappeared in current (missing vs baseline): {len(audit['disappeared_in_current'])}")
+    lines.append(
+        f"- Disappeared in current (missing vs baseline): {len(audit['disappeared_in_current'])}"
+    )
 
     # Worst-offender list
     df = result.deltas.dropna(subset=["d_h", "d_v"]).copy()
@@ -968,8 +982,16 @@ def export_pdf(result: DriftResult, out_path: str | os.PathLike) -> None:
         text.append("------------------")
         for k, v in result.consistency.items():
             text.append(f"  {k}: {v['state']}  (base={v['baseline']!r}, cur={v['current']!r})")
-        ax.text(0.01, 0.99, "\n".join(text), family="monospace", fontsize=9,
-                va="top", ha="left", transform=ax.transAxes)
+        ax.text(
+            0.01,
+            0.99,
+            "\n".join(text),
+            family="monospace",
+            fontsize=9,
+            va="top",
+            ha="left",
+            transform=ax.transAxes,
+        )
         pdf.savefig(fig2)
 
 
