@@ -1,0 +1,121 @@
+/* RFlect docs — brand polish */
+
+:root {
+  --md-primary-fg-color:        #1e3a8a;   /* deep indigo */
+  --md-primary-fg-color--light: #3b5bcb;
+  --md-primary-fg-color--dark:  #14264a;
+  --md-accent-fg-color:         #06b6d4;   /* cyan — RF "signal" accent */
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #1e3a8a;
+  --md-accent-fg-color:         #22d3ee;
+  --md-default-bg-color:        #0b1020;
+  --md-default-bg-color--light: #131a2d;
+}
+
+/* Logo crispness */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.7rem;
+}
+
+/* Tighten code blocks */
+.md-typeset pre > code {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* Cards on the landing page (used in index.md via attr_list / def_list) */
+.rflect-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin: 1.4rem 0 2rem;
+}
+
+.rflect-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 0.6rem;
+  background: var(--md-default-bg-color--lightest, rgba(0, 0, 0, 0.03));
+  border: 1px solid rgba(127, 127, 127, 0.18);
+  text-decoration: none !important;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.rflect-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 6px 18px -10px rgba(6, 182, 212, 0.45);
+}
+
+.rflect-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--md-primary-fg-color--light);
+  font-size: 0.98rem;
+}
+
+[data-md-color-scheme="slate"] .rflect-card strong {
+  color: var(--md-accent-fg-color);
+}
+
+.rflect-card span {
+  display: block;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* Hero strip on landing page */
+.rflect-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1rem 0 0.5rem;
+}
+
+.rflect-hero img {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.rflect-hero-text h1 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.rflect-hero-text p {
+  margin: 0.25rem 0 0;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 600px) {
+  .rflect-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* Screenshot framing */
+.rflect-screenshot {
+  display: block;
+  max-width: 100%;
+  margin: 0.6rem auto 1.2rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.18);
+}
+
+/* Table polish */
+.md-typeset table:not([class]) th {
+  background: var(--md-primary-fg-color);
+  color: white;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background: var(--md-primary-fg-color--light);
+}
