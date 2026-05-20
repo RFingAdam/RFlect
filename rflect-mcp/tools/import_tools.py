@@ -46,6 +46,61 @@ def get_loaded_data_summary() -> str:
         return summary
 
 
+def _build_active_analyzer_data(file_path: str):
+    """Read an active TRP file and return the analyzer-compatible data dict.
+
+    Shared by import_antenna_file (when scan_type='active') and import_active_processed
+    so both produce the post-processed shape that report_tools/_generate_active_plots
+    and the analyzer expect. See issue #63.
+
+    Returns (data_dict, frequency_mhz).
+    """
+    raw = read_active_file(file_path)
+    frequency = raw.get('Frequency', raw.get('frequency', 0))
+
+    result = calculate_active_variables(
+        raw['Start Phi'], raw['Stop Phi'],
+        raw['Start Theta'], raw['Stop Theta'],
+        raw['Inc Phi'], raw['Inc Theta'],
+        np.array(raw['H_Power_dBm']),
+        np.array(raw['V_Power_dBm']),
+    )
+    (data_points, theta_deg, phi_deg, theta_rad, phi_rad,
+     total_power_2d, h_power_2d, v_power_2d,
+     phi_deg_plot, phi_rad_plot,
+     total_power_2d_plot, h_power_2d_plot, v_power_2d_plot,
+     total_power_min, total_power_nom,
+     h_power_min, h_power_nom,
+     v_power_min, v_power_nom,
+     TRP_dBm, h_TRP_dBm, v_TRP_dBm) = result
+
+    analyzer_data = {
+        # Flattened arrays for AntennaAnalyzer backward compatibility
+        'total_power': total_power_2d.flatten(),
+        'h_power': h_power_2d.flatten(),
+        'v_power': v_power_2d.flatten(),
+        'TRP_dBm': float(TRP_dBm),
+        'h_TRP_dBm': float(h_TRP_dBm),
+        'v_TRP_dBm': float(v_TRP_dBm),
+        'theta': theta_deg,
+        'phi': phi_deg,
+        # 2D arrays for plotting
+        'data_points': data_points,
+        'theta_rad': theta_rad,
+        'phi_rad': phi_rad,
+        'total_power_2d': total_power_2d,
+        'h_power_2d': h_power_2d,
+        'v_power_2d': v_power_2d,
+        # Extended arrays for 3D plot wrapping
+        'phi_deg_plot': phi_deg_plot,
+        'phi_rad_plot': phi_rad_plot,
+        'total_power_2d_plot': total_power_2d_plot,
+        'h_power_2d_plot': h_power_2d_plot,
+        'v_power_2d_plot': v_power_2d_plot,
+    }
+    return analyzer_data, frequency
+
+
 def register_import_tools(mcp):
     """Register import tools with the MCP server."""
 
@@ -90,15 +145,11 @@ def register_import_tools(mcp):
                     'inc_theta': inc_theta,
                 }
             else:
-                data = read_active_file(file_path)
-                # Active data is a dict with 'Frequency' key
-                frequencies = []
-                if isinstance(data, dict) and 'Frequency' in data:
-                    frequencies = [data['Frequency']]
-                elif isinstance(data, dict) and 'frequency' in data:
-                    frequencies = [data['frequency']]
-                elif isinstance(data, list):
-                    frequencies = [d.get('frequency', 0) for d in data if isinstance(d, dict)]
+                # Active: always run calculate_active_variables so the loaded dict
+                # contains the post-processed keys that report_tools expects.
+                # See issue #63.
+                data, frequency = _build_active_analyzer_data(file_path)
+                frequencies = [frequency]
 
             # Store the measurement
             name = os.path.basename(file_path)
@@ -110,6 +161,14 @@ def register_import_tools(mcp):
                     data=data
                 )
 
+            if scan_type == "active":
+                return (
+                    f"Successfully imported: {name}\n"
+                    f"Type: active\n"
+                    f"Frequency: {frequencies[0]} MHz\n"
+                    f"TRP: {data['TRP_dBm']:.2f} dBm\n"
+                    f"Data points: {data['data_points']}"
+                )
             return f"Successfully imported: {name}\nType: {scan_type}\nFrequencies: {frequencies}\nData points loaded."
 
         except Exception as e:
@@ -274,52 +333,7 @@ def register_import_tools(mcp):
             return f"Error: File not found: {file_path}"
 
         try:
-            raw = read_active_file(file_path)
-
-            frequency = raw.get('Frequency', raw.get('frequency', 0))
-
-            result = calculate_active_variables(
-                raw['Start Phi'], raw['Stop Phi'],
-                raw['Start Theta'], raw['Stop Theta'],
-                raw['Inc Phi'], raw['Inc Theta'],
-                np.array(raw['H_Power_dBm']),
-                np.array(raw['V_Power_dBm']),
-            )
-
-            (data_points, theta_deg, phi_deg, theta_rad, phi_rad,
-             total_power_2d, h_power_2d, v_power_2d,
-             phi_deg_plot, phi_rad_plot,
-             total_power_2d_plot, h_power_2d_plot, v_power_2d_plot,
-             total_power_min, total_power_nom,
-             h_power_min, h_power_nom,
-             v_power_min, v_power_nom,
-             TRP_dBm, h_TRP_dBm, v_TRP_dBm) = result
-
-            # Build analyzer-compatible data dict
-            analyzer_data = {
-                # Flattened arrays for AntennaAnalyzer backward compatibility
-                'total_power': total_power_2d.flatten(),
-                'h_power': h_power_2d.flatten(),
-                'v_power': v_power_2d.flatten(),
-                'TRP_dBm': float(TRP_dBm),
-                'h_TRP_dBm': float(h_TRP_dBm),
-                'v_TRP_dBm': float(v_TRP_dBm),
-                'theta': theta_deg,
-                'phi': phi_deg,
-                # 2D arrays for plotting
-                'data_points': data_points,
-                'theta_rad': theta_rad,
-                'phi_rad': phi_rad,
-                'total_power_2d': total_power_2d,
-                'h_power_2d': h_power_2d,
-                'v_power_2d': v_power_2d,
-                # Extended arrays for 3D plot wrapping
-                'phi_deg_plot': phi_deg_plot,
-                'phi_rad_plot': phi_rad_plot,
-                'total_power_2d_plot': total_power_2d_plot,
-                'h_power_2d_plot': h_power_2d_plot,
-                'v_power_2d_plot': v_power_2d_plot,
-            }
+            analyzer_data, frequency = _build_active_analyzer_data(file_path)
 
             if name == "auto":
                 name = os.path.basename(file_path).replace(".txt", "").strip()
@@ -335,11 +349,12 @@ def register_import_tools(mcp):
             return (
                 f"Successfully imported active file: {name}\n"
                 f"Frequency: {frequency} MHz\n"
-                f"Data points: {data_points}\n"
-                f"TRP: {TRP_dBm:.2f} dBm\n"
-                f"H-TRP: {h_TRP_dBm:.2f} dBm | V-TRP: {v_TRP_dBm:.2f} dBm\n"
-                f"Max total power: {float(np.max(total_power_2d)):.2f} dBm\n"
-                f"Min total power: {float(np.min(total_power_2d)):.2f} dBm"
+                f"Data points: {analyzer_data['data_points']}\n"
+                f"TRP: {analyzer_data['TRP_dBm']:.2f} dBm\n"
+                f"H-TRP: {analyzer_data['h_TRP_dBm']:.2f} dBm | "
+                f"V-TRP: {analyzer_data['v_TRP_dBm']:.2f} dBm\n"
+                f"Max total power: {float(np.max(analyzer_data['total_power_2d'])):.2f} dBm\n"
+                f"Min total power: {float(np.min(analyzer_data['total_power_2d'])):.2f} dBm"
             )
 
         except Exception as e:
