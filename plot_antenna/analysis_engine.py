@@ -323,9 +323,25 @@ class AntennaAnalyzer:
         # Sort by gain value (descending)
         local_max.sort(key=lambda i: cut_gain[i], reverse=True)
 
-        main_gain = float(cut_gain[local_max[0]])
+        main_idx = local_max[0]
+        main_gain = float(cut_gain[main_idx])
+
+        # Main-lobe guard: exclude any local maximum that lies inside the main
+        # lobe itself (a shoulder/ripple on the main beam is not a sidelobe).
+        # The main-lobe region is the contiguous span around the peak that stays
+        # within 3 dB of the peak; walk outward until the gain drops below it.
+        threshold = main_gain - 3.0
+        left = main_idx
+        while left - 1 >= 0 and cut_gain[left - 1] >= threshold:
+            left -= 1
+        right = main_idx
+        while right + 1 < len(cut_gain) and cut_gain[right + 1] >= threshold:
+            right += 1
+
         sidelobes = []
-        for idx in local_max[1 : num_sidelobes + 1]:
+        for idx in local_max[1:]:
+            if left <= idx <= right:
+                continue  # inside the main lobe — not a sidelobe
             sll = float(cut_gain[idx]) - main_gain
             sidelobes.append(
                 {
@@ -334,6 +350,8 @@ class AntennaAnalyzer:
                     "sll_dB": sll,
                 }
             )
+            if len(sidelobes) >= num_sidelobes:
+                break
 
         return sidelobes
 
