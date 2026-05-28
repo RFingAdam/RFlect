@@ -1,5 +1,47 @@
 # RFlect - Release Notes
 
+## Version 5.0.0 (05/28/2026)
+
+**Major release — zero-dependency, MCP-first relaunch.**
+
+RFlect no longer makes any outbound LLM/API calls and needs **no API key and no subscription.** It is now a fully deterministic RF analysis + rendering toolkit. When driven over MCP, the AI agent *is* the LLM: it calls RFlect's tools for computed data and authors any report narrative itself. Every value RFlect produces is reproducible.
+
+### Breaking changes
+
+- **Removed the entire in-app AI/LLM stack**: the GUI AI chat assistant, GUI AI-report generation, the multi-provider LLM abstraction (`plot_antenna/llm_provider.py`), and the encrypted API-key store (`plot_antenna/api_keys.py`).
+- **`generate_report` no longer accepts `ai_*` options or calls any LLM.** Report prose is deterministic and data-driven by default.
+- **`plot_antenna/ai_analysis.py` renamed to `plot_antenna/analysis_engine.py`** (it was always pure NumPy compute — the old name was a misnomer). `AntennaAnalyzer` is unchanged and still backs every MCP analysis tool.
+- Removed the `AI_*` keys from the config template and the `ai_*` flags from report templates.
+
+### New features
+
+- **Agent-authored report narrative.** `generate_report` gained an optional `narrative` dict so the driving MCP agent can supply `executive_summary`, `section_analysis` (per measurement), `recommendations`, and per-figure `captions`. Any omitted key falls back to the deterministic text.
+- **6 new MCP tools** (MCP count 35 → 41, 9 categories):
+  - `compare_antennas` — cross-measurement overlay: per-frequency peak gain/TRP, deltas vs a reference, best-per-frequency, optional CSV.
+  - `analyze_s11` — return loss / impedance bandwidth / VSWR / resonance from an S11 sweep.
+  - `analyze_group_delay` — group delay + in-band flatness from a transmission-phase sweep.
+  - `estimate_link_budget` — max range + link margin via Friis / log-distance / ITU-indoor, with optional Rayleigh/Rician fade margin.
+  - `analyze_mimo_diversity` — ECC → Vaughan-Andersen diversity gain + 2×2 capacity + isolation rating.
+  - `generate_active_cal` — scriptable active chamber cal-file generation (records into cal-drift history).
+- All new tools reuse RFlect's existing tested math (`calculations.py`, `uwb_analysis.py`, `analysis_engine.py`, `file_utils.py`); none reimplement it. Each returns a structured dict and never raises.
+
+### Documentation
+
+- 10/10 docs relaunch: removed the AI section, reframed the landing page + MCP overview to the zero-dependency story, added a **measurement-type matrix** (`reference/measurement-types.md`) covering every scan type and analysis with its MCP tool, documented the new tools + an agent-narrative recipe, and rewrote `AI_STATUS.md` → `MCP_STATUS.md`.
+- **Cross-platform setup guides** (Linux/macOS/Windows) in `docs/mcp/installation.md`, the README, and the MCP README, with per-OS client-config locations and venv Python paths.
+
+### Engineering / CI
+
+- Verified functional on **Windows, Linux, and macOS** across Python 3.11/3.12 (full CI matrix green). All file IO pins `encoding="utf-8"` (Windows cp1252-safe).
+- Modernized CI actions (checkout@v5, cache@v4, codecov@v5, action-gh-release@v2) and opted into Node 24.
+- Scrubbed personal paths from the repo; tightened `.gitignore`.
+
+### Tests
+
+- Full suite: 327 passed / 148 skipped. New tests cover the agent-narrative report path and all 6 new MCP tools.
+
+---
+
 ## Version 4.3.0 (05/28/2026)
 
 **Feature release — multi-angle throughput-validation MCP tool.**
