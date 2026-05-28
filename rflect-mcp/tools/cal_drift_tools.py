@@ -250,6 +250,19 @@ def cal_drift_recert_check(
     )
 
 
+def cal_drift_cable_loss_history(
+    antenna: Optional[str] = None, band: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Cable-loss .s2p references tracked across recorded cal runs (#5).
+
+    Returns one entry per run that recorded a cable-loss file, date-ordered, so
+    a cable swap (a common chamber-drift source) is auditable.
+
+    Returns: list of {run_id, date, cal_type, cable_loss_file, cable_loss_sha256}.
+    """
+    return cal_drift.cable_loss_history(antenna=antenna, band=band)
+
+
 def register_cal_drift_tools(mcp):
     """Register calibration-drift tools with the MCP server."""
     mcp.tool()(cal_drift_ingest)
@@ -263,3 +276,4 @@ def register_cal_drift_tools(mcp):
     mcp.tool()(cal_drift_alert)
     mcp.tool()(cal_drift_monitor)
     mcp.tool()(cal_drift_recert_check)
+    mcp.tool()(cal_drift_cable_loss_history)

@@ -72,6 +72,9 @@ class CalRunMeta:
     operator_notes: str = ""
     ingested_at: str = ""
     setup_group: str = ""  # user-assigned methodology epoch; empty == default
+    cal_type: str = "active"  # "active" | "passive" (#6)
+    cable_loss_file: str = ""  # .s2p cable-loss reference tracked with the run (#5)
+    cable_loss_sha256: str = ""
 
 
 @dataclass
@@ -475,11 +478,20 @@ def record_run(
     hpol_ref_file: str = "",
     vpol_ref_file: str = "",
     operator_notes: str = "",
+    cal_type: str = "active",
+    cable_loss_file: str = "",
 ) -> Optional[CalRunMeta]:
     """Record one calibration run to the drift history. Idempotent on output SHA.
 
     `cal_result` is the dict returned by `generate_active_cal_file`:
     {output_path, summary_path, rows_written, rows_missing}.
+
+    Args (added v6.0):
+        cal_type: "active" (default) or "passive" — passive cal files in the
+            same Freq/H-Pol/V-Pol tabular format are tracked + drift-compared
+            identically (#6).
+        cable_loss_file: optional .s2p cable-loss reference tracked alongside
+            the run so cable-loss history is auditable over time (#5).
 
     Returns the recorded CalRunMeta, or None if it was a duplicate.
     """
@@ -543,6 +555,13 @@ def record_run(
         rows_missing=int(cal_result.get("rows_missing") or 0),
         operator_notes=operator_notes,
         ingested_at=_dt.datetime.now().isoformat(timespec="seconds"),
+        cal_type=cal_type if cal_type in ("active", "passive") else "active",
+        cable_loss_file=cable_loss_file,
+        cable_loss_sha256=(
+            sha256_file(cable_loss_file)
+            if cable_loss_file and os.path.exists(cable_loss_file)
+            else ""
+        ),
     )
 
     _write_points_csv(run_id, points, hdir)
@@ -875,6 +894,36 @@ def evaluate_drift_alert(
         "alert_db": alert_db,
         "reasons": reasons,
     }
+
+
+def cable_loss_history(antenna: Optional[str] = None, band: Optional[str] = None) -> list:
+    """Cable-loss .s2p references tracked across recorded cal runs (#5).
+
+    Returns one entry per run that has a cable_loss_file, ordered by date, so an
+    operator can audit which cable-loss file each calibration used and spot when
+    it changed (a cable swap is a common drift source).
+
+    Returns: [{run_id, date, cal_type, cable_loss_file, cable_loss_sha256}, ...].
+    """
+    df = list_runs(antenna=antenna, band=band)
+    if df is None or len(df) == 0:
+        return []
+    out = []
+    for _, row in df.iterrows():
+        clf = str(row.get("cable_loss_file", "") or "").strip()
+        if clf.lower() in ("", "nan", "none"):  # CSV round-trip turns empty -> NaN -> "nan"
+            continue
+        out.append(
+            {
+                "run_id": str(row.get("run_id", "")),
+                "date": str(row.get("date", "")),
+                "cal_type": str(row.get("cal_type", "active") or "active"),
+                "cable_loss_file": clf,
+                "cable_loss_sha256": str(row.get("cable_loss_sha256", "") or ""),
+            }
+        )
+    out.sort(key=lambda r: r["date"])
+    return out
 
 
 def gain_standard_recert_status(
