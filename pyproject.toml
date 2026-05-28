@@ -60,6 +60,12 @@ exe = [
     "pyinstaller>=6.18.0",
     "pyinstaller-hooks-contrib>=2026.0",
 ]
+# Optional: live instrument / positioner control (VNA over SCPI, serial
+# positioners). The automation tools fall back to in-memory mocks without these.
+instruments = [
+    "pyvisa>=1.14.0",
+    "pyserial>=3.5",
+]
 
 [project.urls]
 Homepage = "https://github.com/RFingAdam/RFlect"
