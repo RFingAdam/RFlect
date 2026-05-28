@@ -1487,12 +1487,24 @@ def fade_margin_for_reliability(reliability_pct, fading="rayleigh", K=10):
         ratio_lin = -np.log(1.0 - outage)
         return -10.0 * np.log10(ratio_lin)
     else:  # rician
-        # Use inverse of Gaussian approximation
-        sigma_db = 4.34 / np.sqrt(2 * K + 1)
-        # z such that Φ(z) = outage → z = Φ^(-1)(outage)
-        # Using Beasley-Springer-Moro approximation for inverse normal
-        z = _norm_ppf_approx(outage)
-        return -z * sigma_db  # margin below mean
+        # Exact Rician: the instantaneous power normalized to its mean is
+        # noncentral chi-square (df=2, nc=2K), scaled so the mean is 1:
+        #     gamma_norm = ncx2(df=2, nc=2K) / (2(K+1))
+        # Outage = P(gamma_norm <= x_n); invert for the normalized fade
+        # threshold x_n, then margin = -10*log10(x_n). This reduces exactly to
+        # the Rayleigh result as K -> 0 (ncx2 df=2 nc=0 == chi2 df=2).
+        try:
+            from scipy.stats import ncx2
+
+            x_n = ncx2.ppf(outage, df=2, nc=2.0 * K) / (2.0 * (K + 1.0))
+            if not np.isfinite(x_n) or x_n <= 0:
+                raise ValueError("non-physical inverse")
+            return -10.0 * np.log10(x_n)
+        except Exception:
+            # Fallback: log-normal (dB-Gaussian) approximation.
+            sigma_db = 4.34 / np.sqrt(2 * K + 1)
+            z = _norm_ppf_approx(outage)
+            return -z * sigma_db
 
 
 def _norm_ppf_approx(p):
