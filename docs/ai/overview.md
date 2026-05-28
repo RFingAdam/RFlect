@@ -3,7 +3,7 @@
 RFlect has optional AI integration on two surfaces:
 
 1. **In-GUI** — AI Chat Assistant + AI-powered DOCX reports
-2. **MCP** — agent clients (Claude Code, Cline, …) drive RFlect programmatically via 34 tools
+2. **MCP** — agent clients (Claude Code, Cline, …) drive RFlect programmatically via 35 tools
 
 Both are powered by the same unified provider abstraction in `plot_antenna/llm_provider.py`, which supports **OpenAI**, **Anthropic**, and **Ollama**.
 

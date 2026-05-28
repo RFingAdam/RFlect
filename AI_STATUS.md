@@ -1,7 +1,7 @@
 # RFlect AI Features — Status & Roadmap
 
-**Last Updated**: May 12, 2026
-**Current Version**: v4.2.0
+**Last Updated**: May 28, 2026
+**Current Version**: v4.3.0
 **Status**: Beta / Enabled in GUI and MCP
 
 ---
@@ -13,7 +13,7 @@ RFlect ships AI-powered features for intelligent antenna analysis. A unified pro
 There are two integration surfaces:
 
 1. **In-GUI** — AI Chat Assistant + AI-powered report generation, accessible from the desktop app.
-2. **MCP server** — `rflect-mcp/server.py` exposes 34 tools an AI agent (Claude Code, Cline, etc.) can call programmatically.
+2. **MCP server** — `rflect-mcp/server.py` exposes 35 tools an AI agent (Claude Code, Cline, etc.) can call programmatically.
 
 ## What Works
 
@@ -59,7 +59,7 @@ There are two integration surfaces:
 - Restrictive file permissions (chmod 600 / Windows ACL)
 - Keys stored in `_key_cache` dict instead of `os.environ`
 
-### 5. MCP Server (34 tools)
+### 5. MCP Server (35 tools)
 **Status**: Complete
 
 | Category       | Count | Examples                                                                          |
@@ -71,6 +71,7 @@ There are two integration surfaces:
 | UWB            | 3     | `calculate_sff_from_files`, `analyze_uwb_channel`, `get_impedance_bandwidth`      |
 | Calibration Drift | 8 | `cal_drift_ingest`, `cal_drift_compare`, `cal_drift_report`, `cal_drift_set_setup_group` |
 | Orchestration  | 1     | `process_folder` *(new in v4.2.0)*                                                |
+| Validation     | 1     | `analyze_iperf_angle_sweep` *(new in v4.3.0)*                                     |
 | Misc           | 3     | `get_measurement_details`, `validate_file_pair`, `convert_to_cst`                 |
 
 #### `process_folder` (v4.2.0)
@@ -83,6 +84,17 @@ process_folder(folder_path, intent='auto'|'passive'|'active'|'cal_drift'|'uwb',
 ```
 
 Auto-detect priority: `cal_drift > passive > active > uwb`. Mixed folders proceed with the winner and surface a `mixed_intents_detected` warning. The tool never raises — every failure mode (missing folder, no match, partial pair, per-file UWB error, report write failure) returns as a structured warning.
+
+#### `analyze_iperf_angle_sweep` (v4.3.0)
+
+Compares two bench iperf sessions — an installed-antenna session and a matched reference-antenna session recorded at the same azimuth angles — to quantify how the installed antenna's real-environment throughput tracks a reference across the radiation pattern. For each `(channel, mode)` cell it computes per-angle deltas (installed − reference) and a roll-up (mean, median, worst-angle, best-angle, spread, p10/p90), then writes `summary.csv`, `summary.json`, a polar PNG per cell, and a `report.md` with a configurable adequacy verdict.
+
+```
+analyze_iperf_angle_sweep(session_dir, reference_session_dir, out_dir,
+                          mean_threshold_mbps=-5.0, worst_threshold_mbps=-10.0)
+```
+
+Reads only the documented bench `session.json` shape (`wifi_only` runs carrying `angle_deg` and `aggregate.overall_mbps`); no dependency on any bench harness. Like the orchestrator, it never raises — every failure mode returns as a structured warning.
 
 ---
 

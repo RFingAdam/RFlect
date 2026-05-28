@@ -35,7 +35,7 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 
 <a class="rflect-card" href="mcp/overview/">
 <strong>MCP Server →</strong>
-<span>34 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
+<span>35 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
 </a>
 
 <a class="rflect-card" href="mcp/recipes/">
@@ -58,7 +58,7 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 ## Built for the way RF labs actually work
 
 - **GUI** — desktop app (Tk-based, dark theme) for interactive review
-- **MCP server** — 34 tools that let Claude Code, Cline, and other AI clients drive RFlect programmatically
+- **MCP server** — 35 tools that let Claude Code, Cline, and other AI clients drive RFlect programmatically
 - **AI-assisted reports** — DOCX with embedded plots, gain tables, and optional LLM-generated executive summaries (OpenAI / Anthropic / Ollama)
 - **Cal-drift tracker** — record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches
 

@@ -83,6 +83,28 @@ Returns:
 
 See [Recipes](recipes.md) for usage patterns.
 
+## Validation (1)
+
+| Tool                       | Purpose                                                     |
+|----------------------------|-------------------------------------------------------------|
+| `analyze_iperf_angle_sweep(session_dir, reference_session_dir, out_dir, mean_threshold_mbps, worst_threshold_mbps)` | Per-angle throughput delta of an installed antenna vs a reference, across azimuth |
+
+Compares two bench iperf sessions — an installed-antenna session and a matched reference-antenna session recorded at the same azimuth angles. For each `(channel, mode)` cell it computes the per-angle deltas (installed − reference) and a roll-up: mean, median, worst-angle, best-angle, spread, and p10/p90. It writes `summary.csv`, `summary.json`, a polar PNG per cell, and a markdown `report.md` with a configurable adequacy verdict.
+
+Returns:
+```python
+{
+  "summary_csv":  str | None,
+  "summary_json": str | None,
+  "report_md":    str | None,
+  "polar_pngs":   list[str],
+  "n_cells":      int,
+  "warnings":     list[str],     # never raises; failures here
+}
+```
+
+Reads only the documented bench `session.json` shape (`wifi_only` runs carrying `angle_deg` and `aggregate.overall_mbps`); it has no dependency on any specific bench harness. See [Recipes](recipes.md) for usage patterns.
+
 ## Misc (3)
 
 | Tool                       | Purpose                                                     |
