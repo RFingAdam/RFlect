@@ -3,7 +3,7 @@ Analysis Tools for RFlect MCP Server
 
 Provides pattern analysis, gain statistics, polarization comparison,
 and frequency extrapolation.
-Uses plot_antenna.ai_analysis.AntennaAnalyzer for core functionality.
+Uses plot_antenna.analysis_engine.AntennaAnalyzer for core functionality.
 """
 
 import os
@@ -12,7 +12,7 @@ import json
 import numpy as np
 
 # Import from RFlect
-from plot_antenna.ai_analysis import AntennaAnalyzer
+from plot_antenna.analysis_engine import AntennaAnalyzer
 from plot_antenna.calculations import extrapolate_pattern, validate_extrapolation
 from plot_antenna.file_utils import read_passive_file
 from .import_tools import get_loaded_measurements, LoadedMeasurement

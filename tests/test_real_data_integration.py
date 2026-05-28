@@ -33,7 +33,7 @@ from plot_antenna.calculations import (
     extrapolate_pattern,
     validate_extrapolation,
 )
-from plot_antenna.ai_analysis import AntennaAnalyzer
+from plot_antenna.analysis_engine import AntennaAnalyzer
 
 
 # ---------------------------------------------------------------------------

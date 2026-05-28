@@ -57,7 +57,6 @@ class TestReportOptions:
         assert opts.frequencies is None
         assert opts.include_2d_plots is True
         assert opts.include_3d_plots is False
-        assert opts.ai_model == "gpt-4o-mini"
 
     def test_custom_options(self):
         """Verify ReportOptions can be overridden with custom values."""
