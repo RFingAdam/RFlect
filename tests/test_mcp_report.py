@@ -2,7 +2,7 @@
 Tests for RFlect MCP Report Pipeline
 
 Tests the branded DOCX report generation: plot generation, DOCX building,
-gain tables, LLM provider fallback, and end-to-end report flow.
+gain tables, deterministic narrative, and end-to-end report flow.
 """
 
 import sys
@@ -107,9 +107,6 @@ def default_opts():
     from tools.report_tools import ReportOptions
 
     return ReportOptions(
-        ai_executive_summary=False,
-        ai_section_analysis=False,
-        ai_recommendations=False,
         include_2d_plots=False,
         include_3d_plots=False,
     )
@@ -162,7 +159,6 @@ class TestReportOptionsBranded:
         assert opts.include_cover_page is True
         assert opts.include_table_of_contents is True
         assert opts.include_gain_tables is True
-        assert opts.ai_model == "gpt-4o-mini"
 
     def test_custom_metadata_passthrough(self):
         from tools.report_tools import ReportOptions
@@ -353,7 +349,7 @@ class TestBuildPatternProse:
     def test_pattern_prose_is_sentences(self, mock_passive_measurement):
         from tools.report_tools import _build_pattern_prose
         from tools.import_tools import _loaded_measurements, _measurements_lock
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         with _measurements_lock:
             _loaded_measurements["TestPassive"] = mock_passive_measurement
@@ -414,34 +410,6 @@ class TestBuildDataDrivenConclusions:
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestActive", None)
-
-
-# ---------------------------------------------------------------------------
-# Tests: _create_llm_provider
-# ---------------------------------------------------------------------------
-
-
-class TestCreateLLMProvider:
-    """Test LLM provider creation with graceful fallback."""
-
-    def test_no_key_returns_none(self, monkeypatch):
-        """Verify graceful None return when no API key is configured."""
-        from tools.report_tools import _create_llm_provider, ReportOptions
-
-        # Patch get_api_key to return None
-        monkeypatch.setattr(
-            "tools.report_tools.get_all_analysis",
-            lambda *a, **kw: "",
-        )
-        # _create_llm_provider imports internally, so we need to patch at source
-        import plot_antenna.api_keys as ak
-
-        monkeypatch.setattr(ak, "get_api_key", lambda _: None)
-
-        provider = _create_llm_provider(ReportOptions())
-        assert provider is None
-
-
 # ---------------------------------------------------------------------------
 # Tests: _prepare_report_data
 # ---------------------------------------------------------------------------
@@ -596,7 +564,7 @@ class TestConsolidatedPerformanceTable:
         from docx.shared import RGBColor
         from tools.report_tools import _build_consolidated_performance_table
         from tools.import_tools import _loaded_measurements, _measurements_lock
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         with _measurements_lock:
             _loaded_measurements["TestPassive"] = mock_passive_measurement
@@ -633,7 +601,7 @@ class TestConsolidatedPerformanceTable:
         from docx.shared import RGBColor
         from tools.report_tools import _build_consolidated_performance_table
         from tools.import_tools import _loaded_measurements, _measurements_lock
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         with _measurements_lock:
             _loaded_measurements["TestActive"] = mock_active_measurement
@@ -671,7 +639,7 @@ class TestPolarizationTable:
         from docx.shared import RGBColor
         from tools.report_tools import _build_polarization_table
         from tools.import_tools import _loaded_measurements, _measurements_lock
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         with _measurements_lock:
             _loaded_measurements["TestPassive"] = mock_passive_measurement
@@ -755,7 +723,6 @@ class TestBuildBrandedDocx:
                 {},
                 default_opts,
                 None,
-                None,
                 measurements,
             )
 
@@ -800,7 +767,6 @@ class TestBuildBrandedDocx:
                 report_data,
                 {},
                 default_opts,
-                None,
                 metadata,
                 measurements,
             )
@@ -834,9 +800,6 @@ class TestBuildBrandedDocx:
         try:
             opts = ReportOptions(
                 include_gain_tables=True,
-                ai_executive_summary=False,
-                ai_section_analysis=False,
-                ai_recommendations=False,
                 include_2d_plots=False,
                 include_3d_plots=False,
             )
@@ -848,7 +811,6 @@ class TestBuildBrandedDocx:
                 report_data,
                 {},
                 opts,
-                None,
                 None,
                 measurements,
             )
@@ -881,7 +843,6 @@ class TestBuildBrandedDocx:
                 report_data,
                 {},
                 default_opts,
-                None,
                 None,
                 measurements,
             )
@@ -918,7 +879,6 @@ class TestBuildBrandedDocx:
                 report_data,
                 {},
                 default_opts,
-                None,
                 None,
                 measurements,
             )
@@ -957,7 +917,6 @@ class TestBuildBrandedDocx:
                 {},
                 default_opts,
                 None,
-                None,
                 measurements,
             )
 
@@ -989,9 +948,6 @@ class TestBuildBrandedDocx:
 
         try:
             opts = ReportOptions(
-                ai_executive_summary=False,
-                ai_section_analysis=False,
-                ai_recommendations=False,
                 include_2d_plots=False,
                 include_3d_plots=False,
                 include_gain_tables=False,
@@ -1004,7 +960,6 @@ class TestBuildBrandedDocx:
                 report_data,
                 {},
                 opts,
-                None,
                 None,
                 measurements,
             )
@@ -1020,22 +975,6 @@ class TestBuildBrandedDocx:
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
-
-
-# ---------------------------------------------------------------------------
-# Tests: _generate_ai_text
-# ---------------------------------------------------------------------------
-
-
-class TestGenerateAIText:
-
-    def test_none_provider_returns_none(self):
-        from tools.report_tools import _generate_ai_text, ReportOptions
-
-        result = _generate_ai_text(None, "test", {"frequencies": []}, ReportOptions())
-        assert result is None
-
-
 # ---------------------------------------------------------------------------
 # Tests: End-to-end generate_report (via direct function call)
 # ---------------------------------------------------------------------------
@@ -1070,9 +1009,6 @@ class TestEndToEnd:
         try:
             opts = ReportOptions(
                 frequencies=[2450.0],
-                ai_executive_summary=False,
-                ai_section_analysis=False,
-                ai_recommendations=False,
                 include_gain_tables=True,
                 include_2d_plots=False,
                 include_3d_plots=False,
@@ -1091,7 +1027,6 @@ class TestEndToEnd:
                 report_data,
                 {},
                 opts,
-                None,
                 metadata,
                 measurements,
             )
@@ -1130,9 +1065,6 @@ class TestEndToEnd:
 
         try:
             opts = ReportOptions(
-                ai_executive_summary=False,
-                ai_section_analysis=False,
-                ai_recommendations=False,
                 include_gain_tables=True,
                 include_2d_plots=False,
                 include_3d_plots=False,
@@ -1145,7 +1077,6 @@ class TestEndToEnd:
                 report_data,
                 {},
                 opts,
-                None,
                 None,
                 measurements,
             )
@@ -1193,9 +1124,6 @@ class TestEndToEnd:
 
         try:
             opts = ReportOptions(
-                ai_executive_summary=False,
-                ai_section_analysis=False,
-                ai_recommendations=False,
                 include_gain_tables=True,
                 include_2d_plots=False,
                 include_3d_plots=False,
@@ -1208,7 +1136,6 @@ class TestEndToEnd:
                 report_data,
                 {},
                 opts,
-                None,
                 None,
                 measurements,
             )
@@ -1247,7 +1174,7 @@ class TestFreqComparisonTable:
         from docx import Document
         from docx.shared import RGBColor
         from tools.report_tools import _add_freq_comparison_table
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         analyzer = AntennaAnalyzer(
             measurement_data=mock_active_measurement.data,
@@ -1267,7 +1194,7 @@ class TestFreqComparisonTable:
         from docx import Document
         from docx.shared import RGBColor
         from tools.report_tools import _add_freq_comparison_table
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         analyzer = AntennaAnalyzer(
             measurement_data=mock_passive_measurement.data,
@@ -1486,7 +1413,7 @@ class TestBandContextInProse:
         """Pattern prose should label BLE channels at known frequencies."""
         from tools.report_tools import _build_pattern_prose, _detect_rf_band
         from tools.import_tools import _loaded_measurements, _measurements_lock
-        from plot_antenna.ai_analysis import AntennaAnalyzer
+        from plot_antenna.analysis_engine import AntennaAnalyzer
 
         ble_freqs = [2402.0, 2440.0, 2480.0]
         from tools.import_tools import LoadedMeasurement

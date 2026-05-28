@@ -1,5 +1,5 @@
 """
-Unit tests for plot_antenna.ai_analysis module
+Unit tests for plot_antenna.analysis_engine module
 
 Tests cover:
 - AntennaAnalyzer initialization for passive and active scans
@@ -14,7 +14,7 @@ All test data uses deterministic numpy arrays with known properties.
 import pytest
 import numpy as np
 
-from plot_antenna.ai_analysis import AntennaAnalyzer
+from plot_antenna.analysis_engine import AntennaAnalyzer
 
 
 # ---------------------------------------------------------------------------

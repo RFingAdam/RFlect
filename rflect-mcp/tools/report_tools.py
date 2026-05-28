@@ -2,8 +2,9 @@
 Report Tools for RFlect MCP Server
 
 Generates professional branded DOCX reports with embedded plots, gain tables,
-AI-generated summaries/conclusions/captions, and graceful fallback when no
-AI provider is configured.
+and deterministic, data-driven summaries/conclusions/captions. No LLM or API
+key is involved; a driving MCP agent may author narrative prose and supply it
+to generate_report (see the narrative parameters).
 """
 
 import os
@@ -42,11 +43,6 @@ class ReportOptions:
     include_gain_tables: bool = True
     max_frequencies_in_table: int = 10  # Limit table rows
 
-    # AI content
-    ai_executive_summary: bool = True
-    ai_section_analysis: bool = True
-    ai_recommendations: bool = True
-    ai_model: str = "gpt-4o-mini"  # Cost-effective default
 
     # Output
     output_format: str = "docx"  # docx, pdf (future)
@@ -63,43 +59,6 @@ class ReportOptions:
 
 # ---------------------------------------------------------------------------
 # LLM Provider Helper
-# ---------------------------------------------------------------------------
-
-def _create_llm_provider(opts: ReportOptions):
-    """Create an LLM provider for report generation based on config.
-
-    Returns BaseLLMProvider or None if no API key is configured.
-    """
-    try:
-        from plot_antenna.api_keys import get_api_key
-        from plot_antenna.llm_provider import create_provider
-        from plot_antenna import config
-
-        ai_provider = getattr(config, "AI_PROVIDER", "openai")
-
-        if ai_provider == "openai":
-            api_key = get_api_key("openai")
-            if not api_key:
-                return None
-            model = getattr(config, "AI_OPENAI_MODEL", opts.ai_model)
-            return create_provider("openai", api_key=api_key, model=model)
-        elif ai_provider == "anthropic":
-            api_key = get_api_key("anthropic")
-            if not api_key:
-                return None
-            model = getattr(config, "AI_ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-            return create_provider("anthropic", api_key=api_key, model=model)
-        elif ai_provider == "ollama":
-            model = getattr(config, "AI_OLLAMA_MODEL", "llama3.1")
-            base_url = getattr(config, "AI_OLLAMA_URL", "http://localhost:11434")
-            return create_provider("ollama", model=model, base_url=base_url)
-    except Exception:
-        pass
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Plot Generation
 # ---------------------------------------------------------------------------
 
 def _generate_plots(measurements: Dict[str, LoadedMeasurement], opts: ReportOptions,
@@ -565,31 +524,6 @@ def _sort_images_by_frequency(img_paths: List[str]) -> List[str]:
 
 # ---------------------------------------------------------------------------
 # AI Text Generation
-# ---------------------------------------------------------------------------
-
-def _generate_ai_text(provider, prompt: str, data: Dict, opts: ReportOptions,
-                      max_tokens: int = 500) -> Optional[str]:
-    """Generate AI text using an LLM provider. Returns None on failure."""
-    if provider is None:
-        return None
-    try:
-        from plot_antenna.llm_provider import LLMMessage
-
-        all_analysis = []
-        for freq in data["frequencies"][:3]:
-            all_analysis.append(get_all_analysis(freq))
-
-        full_prompt = f"{prompt}\n\nMeasurement Data:\n" + "\n".join(all_analysis)
-        response = provider.chat(
-            [LLMMessage(role="user", content=full_prompt)], max_tokens=max_tokens
-        )
-        return response.content or None
-    except Exception:
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Branded DOCX Builder
 # ---------------------------------------------------------------------------
 
 def _fmt(val, fmt=".2f", suffix=""):
@@ -1246,7 +1180,7 @@ def _add_freq_comparison_table(doc, antenna_analyzer, add_branded_heading, brand
 
 def _build_branded_docx(output_path: str, report_data: Dict,
                         plot_images: Dict[str, List[str]],
-                        opts: ReportOptions, provider, metadata: Optional[Dict],
+                        opts: ReportOptions, metadata: Optional[Dict],
                         measurements: Dict[str, LoadedMeasurement]):
     """Build a professional branded DOCX report with data-driven content.
 
@@ -1414,29 +1348,11 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     # ------------------------------------------------------------------ #
     add_branded_heading(doc, "Executive Summary", level=1)
 
-    # Always build data-driven summary as the baseline
+    # Data-driven executive summary
     summary_paragraphs = _build_executive_summary(measurements, opts,
                                                    band_info_map=band_info_map)
-
-    if opts.ai_executive_summary:
-        # Try AI enhancement; fall back to data-driven if unavailable
-        ai_summary = _generate_ai_text(
-            provider,
-            "You are an RF engineer analyzing antenna test data.\n"
-            "Write a concise executive summary (2-3 paragraphs) highlighting "
-            "key performance characteristics, any concerns, and overall assessment.",
-            report_data, opts, max_tokens=500,
-        )
-        if ai_summary:
-            for para_text in ai_summary.split("\n"):
-                if para_text.strip():
-                    doc.add_paragraph(para_text.strip())
-        else:
-            for para in summary_paragraphs:
-                doc.add_paragraph(para)
-    else:
-        for para in summary_paragraphs:
-            doc.add_paragraph(para)
+    for para in summary_paragraphs:
+        doc.add_paragraph(para)
     doc.add_page_break()
 
     # ------------------------------------------------------------------ #
@@ -1589,20 +1505,6 @@ def _build_branded_docx(output_path: str, report_data: Dict,
                                             band_info=meas_band)
                 doc.add_paragraph(prose)
 
-        # Optional AI commentary
-        if opts.ai_section_analysis:
-            ai_commentary = _generate_ai_text(
-                provider,
-                "Analyze the radiation patterns and comment on pattern classification, "
-                "beamwidth characteristics, front-to-back ratio, and any anomalies.",
-                report_data, opts, max_tokens=400,
-            )
-            if ai_commentary:
-                doc.add_paragraph()
-                for line in ai_commentary.split("\n"):
-                    if line.strip():
-                        doc.add_paragraph(line.strip())
-
     # ------------------------------------------------------------------ #
     # SECTION 9: Polarization Analysis (consolidated table + summary)
     # ------------------------------------------------------------------ #
@@ -1643,23 +1545,7 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     doc.add_page_break()
     add_branded_heading(doc, "Conclusions and Recommendations", level=1)
 
-    if opts.ai_recommendations:
-        ai_conclusions = _generate_ai_text(
-            provider,
-            "Based on the measurements, provide 4-6 bullet-point conclusions and "
-            "recommendations for the antenna design. Be specific and actionable.",
-            report_data, opts, max_tokens=500,
-        )
-        if ai_conclusions:
-            doc.add_paragraph("Based on the measurement results presented in this report:")
-            for line in ai_conclusions.split("\n"):
-                line = line.strip().lstrip("-").lstrip("*").lstrip()
-                if line:
-                    doc.add_paragraph(f"{line}", style="List Bullet")
-        else:
-            _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
-    else:
-        _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
+    _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
 
     # Brand footer
     if brand_tagline or brand_website:
@@ -1783,18 +1669,12 @@ DATA FILTERING:
 - max_frequencies_in_table: number (default: 10)
   Limits table rows for readability
 
-AI CONTENT:
-- ai_executive_summary: true/false (default: true)
-  AI-generated executive summary
-
-- ai_section_analysis: true/false (default: true)
-  AI commentary on each section
-
-- ai_recommendations: true/false (default: true)
-  AI-generated design recommendations
-
-- ai_model: "gpt-4o-mini", "gpt-4o", "o3", etc.
-  Default: "gpt-4o-mini" (cost-effective)
+NARRATIVE (all deterministic by default; no LLM/API key):
+- The executive summary, per-section pattern prose, and conclusions are
+  generated deterministically from the measurement data.
+- A driving MCP agent may author its own prose and pass it to
+  generate_report via the narrative parameters (executive_summary,
+  section_analysis, recommendations, captions). See generate_report.
 
 OUTPUT:
 - include_cover_page: true/false (default: true)
@@ -1813,9 +1693,7 @@ EXAMPLE - Minimal Report:
     "frequencies": [2450],
     "polarizations": ["total"],
     "include_2d_plots": true,
-    "include_3d_plots": false,
-    "ai_executive_summary": false,
-    "ai_section_analysis": false
+    "include_3d_plots": false
 }
 
 EXAMPLE - Full Report:
@@ -1825,9 +1703,6 @@ EXAMPLE - Full Report:
     "include_2d_plots": true,
     "include_3d_plots": true,
     "include_gain_tables": true,
-    "ai_executive_summary": true,
-    "ai_section_analysis": true,
-    "ai_recommendations": true,
     "metadata": {
         "title": "BLE Antenna Test Report",
         "project_name": "Product X",
@@ -1890,16 +1765,13 @@ EXAMPLE - Full Report:
             if opts.include_2d_plots or opts.include_3d_plots:
                 plot_images = _generate_plots(measurements, opts, temp_dir)
 
-            # 3. Create AI provider (optional)
-            provider = _create_llm_provider(opts)
-
-            # 4. Build branded DOCX
+            # 3. Build branded DOCX (deterministic content)
             _build_branded_docx(
                 output_path, report_data, plot_images,
-                opts, provider, metadata, measurements,
+                opts, metadata, measurements,
             )
 
-            # 5. Summary
+            # 4. Summary
             total_plots = sum(len(imgs) for imgs in plot_images.values())
             summary = f"Report generated: {output_path}\n\n"
             summary += "Contents:\n"
@@ -1907,7 +1779,6 @@ EXAMPLE - Full Report:
             summary += f"- Frequencies: {report_data['frequencies']}\n"
             summary += f"- Embedded plots: {total_plots}\n"
             summary += f"- Gain tables: {'Yes' if opts.include_gain_tables else 'No'}\n"
-            summary += f"- AI provider: {'Connected' if provider else 'None (fallback text used)'}\n"
             summary += f"- Cover page: {'Yes' if opts.include_cover_page else 'No'}\n"
 
             return summary
@@ -1961,13 +1832,13 @@ EXAMPLE - Full Report:
         preview += "\nSECTIONS\n"
         preview += f"  [{'x' if opts.include_cover_page else ' '}] Cover Page (branded)\n"
         preview += f"  [{'x' if opts.include_table_of_contents else ' '}] Table of Contents\n"
-        preview += f"  [{'x' if opts.ai_executive_summary else ' '}] Executive Summary (AI)\n"
+        preview += "  [x] Executive Summary (data-driven)\n"
         preview += "  [x] Test Configuration\n"
         preview += f"  [{'x' if opts.include_gain_tables else ' '}] Gain Summary Tables\n"
         preview += f"  [{'x' if opts.include_2d_plots else ' '}] 2D Pattern Plots\n"
         preview += f"  [{'x' if opts.include_3d_plots else ' '}] 3D Pattern Plots\n"
-        preview += f"  [{'x' if opts.ai_section_analysis else ' '}] Pattern Analysis (AI)\n"
-        preview += f"  [{'x' if opts.ai_recommendations else ' '}] Conclusions (AI)\n"
+        preview += "  [x] Pattern Analysis (data-driven)\n"
+        preview += "  [x] Conclusions (data-driven)\n"
 
         # Estimate plot count (respects max_plot_frequencies)
         n_meas = len(report_data["measurements"])
@@ -1984,8 +1855,6 @@ EXAMPLE - Full Report:
         preview += f"  Plots: ~{plot_count}\n"
         n_freqs = len(report_data["frequencies"])
         preview += f"  Tables: ~{n_freqs if opts.include_gain_tables else 0}\n"
-        ai_count = sum([opts.ai_executive_summary, opts.ai_section_analysis, opts.ai_recommendations])
-        preview += f"  AI Sections: {ai_count}\n"
 
         if plot_count > 20:
             preview += f"\nWarning: {plot_count} plots may make the report very large.\n"

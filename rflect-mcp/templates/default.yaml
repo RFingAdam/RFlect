@@ -30,16 +30,6 @@ sections:
   - id: executive_summary
     title: "Executive Summary"
     enabled: true
-    ai_generated: true
-    ai_prompt: |
-      You are an RF engineer writing an executive summary for an antenna test report.
-      Based on the measurement data, write a concise 2-3 paragraph summary that:
-      1. States the antenna under test and frequency range
-      2. Highlights key performance metrics (max gain, pattern type, beamwidth)
-      3. Notes any concerns or notable characteristics
-      4. Provides an overall assessment (meets specs, needs improvement, etc.)
-
-      Keep the tone professional and technical but accessible.
 
   - id: test_configuration
     title: "Test Configuration"
@@ -57,12 +47,6 @@ sections:
     content:
       - gain_table  # Frequency vs Max Gain table
       - gain_chart  # Optional bar chart
-    ai_analysis: true
-    ai_prompt: |
-      Analyze the gain data and comment on:
-      - Gain stability across the frequency band
-      - Peak gain frequency
-      - Any anomalies or unexpected variations
 
   - id: radiation_patterns
     title: "Radiation Patterns"
@@ -101,13 +85,6 @@ sections:
       - front_to_back_ratio
       - null_locations
       - sidelobe_levels
-    ai_analysis: true
-    ai_prompt: |
-      Analyze the radiation patterns and comment on:
-      - Pattern classification (directional, omnidirectional, etc.)
-      - Beamwidth characteristics and suitability for application
-      - Front-to-back ratio implications
-      - Any pattern asymmetries or anomalies
 
   - id: polarization_analysis
     title: "Polarization Analysis"
@@ -116,21 +93,10 @@ sections:
       - dominant_polarization
       - xpd_table  # Cross-polar discrimination
       - polarization_balance
-    ai_analysis: true
 
   - id: recommendations
     title: "Conclusions and Recommendations"
     enabled: true
-    ai_generated: true
-    ai_prompt: |
-      Based on all the measurement data, provide:
-      1. Summary of antenna performance vs typical specifications
-      2. Identified strengths of the design
-      3. Areas for potential improvement
-      4. Recommendations for specific applications
-      5. Any suggested follow-up testing
-
-      Be specific and actionable in recommendations.
 
   - id: appendix_data
     title: "Appendix: Raw Data"

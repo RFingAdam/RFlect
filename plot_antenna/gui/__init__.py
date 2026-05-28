@@ -7,8 +7,7 @@ The main AntennaPlotGUI class is assembled from multiple mixins for maintainabil
 Structure:
 - main_window.py: Core AntennaPlotGUI class combining all mixins
 - base_protocol.py: Protocol/interface definitions for type checking
-- dialogs_mixin.py: Dialog methods (About, API Key, AI Settings, Settings)
-- ai_chat_mixin.py: AI chat window and all AI-related methods
+- dialogs_mixin.py: Dialog methods (About, Settings)
 - tools_mixin.py: Bulk processing, polarization analysis, converters
 - callbacks_mixin.py: File import, data processing, save operations
 - utils.py: Shared utility functions (DualOutput, resource_path, etc.)

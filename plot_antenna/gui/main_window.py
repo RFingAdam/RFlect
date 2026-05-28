@@ -3,7 +3,6 @@ Main Window - Core AntennaPlotGUI class for RFlect
 
 This module contains the main GUI class that combines all mixins:
 - DialogsMixin: Dialogs (About, API Key, Settings)
-- AIChatMixin: AI Chat functionality
 - ToolsMixin: Bulk processing, polarization, converters
 - CallbacksMixin: File import, data processing, save operations
 """
@@ -88,11 +87,8 @@ from ..config import (
 )
 from ..calculations import extract_passive_frequencies
 
-from ..api_keys import is_api_key_configured, initialize_keys, clear_env_keys
-
 # Import mixins
 from .dialogs_mixin import DialogsMixin
-from .ai_chat_mixin import AIChatMixin  # kept for mixin class — methods unused until re-enabled
 from .tools_mixin import ToolsMixin
 from .callbacks_mixin import CallbacksMixin
 
@@ -100,14 +96,13 @@ from .callbacks_mixin import CallbacksMixin
 from .utils import DualOutput, resource_path, get_user_data_dir, get_current_version
 
 
-class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # type: ignore[misc]
+class AntennaPlotGUI(DialogsMixin, ToolsMixin, CallbacksMixin):  # type: ignore[misc]
     """
     Main GUI class for the RFlect application.
 
     This class manages the creation and interactions of the main application window.
     Functionality is organized into mixins for maintainability:
     - DialogsMixin: About, API key, settings dialogs
-    - AIChatMixin: AI chat and analysis functions
     - ToolsMixin: Bulk processing, polarization, converters
     - CallbacksMixin: File import, data processing
     """
@@ -145,7 +140,7 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self._active_figures = []
         self._extrapolation_cache = {}
 
-        # Measurement context for AI awareness
+        # Measurement context
         self._measurement_context = {
             "files_loaded": [],
             "scan_type": None,
@@ -172,9 +167,6 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         self.recent_files = []
         self.max_recent_files = 5
         self.load_recent_files()
-
-        # Initialize API key storage (loads keys from keyring/file/env)
-        initialize_keys()
 
         # VSWR limit settings
         self.saved_limit1_freq1 = 0.0
@@ -712,20 +704,6 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         tools_menu.add_separator()
         tools_menu.add_command(label="Generate Report", command=self.generate_report_from_directory)
 
-        # AI tools
-        tools_menu.add_separator()
-        tools_menu.add_command(label="Manage API Keys...", command=self.manage_api_key)
-        tools_menu.add_command(label="AI Settings...", command=self.manage_ai_settings)
-        any_key = is_api_key_configured("openai") or is_api_key_configured("anthropic")
-        if any_key:
-            tools_menu.add_command(
-                label="Generate Report with AI", command=self.generate_ai_report_from_directory
-            )
-            tools_menu.add_command(label="AI Chat Assistant...", command=self.open_ai_chat)
-        else:
-            print("[INFO] No AI API key configured. AI report/chat disabled.")
-            print("       Configure via: Tools -> Manage API Keys")
-
         menubar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help Menu
@@ -844,10 +822,6 @@ class AntennaPlotGUI(DialogsMixin, AIChatMixin, ToolsMixin, CallbacksMixin):  # 
         """Properly cleanup resources before closing the application."""
         try:
             self._save_user_settings()
-        except Exception:
-            pass
-        try:
-            clear_env_keys()
         except Exception:
             pass
         try:

@@ -15,55 +15,8 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # type: ignore[import-untyped
 
 import datetime
 import os
-import base64
-
-# Import centralized API key management
-from .api_keys import get_api_key
 
 
-def _create_report_provider():
-    """Create an LLM provider for report generation based on config."""
-    try:
-        from .llm_provider import create_provider
-
-        provider_name = config.AI_PROVIDER if hasattr(config, "AI_PROVIDER") else "openai"
-
-        if provider_name == "openai":
-            api_key = get_api_key("openai")
-            if not api_key:
-                return None
-            model = config.AI_MODEL if hasattr(config, "AI_MODEL") else "gpt-4o-mini"
-            return create_provider("openai", api_key=api_key, model=model)
-        elif provider_name == "anthropic":
-            api_key = get_api_key("anthropic")
-            if not api_key:
-                return None
-            model = (
-                config.AI_ANTHROPIC_MODEL
-                if hasattr(config, "AI_ANTHROPIC_MODEL")
-                else "claude-sonnet-4-20250514"
-            )
-            return create_provider("anthropic", api_key=api_key, model=model)
-        elif provider_name == "ollama":
-            model = config.AI_OLLAMA_MODEL if hasattr(config, "AI_OLLAMA_MODEL") else "llama3.1"
-            base_url = (
-                config.AI_OLLAMA_URL
-                if hasattr(config, "AI_OLLAMA_URL")
-                else "http://localhost:11434"
-            )
-            return create_provider("ollama", model=model, base_url=base_url)
-    except Exception as e:
-        print(f"[WARNING] Could not create AI provider: {e}")
-    return None
-
-
-# Helper function to encode an image as a base64 string for OpenAI API
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
-
-
-# Helper function to detect measurement type from filename
 def detect_measurement_type(filename):
     """
     Detect measurement type from image filename.
@@ -209,23 +162,17 @@ def deduplicate_images(image_tuples):
 
 
 class RFAnalyzer:
-    def __init__(self, use_ai=False, project_context=None):
-        """
-        Initialize RF Analyzer with optional AI capabilities.
+    """Deterministic caption/summary generator for the GUI report path.
 
-        Parameters:
-        - use_ai: Boolean to enable/disable AI analysis
-        - project_context: Dictionary containing project information for enhanced AI prompting
-          Example: {
-              'antenna_type': 'Patch Antenna',
-              'frequency_range': '2.4-2.5 GHz',
-              'application': 'WiFi 2.4 GHz',
-              'requirements': 'Gain > 5 dBi, VSWR < 2:1'
-          }
-        """
+    Historically this wrapped an LLM provider; v5.0.0 removed all outbound
+    LLM calls. Captions, executive summary, and conclusions are now produced
+    deterministically from the measurement data. ``use_ai`` is retained for
+    signature compatibility but is always treated as False.
+    """
+
+    def __init__(self, use_ai=False, project_context=None):
         self.messages = []
-        self._provider = _create_report_provider() if use_ai else None
-        self.use_ai = use_ai and self._provider is not None
+        self.use_ai = False
         self.project_context = project_context or {}
         self.analysis_results = []  # Track all image analyses
         self.measurement_stats = {
@@ -238,157 +185,14 @@ class RFAnalyzer:
         }
 
     def analyze_image(self, image_path, measurement_type=None, is_paired=False):
-        """
-        Analyze the image using OpenAI if the AI flag is set, or return a placeholder.
-
-        Parameters:
-        - image_path: Path to the image file
-        - measurement_type: Type of measurement ('passive', 'active', 'polarization', etc.)
-        - is_paired: Whether this is part of a 1of2/2of2 pair (combines both views)
-        """
-        if self.use_ai:
-            analysis = self.send_to_ai_provider(
-                image_path, self.project_context, measurement_type, is_paired
-            )
-
-            # Store analysis result for later aggregation
-            self.analysis_results.append(
-                {
-                    "image_name": os.path.basename(image_path),
-                    "measurement_type": measurement_type,
-                    "analysis": analysis,
-                }
-            )
-
-            # Extract metrics from this analysis
-            self._extract_metrics(analysis, image_path)
-
-            return analysis
-        else:
-            return self.generate_placeholder_caption(image_path, measurement_type)
+        """Return a deterministic placeholder caption for the image."""
+        return self.generate_placeholder_caption(image_path, measurement_type)
 
     def analyze_image_batch(self, image_paths, frequency, batch_type, measurement_type=None):
-        """
-        Analyze a batch of related images with a single AI call for token efficiency.
-        Uses the unified provider abstraction.
-        """
-        if not self.use_ai or not image_paths or not self._provider:
-            return self._generate_batch_placeholder(
-                image_paths, frequency, batch_type, measurement_type
-            )
-
-        # Limit to first 4 images for batch analysis
-        images_to_analyze = image_paths[:4]
-
-        # Build batch-specific prompt
-        prompt = self._build_batch_prompt(
-            frequency, batch_type, measurement_type, len(images_to_analyze)
+        """Return a deterministic placeholder caption for a batch of images."""
+        return self._generate_batch_placeholder(
+            image_paths, frequency, batch_type, measurement_type
         )
-
-        try:
-            from .llm_provider import LLMMessage
-
-            max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 300
-            temperature = config.AI_TEMPERATURE if hasattr(config, "AI_TEMPERATURE") else 0.2
-
-            # Encode all images
-            image_b64_list = [encode_image(p) for p in images_to_analyze]
-
-            if self._provider.supports_vision():
-                msg = LLMMessage(role="user", content=prompt, images=image_b64_list)
-            else:
-                msg = LLMMessage(
-                    role="user",
-                    content=prompt
-                    + "\n\n[Batch image analysis not available - model does not support vision]",
-                )
-
-            response = self._provider.chat(
-                [msg],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-
-            analysis = response.content.strip() if response.content else ""
-
-            if analysis:
-                self.analysis_results.append(
-                    {
-                        "image_name": f"Batch: {frequency} {batch_type}",
-                        "measurement_type": measurement_type,
-                        "analysis": analysis,
-                    }
-                )
-                self._extract_metrics(analysis, images_to_analyze[0])
-                return analysis
-
-            return self._generate_batch_placeholder(
-                image_paths, frequency, batch_type, measurement_type
-            )
-
-        except Exception as e:
-            print(f"Batch analysis error: {e}")
-            return self._generate_batch_placeholder(
-                image_paths, frequency, batch_type, measurement_type
-            )
-
-    def _build_batch_prompt(self, frequency, batch_type, measurement_type, image_count):
-        """Build a prompt for batch image analysis."""
-        base_prompt = f"""You are an expert RF Engineer. Analyze these {image_count} antenna measurement plots at {frequency} and provide a SINGLE consolidated technical summary.
-
-**Important**: Provide ONE unified analysis covering all images, not separate analyses for each."""
-
-        if batch_type == "3d_plots":
-            specific_guidance = """
-These are 3D radiation pattern plots showing H-pol, V-pol, and Total TRP.
-
-Provide a unified analysis covering:
-1. **Total TRP**: Report total radiated power (dBm) and max EIRP direction
-2. **Polarization Breakdown**: H-pol vs V-pol TRP values and dominant polarization
-3. **Pattern Characteristics**: Spherical coverage quality, main lobe direction, null regions
-4. **Overall Assessment**: Brief statement on radiation quality for the intended application"""
-
-        elif batch_type == "2d_cuts":
-            specific_guidance = """
-These are 2D radiation pattern cuts (azimuth and elevation planes).
-
-Provide a unified analysis covering:
-1. **Power Range**: Max/Min/Avg across all cuts with units (dBm)
-2. **Pattern Shape**: Omnidirectional vs directional, symmetry assessment
-3. **Coverage Quality**: Null depths, ripple, and uniformity across cuts
-4. **Key Observations**: Any notable patterns or concerns"""
-
-        else:
-            specific_guidance = """
-Analyze all images together and provide:
-1. **Key Metrics**: Primary values with units
-2. **Pattern Summary**: Overall characteristics
-3. **Performance Notes**: Notable observations"""
-
-        response_style = (
-            config.AI_RESPONSE_STYLE if hasattr(config, "AI_RESPONSE_STYLE") else "concise"
-        )
-        max_words = config.AI_MAX_WORDS if hasattr(config, "AI_MAX_WORDS") else 100
-
-        output_format = f"""
-
-### Output Requirements:
-- Write {max_words}-{max_words + 50} words total (NOT per image)
-- Use precise RF terminology with numerical values and units
-- Write in formal third person technical style
-- NO separate sections for each image - ONE unified summary
-
-### Output Format:
-**Performance Summary at {frequency}**: [3-4 sentences covering all plots with key metrics]
-
-**Key Specifications**:
-• TRP/Power: [values]
-• Pattern: [description]
-• Coverage: [assessment]"""
-
-        return base_prompt + specific_guidance + output_format
-
-    # Legacy batch methods removed — batch analysis now uses unified provider in analyze_image_batch()
 
     def _generate_batch_placeholder(self, image_paths, frequency, batch_type, measurement_type):
         """Generate placeholder text for batch analysis when AI is disabled."""
@@ -442,57 +246,6 @@ Analyze all images together and provide:
             caption += "**Analysis**: Analyze key performance metrics visible in the plot."
 
         return caption
-
-    def _extract_metrics(self, analysis_text, image_path):
-        """Extract key metrics from analysis text to populate measurement_stats."""
-        import re
-
-        # Extract frequency information
-        freq_matches = re.findall(r"(\d+(?:\.\d+)?)\s*(?:MHz|GHz)", analysis_text, re.IGNORECASE)
-        for freq in freq_matches:
-            # Normalize to GHz format for consistency
-            if "mhz" in analysis_text.lower():
-                self.measurement_stats["frequencies"].add(f"{float(freq)/1000:.2f} GHz")
-            else:
-                self.measurement_stats["frequencies"].add(f"{freq} GHz")
-
-        # Extract TRP values (dBm)
-        trp_matches = re.findall(
-            r"TRP[:\s]+([+-]?\d+(?:\.\d+)?)\s*dBm", analysis_text, re.IGNORECASE
-        )
-        for trp in trp_matches:
-            self.measurement_stats["trp_values"].append(float(trp))
-
-        # Extract gain values (dBi/dBd)
-        gain_matches = re.findall(
-            r"(?:gain|peak)[:\s]+([+-]?\d+(?:\.\d+)?)\s*dBi?", analysis_text, re.IGNORECASE
-        )
-        for gain in gain_matches:
-            gain_val = float(gain)
-            if (
-                self.measurement_stats["max_gain"] is None
-                or gain_val > self.measurement_stats["max_gain"]
-            ):
-                self.measurement_stats["max_gain"] = gain_val
-            if (
-                self.measurement_stats["min_gain"] is None
-                or gain_val < self.measurement_stats["min_gain"]
-            ):
-                self.measurement_stats["min_gain"] = gain_val
-
-        # Track issues/characteristics mentioned
-        keywords = [
-            "asymmetric",
-            "null",
-            "ripple",
-            "high AR",
-            "poor XPD",
-            "low efficiency",
-            "variation",
-        ]
-        for keyword in keywords:
-            if keyword.lower() in analysis_text.lower():
-                self.measurement_stats["issues_found"].append(keyword)
 
     def generate_executive_summary(self):
         """Generate an intelligent executive summary based on all analyzed measurements."""
@@ -652,324 +405,6 @@ Analyze all images together and provide:
         )
 
         return conclusions
-
-    def send_to_ai_provider(
-        self, image_path, project_context=None, measurement_type=None, is_paired=False
-    ):
-        """
-        Send image to AI provider for analysis.
-        Uses the unified provider abstraction to support OpenAI, Anthropic, and Ollama.
-        """
-        if not self._provider:
-            return self.generate_placeholder_caption(image_path, measurement_type)
-
-        base64_image = encode_image(image_path)
-        prompt_text = self._build_prompt(project_context, measurement_type, is_paired)
-
-        max_tokens = config.AI_MAX_TOKENS if hasattr(config, "AI_MAX_TOKENS") else 150
-        temperature = config.AI_TEMPERATURE if hasattr(config, "AI_TEMPERATURE") else 0.2
-
-        try:
-            from .llm_provider import LLMMessage
-
-            if self._provider.supports_vision():
-                msg = LLMMessage(role="user", content=prompt_text, images=[base64_image])
-            else:
-                # Fallback for non-vision models: text-only prompt
-                msg = LLMMessage(
-                    role="user",
-                    content=prompt_text
-                    + "\n\n[Image analysis not available - model does not support vision]",
-                )
-
-            response = self._provider.chat(
-                [msg],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-
-            reply = response.content.strip() if response.content else ""
-            if reply:
-                self.messages.append({"role": "assistant", "content": reply})
-                return reply
-
-            return self.generate_placeholder_caption(image_path, measurement_type)
-
-        except Exception as e:
-            print(f"[WARNING] AI analysis error: {str(e)[:100]}")
-            return "**AI Analysis Unavailable** - Error during analysis. Report will use placeholder captions."
-
-    def _build_prompt(self, project_context, measurement_type, is_paired=False):
-        """Build the analysis prompt based on context and measurement type."""
-        # Build enhanced prompt based on context
-        base_prompt = """You are an expert RF Engineer specializing in antenna measurements and design validation. 
-Analyze the provided antenna measurement plot and provide a comprehensive technical summary."""
-
-        # Add paired image context if applicable
-        if is_paired:
-            base_prompt += "\n\n**Note**: This image represents a combined view (front and rear perspectives, 1of2 and 2of2). Analyze the complete 3D radiation pattern shown."
-
-        # Add project context if available
-        if project_context:
-            context_text = "\n\n### Project Context:\n"
-            if "antenna_type" in project_context:
-                context_text += f"- **Antenna Type**: {project_context['antenna_type']}\n"
-            if "frequency_range" in project_context:
-                context_text += f"- **Frequency Range**: {project_context['frequency_range']}\n"
-            if "application" in project_context:
-                context_text += f"- **Application**: {project_context['application']}\n"
-            if "requirements" in project_context:
-                context_text += f"- **Key Requirements**: {project_context['requirements']}\n"
-            base_prompt += context_text
-
-        # Add measurement-specific guidance (simplified for concise responses)
-        response_style = (
-            config.AI_RESPONSE_STYLE if hasattr(config, "AI_RESPONSE_STYLE") else "concise"
-        )
-
-        if response_style == "concise":
-            # Concise analysis prompts - professional technical style
-            if measurement_type == "polarization":
-                analysis_prompt = """
-### Analysis Focus:
-1. **Axial Ratio**: Report peak and average AR values (dB) with angular coverage
-2. **Polarization Sense**: Identify RHCP/LHCP/Linear dominant regions
-3. **XPD**: Cross-polarization discrimination values and uniformity
-4. **Quality Assessment**: Circular polarization quality (AR < 3 dB coverage)
-"""
-            elif measurement_type == "passive":
-                analysis_prompt = """
-### Analysis Focus:
-1. **Gain Performance**: Peak gain (dBi), boresight direction, 3 dB beamwidth
-2. **Pattern Shape**: Omni/directional classification, symmetry assessment
-3. **Null Analysis**: Null positions, depths, and potential impact
-4. **Polarization**: H-pol vs V-pol gain comparison, dominant polarization
-"""
-            elif measurement_type == "active":
-                analysis_prompt = """
-### Analysis Focus:
-1. **TRP**: Total Radiated Power (dBm) with H-pol/V-pol breakdown
-2. **Power Distribution**: Max/min radiation directions, coverage uniformity
-3. **Pattern Quality**: Hot spots, nulls, or dead zones identification
-4. **Efficiency Indicators**: Power balance and radiated power assessment
-"""
-            else:
-                analysis_prompt = """
-### Analysis Focus:
-1. **Key Metrics**: Primary performance values (dB/dBi/dBm)
-2. **Pattern Analysis**: Shape, symmetry, coverage characteristics
-3. **Band Identification**: Infer operational frequency band
-4. **Performance Notes**: Any notable characteristics or anomalies
-"""
-        else:
-            # Detailed analysis prompts (original verbose style)
-            if measurement_type == "polarization":
-                analysis_prompt = """
-### Analysis Focus for Polarization Measurements:
-
-1. **Axial Ratio Analysis**:
-   - Report AR values at boresight and coverage angles
-   - Identify regions of circular vs linear polarization
-   - Assess AR < 3 dB coverage area for circular polarization quality
-
-2. **Polarization Sense**:
-   - Identify dominant polarization (RHCP/LHCP/Linear)
-   - Note any polarization transitions across the pattern
-
-3. **Cross-Polarization Discrimination (XPD)**:
-   - Report XPD values and their variation
-   - Assess isolation between orthogonal polarizations
-
-4. **Tilt Angle**:
-   - Describe polarization ellipse orientation patterns
-   - Note any systematic rotation behavior
-
-5. **Performance Assessment**:
-   - Evaluate if the antenna meets circular polarization requirements
-   - Identify areas for potential improvement
-"""
-            elif measurement_type == "passive":
-                analysis_prompt = """
-### Analysis Focus for Passive Gain Measurements:
-
-1. **Gain Metrics**:
-   - Report peak gain, minimum gain, and average gain values
-   - Identify the direction of maximum radiation (boresight)
-   - Note gain at key angles (0°, ±30°, ±45°, ±60°)
-
-2. **Pattern Characteristics**:
-   - Describe the radiation pattern shape (omnidirectional, directional, etc.)
-   - Identify null positions and their depths
-   - Assess pattern symmetry
-
-3. **Polarization Performance**:
-   - Compare H-pol vs V-pol gain
-   - Calculate cross-polarization ratio
-   - Identify dominant polarization
-
-4. **3D Pattern Analysis** (if applicable):
-   - Describe spherical coverage
-   - Identify back lobe levels
-   - Assess pattern distortion or irregularities
-
-5. **Band-Specific Performance**:
-   - Infer operational band from frequency
-   - Compare performance against typical requirements for that band
-"""
-            elif measurement_type == "active":
-                analysis_prompt = """
-### Analysis Focus for Active Power Measurements:
-
-1. **Power Metrics**:
-   - Report TRP (Total Radiated Power) in dBm
-   - Note H-pol and V-pol TRP components
-   - Calculate percentage power distribution
-
-2. **Pattern Analysis**:
-   - Identify directions of maximum and minimum radiation
-   - Assess pattern uniformity
-   - Note any significant nulls or hot spots
-
-3. **Efficiency Assessment**:
-   - Compare radiated power to expected input power
-   - Identify potential losses or inefficiencies
-
-4. **Coverage Evaluation**:
-   - Assess coverage uniformity across the sphere
-   - Identify blind spots or weak coverage areas
-"""
-            else:
-                # Generic analysis prompt
-                analysis_prompt = """
-### Analysis Guidelines:
-
-1. **Key Parameters**: Identify and report min, max, and average values for:
-   - Gain (dBi or dBm)
-   - Efficiency (if applicable)
-   - Directivity
-   - Pattern characteristics
-
-2. **Frequency Band**: Infer the operational band from the plot or filename.
-
-3. **Pattern Characteristics**: Describe radiation pattern shape, symmetry, nulls, and lobes.
-
-4. **Performance Assessment**: Evaluate if the results meet typical requirements for the inferred application.
-"""
-
-        # Configure output style based on config settings
-        max_words = config.AI_MAX_WORDS if hasattr(config, "AI_MAX_WORDS") else 80
-        include_recommendations = (
-            config.AI_INCLUDE_RECOMMENDATIONS
-            if hasattr(config, "AI_INCLUDE_RECOMMENDATIONS")
-            else False
-        )
-
-        if response_style == "concise":
-            output_requirements = f"""
-
-### Output Requirements:
-- Provide a professional technical caption in {max_words}-{max_words + 40} words
-- Use precise RF engineering terminology
-- Include specific numerical values with units (dBi, dBm, degrees)
-- Write in third person, present tense, formal technical style
-- Do NOT use phrases like "I can see", "appears to show", or qualify image quality
-- Focus on factual observations and quantitative data
-
-### Output Format (use this exact structure):
-**Performance Summary**: [2-3 sentences describing primary characteristics and key metrics]
-
-**Key Specifications**:
-• Peak/Max: [value with units] at [direction/angle if visible]
-• Min/Coverage: [value or coverage description]
-• Pattern Type: [omnidirectional/directional/hemispherical with brief qualifier]
-{("• **Note**: [One critical observation if applicable]" if include_recommendations else "")}
-"""
-        else:
-            # Detailed mode (original verbose style)
-            output_requirements = f"""
-
-### Output Requirements:
-- Use clear, concise technical language
-- Organize findings with Markdown formatting (headers, bullet points, bold for emphasis)
-- Include specific numerical values where visible
-- Keep the response focused and under {max_words*3} words
-- Do NOT include phrases like "I cannot see" or "image quality"
-
-### Output Structure:
-**Summary**: One-sentence overview
-**Key Findings**: Bullet points of main observations
-**Performance Assessment**: Brief evaluation against typical requirements
-{("**Recommendations**: Suggested improvements" if include_recommendations else "")}
-"""
-
-        return base_prompt + analysis_prompt + output_requirements
-
-    def _handle_api_error(self, result, api_name):
-        """Handle API errors with helpful messages. Provider-aware."""
-        error_msg = result.get("error", {}).get("message", "Unknown error")
-        error_type = result.get("error", {}).get("type", "unknown")
-        error_code = result.get("error", {}).get("code", "unknown")
-
-        # Determine current provider for context-appropriate messages
-        provider_name = self._provider.provider_name() if self._provider else "openai"
-
-        provider_urls = {
-            "openai": "https://platform.openai.com",
-            "anthropic": "https://console.anthropic.com",
-            "ollama": "http://localhost:11434",
-        }
-        provider_url = provider_urls.get(provider_name, "")
-
-        # Provide helpful error messages
-        if "quota" in error_msg.lower() or "insufficient_quota" in error_type:
-            helpful_msg = (
-                f"[WARNING] {provider_name.title()} {api_name} API Quota Exceeded\n"
-                f"Your {provider_name.title()} account has insufficient credits.\n\n"
-                "To fix this:\n"
-                f"1. Visit: {provider_url}/account/billing\n"
-                "2. Add payment method and credits ($5-10 recommended)\n"
-                "3. Wait a few minutes for credits to activate\n"
-                "4. Try generating the report again\n\n"
-                "Note: The report will still be generated with placeholder captions."
-            )
-            print(f"\n{'='*60}")
-            print(helpful_msg)
-            print(f"{'='*60}\n")
-            return f"**AI Analysis Unavailable** - {provider_name.title()} quota exceeded. Please add billing credits at {provider_url}/account/billing"
-        elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
-            helpful_msg = (
-                f"[WARNING] {provider_name.title()} {api_name} API Key Issue\n"
-                "The API key is invalid or not authorized.\n\n"
-                "To fix this:\n"
-                f"1. Visit: {provider_url}/api-keys\n"
-                "2. Generate a new API key\n"
-                "3. Update your key via RFlect Settings or .env file\n"
-                "4. Restart the application\n"
-            )
-            print(f"\n{'='*60}")
-            print(helpful_msg)
-            print(f"{'='*60}\n")
-            return f"**AI Analysis Unavailable** - Invalid {provider_name.title()} API key. Check settings."
-        elif "model" in error_msg.lower() and (
-            "not found" in error_msg.lower() or "does not exist" in error_msg.lower()
-        ):
-            helpful_msg = (
-                f"[WARNING] Model Not Available\n"
-                f"The model specified in config is not available or not supported by {api_name} API.\n\n"
-                f"Error: {error_msg}\n\n"
-                "To fix this:\n"
-                "1. Check AI model settings in config_local.py or config_template.py\n"
-                f"2. Verify model name matches {provider_name.title()}'s current offerings\n"
-                "3. Try switching to a compatible model in Settings\n"
-            )
-            print(f"\n{'='*60}")
-            print(helpful_msg)
-            print(f"{'='*60}\n")
-            return f"**AI Analysis Unavailable** - Model not available. Check AI model in config. Error: {error_msg}"
-        else:
-            print(f"{provider_name.title()} {api_name} API Error ({error_type}): {error_msg}")
-            return f"**Analysis unavailable**: {error_msg}"
-
 
 def _fmt(val, fmt=".2f", suffix=""):
     """Format a value for table display, handling None gracefully."""
@@ -1306,13 +741,10 @@ def generate_report(
         toc_para.paragraph_format.space_before = Pt(6)
         doc.add_page_break()
 
-    # Executive Summary (if requested and AI is enabled)
-    if include_summary and analyzer.use_ai:
+    # Executive Summary (deterministic, when requested)
+    if include_summary:
         add_branded_heading(doc, "Executive Summary", level=1)
-
-        # Generate intelligent summary based on all analyses
         summary_text = analyzer.generate_executive_summary()
-
         summary_para = doc.add_paragraph(summary_text)
         summary_para.paragraph_format.space_before = Pt(6)
         doc.add_page_break()
@@ -1635,26 +1067,20 @@ def generate_report(
     doc.add_page_break()
     add_branded_heading(doc, "Conclusions and Recommendations", level=1)
 
-    # Generate intelligent conclusions based on measurements
-    if analyzer.use_ai:
-        conclusions_list = analyzer.generate_conclusions()
-        doc.add_paragraph("Based on the measurement results presented in this report:")
-        for conclusion in conclusions_list:
-            doc.add_paragraph(f"• {conclusion}", style="List Bullet")
-    else:
-        doc.add_paragraph("Based on the measurement results presented in this report:")
-        doc.add_paragraph(
-            "• Review all performance metrics against specification requirements",
-            style="List Bullet",
-        )
-        doc.add_paragraph(
-            "• Verify antenna performance meets application needs across the operational bandwidth",
-            style="List Bullet",
-        )
-        doc.add_paragraph(
-            "• Consider additional measurements or design iterations if performance gaps are identified",
-            style="List Bullet",
-        )
+    # Deterministic conclusions/recommendations
+    doc.add_paragraph("Based on the measurement results presented in this report:")
+    doc.add_paragraph(
+        "• Review all performance metrics against specification requirements",
+        style="List Bullet",
+    )
+    doc.add_paragraph(
+        "• Verify antenna performance meets application needs across the operational bandwidth",
+        style="List Bullet",
+    )
+    doc.add_paragraph(
+        "• Consider additional measurements or design iterations if performance gaps are identified",
+        style="List Bullet",
+    )
 
     # Add brand contact footer (if configured)
     if brand_tagline or brand_website:

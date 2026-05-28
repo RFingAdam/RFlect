@@ -244,7 +244,6 @@ def _maybe_generate_report(
         from tools.report_tools import (
             _prepare_report_data,
             _generate_plots,
-            _create_llm_provider,
             _build_branded_docx,
             ReportOptions,
         )
@@ -261,10 +260,9 @@ def _maybe_generate_report(
         if opts.include_2d_plots or opts.include_3d_plots:
             plot_images = _generate_plots(measurements, opts, temp_dir)
 
-        provider = _create_llm_provider(opts)
         _build_branded_docx(
             target, report_data, plot_images,
-            opts, provider, {}, measurements,
+            opts, {}, measurements,
         )
         return target, []
     except Exception as exc:
