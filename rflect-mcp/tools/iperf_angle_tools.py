@@ -46,9 +46,9 @@ def _load_session_runs(session_dir: str) -> Tuple[List[Dict[str, Any]], List[str
     if not os.path.isfile(manifest_path):
         return [], [f"manifest_missing: {manifest_path}"]
     try:
-        with open(manifest_path, "r") as fh:
+        with open(manifest_path, "r", encoding="utf-8") as fh:
             manifest = json.load(fh)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         return [], [f"manifest_parse_failed: {exc}"]
 
     runs_raw = manifest.get("runs", [])
@@ -403,19 +403,19 @@ def register_iperf_angle_tools(mcp):
             "mean_installed_mbps", "mean_reference_mbps",
         ]
         try:
-            with open(csv_path, "w", newline="") as fh:
+            with open(csv_path, "w", newline="", encoding="utf-8") as fh:
                 writer = csv.DictWriter(fh, fieldnames=csv_fields)
                 writer.writeheader()
                 for r in summary_rows:
                     writer.writerow({k: r.get(k) for k in csv_fields})
             result["summary_csv"] = csv_path
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             result["warnings"].append(f"csv_write_failed: {exc}")
 
         # JSON
         json_path = os.path.join(out_dir, "summary.json")
         try:
-            with open(json_path, "w") as fh:
+            with open(json_path, "w", encoding="utf-8") as fh:
                 json.dump({
                     "installed_session": os.path.basename(session_dir.rstrip("/")),
                     "reference_session": os.path.basename(reference_session_dir.rstrip("/")),
@@ -424,13 +424,13 @@ def register_iperf_angle_tools(mcp):
                     "cells": summary_rows,
                 }, fh, indent=2)
             result["summary_json"] = json_path
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             result["warnings"].append(f"json_write_failed: {exc}")
 
         # Markdown report
         report_path = os.path.join(out_dir, "report.md")
         try:
-            with open(report_path, "w") as fh:
+            with open(report_path, "w", encoding="utf-8") as fh:
                 fh.write(_render_report_md(
                     summary_rows,
                     polar_paths,
@@ -440,7 +440,7 @@ def register_iperf_angle_tools(mcp):
                     worst_threshold_mbps=worst_threshold_mbps,
                 ))
             result["report_md"] = report_path
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             result["warnings"].append(f"report_md_write_failed: {exc}")
 
         result["polar_pngs"] = sorted(polar_paths.values())
