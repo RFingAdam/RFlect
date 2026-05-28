@@ -4,6 +4,21 @@ Analysis Tools for RFlect MCP Server
 Provides pattern analysis, gain statistics, polarization comparison,
 and frequency extrapolation.
 Uses plot_antenna.analysis_engine.AntennaAnalyzer for core functionality.
+
+Return contract (#10)
+---------------------
+These tools follow the *human-readable string* contract: every tool returns a
+``str`` on success and on failure, and NEVER raises. Failures are signalled in
+two consistent tiers, both detectable by substring:
+
+  * Hard errors (exceptions) -> prefixed ``"Error: ..."``.
+  * Pre-conditions / empty results -> a descriptive sentence
+    (``"No data loaded. ..."``, ``"... not found."``, ``"No frequency ..."``).
+
+(The structured-data tools -- rf_methods, cal_drift, instruments -- instead use
+the dict contract with an ``error``/``warnings`` field. The string contract is
+intentional here: these tools feed narrative text straight to the model and the
+integration tests assert on substrings.) Locked by test_tool_contract.py.
 """
 
 import os
@@ -53,9 +68,7 @@ def _get_analyzer_for_measurement(measurement_name: Optional[str] = None) -> tup
     try:
         # Create analyzer from loaded data
         analyzer = AntennaAnalyzer(
-            measurement_data=m.data,
-            scan_type=m.scan_type,
-            frequencies=m.frequencies
+            measurement_data=m.data, scan_type=m.scan_type, frequencies=m.frequencies
         )
         return analyzer, measurement_name, None
     except Exception as e:
@@ -63,6 +76,7 @@ def _get_analyzer_for_measurement(measurement_name: Optional[str] = None) -> tup
 
 
 # ---- Standalone analysis functions (callable without MCP registration) ----
+
 
 def list_frequencies(measurement_name: Optional[str] = None) -> str:
     """
@@ -96,7 +110,7 @@ def list_frequencies(measurement_name: Optional[str] = None) -> str:
 def analyze_pattern(
     frequency: Optional[float] = None,
     polarization: str = "total",
-    measurement_name: Optional[str] = None
+    measurement_name: Optional[str] = None,
 ) -> str:
     """
     Analyze radiation pattern characteristics.
@@ -135,15 +149,15 @@ def analyze_pattern(
         output += f"HPBW (H-plane): {_fmt(result.get('hpbw_h_plane'), '.1f')}°\n"
         output += f"Front-to-Back Ratio: {_fmt(result.get('front_to_back_dB'), '.1f')} dB\n"
 
-        main_theta = result.get('main_beam_theta')
-        main_phi = result.get('main_beam_phi')
+        main_theta = result.get("main_beam_theta")
+        main_phi = result.get("main_beam_phi")
         if main_theta is not None and main_phi is not None:
             output += f"Main Beam Direction: \u03b8={_fmt(main_theta, '.1f')}°, \u03c6={_fmt(main_phi, '.1f')}°\n"
 
-        num_nulls = result.get('num_nulls', 0)
+        num_nulls = result.get("num_nulls", 0)
         if num_nulls:
             output += f"\nNulls: {num_nulls} found\n"
-            deepest = result.get('deepest_null_dB')
+            deepest = result.get("deepest_null_dB")
             if deepest is not None:
                 output += f"Deepest Null: {_fmt(deepest)} dB\n"
 
@@ -154,8 +168,7 @@ def analyze_pattern(
 
 
 def get_gain_statistics(
-    frequency: Optional[float] = None,
-    measurement_name: Optional[str] = None
+    frequency: Optional[float] = None, measurement_name: Optional[str] = None
 ) -> str:
     """
     Get gain statistics for the antenna measurement.
@@ -187,12 +200,12 @@ def get_gain_statistics(
         output += "-" * 40 + "\n\n"
 
         # Handle both passive (dBi) and active (dBm) scan types
-        if result.get('scan_type') == 'active':
+        if result.get("scan_type") == "active":
             output += f"Maximum Power: {_fmt(result.get('max_power_dBm'))} dBm\n"
             output += f"Minimum Power: {_fmt(result.get('min_power_dBm'))} dBm\n"
             output += f"Average Power: {_fmt(result.get('avg_power_dBm'))} dBm\n"
             output += f"Std Dev: {_fmt(result.get('std_dev_dB'))} dB\n"
-            if 'TRP_dBm' in result:
+            if "TRP_dBm" in result:
                 output += f"TRP: {_fmt(result.get('TRP_dBm'))} dBm\n"
         else:
             output += f"Maximum Gain: {_fmt(result.get('max_gain_dBi'))} dBi\n"
@@ -201,9 +214,9 @@ def get_gain_statistics(
             output += f"Std Dev: {_fmt(result.get('std_dev_dB'))} dB\n"
 
             # Polarization-specific if available
-            if 'max_hpol_gain_dBi' in result:
+            if "max_hpol_gain_dBi" in result:
                 output += f"\nHPOL Max Gain: {_fmt(result.get('max_hpol_gain_dBi'))} dBi\n"
-            if 'max_vpol_gain_dBi' in result:
+            if "max_vpol_gain_dBi" in result:
                 output += f"VPOL Max Gain: {_fmt(result.get('max_vpol_gain_dBi'))} dBi\n"
 
         return output
@@ -213,8 +226,7 @@ def get_gain_statistics(
 
 
 def compare_polarizations(
-    frequency: Optional[float] = None,
-    measurement_name: Optional[str] = None
+    frequency: Optional[float] = None, measurement_name: Optional[str] = None
 ) -> str:
     """
     Compare HPOL and VPOL polarization components.
@@ -251,11 +263,11 @@ def compare_polarizations(
         output += f"HPOL Max Gain: {_fmt(result.get('max_hpol_gain_dBi'))} dBi\n"
         output += f"VPOL Max Gain: {_fmt(result.get('max_vpol_gain_dBi'))} dBi\n"
 
-        balance = result.get('polarization_balance_dB')
+        balance = result.get("polarization_balance_dB")
         if balance is not None:
             output += f"Polarization Balance: {_fmt(balance, '.1f')} dB\n"
 
-        note = result.get('polarization_note')
+        note = result.get("polarization_note")
         if note:
             output += f"Assessment: {note}\n"
 
@@ -266,8 +278,7 @@ def compare_polarizations(
 
 
 def get_all_analysis(
-    frequency: Optional[float] = None,
-    measurement_name: Optional[str] = None
+    frequency: Optional[float] = None, measurement_name: Optional[str] = None
 ) -> str:
     """
     Get comprehensive analysis of the antenna measurement.
@@ -326,9 +337,7 @@ def extrapolate_to_frequency(
 
         freqs = [d["frequency"] for d in hpol_data]
 
-        result = extrapolate_pattern(
-            hpol_data, vpol_data, target_frequency, fit_degree=fit_degree
-        )
+        result = extrapolate_pattern(hpol_data, vpol_data, target_frequency, fit_degree=fit_degree)
 
         h_mag = np.array(result["hpol"]["mag"])
         v_mag = np.array(result["vpol"]["mag"])
@@ -421,9 +430,7 @@ def get_horizon_statistics(
         output += f"Avg {unit} (linear): {_fmt(result.get('avg_gain_dB'))} {unit}\n"
         output += f"Band Avg (sin-theta): {_fmt(result.get('meg_dB'))} {unit}\n"
         output += f"Full-Sphere Avg: {_fmt(result.get('full_meg_dB'))} {unit}\n"
-        output += (
-            f"Maritime Advantage: {_fmt(result.get('horizon_efficiency_dB'), '.1f')} dB vs sphere avg\n"
-        )
+        output += f"Maritime Advantage: {_fmt(result.get('horizon_efficiency_dB'), '.1f')} dB vs sphere avg\n"
         output += (
             f"Band Power Share: {_fmt(result.get('horizon_power_pct'), '.1f')}% "
             f"(iso area {_fmt(result.get('solid_angle_pct'), '.1f')}%)\n"
@@ -447,6 +454,7 @@ def get_horizon_statistics(
 
 
 # ---- MCP tool registration (wraps the standalone functions above) ----
+
 
 def register_analysis_tools(mcp):
     """Register analysis tools with the MCP server."""

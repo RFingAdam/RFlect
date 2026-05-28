@@ -3,6 +3,14 @@ Bulk Processing Tools for RFlect MCP Server
 
 Exposes existing batch processing functions from plot_antenna.file_utils
 as headless MCP tools for VNA automation workflows.
+
+Return contract (#10)
+---------------------
+Like analysis_tools, these tools follow the *human-readable string* contract:
+they return a ``str`` on success and on failure and NEVER raise. Hard errors are
+prefixed ``"Error: ..."``; empty/precondition results use a descriptive sentence
+(``"No HPOL files ..."``, ``"Could not extract frequencies ..."``). Both tiers are
+substring-detectable. Locked by test_tool_contract.py.
 """
 
 import os
@@ -67,8 +75,7 @@ def register_bulk_tools(mcp):
             invalid = [f for f in selected_frequencies if f not in freq_list]
             if invalid:
                 return (
-                    f"Frequencies not found in data: {invalid} MHz\n"
-                    f"Available: {freq_list} MHz"
+                    f"Frequencies not found in data: {invalid} MHz\n" f"Available: {freq_list} MHz"
                 )
 
             output_dir = save_path or folder_path
@@ -254,8 +261,7 @@ def register_bulk_tools(mcp):
 
             if frequency not in freq_list:
                 return (
-                    f"Frequency {frequency} MHz not found in data.\n"
-                    f"Available: {freq_list} MHz"
+                    f"Frequency {frequency} MHz not found in data.\n" f"Available: {freq_list} MHz"
                 )
 
             convert_HpolVpol_files(
@@ -271,8 +277,7 @@ def register_bulk_tools(mcp):
             base_name = os.path.splitext(os.path.basename(hpol_path))[0]
             base_name = base_name.replace("AP_HPol", "").rstrip("_")
             output_file = os.path.join(
-                os.path.dirname(hpol_path),
-                f"{base_name}_{int(frequency)}MHz.ffs"
+                os.path.dirname(hpol_path), f"{base_name}_{int(frequency)}MHz.ffs"
             )
 
             summary = f"CST conversion complete.\n\n"
