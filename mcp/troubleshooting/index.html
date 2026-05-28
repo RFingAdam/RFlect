@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
       
       
       
@@ -16,7 +16,7 @@
         <link rel="prev" href="../recipes/">
       
       
-        <link rel="next" href="../../ai/overview/">
+        <link rel="next" href="../../reference/measurement-types/">
       
       
         
@@ -329,27 +329,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../ai/overview/" class="md-tabs__link">
-          
-  
-  
-  AI
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../reference/cli/" class="md-tabs__link">
+        <a href="../../reference/measurement-types/" class="md-tabs__link">
           
   
   
@@ -1312,10 +1292,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ai-summary-requires-api-key" class="md-nav__link">
+  <a href="#report-prose-looks-generic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        "AI Summary requires API key"
+        Report prose looks generic
       
     </span>
   </a>
@@ -1458,7 +1438,7 @@
   <span class="md-ellipsis">
     
   
-    AI
+    Reference
   
 
     
@@ -1474,212 +1454,39 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/status/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Status
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/providers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Providers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/chat/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Chat
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/reports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reports
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
     Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/measurement-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measurement Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1848,10 +1655,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ai-summary-requires-api-key" class="md-nav__link">
+  <a href="#report-prose-looks-generic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        "AI Summary requires API key"
+        Report prose looks generic
       
     </span>
   </a>
@@ -1982,25 +1789,27 @@
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">get_all_analysis</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
 </code></pre></div>
 <p>Or skip the import step entirely with <code>process_folder("/path/to/dir", intent="passive")</code>.</p>
-<h2 id="ai-summary-requires-api-key">"AI Summary requires API key"<a class="headerlink" href="#ai-summary-requires-api-key" title="Permanent link">&para;</a></h2>
-<p>Report generation tried to use an AI provider but none is configured. Options:</p>
-<ul>
-<li><strong>GUI</strong>: Tools → Manage API Keys → enter OpenAI/Anthropic key</li>
-<li><strong>Environment</strong>: <code>export OPENAI_API_KEY=...</code> or <code>export ANTHROPIC_API_KEY=...</code></li>
-<li><strong>Ollama</strong>: run <code>ollama serve</code> locally, no key needed</li>
-<li><strong>Skip AI</strong>: pass <code>"ai_executive_summary": false</code> in options</li>
-</ul>
+<h2 id="report-prose-looks-generic">Report prose looks generic<a class="headerlink" href="#report-prose-looks-generic" title="Permanent link">&para;</a></h2>
+<p>As of v5.0.0 RFlect has <strong>no LLM and needs no API key</strong>. <code>generate_report</code>
+produces deterministic, data-driven prose by default. To get richer narrative,
+have the driving agent author it and pass it via the <code>narrative</code> parameter:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span> <span class="n">narrative</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;executive_summary&quot;</span><span class="p">:</span> <span class="s2">&quot;…agent-written summary…&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span>   <span class="s2">&quot;- point one</span><span class="se">\n</span><span class="s2">- point two&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">})</span>
+</code></pre></div>
+<p>See <a href="../recipes/">Recipes</a> for the full agent-authored-narrative flow.</p>
 <h2 id="report-too-large-oom">Report too large / OOM<a class="headerlink" href="#report-too-large-oom" title="Permanent link">&para;</a></h2>
 <p>Use filtering:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span> <span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;frequencies&quot;</span><span class="p">:</span>          <span class="p">[</span><span class="mi">2450</span><span class="p">],</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;polarizations&quot;</span><span class="p">:</span>        <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">&quot;include_3d_plots&quot;</span><span class="p">:</span>     <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;max_frequencies_in_table&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">})</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span> <span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">&quot;frequencies&quot;</span><span class="p">:</span>          <span class="p">[</span><span class="mi">2450</span><span class="p">],</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">&quot;polarizations&quot;</span><span class="p">:</span>        <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">&quot;include_3d_plots&quot;</span><span class="p">:</span>     <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">&quot;max_frequencies_in_table&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">})</span>
 </code></pre></div>
 <h2 id="file-import-fails">File import fails<a class="headerlink" href="#file-import-fails" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Error importing file: …
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Error importing file: …
 </code></pre></div>
 <p>Check:</p>
 <ul>
@@ -2032,29 +1841,29 @@
 </table>
 <p>Run <code>list_measurement_files(folder)</code> to see what's in the folder.</p>
 <h2 id="mixed-intents-warning">Mixed-intents warning<a class="headerlink" href="#mixed-intents-warning" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>&quot;warnings&quot;: [&quot;mixed_intents_detected: passive(2), active(1) — chose passive&quot;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&quot;warnings&quot;: [&quot;mixed_intents_detected: passive(2), active(1) — chose passive&quot;]
 </code></pre></div>
 <p>Not an error — RFlect picked the highest-priority intent. If you want a different choice, pass <code>intent=</code> explicitly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>  <span class="c1"># ignore the passive pair</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>  <span class="c1"># ignore the passive pair</span>
 </code></pre></div>
 <h2 id="cal-drift-import-is-idempotent-why">Cal-drift import is idempotent — why?<a class="headerlink" href="#cal-drift-import-is-idempotent-why" title="Permanent link">&para;</a></h2>
 <p>Each <code>TRP Cal *.txt</code> is content-hashed (SHA-256) on ingest. Re-running <code>cal_drift_ingest</code> on the same directory will report <code>skipped_duplicate</code> instead of double-recording.</p>
 <h2 id="tool-count-check">Tool count check<a class="headerlink" href="#tool-count-check" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s2">import sys, os</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s2">sys.path.insert(0, os.path.abspath(&#39;rflect-mcp&#39;))</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s2">from mcp.server.fastmcp import FastMCP</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s2">from tools.import_tools import register_import_tools</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s2"># ... import the rest ...</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="s2">m = FastMCP(&#39;t&#39;)</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s2"># ... register them ...</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s2">print(len(m._tool_manager._tools))</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s2">import sys, os</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s2">sys.path.insert(0, os.path.abspath(&#39;rflect-mcp&#39;))</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s2">from mcp.server.fastmcp import FastMCP</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s2">from tools.import_tools import register_import_tools</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s2"># ... import the rest ...</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s2">m = FastMCP(&#39;t&#39;)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s2"># ... register them ...</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s2">print(len(m._tool_manager._tools))</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s2">&quot;</span>
 </code></pre></div>
 <p>Should print <code>34</code> on v4.2.0+.</p>
 <h2 id="logs">Logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h2>
 <p>Run the server directly to see errors:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>rflect-mcp/server.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python<span class="w"> </span>rflect-mcp/server.py
 </code></pre></div>
 <p>It will block waiting for MCP stdio traffic; Ctrl+C to exit. Any import errors print to stderr before that point.</p>
 <h2 id="still-stuck">Still stuck?<a class="headerlink" href="#still-stuck" title="Permanent link">&para;</a></h2>
@@ -2120,13 +1929,13 @@
         
         
           
-          <a href="../../ai/overview/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
+          <a href="../../reference/measurement-types/" class="md-footer__link md-footer__link--next" aria-label="Next: Measurement Types">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Overview
+                Measurement Types
               </div>
             </div>
             <div class="md-footer__button md-icon">

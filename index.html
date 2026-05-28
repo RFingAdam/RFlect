@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
       
       
       
@@ -327,27 +327,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="ai/overview/" class="md-tabs__link">
-          
-  
-  
-  AI
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="reference/cli/" class="md-tabs__link">
+        <a href="reference/measurement-types/" class="md-tabs__link">
           
   
   
@@ -1396,7 +1376,7 @@
   <span class="md-ellipsis">
     
   
-    AI
+    Reference
   
 
     
@@ -1412,212 +1392,39 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai/status/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Status
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai/providers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Providers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai/chat/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Chat
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai/reports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reports
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
     Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/measurement-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measurement Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1879,7 +1686,7 @@
 
 <a class="rflect-card" href="mcp/overview/">
 <strong>MCP Server →</strong>
-<span>35 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
+<span>41 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
 </a>
 
 <a class="rflect-card" href="mcp/recipes/">
@@ -1887,9 +1694,9 @@
 <span>One call: <code>process_folder(...)</code>. Passive / active / cal-drift / UWB / auto.</span>
 </a>
 
-<a class="rflect-card" href="ai/overview/">
-<strong>AI Features →</strong>
-<span>OpenAI, Anthropic, Ollama. Chat over your data. AI-augmented DOCX reports.</span>
+<a class="rflect-card" href="reference/measurement-types/">
+<strong>Measurement Types →</strong>
+<span>Every scan type and analysis, its input format, and the MCP tool that drives it.</span>
 </a>
 
 <a class="rflect-card" href="hardware/file-formats/">
@@ -1901,9 +1708,10 @@
 
 <h2 id="built-for-the-way-rf-labs-actually-work">Built for the way RF labs actually work<a class="headerlink" href="#built-for-the-way-rf-labs-actually-work" title="Permanent link">&para;</a></h2>
 <ul>
+<li><strong>No API key, no subscription, no LLM dependency</strong> — RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.</li>
+<li><strong>MCP server</strong> — 41 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent <em>is</em> the LLM; RFlect provides the data and the rendering.</li>
 <li><strong>GUI</strong> — desktop app (Tk-based, dark theme) for interactive review</li>
-<li><strong>MCP server</strong> — 35 tools that let Claude Code, Cline, and other AI clients drive RFlect programmatically</li>
-<li><strong>AI-assisted reports</strong> — DOCX with embedded plots, gain tables, and optional LLM-generated executive summaries (OpenAI / Anthropic / Ollama)</li>
+<li><strong>Agent-authored reports</strong> — DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via <a href="mcp/tools-reference/"><code>generate_report</code></a>'s <code>narrative</code> parameter</li>
 <li><strong>Cal-drift tracker</strong> — record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches</li>
 </ul>
 <h2 id="inputs-at-a-glance">Inputs at a glance<a class="headerlink" href="#inputs-at-a-glance" title="Permanent link">&para;</a></h2>

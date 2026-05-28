@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
       
       
       
@@ -329,27 +329,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../ai/overview/" class="md-tabs__link">
-          
-  
-  
-  AI
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../reference/cli/" class="md-tabs__link">
+        <a href="../../reference/measurement-types/" class="md-tabs__link">
           
   
   
@@ -1322,6 +1302,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rf-analysis-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RF Analysis (6)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#misc-3" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1447,7 +1438,7 @@
   <span class="md-ellipsis">
     
   
-    AI
+    Reference
   
 
     
@@ -1463,212 +1454,39 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/status/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Status
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/providers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Providers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/chat/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Chat
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/reports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reports
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
     Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/measurement-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measurement Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1896,6 +1714,17 @@
     <span class="md-ellipsis">
       
         Validation (1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rf-analysis-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RF Analysis (6)
       
     </span>
   </a>
@@ -2186,6 +2015,43 @@
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
 </code></pre></div></p>
 <p>Reads only the documented bench <code>session.json</code> shape (<code>wifi_only</code> runs carrying <code>angle_deg</code> and <code>aggregate.overall_mbps</code>); it has no dependency on any specific bench harness. See <a href="../recipes/">Recipes</a> for usage patterns.</p>
+<h2 id="rf-analysis-6">RF Analysis (6)<a class="headerlink" href="#rf-analysis-6" title="Permanent link">&para;</a></h2>
+<p>Deterministic wrappers over <code>plot_antenna</code> math (no LLM, no network). Each returns a structured dict and never raises; failures appear in a <code>warnings</code> list.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compare_antennas(measurement_names, reference, out_csv)</code></td>
+<td>Cross-measurement overlay: per-frequency peak gain/TRP, deltas vs a reference, best-per-frequency, best-overall, optional CSV</td>
+</tr>
+<tr>
+<td><code>analyze_s11(freq_hz, s11_db, threshold_db, include_vswr_curve)</code></td>
+<td>Return loss / impedance bandwidth / VSWR / resonance from an S11 sweep</td>
+</tr>
+<tr>
+<td><code>analyze_group_delay(freq_hz, phase_deg, band_start_hz, band_stop_hz)</code></td>
+<td>Group delay + in-band flatness from a transmission-phase sweep (phase only)</td>
+</tr>
+<tr>
+<td><code>estimate_link_budget(tx_power_dbm, rx_sensitivity_dbm, tx_gain_dbi, rx_gain_dbi, freq_mhz, ...)</code></td>
+<td>Max range + link margin via Friis / log-distance / ITU-indoor; optional Rayleigh/Rician fade margin and de-rated reliable range</td>
+</tr>
+<tr>
+<td><code>analyze_mimo_diversity(ecc, snr_db, snr_sweep_db, fading, rician_k)</code></td>
+<td>ECC → Vaughan-Andersen diversity gain, 2×2 capacity, isolation rating, optional capacity-vs-SNR curve</td>
+</tr>
+<tr>
+<td><code>generate_active_cal(power_measurement_file, gain_standard_file, hpol_file, vpol_file, freq_list, cable_loss)</code></td>
+<td>Generate an active chamber cal file + summary; auto-records into cal-drift history</td>
+</tr>
+</tbody>
+</table>
+<p><code>compare_antennas</code> operates on the loaded-measurement store (import first). The others take agent-supplied arrays/scalars — pair them with measured values (e.g. use the peak gain from <code>get_gain_statistics</code> as <code>tx_gain_dbi</code>, or an ECC from measured patterns for <code>analyze_mimo_diversity</code>).</p>
 <h2 id="misc-3">Misc (3)<a class="headerlink" href="#misc-3" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

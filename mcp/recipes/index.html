@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
       
       
       
@@ -329,27 +329,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../ai/overview/" class="md-tabs__link">
-          
-  
-  
-  AI
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../reference/cli/" class="md-tabs__link">
+        <a href="../../reference/measurement-types/" class="md-tabs__link">
           
   
   
@@ -1338,6 +1318,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#agent-authored-report-narrative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-authored report narrative
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1414,7 +1405,7 @@
   <span class="md-ellipsis">
     
   
-    AI
+    Reference
   
 
     
@@ -1430,212 +1421,39 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/status/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Status
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/providers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Providers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/chat/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Chat
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/reports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reports
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
     Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/measurement-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measurement Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1858,6 +1676,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#agent-authored-report-narrative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-authored report narrative
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1976,6 +1805,25 @@
 <li>"Process the UWB folder and summarize the worst-fidelity angle."</li>
 </ul>
 <p>The agent will translate these into <code>process_folder(...)</code> calls and follow up with the right secondary tools (e.g., <code>cal_drift_compare</code> for the drift case).</p>
+<h2 id="agent-authored-report-narrative">Agent-authored report narrative<a class="headerlink" href="#agent-authored-report-narrative" title="Permanent link">&para;</a></h2>
+<p>RFlect generates report prose <strong>deterministically</strong> by default — no LLM, no API key. Because the MCP client driving RFlect <em>is</em> an LLM, the higher-quality path is for the agent to read the computed analysis and author the narrative itself, then hand it to <code>generate_report</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1. Compute the facts (deterministic).</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">get_gain_statistics</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">pol</span>   <span class="o">=</span> <span class="n">compare_polarizations</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># 2. The agent writes the prose from those facts, then:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">generate_report</span><span class="p">(</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;BLE Antenna Report&quot;</span><span class="p">,</span> <span class="s2">&quot;antenna_type&quot;</span><span class="p">:</span> <span class="s2">&quot;Chip&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">narrative</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="s2">&quot;executive_summary&quot;</span><span class="p">:</span> <span class="s2">&quot;Peak gain of +1.8 dBi at 2450 MHz with ...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="s2">&quot;section_analysis&quot;</span><span class="p">:</span>  <span class="p">{</span><span class="s2">&quot;WiFi-Main&quot;</span><span class="p">:</span> <span class="s2">&quot;Pattern is near-omnidirectional ...&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span>   <span class="s2">&quot;- Re-tune match toward band center</span><span class="se">\n</span><span class="s2">- Re-check 2480 MHz&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="s2">&quot;captions&quot;</span><span class="p">:</span>          <span class="p">{</span><span class="s2">&quot;3D_TRP_total_2450.0MHz.png&quot;</span><span class="p">:</span> <span class="s2">&quot;Total radiated power, 2450 MHz&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="p">},</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="p">)</span>
+</code></pre></div>
+<p>Any <code>narrative</code> key you omit falls back to RFlect's data-driven text, so you can author just the executive summary and let everything else stay deterministic. There is no <code>ai_*</code> option and no provider to configure.</p>
 
 
 
