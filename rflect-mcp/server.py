@@ -33,6 +33,11 @@ from tools.uwb_tools import register_uwb_tools
 from tools.cal_drift_tools import register_cal_drift_tools
 from tools.orchestration import register_orchestration_tools
 from tools.iperf_angle_tools import register_iperf_angle_tools
+from tools.comparison_tools import register_comparison_tools
+from tools.vna_tools import register_vna_tools
+from tools.propagation_tools import register_propagation_tools
+from tools.mimo_tools import register_mimo_tools
+from tools.calibration_tools import register_calibration_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -46,6 +51,11 @@ register_uwb_tools(mcp)
 register_cal_drift_tools(mcp)
 register_orchestration_tools(mcp)
 register_iperf_angle_tools(mcp)
+register_comparison_tools(mcp)
+register_vna_tools(mcp)
+register_propagation_tools(mcp)
+register_mimo_tools(mcp)
+register_calibration_tools(mcp)
 
 
 @mcp.resource("rflect://status")
