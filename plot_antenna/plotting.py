@@ -20,6 +20,41 @@ from .config import (
     polar_dB_min,
     MIMO_SNR_RANGE_DB,
 )
+
+# Shared plot style + save helpers (#41) — single source of truth for output
+# dpi/format and a small colormap registry, so styling isn't duplicated across
+# the many plot_* functions. Existing call sites migrate to save_figure()
+# incrementally; new plots should use it.
+PLOT_DPI = 300
+PLOT_FORMAT = "png"
+
+_COLORMAPS = {
+    "gain": "viridis",
+    "power": "turbo",
+    "phase": "twilight",
+    "error": "RdYlGn_r",
+    "diverging": "RdBu_r",
+}
+
+
+def colormap_for(kind: str):
+    """Return the registered colormap name for a plot kind (default: viridis)."""
+    return _COLORMAPS.get(kind, "viridis")
+
+
+def save_figure(fig_or_path, path=None, *, dpi=PLOT_DPI, fmt=PLOT_FORMAT):
+    """Save a figure with the project-standard dpi/format (#41).
+
+    Usage: save_figure(fig, path) or save_figure(path) to save the current
+    pyplot figure. Centralizes the dpi=300 / format="png" convention.
+    """
+    if path is None:
+        plt.savefig(fig_or_path, format=fmt, dpi=dpi)
+        return fig_or_path
+    fig_or_path.savefig(path, format=fmt, dpi=dpi)
+    return path
+
+
 from .file_utils import parse_2port_data
 from .calculations import (
     calculate_trp,
