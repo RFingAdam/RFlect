@@ -25,6 +25,7 @@ import numpy as np
 import requests
 
 from ..config import (
+    FONT_FAMILY,
     ACCENT_BLUE_COLOR,
     DARK_BG_COLOR,
     LIGHT_TEXT_COLOR,
@@ -176,34 +177,42 @@ class ToolsMixin:
         report_dialog.grab_set()
 
         # Title
-        tk.Label(report_dialog, text="Report Generation", font=("Arial", 14, "bold")).pack(pady=10)
+        tk.Label(report_dialog, text="Report Generation", font=(FONT_FAMILY, 14, "bold")).pack(
+            pady=10
+        )
 
         # Report title
-        tk.Label(report_dialog, text="Report Title:", font=("Arial", 10)).pack(anchor="w", padx=20)
+        tk.Label(report_dialog, text="Report Title:", font=(FONT_FAMILY, 10)).pack(
+            anchor="w", padx=20
+        )
         title_var = tk.StringVar(value="Antenna Measurement Report")
         tk.Entry(report_dialog, textvariable=title_var, width=50).pack(padx=20, pady=5)
 
         # Project name
-        tk.Label(report_dialog, text="Project Name:", font=("Arial", 10)).pack(anchor="w", padx=20)
+        tk.Label(report_dialog, text="Project Name:", font=(FONT_FAMILY, 10)).pack(
+            anchor="w", padx=20
+        )
         project_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=project_var, width=50).pack(padx=20, pady=5)
 
         # Antenna type
         tk.Label(
-            report_dialog, text="Antenna Type (e.g., Patch, Monopole, PIFA):", font=("Arial", 10)
+            report_dialog,
+            text="Antenna Type (e.g., Patch, Monopole, PIFA):",
+            font=(FONT_FAMILY, 10),
         ).pack(anchor="w", padx=20)
         antenna_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=antenna_var, width=50).pack(padx=20, pady=5)
 
         # Frequency range
         tk.Label(
-            report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):", font=("Arial", 10)
+            report_dialog, text="Frequency Range (e.g., 2.4-2.5 GHz):", font=(FONT_FAMILY, 10)
         ).pack(anchor="w", padx=20)
         freq_var = tk.StringVar()
         tk.Entry(report_dialog, textvariable=freq_var, width=50).pack(padx=20, pady=5)
 
         # Author
-        tk.Label(report_dialog, text="Author/Engineer:", font=("Arial", 10)).pack(
+        tk.Label(report_dialog, text="Author/Engineer:", font=(FONT_FAMILY, 10)).pack(
             anchor="w", padx=20
         )
         author_var = tk.StringVar()
@@ -872,20 +881,20 @@ class ToolsMixin:
             freq_dialog.grab_set()
 
             # Frequency selection
-            tk.Label(freq_dialog, text="Select Frequency (MHz):", font=("Arial", 11, "bold")).pack(
-                pady=10
-            )
+            tk.Label(
+                freq_dialog, text="Select Frequency (MHz):", font=(FONT_FAMILY, 11, "bold")
+            ).pack(pady=10)
             freq_var = tk.StringVar(value=str(freq_list[0]))
-            freq_listbox = tk.Listbox(freq_dialog, height=6, font=("Arial", 10))
+            freq_listbox = tk.Listbox(freq_dialog, height=6, font=(FONT_FAMILY, 10))
             for freq in freq_list:
                 freq_listbox.insert(tk.END, f"{freq} MHz")
             freq_listbox.selection_set(0)
             freq_listbox.pack(pady=5)
 
             # Plot options
-            tk.Label(freq_dialog, text="Visualization Options:", font=("Arial", 11, "bold")).pack(
-                pady=10
-            )
+            tk.Label(
+                freq_dialog, text="Visualization Options:", font=(FONT_FAMILY, 11, "bold")
+            ).pack(pady=10)
             plot_2d_var = tk.BooleanVar(value=True)
             plot_3d_var = tk.BooleanVar(value=True)
 
@@ -893,20 +902,22 @@ class ToolsMixin:
                 freq_dialog,
                 text="Show 2D Plots (Contour + Polar)",
                 variable=plot_2d_var,
-                font=("Arial", 10),
+                font=(FONT_FAMILY, 10),
             ).pack()
             tk.Checkbutton(
                 freq_dialog,
                 text="Show 3D Plots (Spherical)",
                 variable=plot_3d_var,
-                font=("Arial", 10),
+                font=(FONT_FAMILY, 10),
             ).pack()
 
             # Export option
-            tk.Label(freq_dialog, text="Export Options:", font=("Arial", 11, "bold")).pack(pady=10)
+            tk.Label(freq_dialog, text="Export Options:", font=(FONT_FAMILY, 11, "bold")).pack(
+                pady=10
+            )
             export_var = tk.BooleanVar(value=False)
             tk.Checkbutton(
-                freq_dialog, text="Export data to file", variable=export_var, font=("Arial", 10)
+                freq_dialog, text="Export data to file", variable=export_var, font=(FONT_FAMILY, 10)
             ).pack()
 
             # Results container
@@ -930,10 +941,10 @@ class ToolsMixin:
             button_frame = tk.Frame(freq_dialog)
             button_frame.pack(pady=20)
             tk.Button(
-                button_frame, text="OK", command=on_ok, width=10, font=("Arial", 10, "bold")
+                button_frame, text="OK", command=on_ok, width=10, font=(FONT_FAMILY, 10, "bold")
             ).pack(side=tk.LEFT, padx=5)
             tk.Button(
-                button_frame, text="Cancel", command=on_cancel, width=10, font=("Arial", 10)
+                button_frame, text="Cancel", command=on_cancel, width=10, font=(FONT_FAMILY, 10)
             ).pack(side=tk.LEFT, padx=5)
 
             # Wait for dialog to close

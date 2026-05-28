@@ -16,6 +16,7 @@ from tkinter import filedialog, messagebox, ttk
 from typing import TYPE_CHECKING, Optional
 
 from ..config import (
+    FONT_FAMILY,
     DARK_BG_COLOR,
     LIGHT_TEXT_COLOR,
     ACCENT_BLUE_COLOR,
@@ -136,7 +137,7 @@ class DialogsMixin:
         name_label = tk.Label(
             header_frame,
             text="RFlect",
-            font=("Arial", 28, "bold"),
+            font=(FONT_FAMILY, 28, "bold"),
             bg=DARK_BG_COLOR,
             fg="#E63946",  # Red color similar to smith_logo.png
         )
@@ -146,7 +147,7 @@ class DialogsMixin:
         version_label = tk.Label(
             about_window,
             text=f"Version {self.CURRENT_VERSION}",
-            font=("Arial", 12),
+            font=(FONT_FAMILY, 12),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
         )
@@ -156,7 +157,7 @@ class DialogsMixin:
         desc_label = tk.Label(
             about_window,
             text="Antenna Measurement & Analysis Tool",
-            font=("Arial", 10, "italic"),
+            font=(FONT_FAMILY, 10, "italic"),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
         )
@@ -181,7 +182,7 @@ Features:
         credits_label = tk.Label(
             credits_frame,
             text=credits_text,
-            font=("Arial", 9),
+            font=(FONT_FAMILY, 9),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
             justify=tk.LEFT,
@@ -192,7 +193,7 @@ Features:
         license_label = tk.Label(
             about_window,
             text="Licensed under GNU General Public License v3.0",
-            font=("Arial", 8),
+            font=(FONT_FAMILY, 8),
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
         )
@@ -987,7 +988,7 @@ Features:
                 text="(single freq)",
                 bg=DARK_BG_COLOR,
                 fg="#A0A0A0",
-                font=("Arial", 9),
+                font=(FONT_FAMILY, 9),
             ).grid(row=4, column=3, sticky=tk.W)
 
             # CSV file for per-frequency conducted power (batch processing)
@@ -1371,7 +1372,7 @@ Features:
             title = tk.Label(
                 settings_window,
                 text="VSWR/Return Loss Settings",
-                font=("Arial", 12, "bold"),
+                font=(FONT_FAMILY, 12, "bold"),
                 bg=DARK_BG_COLOR,
                 fg=LIGHT_TEXT_COLOR,
             )

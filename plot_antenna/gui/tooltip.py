@@ -1,6 +1,7 @@
 """Lightweight tooltip widget for Tkinter."""
 
 import tkinter as tk
+from ..config import FONT_FAMILY
 
 
 class ToolTip:
@@ -42,7 +43,7 @@ class ToolTip:
             fg="#DDDDDD",
             relief=tk.SOLID,
             borderwidth=1,
-            font=("Segoe UI", 9),
+            font=(FONT_FAMILY, 9),
             padx=8,
             pady=4,
         )

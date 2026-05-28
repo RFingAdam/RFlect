@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Optional, List, Any
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR
+from ..config import ACCENT_BLUE_COLOR, LIGHT_TEXT_COLOR, FONT_FAMILY
 
 from ..file_utils import (
     read_passive_file,
@@ -368,7 +368,7 @@ class CallbacksMixin:
 
         row = 0
         for band_label, band_data in results:
-            tk.Label(result_window, text=band_label, font=("Arial", 12, "bold")).grid(
+            tk.Label(result_window, text=band_label, font=(FONT_FAMILY, 12, "bold")).grid(
                 row=row, column=0, columnspan=7, pady=5
             )
             row += 1
@@ -383,7 +383,7 @@ class CallbacksMixin:
                 "Avg Eff(dB)",
             ]
             for col, header in enumerate(headers):
-                tk.Label(result_window, text=header, font=("Arial", 10, "bold")).grid(
+                tk.Label(result_window, text=header, font=(FONT_FAMILY, 10, "bold")).grid(
                     row=row, column=col, padx=10, pady=5
                 )
             row += 1
@@ -441,20 +441,20 @@ class CallbacksMixin:
         summary_window.title("Final Summary")
 
         tk.Label(
-            summary_window, text="Final Summary of All Bands", font=("Arial", 12, "bold")
+            summary_window, text="Final Summary of All Bands", font=(FONT_FAMILY, 12, "bold")
         ).grid(row=0, column=0, columnspan=len(results) + 1, pady=10)
 
-        tk.Label(summary_window, text="Parameter", font=("Arial", 10, "bold")).grid(
+        tk.Label(summary_window, text="Parameter", font=(FONT_FAMILY, 10, "bold")).grid(
             row=1, column=0, padx=10, pady=5
         )
         for col, (band_label, _) in enumerate(results, start=1):
-            tk.Label(summary_window, text=band_label, font=("Arial", 10, "bold")).grid(
+            tk.Label(summary_window, text=band_label, font=(FONT_FAMILY, 10, "bold")).grid(
                 row=1, column=col, padx=10, pady=5
             )
 
         parameters = ["Avg Eff(%)", "Avg Eff(dB)", "Min Gain(dBi)", "Max Gain(dBi)"]
         for row, param in enumerate(parameters, start=2):
-            tk.Label(summary_window, text=param, font=("Arial", 10, "bold")).grid(
+            tk.Label(summary_window, text=param, font=(FONT_FAMILY, 10, "bold")).grid(
                 row=row, column=0, sticky="w", padx=10, pady=5
             )
 

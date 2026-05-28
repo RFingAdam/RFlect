@@ -68,13 +68,28 @@ WARNING_COLOR = "#FFC107"
 SUCCESS_COLOR = "#4CAF50"
 INFO_COLOR = "#4A90E2"
 
-# GUI Fonts
-HEADER_FONT = ("Arial", 14, "bold")
-LABEL_FONT = ("Arial", 12)
-FONT_SM = ("Arial", 9)
-FONT_MD = ("Arial", 11)
-FONT_LG = ("Arial", 13)
-FONT_XL = ("Arial", 16, "bold")
+# Platform-aware font family (Linux/macOS/Windows) — defined first so every
+# font constant below uses a family that actually exists on the host. "Arial"
+# is not guaranteed on Linux and caused Tk substitution / misaligned dialogs.
+import sys as _sys
+
+if _sys.platform == "win32":
+    FONT_FAMILY = "Segoe UI"
+    _MONO_FAMILY = "Consolas"
+elif _sys.platform == "darwin":
+    FONT_FAMILY = "Helvetica Neue"
+    _MONO_FAMILY = "Menlo"
+else:  # Linux / other
+    FONT_FAMILY = "DejaVu Sans"
+    _MONO_FAMILY = "DejaVu Sans Mono"
+
+# GUI Fonts (now cross-platform via FONT_FAMILY)
+HEADER_FONT = (FONT_FAMILY, 14, "bold")
+LABEL_FONT = (FONT_FAMILY, 12)
+FONT_SM = (FONT_FAMILY, 9)
+FONT_MD = (FONT_FAMILY, 11)
+FONT_LG = (FONT_FAMILY, 13)
+FONT_XL = (FONT_FAMILY, 16, "bold")
 
 # Spacing Constants
 PAD_SM = 5
@@ -92,19 +107,7 @@ HEADER_ACCENT_COLOR = "#E63946"
 DISABLED_FG_COLOR = "#A0A0A0"  # WCAG AA compliant (5.6:1 on #2E2E2E)
 FOCUS_BORDER_COLOR = "#5A9CF5"
 
-# Modern Fonts (platform-aware fallbacks for Linux/macOS/Windows)
-import sys as _sys
-
-if _sys.platform == "win32":
-    FONT_FAMILY = "Segoe UI"
-    _MONO_FAMILY = "Consolas"
-elif _sys.platform == "darwin":
-    FONT_FAMILY = "Helvetica Neue"
-    _MONO_FAMILY = "Menlo"
-else:  # Linux / other
-    FONT_FAMILY = "DejaVu Sans"
-    _MONO_FAMILY = "DejaVu Sans Mono"
-
+# Modern Fonts (same platform-aware family)
 HEADER_BAR_FONT = (FONT_FAMILY, 16, "bold")
 HEADER_VERSION_FONT = (FONT_FAMILY, 9)
 SECTION_HEADER_FONT = (FONT_FAMILY, 11, "bold")
