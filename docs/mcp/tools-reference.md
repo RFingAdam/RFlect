@@ -105,6 +105,21 @@ Returns:
 
 Reads only the documented bench `session.json` shape (`wifi_only` runs carrying `angle_deg` and `aggregate.overall_mbps`); it has no dependency on any specific bench harness. See [Recipes](recipes.md) for usage patterns.
 
+## RF Analysis (6)
+
+Deterministic wrappers over `plot_antenna` math (no LLM, no network). Each returns a structured dict and never raises; failures appear in a `warnings` list.
+
+| Tool | Purpose |
+|------|---------|
+| `compare_antennas(measurement_names, reference, out_csv)` | Cross-measurement overlay: per-frequency peak gain/TRP, deltas vs a reference, best-per-frequency, best-overall, optional CSV |
+| `analyze_s11(freq_hz, s11_db, threshold_db, include_vswr_curve)` | Return loss / impedance bandwidth / VSWR / resonance from an S11 sweep |
+| `analyze_group_delay(freq_hz, phase_deg, band_start_hz, band_stop_hz)` | Group delay + in-band flatness from a transmission-phase sweep (phase only) |
+| `estimate_link_budget(tx_power_dbm, rx_sensitivity_dbm, tx_gain_dbi, rx_gain_dbi, freq_mhz, ...)` | Max range + link margin via Friis / log-distance / ITU-indoor; optional Rayleigh/Rician fade margin and de-rated reliable range |
+| `analyze_mimo_diversity(ecc, snr_db, snr_sweep_db, fading, rician_k)` | ECC → Vaughan-Andersen diversity gain, 2×2 capacity, isolation rating, optional capacity-vs-SNR curve |
+| `generate_active_cal(power_measurement_file, gain_standard_file, hpol_file, vpol_file, freq_list, cable_loss)` | Generate an active chamber cal file + summary; auto-records into cal-drift history |
+
+`compare_antennas` operates on the loaded-measurement store (import first). The others take agent-supplied arrays/scalars — pair them with measured values (e.g. use the peak gain from `get_gain_statistics` as `tx_gain_dbi`, or an ECC from measured patterns for `analyze_mimo_diversity`).
+
 ## Misc (3)
 
 | Tool                       | Purpose                                                     |

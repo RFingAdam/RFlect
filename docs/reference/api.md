@@ -77,28 +77,38 @@ polz    = analyzer.compare_polarizations(frequency=2450.0)
 | `set_setup_group(run_id, group)` | Tag a run's methodology epoch                    |
 | `update_notes(run_id, text)`     | Operator notes                                   |
 
-## LLM provider — `plot_antenna.llm_provider`
+## Analysis engine — `plot_antenna.analysis_engine`
+
+The deterministic core that backs every MCP analysis tool. Pure NumPy, no LLM.
 
 ```python
-from plot_antenna.llm_provider import get_provider, UnifiedMessage, ToolDefinition
+from plot_antenna.analysis_engine import AntennaAnalyzer
 
-provider = get_provider("openai")  # or "anthropic", "ollama"
-response = provider.chat(
-    messages=[UnifiedMessage(role="user", content="...")],
-    tools=[ToolDefinition(name="get_gain_statistics", ...)],
-)
+az = AntennaAnalyzer(measurement_data=m.data, scan_type=m.scan_type,
+                     frequencies=m.frequencies)
+az.get_gain_statistics(frequency=2450.0)   # peak/avg/min gain, std
+az.analyze_pattern(frequency=2450.0)        # HPBW, sidelobes, classification
+az.compare_polarizations(frequency=2450.0)  # dominant pol, XPD, balance
+az.get_horizon_statistics(...)              # horizon-plane stats
 ```
 
-See `plot_antenna/llm_provider.py` for `BaseLLMProvider`, `LLMResponse`, `ToolCall`.
+## Propagation & MIMO — `plot_antenna.calculations`
 
-## API key management — `plot_antenna.api_keys`
+| Function | Purpose |
+|---|---|
+| `free_space_path_loss(freq_mhz, distance_m)` | Friis FSPL (dB) |
+| `friis_range_estimate(pt, pr, gt, gr, freq_mhz, n, loss)` | Max range from a link budget |
+| `log_distance_path_loss(freq_mhz, d, n, d0, sigma)` | Log-distance model |
+| `itu_indoor_path_loss(freq_mhz, d, n_floors, env)` | ITU-R P.1238 indoor model |
+| `fade_margin_for_reliability(pct, fading, K)` | Rayleigh/Rician fade margin |
+| `envelope_correlation_from_patterns(...)` | ECC from far-field patterns |
+| `diversity_gain(ecc)` | Vaughan-Andersen diversity gain (dB) |
+| `mimo_capacity_vs_snr(ecc, ...)` | SISO / 2×2 AWGN / fading capacity curves |
 
-```python
-from plot_antenna.api_keys import store_key, get_key, delete_key
+These are exposed over MCP via `estimate_link_budget` and `analyze_mimo_diversity`.
 
-store_key("openai", "sk-...")
-key = get_key("openai")        # returns plaintext from keyring or Fernet store
-delete_key("openai")
-```
-
-Keys are AES-128 (Fernet) encrypted at rest with PBKDF2-HMAC-SHA256 (600 K iterations) and a machine-ID-derived salt. Storage priority: OS keyring → Fernet file → environment variable → `.env`.
+!!! note "No LLM in v5.0.0"
+    RFlect makes no outbound LLM/API calls and needs no API key. The MCP client
+    is the LLM; RFlect supplies deterministic data and rendering. Report
+    narrative is data-driven by default or supplied by the agent — see
+    `generate_report`'s `narrative` parameter.

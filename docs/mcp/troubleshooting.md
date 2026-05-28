@@ -23,14 +23,20 @@ get_all_analysis(2450.0)
 
 Or skip the import step entirely with `process_folder("/path/to/dir", intent="passive")`.
 
-## "AI Summary requires API key"
+## Report prose looks generic
 
-Report generation tried to use an AI provider but none is configured. Options:
+As of v5.0.0 RFlect has **no LLM and needs no API key**. `generate_report`
+produces deterministic, data-driven prose by default. To get richer narrative,
+have the driving agent author it and pass it via the `narrative` parameter:
 
-- **GUI**: Tools → Manage API Keys → enter OpenAI/Anthropic key
-- **Environment**: `export OPENAI_API_KEY=...` or `export ANTHROPIC_API_KEY=...`
-- **Ollama**: run `ollama serve` locally, no key needed
-- **Skip AI**: pass `"ai_executive_summary": false` in options
+```python
+generate_report("/tmp/report.docx", narrative={
+    "executive_summary": "…agent-written summary…",
+    "recommendations":   "- point one\n- point two",
+})
+```
+
+See [Recipes](recipes.md) for the full agent-authored-narrative flow.
 
 ## Report too large / OOM
 

@@ -125,3 +125,27 @@ If you're driving Claude / Cline / Continue with natural language, these work we
 - "Process the UWB folder and summarize the worst-fidelity angle."
 
 The agent will translate these into `process_folder(...)` calls and follow up with the right secondary tools (e.g., `cal_drift_compare` for the drift case).
+
+## Agent-authored report narrative
+
+RFlect generates report prose **deterministically** by default — no LLM, no API key. Because the MCP client driving RFlect *is* an LLM, the higher-quality path is for the agent to read the computed analysis and author the narrative itself, then hand it to `generate_report`:
+
+```python
+# 1. Compute the facts (deterministic).
+stats = get_gain_statistics(2450.0)
+pol   = compare_polarizations(2450.0)
+
+# 2. The agent writes the prose from those facts, then:
+generate_report(
+    "/tmp/report.docx",
+    metadata={"title": "BLE Antenna Report", "antenna_type": "Chip"},
+    narrative={
+        "executive_summary": "Peak gain of +1.8 dBi at 2450 MHz with ...",
+        "section_analysis":  {"WiFi-Main": "Pattern is near-omnidirectional ..."},
+        "recommendations":   "- Re-tune match toward band center\n- Re-check 2480 MHz",
+        "captions":          {"3D_TRP_total_2450.0MHz.png": "Total radiated power, 2450 MHz"},
+    },
+)
+```
+
+Any `narrative` key you omit falls back to RFlect's data-driven text, so you can author just the executive summary and let everything else stay deterministic. There is no `ai_*` option and no provider to configure.

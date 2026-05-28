@@ -127,24 +127,18 @@ python run_rflect.py
 
 - **Polarization Analysis** — Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
 - **Batch Processing** — Process an entire folder of HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
-- **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and optional AI-generated executive analysis
+- **Report Generation** — Export DOCX reports with embedded plots, measurement summaries, and deterministic data-driven prose (or narrative authored by the driving MCP agent)
 - **3D Visualization** — Perceptually uniform turbo colormap, transparent panes, coordinate axes, and manual or auto Z-axis scaling
 
-## AI-Powered Analysis (Optional)
+## Zero-dependency, MCP-driven (v5.0.0)
 
-RFlect integrates with **OpenAI**, **Anthropic**, and **Ollama** to bring intelligent analysis to your measurement workflow. Ask questions about your data in natural language, get AI-generated executive summaries in reports, or let vision models interpret your radiation patterns.
+RFlect makes **no outbound LLM/API calls and needs no API key or subscription.** It is a deterministic RF analysis + rendering toolkit. When driven over MCP, the AI agent *is* the LLM: it calls RFlect's tools for data and — if a report needs narrative prose — authors it itself and passes it to `generate_report`. Everything RFlect computes is reproducible, not generated.
 
-All AI features are completely optional — RFlect works fully without any provider configured. When you're ready, configure a provider via **Tools > Manage API Keys**. Your keys are encrypted locally with AES-128 and never leave your machine.
-
-<p align="center">
-  <img src="./assets/api_key_management.png" alt="API Key Management" width="440">
-</p>
-
-See [AI_STATUS.md](AI_STATUS.md) for provider details and supported models.
+See [MCP_STATUS.md](MCP_STATUS.md) for the full tool inventory.
 
 ## MCP Server
 
-RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 25 tools that let AI assistants like Claude Code import your measurements, run analysis, generate reports, and perform UWB characterization programmatically. No GUI required.
+RFlect ships with an [MCP](https://modelcontextprotocol.io/) server — 41 tools that let an AI agent like Claude Code import your measurements, run analysis, compare antennas, estimate link budgets, generate reports, and perform UWB/MIMO characterization programmatically. No GUI required.
 
 See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
 
