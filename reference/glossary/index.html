@@ -16,7 +16,7 @@
         <link rel="prev" href="../api/">
       
       
-        <link rel="next" href="../../contributing/">
+        <link rel="next" href="../../changelog/">
       
       
         
@@ -338,6 +338,25 @@
         </a>
       </li>
     
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
   
 
       
@@ -1428,6 +1447,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributing/" class="md-nav__link">
         
   
@@ -1587,6 +1633,22 @@
 <td><strong>XPD</strong></td>
 <td>Cross-Polarization Discrimination — co-pol field divided by cross-pol field, in dB. Uses 20 log, not 10 log.</td>
 </tr>
+<tr>
+<td><strong>EIRP</strong></td>
+<td>Effective Isotropic Radiated Power — power radiated in a given direction relative to an isotropic source. RFlect's per-angle chamber input; TRP is its sphere average (the 1/4π in <code>calculate_trp</code>).</td>
+</tr>
+<tr>
+<td><strong>Sidelobe</strong></td>
+<td>A radiation lobe other than the main beam; sidelobe level (SLL) is its peak relative to the main-lobe peak, in dB.</td>
+</tr>
+<tr>
+<td><strong>Group delay</strong></td>
+<td>−dφ/dω, the negative derivative of transmission phase w.r.t. angular frequency (s); flatness across the band matters for wideband/UWB pulse fidelity.</td>
+</tr>
+<tr>
+<td><strong>Cal drift</strong></td>
+<td>Change in a chamber's path-loss calibration factors over time; RFlect tracks runs across epochs and flags drift beyond a threshold.</td>
+</tr>
 </tbody>
 </table>
 
@@ -1643,13 +1705,13 @@
         
         
           
-          <a href="../../contributing/" class="md-footer__link md-footer__link--next" aria-label="Next: Contributing">
+          <a href="../../changelog/" class="md-footer__link md-footer__link--next" aria-label="Next: Changelog">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Contributing
+                Changelog
               </div>
             </div>
             <div class="md-footer__button md-icon">
