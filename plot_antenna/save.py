@@ -406,6 +406,7 @@ class RFAnalyzer:
 
         return conclusions
 
+
 def _fmt(val, fmt=".2f", suffix=""):
     """Format a value for table display, handling None gracefully."""
     if val is None:
