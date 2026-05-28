@@ -837,6 +837,93 @@ def compute_drift(baseline_run_id: str, current_run_id: str) -> DriftResult:
     )
 
 
+def evaluate_drift_alert(
+    result: "DriftResult", warn_db: float = 0.5, alert_db: float = 1.0
+) -> dict:
+    """Classify a DriftResult against warn/alert thresholds (issue #4).
+
+    Looks at the worst per-polarization mean drift and max absolute drift and
+    returns a level — "OK", "WARN", or "ALERT" — with the triggering reasons.
+    Pure function (no IO); thresholds default to the module's soft/hard outlier
+    levels.
+
+    Returns:
+        {level, worst_mean_abs_db, worst_max_abs_db, warn_db, alert_db, reasons}
+    """
+    stats = result.stats
+    worst_mean = max(abs(stats["H"]["mean"]), abs(stats["V"]["mean"]))
+    worst_max = max(stats["H"]["max_abs"], stats["V"]["max_abs"])
+    reasons = []
+    level = "OK"
+    if worst_max >= alert_db or worst_mean >= alert_db:
+        level = "ALERT"
+        reasons.append(f"drift >= alert threshold {alert_db} dB")
+    elif worst_max >= warn_db or worst_mean >= warn_db:
+        level = "WARN"
+        reasons.append(f"drift >= warn threshold {warn_db} dB")
+    # Setup-group mismatch is always worth flagging.
+    sg = result.consistency.get("setup_group")
+    if sg and isinstance(sg, (list, tuple)) and sg[0] == "mismatch":
+        if level == "OK":
+            level = "WARN"
+        reasons.append(f"setup_group mismatch ({sg[1]!r} vs {sg[2]!r})")
+    return {
+        "level": level,
+        "worst_mean_abs_db": round(worst_mean, 4),
+        "worst_max_abs_db": round(worst_max, 4),
+        "warn_db": warn_db,
+        "alert_db": alert_db,
+        "reasons": reasons,
+    }
+
+
+def gain_standard_recert_status(
+    cal_date: str, interval_months: int = 12, last_recert_date: Optional[str] = None
+) -> dict:
+    """Gain-standard recertification status for a cal run (issue #3).
+
+    Given the calibration date and the recert interval, report whether the
+    gain standard's certification was current as of the cal (relative to its
+    last recert). Pure date math. Dates are "YYYY-MM-DD".
+
+    Returns:
+        {status: "ok"|"due"|"unknown", months_since_recert, interval_months,
+         due_date, cal_date, last_recert_date}
+    """
+    from datetime import date
+
+    out = {
+        "status": "unknown",
+        "months_since_recert": None,
+        "interval_months": interval_months,
+        "due_date": None,
+        "cal_date": cal_date,
+        "last_recert_date": last_recert_date,
+    }
+    if not last_recert_date:
+        return out  # no recert reference -> unknown
+
+    def _parse(s):
+        return date.fromisoformat(s)
+
+    try:
+        cal = _parse(cal_date)
+        recert = _parse(last_recert_date)
+    except (ValueError, TypeError):
+        return out
+
+    months = (cal.year - recert.year) * 12 + (cal.month - recert.month)
+    # due date = recert + interval (approx by months)
+    due_year = recert.year + (recert.month - 1 + interval_months) // 12
+    due_month = (recert.month - 1 + interval_months) % 12 + 1
+    due_day = min(recert.day, 28)
+    due = date(due_year, due_month, due_day)
+    out["months_since_recert"] = months
+    out["due_date"] = due.isoformat()
+    out["status"] = "due" if cal > due else "ok"
+    return out
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Plotting + reporting
 # ──────────────────────────────────────────────────────────────────────────

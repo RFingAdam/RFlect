@@ -151,6 +151,105 @@ def cal_drift_set_notes(run_id: str, notes: str) -> bool:
     return cal_drift.update_notes(run_id, notes)
 
 
+def cal_drift_alert(
+    baseline_run_id: str,
+    current_run_id: str,
+    warn_db: float = 0.5,
+    alert_db: float = 1.0,
+) -> Dict[str, Any]:
+    """Compare two cal runs and classify the drift as OK / WARN / ALERT (#4).
+
+    Computes the drift between baseline and current and applies warn/alert
+    thresholds to the worst per-polarization mean and max-absolute drift; also
+    flags a setup_group mismatch.
+
+    Args:
+        baseline_run_id, current_run_id: run_ids from cal_drift_list_runs.
+        warn_db: drift at/above this -> WARN (default 0.5 dB).
+        alert_db: drift at/above this -> ALERT (default 1.0 dB).
+
+    Returns:
+        Dict: level, worst_mean_abs_db, worst_max_abs_db, reasons, warn_db,
+        alert_db. On failure: {error}. Never raises.
+    """
+    try:
+        result = cal_drift.compute_drift(baseline_run_id, current_run_id)
+    except Exception as exc:
+        return {"error": f"cal_drift_alert failed: {exc}"}
+    out = cal_drift.evaluate_drift_alert(result, warn_db=warn_db, alert_db=alert_db)
+    out["baseline_run_id"] = baseline_run_id
+    out["current_run_id"] = current_run_id
+    return out
+
+
+def cal_drift_monitor(
+    baseline_run_id: str,
+    antenna: Optional[str] = None,
+    band: Optional[str] = None,
+    warn_db: float = 0.5,
+    alert_db: float = 1.0,
+) -> Dict[str, Any]:
+    """Compare the most-recent cal run to a baseline and alert (#33).
+
+    Cron-friendly: finds the latest recorded run (optionally filtered by
+    antenna/band), compares it to the baseline, and returns the drift alert.
+    Intended to be scheduled so chamber drift is caught automatically.
+
+    Args:
+        baseline_run_id: the reference run to compare against.
+        antenna, band: optional filters to select the latest run.
+        warn_db, alert_db: alert thresholds (dB).
+
+    Returns:
+        Dict: latest_run_id, plus the cal_drift_alert fields. On failure:
+        {error}. Never raises.
+    """
+    try:
+        df = cal_drift.list_runs(antenna=antenna, band=band)
+        if df is None or len(df) == 0:
+            return {"error": "no_recorded_runs", "warnings": ["nothing to monitor"]}
+        # Latest by date then time if present.
+        sort_cols = [c for c in ("date", "time") if c in df.columns]
+        latest = df.sort_values(sort_cols).iloc[-1] if sort_cols else df.iloc[-1]
+        latest_id = str(latest["run_id"])
+    except Exception as exc:
+        return {"error": f"cal_drift_monitor failed: {exc}"}
+    if latest_id == baseline_run_id:
+        return {
+            "latest_run_id": latest_id,
+            "level": "OK",
+            "reasons": ["latest run is the baseline; nothing newer to compare"],
+        }
+    out = cal_drift_alert(baseline_run_id, latest_id, warn_db=warn_db, alert_db=alert_db)
+    out["latest_run_id"] = latest_id
+    return out
+
+
+def cal_drift_recert_check(
+    cal_date: str,
+    interval_months: int = 12,
+    last_recert_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Gain-standard recertification status for a cal run (#3).
+
+    Reports whether the gain standard's certification was current as of the
+    cal date, given its last recert and the recert interval.
+
+    Args:
+        cal_date: calibration date "YYYY-MM-DD".
+        interval_months: recert validity interval (default 12).
+        last_recert_date: last recertification date "YYYY-MM-DD" (required for
+            a definite verdict; otherwise status is "unknown").
+
+    Returns:
+        Dict: status ("ok"|"due"|"unknown"), months_since_recert, due_date,
+        interval_months, cal_date, last_recert_date. Never raises.
+    """
+    return cal_drift.gain_standard_recert_status(
+        cal_date, interval_months=interval_months, last_recert_date=last_recert_date
+    )
+
+
 def register_cal_drift_tools(mcp):
     """Register calibration-drift tools with the MCP server."""
     mcp.tool()(cal_drift_ingest)
@@ -161,3 +260,6 @@ def register_cal_drift_tools(mcp):
     mcp.tool()(cal_drift_set_history_dir)
     mcp.tool()(cal_drift_set_setup_group)
     mcp.tool()(cal_drift_set_notes)
+    mcp.tool()(cal_drift_alert)
+    mcp.tool()(cal_drift_monitor)
+    mcp.tool()(cal_drift_recert_check)
