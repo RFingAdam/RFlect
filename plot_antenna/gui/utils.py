@@ -11,6 +11,7 @@ import tkinter as tk
 from ..file_utils import parse_2port_data
 import pandas as pd
 import numpy as np
+from ..config import FONT_FAMILY
 
 
 class DualOutput:
@@ -143,7 +144,7 @@ def display_parameter_table(results, param_name, parent):
     row = 0
     for band_label, band_data in results:
         # Band label
-        tk.Label(parent, text=band_label, font=("Arial", 12, "bold")).grid(
+        tk.Label(parent, text=band_label, font=(FONT_FAMILY, 12, "bold")).grid(
             row=row, column=0, columnspan=3, pady=10
         )
         row += 1
@@ -151,7 +152,7 @@ def display_parameter_table(results, param_name, parent):
         # Table headers for each band
         headers = ["File", f"Min {param_name}", f"Max {param_name}"]
         for col, header in enumerate(headers):
-            tk.Label(parent, text=header, font=("Arial", 10, "bold")).grid(
+            tk.Label(parent, text=header, font=(FONT_FAMILY, 10, "bold")).grid(
                 row=row, column=col, padx=10, pady=5
             )
         row += 1
