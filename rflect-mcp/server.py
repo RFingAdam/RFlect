@@ -43,6 +43,7 @@ from tools.uncertainty_tools import register_uncertainty_tools
 from tools.sparam_tools import register_sparam_tools
 from tools.statistics_tools import register_statistics_tools
 from tools.rf_methods_tools import register_rf_methods_tools
+from tools.instrument_tools import register_instrument_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -66,6 +67,7 @@ register_uncertainty_tools(mcp)
 register_sparam_tools(mcp)
 register_statistics_tools(mcp)
 register_rf_methods_tools(mcp)
+register_instrument_tools(mcp)
 
 
 @mcp.resource("rflect://status")
