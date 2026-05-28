@@ -38,6 +38,10 @@ from tools.vna_tools import register_vna_tools
 from tools.propagation_tools import register_propagation_tools
 from tools.mimo_tools import register_mimo_tools
 from tools.calibration_tools import register_calibration_tools
+from tools.compliance_tools import register_compliance_tools
+from tools.uncertainty_tools import register_uncertainty_tools
+from tools.sparam_tools import register_sparam_tools
+from tools.statistics_tools import register_statistics_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -56,6 +60,10 @@ register_vna_tools(mcp)
 register_propagation_tools(mcp)
 register_mimo_tools(mcp)
 register_calibration_tools(mcp)
+register_compliance_tools(mcp)
+register_uncertainty_tools(mcp)
+register_sparam_tools(mcp)
+register_statistics_tools(mcp)
 
 
 @mcp.resource("rflect://status")

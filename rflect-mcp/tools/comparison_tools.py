@@ -164,3 +164,78 @@ def register_comparison_tools(mcp):
                 result["warnings"].append(f"csv_write_failed: {exc}")
 
         return result
+
+    @mcp.tool()
+    def summarize_antennas(
+        measurement_names: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Min/Max/Mean summary table of the peak metric across N loaded antennas.
+
+        For each loaded measurement, reports the band Min/Max/Mean of the peak
+        metric (peak gain dBi for passive, peak power/TRP dBm for active) plus
+        its spread. This is the n-antenna comparison table — import the
+        measurements first.
+
+        Args:
+            measurement_names: which to include (default: all loaded).
+
+        Returns:
+            Dict: metric, unit, rows [{name, n_freqs, min, max, mean, spread}],
+            warnings.
+        """
+        result: Dict[str, Any] = {
+            "metric": None,
+            "unit": None,
+            "rows": [],
+            "warnings": [],
+        }
+        loaded = get_loaded_measurements()
+        if not loaded:
+            result["warnings"].append("no_data_loaded")
+            return result
+
+        names = measurement_names or list(loaded.keys())
+        names = [n for n in names if n in loaded]
+        for n in measurement_names or []:
+            if n not in loaded:
+                result["warnings"].append(f"measurement_not_found: {n}")
+        if not names:
+            result["warnings"].append("no_valid_measurements")
+            return result
+
+        for name in names:
+            m = loaded[name]
+            scan_type = m.scan_type
+            try:
+                az = AntennaAnalyzer(
+                    measurement_data=m.data, scan_type=m.scan_type, frequencies=m.frequencies
+                )
+            except Exception as exc:
+                result["warnings"].append(f"analyzer_failed:{name}: {exc}")
+                continue
+            if result["metric"] is None:
+                result["metric"] = "peak_power" if scan_type == "active" else "peak_gain"
+                result["unit"] = "dBm" if scan_type == "active" else "dBi"
+            peaks: List[float] = []
+            for fq in m.frequencies:
+                try:
+                    stats = az.get_gain_statistics(frequency=fq)
+                    val, _ = _peak_metric(stats, scan_type)
+                    if val is not None:
+                        peaks.append(float(val))
+                except Exception as exc:
+                    result["warnings"].append(f"stats_failed:{name}@{fq}: {exc}")
+            if not peaks:
+                continue
+            result["rows"].append(
+                {
+                    "name": name,
+                    "n_freqs": len(peaks),
+                    "min": round(min(peaks), 2),
+                    "max": round(max(peaks), 2),
+                    "mean": round(sum(peaks) / len(peaks), 2),
+                    "spread": round(max(peaks) - min(peaks), 2),
+                }
+            )
+        return result
