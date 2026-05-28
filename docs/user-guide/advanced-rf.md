@@ -48,3 +48,32 @@ Only valid when both HPBW values ≤ 180°. RFlect rejects results that produce 
 Tools menu → Advanced RF Analysis. Sub-dialogs are scrollable since the parameter set is large.
 
 There are currently no MCP wrappers for these modules. Open an issue if you need one — most are pure-Python in `plot_antenna/advanced_*` and could be wrapped quickly.
+
+## RF method gallery (v6.0)
+
+The figures below are authentic outputs of the new v6.0 RF methods
+(`plot_antenna/rf_methods.py`, exposed as MCP tools). Regenerate them with
+`python docs/generate_example_figures.py`.
+
+### Uniform linear array — electronic beam steering
+
+![Array factor steering](../assets/screenshots/example_array_factor.png)
+
+An 8-element, 0.5 λ array steered to 0°, 20°, and 45°. Note the main beam
+broadening (scan loss) as it steers off broadside — the reported HPBW grows from
+~13° to ~18°.
+
+### Aperture taper trade-off
+
+![Array taper comparison](../assets/screenshots/example_array_taper.png)
+
+Uniform vs Hamming taper on a 16-element array: the taper trades ~3 dB of main-beam
+width for a large drop in peak sidelobe level.
+
+### Axial ratio vs H/V phase
+
+![Axial ratio sweep](../assets/screenshots/example_axial_ratio.png)
+
+With equal H/V amplitude, axial ratio dips to 0 dB (perfect circular polarization)
+at a 90° phase difference and rises toward the linear-polarization asymptote at 0°
+and 180°. The 3 dB line marks the usual CP acceptance threshold.
