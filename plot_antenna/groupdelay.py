@@ -155,15 +155,10 @@ def plot_group_delay_error(data_dict, min_freq=None, max_freq=None):
         difference_data.append(difference_at_freq * 1e12)
         error_at_freq = (difference_at_freq) * 29979245800
         error_data.append(error_at_freq)
-        """
-        # TODO Calculate the variance in picoseconds
-        variance_at_freq = np.var(group_delays_at_freq_ps)
-        variance_data.append(variance_at_freq)
-
-        # TODO Calculate the standard deviation
-        std_dev_at_freq = np.std(group_delays_at_freq_ps)
-        std_dev_data.append(std_dev_at_freq)
-        """
+        # NOTE: per-frequency group-delay variance/std across theta is a planned
+        # metric (tracked issue: group-delay dispersion). The previous dead
+        # block referenced an undefined name and is removed to avoid confusion;
+        # implement it with a dedicated test alongside group-delay test coverage.
     # Plot Group Delay difference
     plt.figure(figsize=(10, 6))
     plt.plot(freq_points, difference_data, label="Max Group Delay Difference over Theta")

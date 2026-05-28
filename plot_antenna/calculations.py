@@ -6,16 +6,23 @@ from scipy.signal import windows
 
 def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi):
     """
-    Calculate Total Radiated Power (TRP) using IEEE-correct solid angle integration.
+    Calculate Total Radiated Power (TRP) using the CTIA/IEEE-149 discrete
+    solid-angle integration.
 
-    The TRP is calculated by integrating radiated power density over a closed sphere:
-        TRP = (1/4π) ∫∫ P(θ,φ) · sin(θ) dθ dφ
+    The per-angle input is EIRP — the isotropic-referenced power measured in
+    each direction (after path-loss calibration). For EIRP, TRP is the
+    sphere average of EIRP, i.e. the standard CTIA discrete form:
 
-    For discrete measurements, this becomes:
-        TRP = Σ P(θ,φ) · sin(θ) · Δθ · Δφ / (4π)
+        TRP = (1/4π) ∫∫ EIRP(θ,φ) · sin(θ) dθ dφ
+            ≈ Σ EIRP(θ,φ) · sin(θ) · Δθ · Δφ / (4π)
+
+    The 1/(4π) is correct *because the input is EIRP*, not radiation intensity
+    U (W/sr); for an isotropic radiator with EIRP = P0 in every direction this
+    integrates back to TRP = P0 (verified by the golden-reference test). Do not
+    remove the 1/(4π) — see docs/REVIEW_2026-05.md (finding R7/R8).
 
     Parameters:
-        power_dBm_2d: 2D array of power values in dBm (theta x phi)
+        power_dBm_2d: 2D array of per-angle EIRP in dBm (theta x phi)
         theta_angles_rad: 1D array of theta angles in radians
         inc_theta: Theta increment in degrees
         inc_phi: Phi increment in degrees
