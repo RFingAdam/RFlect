@@ -36,9 +36,10 @@ class DualOutput:
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller."""
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        # PyInstaller creates a temp folder and stores path in _MEIPASS;
+        # absent in a normal dev run (expected — not an error).
         base_path = sys._MEIPASS  # type: ignore
-    except Exception:
+    except AttributeError:
         base_path = os.path.join(os.path.dirname(__file__), "..", "..")
 
     return os.path.abspath(os.path.join(base_path, relative_path))
@@ -69,7 +70,8 @@ def get_current_version():
         with open(settings_path, "r", encoding="utf-8") as file:
             settings = json.load(file)
             return settings.get("CURRENT_VERSION", "Unknown")
-    except Exception:
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"[WARN] Could not read version from settings.json: {e}", file=sys.stderr)
         return "Unknown"
 
 

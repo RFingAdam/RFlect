@@ -822,12 +822,12 @@ class AntennaPlotGUI(DialogsMixin, ToolsMixin, CallbacksMixin):  # type: ignore[
         """Properly cleanup resources before closing the application."""
         try:
             self._save_user_settings()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[WARN] Could not save user settings on exit: {e}", file=sys.stderr)
         try:
             plt.close("all")
         except Exception as e:
-            print(f"Error closing matplotlib figures: {e}")
+            print(f"Error closing matplotlib figures: {e}", file=sys.stderr)
         finally:
             self.root.quit()
             self.root.destroy()
@@ -852,8 +852,9 @@ class AntennaPlotGUI(DialogsMixin, ToolsMixin, CallbacksMixin):  # type: ignore[
                 ):
                     if key in settings:
                         setattr(self, key, float(settings[key]))
-        except Exception:
-            pass  # silently fall back to defaults
+        except (OSError, ValueError, json.JSONDecodeError) as e:
+            # Corrupt/unreadable settings file: fall back to defaults, but say so.
+            print(f"[WARN] Could not load user settings (using defaults): {e}", file=sys.stderr)
 
     def _save_user_settings(self):
         """Persist user settings to disk."""
@@ -875,8 +876,8 @@ class AntennaPlotGUI(DialogsMixin, ToolsMixin, CallbacksMixin):  # type: ignore[
             os.makedirs(os.path.dirname(settings_path), exist_ok=True)
             with open(settings_path, "w", encoding="utf-8") as f:
                 json.dump(settings, f, indent=2)
-        except Exception:
-            pass
+        except OSError as e:
+            print(f"[WARN] Could not save user settings: {e}", file=sys.stderr)
 
     def update_status(self, message):
         """Update the status bar with a new message."""

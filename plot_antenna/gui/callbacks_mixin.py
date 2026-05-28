@@ -1230,7 +1230,7 @@ class CallbacksMixin:
 
             return False
         except Exception as e:
-            print(f"[AI Error] Data processing failed: {str(e)}")
+            self.log_message(f"Data processing failed: {str(e)}", level="error")
             return False
 
     def process_data(self):
