@@ -28,18 +28,15 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy>=1.26.0,<2.0.0",
+    "numpy>=1.26.0,<3.0.0",
     "scipy>=1.14.0,<2.0.0",
     "matplotlib>=3.10.0,<4.0.0",
     "pandas>=2.0.0,<3.0.0",
     "python-docx>=1.2.0,<2.0.0",
-    "openai>=1.38.0,<2.0.0",
-    "keyring>=25.0.0,<26.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
     "tqdm>=4.65.0,<5.0.0",
     "requests>=2.31.0,<3.0.0",
     "Pillow>=10.0.0,<11.0.0",
-    "cryptography>=43.0.0,<44.0.0",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +49,10 @@ dev = [
     "mypy>=1.8.0",
     "bump2version>=1.0.0",
 ]
+# Optional: only needed if you wire RFlect's data into an external LLM yourself.
+# RFlect's own report/analysis path is fully deterministic and needs none of these.
 ai = [
+    "openai>=1.38.0,<2.0.0",
     "anthropic>=0.40.0",
     "ollama>=0.4.0",
 ]
