@@ -1474,15 +1474,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-mcp-server-34-tools" class="md-nav__link">
+  <a href="#5-mcp-server-35-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. MCP Server (34 tools)
+        5. MCP Server (35 tools)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5. MCP Server (34 tools)">
+    <nav class="md-nav" aria-label="5. MCP Server (35 tools)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1490,6 +1490,17 @@
     <span class="md-ellipsis">
       
         process_folder (v4.2.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analyze_iperf_angle_sweep-v430" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        analyze_iperf_angle_sweep (v4.3.0)
       
     </span>
   </a>
@@ -2077,15 +2088,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-mcp-server-34-tools" class="md-nav__link">
+  <a href="#5-mcp-server-35-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. MCP Server (34 tools)
+        5. MCP Server (35 tools)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5. MCP Server (34 tools)">
+    <nav class="md-nav" aria-label="5. MCP Server (35 tools)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2093,6 +2104,17 @@
     <span class="md-ellipsis">
       
         process_folder (v4.2.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analyze_iperf_angle_sweep-v430" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        analyze_iperf_angle_sweep (v4.3.0)
       
     </span>
   </a>
@@ -2335,8 +2357,8 @@
 
 
 <h1 id="rflect-ai-features-status-roadmap">RFlect AI Features — Status &amp; Roadmap<a class="headerlink" href="#rflect-ai-features-status-roadmap" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: May 12, 2026
-<strong>Current Version</strong>: v4.2.0
+<p><strong>Last Updated</strong>: May 28, 2026
+<strong>Current Version</strong>: v4.3.0
 <strong>Status</strong>: Beta / Enabled in GUI and MCP</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
@@ -2344,7 +2366,7 @@
 <p>There are two integration surfaces:</p>
 <ol>
 <li><strong>In-GUI</strong> — AI Chat Assistant + AI-powered report generation, accessible from the desktop app.</li>
-<li><strong>MCP server</strong> — <code>rflect-mcp/server.py</code> exposes 34 tools an AI agent (Claude Code, Cline, etc.) can call programmatically.</li>
+<li><strong>MCP server</strong> — <code>rflect-mcp/server.py</code> exposes 35 tools an AI agent (Claude Code, Cline, etc.) can call programmatically.</li>
 </ol>
 <h2 id="what-works">What Works<a class="headerlink" href="#what-works" title="Permanent link">&para;</a></h2>
 <h3 id="1-ai-chat-assistant">1. AI Chat Assistant<a class="headerlink" href="#1-ai-chat-assistant" title="Permanent link">&para;</a></h3>
@@ -2411,7 +2433,7 @@
 <li>Restrictive file permissions (chmod 600 / Windows ACL)</li>
 <li>Keys stored in <code>_key_cache</code> dict instead of <code>os.environ</code></li>
 </ul>
-<h3 id="5-mcp-server-34-tools">5. MCP Server (34 tools)<a class="headerlink" href="#5-mcp-server-34-tools" title="Permanent link">&para;</a></h3>
+<h3 id="5-mcp-server-35-tools">5. MCP Server (35 tools)<a class="headerlink" href="#5-mcp-server-35-tools" title="Permanent link">&para;</a></h3>
 <p><strong>Status</strong>: Complete</p>
 <table>
 <thead>
@@ -2458,6 +2480,11 @@
 <td><code>process_folder</code> <em>(new in v4.2.0)</em></td>
 </tr>
 <tr>
+<td>Validation</td>
+<td>1</td>
+<td><code>analyze_iperf_angle_sweep</code> <em>(new in v4.3.0)</em></td>
+</tr>
+<tr>
 <td>Misc</td>
 <td>3</td>
 <td><code>get_measurement_details</code>, <code>validate_file_pair</code>, <code>convert_to_cst</code></td>
@@ -2470,6 +2497,12 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>               report=False, freqs=None, report_path=None)
 </code></pre></div>
 <p>Auto-detect priority: <code>cal_drift &gt; passive &gt; active &gt; uwb</code>. Mixed folders proceed with the winner and surface a <code>mixed_intents_detected</code> warning. The tool never raises — every failure mode (missing folder, no match, partial pair, per-file UWB error, report write failure) returns as a structured warning.</p>
+<h4 id="analyze_iperf_angle_sweep-v430"><code>analyze_iperf_angle_sweep</code> (v4.3.0)<a class="headerlink" href="#analyze_iperf_angle_sweep-v430" title="Permanent link">&para;</a></h4>
+<p>Compares two bench iperf sessions — an installed-antenna session and a matched reference-antenna session recorded at the same azimuth angles — to quantify how the installed antenna's real-environment throughput tracks a reference across the radiation pattern. For each <code>(channel, mode)</code> cell it computes per-angle deltas (installed − reference) and a roll-up (mean, median, worst-angle, best-angle, spread, p10/p90), then writes <code>summary.csv</code>, <code>summary.json</code>, a polar PNG per cell, and a <code>report.md</code> with a configurable adequacy verdict.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>analyze_iperf_angle_sweep(session_dir, reference_session_dir, out_dir,
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                          mean_threshold_mbps=-5.0, worst_threshold_mbps=-10.0)
+</code></pre></div>
+<p>Reads only the documented bench <code>session.json</code> shape (<code>wifi_only</code> runs carrying <code>angle_deg</code> and <code>aggregate.overall_mbps</code>); no dependency on any bench harness. Like the orchestrator, it never raises — every failure mode returns as a structured warning.</p>
 <hr />
 <h2 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
 <ol>
@@ -2479,25 +2512,25 @@
 </ol>
 <hr />
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>plot_antenna/
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── llm_provider.py         # Unified provider abstraction
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── ai_analysis.py          # Pure analysis logic (GUI-independent)
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│   └── AntennaAnalyzer     # Reusable analysis class
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>├── gui/
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│   └── ai_chat_mixin.py    # AI chat GUI integration
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>├── save.py                 # Report generation
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>└── api_keys.py             # Secure key management
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>rflect-mcp/
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>├── server.py
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└── tools/
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    ├── import_tools.py
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    ├── analysis_tools.py
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    ├── report_tools.py
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    ├── bulk_tools.py
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    ├── uwb_tools.py
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    ├── cal_drift_tools.py
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    └── orchestration.py    # process_folder (v4.2.0)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>plot_antenna/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── llm_provider.py         # Unified provider abstraction
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── ai_analysis.py          # Pure analysis logic (GUI-independent)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   └── AntennaAnalyzer     # Reusable analysis class
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├── gui/
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   └── ai_chat_mixin.py    # AI chat GUI integration
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>├── save.py                 # Report generation
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>└── api_keys.py             # Secure key management
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>rflect-mcp/
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>├── server.py
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>└── tools/
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    ├── import_tools.py
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    ├── analysis_tools.py
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    ├── report_tools.py
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    ├── bulk_tools.py
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    ├── uwb_tools.py
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    ├── cal_drift_tools.py
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    └── orchestration.py    # process_folder (v4.2.0)
 </code></pre></div>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
@@ -2556,25 +2589,25 @@
 <hr />
 <h2 id="for-developers">For Developers<a class="headerlink" href="#for-developers" title="Permanent link">&para;</a></h2>
 <h3 id="testing-ai-features">Testing AI Features<a class="headerlink" href="#testing-ai-features" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plot_antenna.ai_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">AntennaAnalyzer</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s1">&#39;phi&#39;</span><span class="p">:</span> <span class="n">phi_angles</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s1">&#39;theta&#39;</span><span class="p">:</span> <span class="n">theta_angles</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="s1">&#39;total_gain&#39;</span><span class="p">:</span> <span class="n">gain_array</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="s1">&#39;h_gain&#39;</span><span class="p">:</span> <span class="n">h_pol_array</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="s1">&#39;v_gain&#39;</span><span class="p">:</span> <span class="n">v_pol_array</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">analyzer</span> <span class="o">=</span> <span class="n">AntennaAnalyzer</span><span class="p">(</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">measurement_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">scan_type</span><span class="o">=</span><span class="s1">&#39;passive&#39;</span><span class="p">,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">frequencies</span><span class="o">=</span><span class="p">[</span><span class="mi">2400</span><span class="p">,</span> <span class="mi">2450</span><span class="p">,</span> <span class="mi">2500</span><span class="p">],</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">)</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">get_gain_statistics</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_pattern</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">compare_polarizations</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plot_antenna.ai_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">AntennaAnalyzer</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s1">&#39;phi&#39;</span><span class="p">:</span> <span class="n">phi_angles</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s1">&#39;theta&#39;</span><span class="p">:</span> <span class="n">theta_angles</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="s1">&#39;total_gain&#39;</span><span class="p">:</span> <span class="n">gain_array</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="s1">&#39;h_gain&#39;</span><span class="p">:</span> <span class="n">h_pol_array</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="s1">&#39;v_gain&#39;</span><span class="p">:</span> <span class="n">v_pol_array</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">}</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">analyzer</span> <span class="o">=</span> <span class="n">AntennaAnalyzer</span><span class="p">(</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">measurement_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">scan_type</span><span class="o">=</span><span class="s1">&#39;passive&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">frequencies</span><span class="o">=</span><span class="p">[</span><span class="mi">2400</span><span class="p">,</span> <span class="mi">2450</span><span class="p">,</span> <span class="mi">2500</span><span class="p">],</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">get_gain_statistics</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_pattern</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">compare_polarizations</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">2400</span><span class="p">))</span>
 </code></pre></div>
 <h3 id="adding-new-analysis-functions">Adding New Analysis Functions<a class="headerlink" href="#adding-new-analysis-functions" title="Permanent link">&para;</a></h3>
 <ol>
