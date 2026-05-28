@@ -222,12 +222,12 @@ def test_report_verdict_changes_with_threshold(analyze, tmp_path):
 
     analyze(str(inst_dir), str(ref_dir), str(out_dir),
             mean_threshold_mbps=-5.0, worst_threshold_mbps=-15.0)
-    report_strict = (out_dir / "report.md").read_text()
+    report_strict = (out_dir / "report.md").read_text(encoding="utf-8")
 
     out2 = tmp_path / "out_loose"
     analyze(str(inst_dir), str(ref_dir), str(out2),
             mean_threshold_mbps=-50.0, worst_threshold_mbps=-50.0)
-    report_loose = (out2 / "report.md").read_text()
+    report_loose = (out2 / "report.md").read_text(encoding="utf-8")
 
     # Strict thresholds: mean Δ = -10, worse than -5 -> investigate.
     assert "investigate" in report_strict
