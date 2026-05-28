@@ -29,6 +29,7 @@ def tools():
     from tools.mimo_tools import register_mimo_tools
     from tools.comparison_tools import register_comparison_tools
     from tools.calibration_tools import register_calibration_tools
+    from tools.cal_drift_tools import register_cal_drift_tools
 
     mcp = FastMCP("rflect-new-tools-test")
     register_propagation_tools(mcp)
@@ -36,8 +37,38 @@ def tools():
     register_mimo_tools(mcp)
     register_comparison_tools(mcp)
     register_calibration_tools(mcp)
+    register_cal_drift_tools(mcp)
     reg = mcp._tool_manager._tools
     return {name: reg[name].fn for name in reg}
+
+
+# ---------------------------------------------------------------------------
+# cal_drift_report — never-raise contract (issue #9)
+# ---------------------------------------------------------------------------
+
+
+def test_cal_drift_report_unknown_format_returns_error_dict(tools, tmp_path):
+    """Unknown format must return {'error': ...}, never raise (MCP contract)."""
+    out = tools["cal_drift_report"](
+        baseline_run_id="nope",
+        current_run_id="nope",
+        output_path=str(tmp_path / "r.md"),
+        format="exe",
+    )
+    assert isinstance(out, dict)
+    assert "error" in out and "unknown report format" in out["error"]
+
+
+def test_cal_drift_report_bad_run_ids_returns_error_not_raise(tools, tmp_path):
+    """A valid format but unknown run_ids returns an error dict, not an exception."""
+    out = tools["cal_drift_report"](
+        baseline_run_id="does-not-exist",
+        current_run_id="also-not",
+        output_path=str(tmp_path / "r.md"),
+        format="markdown",
+    )
+    assert isinstance(out, dict)
+    assert "error" in out  # compute_drift failed -> returned, not raised
 
 
 # ---------------------------------------------------------------------------
