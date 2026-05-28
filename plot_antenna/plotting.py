@@ -3650,66 +3650,146 @@ def generate_advanced_analysis_plots(
     """
     Dispatcher for all advanced analysis plots. Called from callbacks/batch
     after pattern processing, analogous to generate_maritime_plots().
+
+    The flat keyword arguments are retained for backward compatibility; they are
+    bundled into grouped config dataclasses (#37) and forwarded to the structured
+    dispatcher :func:`dispatch_advanced_analysis_plots`. New callers should build
+    an :class:`~plot_antenna.advanced_analysis_config.AdvancedAnalysisConfig`
+    directly and call the structured dispatcher.
     """
-    if link_budget_enabled:
+    from .advanced_analysis_config import configs_from_flat_kwargs
+
+    config = configs_from_flat_kwargs(
+        link_budget_enabled=link_budget_enabled,
+        lb_pt_dbm=lb_pt_dbm,
+        lb_pr_dbm=lb_pr_dbm,
+        lb_gr_dbi=lb_gr_dbi,
+        lb_path_loss_exp=lb_path_loss_exp,
+        lb_misc_loss_db=lb_misc_loss_db,
+        lb_target_range_m=lb_target_range_m,
+        indoor_enabled=indoor_enabled,
+        indoor_environment=indoor_environment,
+        indoor_path_loss_exp=indoor_path_loss_exp,
+        indoor_n_walls=indoor_n_walls,
+        indoor_wall_material=indoor_wall_material,
+        indoor_shadow_fading_db=indoor_shadow_fading_db,
+        indoor_max_distance_m=indoor_max_distance_m,
+        fading_enabled=fading_enabled,
+        fading_pr_sensitivity_dbm=fading_pr_sensitivity_dbm,
+        fading_pt_dbm=fading_pt_dbm,
+        fading_target_reliability=fading_target_reliability,
+        fading_model=fading_model,
+        fading_rician_k=fading_rician_k,
+        fading_realizations=fading_realizations,
+        mimo_enabled=mimo_enabled,
+        mimo_snr_db=mimo_snr_db,
+        mimo_fading_model=mimo_fading_model,
+        mimo_rician_k=mimo_rician_k,
+        mimo_xpr_db=mimo_xpr_db,
+        mimo_ecc_values=mimo_ecc_values,
+        mimo_gain_data_list=mimo_gain_data_list,
+        wearable_enabled=wearable_enabled,
+        wearable_body_positions=wearable_body_positions,
+        wearable_tx_power_mw=wearable_tx_power_mw,
+        wearable_num_devices=wearable_num_devices,
+        wearable_room_size=wearable_room_size,
+    )
+    dispatch_advanced_analysis_plots(
+        theta_deg,
+        phi_deg,
+        gain_2d,
+        frequency,
+        config,
+        data_label=data_label,
+        data_unit=data_unit,
+        save_path=save_path,
+    )
+
+
+def dispatch_advanced_analysis_plots(
+    theta_deg,
+    phi_deg,
+    gain_2d,
+    frequency,
+    config,
+    *,
+    data_label="Gain",
+    data_unit="dBi",
+    save_path=None,
+):
+    """Structured dispatcher for the advanced-analysis plots (#37).
+
+    Operates on the grouped :class:`AdvancedAnalysisConfig` instead of 30+ flat
+    keyword arguments. Each ``if <group>.enabled:`` branch is independent. Note
+    that the indoor and fading branches intentionally reuse link-budget
+    parameters (Tx/Rx power, range, path-loss, losses) — this mirrors the GUI,
+    where those panels share the link-budget inputs.
+    """
+    lb = config.link_budget
+    indoor = config.indoor
+    fading = config.fading
+    mimo = config.mimo
+    wearable = config.wearable
+
+    if lb.enabled:
         plot_link_budget_summary(
             frequency,
             gain_2d,
             theta_deg,
             phi_deg,
-            pt_dbm=lb_pt_dbm,
-            pr_dbm=lb_pr_dbm,
-            gr_dbi=lb_gr_dbi,
-            path_loss_exp=lb_path_loss_exp,
-            misc_loss_db=lb_misc_loss_db,
-            target_range_m=lb_target_range_m,
+            pt_dbm=lb.pt_dbm,
+            pr_dbm=lb.pr_dbm,
+            gr_dbi=lb.gr_dbi,
+            path_loss_exp=lb.path_loss_exp,
+            misc_loss_db=lb.misc_loss_db,
+            target_range_m=lb.target_range_m,
             data_label=data_label,
             data_unit=data_unit,
             save_path=save_path,
         )
 
-    if indoor_enabled:
+    if indoor.enabled:
         plot_indoor_coverage_map(
             frequency,
             gain_2d,
             theta_deg,
             phi_deg,
-            pt_dbm=lb_pt_dbm,
-            pr_sensitivity_dbm=lb_pr_dbm,
-            environment=indoor_environment,
-            path_loss_exp=indoor_path_loss_exp,
-            n_walls=indoor_n_walls,
-            wall_material=indoor_wall_material,
-            shadow_fading_db=indoor_shadow_fading_db,
-            max_distance_m=indoor_max_distance_m,
+            pt_dbm=lb.pt_dbm,
+            pr_sensitivity_dbm=lb.pr_dbm,
+            environment=indoor.environment,
+            path_loss_exp=indoor.path_loss_exp,
+            n_walls=indoor.n_walls,
+            wall_material=indoor.wall_material,
+            shadow_fading_db=indoor.shadow_fading_db,
+            max_distance_m=indoor.max_distance_m,
             data_label=data_label,
             data_unit=data_unit,
             save_path=save_path,
         )
 
-    if fading_enabled:
+    if fading.enabled:
         plot_fading_analysis(
             frequency,
             gain_2d,
             theta_deg,
             phi_deg,
-            pr_sensitivity_dbm=fading_pr_sensitivity_dbm,
-            pt_dbm=fading_pt_dbm,
-            target_reliability=fading_target_reliability,
-            fading_model=fading_model,
-            fading_rician_k=fading_rician_k,
-            realizations=fading_realizations,
-            target_distance_m=lb_target_range_m,
-            path_loss_exp=lb_path_loss_exp,
-            misc_loss_db=lb_misc_loss_db,
-            gr_dbi=lb_gr_dbi,
+            pr_sensitivity_dbm=fading.pr_sensitivity_dbm,
+            pt_dbm=fading.pt_dbm,
+            target_reliability=fading.target_reliability,
+            fading_model=fading.model,
+            fading_rician_k=fading.rician_k,
+            realizations=fading.realizations,
+            target_distance_m=lb.target_range_m,
+            path_loss_exp=lb.path_loss_exp,
+            misc_loss_db=lb.misc_loss_db,
+            gr_dbi=lb.gr_dbi,
             data_label=data_label,
             data_unit=data_unit,
             save_path=save_path,
         )
 
-    if mimo_enabled:
-        gain_list = mimo_gain_data_list if mimo_gain_data_list is not None else [gain_2d]
+    if mimo.enabled:
+        gain_list = mimo.gain_data_list if mimo.gain_data_list is not None else [gain_2d]
         if not isinstance(gain_list, (list, tuple)):
             gain_list = [gain_list]
         gain_list = [g for g in gain_list if g is not None]
@@ -3717,28 +3797,28 @@ def generate_advanced_analysis_plots(
             gain_list = [gain_2d]
 
         plot_mimo_analysis(
-            ecc_values=mimo_ecc_values if mimo_ecc_values is not None else [],
+            ecc_values=mimo.ecc_values if mimo.ecc_values is not None else [],
             freq_list=[frequency],
             gain_data_list=list(gain_list),
             theta_deg=theta_deg,
             phi_deg=phi_deg,
-            snr_db=mimo_snr_db,
-            fading=mimo_fading_model,
-            K=mimo_rician_k,
-            xpr_db=mimo_xpr_db,
+            snr_db=mimo.snr_db,
+            fading=mimo.fading_model,
+            K=mimo.rician_k,
+            xpr_db=mimo.xpr_db,
             save_path=save_path,
         )
 
-    if wearable_enabled:
+    if wearable.enabled:
         plot_wearable_assessment(
             frequency,
             gain_2d,
             theta_deg,
             phi_deg,
-            body_positions=wearable_body_positions,
-            tx_power_mw=wearable_tx_power_mw,
-            num_devices=wearable_num_devices,
-            room_size=wearable_room_size,
+            body_positions=wearable.body_positions,
+            tx_power_mw=wearable.tx_power_mw,
+            num_devices=wearable.num_devices,
+            room_size=wearable.room_size,
             data_label=data_label,
             data_unit=data_unit,
             save_path=save_path,
