@@ -84,6 +84,91 @@ def test_recert_bad_date_is_unknown():
 # ----------------------------- #4/#33 MCP never-raise -----------------------------
 
 
+# ----------------------------- #5/#6 cal-type + cable-loss history -----------------------------
+
+from pathlib import Path
+
+import plot_antenna.cal_drift as cal_drift
+
+_FIXTURES = Path(__file__).parent / "fixtures" / "cal_drift"
+_BASELINE_CAL = _FIXTURES / "cal_baseline.txt"
+_SHIFTED_CAL = _FIXTURES / "cal_shifted.txt"
+_REF_HPOL = _FIXTURES / "ref_hpol.txt"
+
+
+@pytest.fixture
+def _hist_dir(tmp_path, monkeypatch):
+    d = tmp_path / "cal_drift"
+    monkeypatch.setenv("RFLECT_CAL_DRIFT_DIR", str(d))
+    return d
+
+
+def test_record_run_persists_cal_type_and_cable_loss(_hist_dir, tmp_path):
+    cable = tmp_path / "cable_loss.s2p"
+    cable.write_text("! mock cable loss\n# GHz S MA R 50\n2.4 0.1 0\n")
+    meta = cal_drift.record_run(
+        cal_result={
+            "output_path": str(_BASELINE_CAL),
+            "summary_path": "",
+            "rows_written": 0,
+            "rows_missing": 0,
+        },
+        hpol_ref_file=str(_REF_HPOL),
+        cal_type="passive",
+        cable_loss_file=str(cable),
+    )
+    assert meta is not None
+    assert meta.cal_type == "passive"
+    assert meta.cable_loss_file == str(cable)
+    assert meta.cable_loss_sha256  # sha computed for an existing file
+    # Persisted + readable back.
+    got = cal_drift.get_run(meta.run_id)
+    assert got.cal_type == "passive"
+    assert got.cable_loss_file == str(cable)
+
+
+def test_cable_loss_history(_hist_dir, tmp_path):
+    cable = tmp_path / "cl.s2p"
+    cable.write_text("! cl\n# GHz S MA R 50\n2.4 0.1 0\n")
+    cal_drift.record_run(
+        cal_result={
+            "output_path": str(_BASELINE_CAL),
+            "summary_path": "",
+            "rows_written": 0,
+            "rows_missing": 0,
+        },
+        hpol_ref_file=str(_REF_HPOL),
+        cable_loss_file=str(cable),
+    )
+    # A second run without a cable-loss file should not appear in the history.
+    cal_drift.record_run(
+        cal_result={
+            "output_path": str(_SHIFTED_CAL),
+            "summary_path": "",
+            "rows_written": 0,
+            "rows_missing": 0,
+        },
+        hpol_ref_file=str(_REF_HPOL),
+    )
+    hist = cal_drift.cable_loss_history()
+    assert len(hist) == 1
+    assert hist[0]["cable_loss_file"] == str(cable)
+    assert hist[0]["cable_loss_sha256"]
+
+
+def test_cal_type_defaults_to_active(_hist_dir):
+    meta = cal_drift.record_run(
+        cal_result={
+            "output_path": str(_BASELINE_CAL),
+            "summary_path": "",
+            "rows_written": 0,
+            "rows_missing": 0,
+        },
+        hpol_ref_file=str(_REF_HPOL),
+    )
+    assert meta.cal_type == "active"
+
+
 def test_mcp_alert_and_monitor_never_raise_on_missing_runs():
     pytest.importorskip("mcp", reason="mcp package not installed")
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "rflect-mcp"))
