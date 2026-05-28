@@ -32,6 +32,7 @@ from tools.bulk_tools import register_bulk_tools
 from tools.uwb_tools import register_uwb_tools
 from tools.cal_drift_tools import register_cal_drift_tools
 from tools.orchestration import register_orchestration_tools
+from tools.iperf_angle_tools import register_iperf_angle_tools
 
 # Create MCP server
 mcp = FastMCP("rflect")
@@ -44,6 +45,7 @@ register_bulk_tools(mcp)
 register_uwb_tools(mcp)
 register_cal_drift_tools(mcp)
 register_orchestration_tools(mcp)
+register_iperf_angle_tools(mcp)
 
 
 @mcp.resource("rflect://status")
