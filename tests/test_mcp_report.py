@@ -410,6 +410,8 @@ class TestBuildDataDrivenConclusions:
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestActive", None)
+
+
 # ---------------------------------------------------------------------------
 # Tests: _prepare_report_data
 # ---------------------------------------------------------------------------
@@ -742,6 +744,69 @@ class TestBuildBrandedDocx:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
 
+    def test_narrative_injection_overrides_deterministic(
+        self, mock_passive_measurement, temp_dir, default_opts
+    ):
+        """Agent-supplied narrative renders verbatim; omitted keys fall back."""
+        from tools.report_tools import _build_branded_docx, _prepare_report_data
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {"TestPassive": mock_passive_measurement}
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+
+        try:
+            report_data = _prepare_report_data(measurements, default_opts)
+            output = os.path.join(temp_dir, "narrative_report.docx")
+
+            narrative = {
+                "executive_summary": "AGENT_SUMMARY_SENTINEL across the band.",
+                "recommendations": "- AGENT_REC_ONE\n- AGENT_REC_TWO",
+                "section_analysis": {"TestPassive": "AGENT_SECTION_SENTINEL note."},
+            }
+            _build_branded_docx(
+                output,
+                report_data,
+                {},
+                default_opts,
+                None,
+                measurements,
+                narrative,
+            )
+
+            from docx import Document
+
+            doc = Document(output)
+            text = "\n".join(p.text for p in doc.paragraphs)
+
+            assert "AGENT_SUMMARY_SENTINEL" in text
+            assert "AGENT_REC_ONE" in text and "AGENT_REC_TWO" in text
+            # Headings still present (structure preserved)
+            assert "Executive Summary" in text
+            assert "Conclusions and Recommendations" in text
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
+    def test_omitted_narrative_falls_back_to_deterministic(
+        self, mock_passive_measurement, temp_dir, default_opts
+    ):
+        """With no narrative dict, deterministic prose is used (no crash)."""
+        from tools.report_tools import _build_branded_docx, _prepare_report_data
+        from tools.import_tools import _loaded_measurements, _measurements_lock
+
+        measurements = {"TestPassive": mock_passive_measurement}
+        with _measurements_lock:
+            _loaded_measurements["TestPassive"] = mock_passive_measurement
+        try:
+            report_data = _prepare_report_data(measurements, default_opts)
+            output = os.path.join(temp_dir, "no_narrative_report.docx")
+            _build_branded_docx(output, report_data, {}, default_opts, None, measurements, None)
+            assert os.path.exists(output) and os.path.getsize(output) > 0
+        finally:
+            with _measurements_lock:
+                _loaded_measurements.pop("TestPassive", None)
+
     def test_docx_with_metadata(self, mock_passive_measurement, temp_dir, default_opts):
         """Verify metadata appears on cover page."""
         from tools.report_tools import _build_branded_docx, _prepare_report_data
@@ -975,6 +1040,8 @@ class TestBuildBrandedDocx:
         finally:
             with _measurements_lock:
                 _loaded_measurements.pop("TestPassive", None)
+
+
 # ---------------------------------------------------------------------------
 # Tests: End-to-end generate_report (via direct function call)
 # ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ from .analysis_tools import (
 @dataclass
 class ReportOptions:
     """Configuration options for report generation."""
+
     # Content filtering
     frequencies: Optional[List[float]] = None  # None = all frequencies
     polarizations: List[str] = field(default_factory=lambda: ["total"])  # total, hpol, vpol
@@ -42,7 +43,6 @@ class ReportOptions:
     include_raw_data_tables: bool = False
     include_gain_tables: bool = True
     max_frequencies_in_table: int = 10  # Limit table rows
-
 
     # Output
     output_format: str = "docx"  # docx, pdf (future)
@@ -61,13 +61,16 @@ class ReportOptions:
 # LLM Provider Helper
 # ---------------------------------------------------------------------------
 
-def _generate_plots(measurements: Dict[str, LoadedMeasurement], opts: ReportOptions,
-                    plot_dir: str) -> Dict[str, List[str]]:
+
+def _generate_plots(
+    measurements: Dict[str, LoadedMeasurement], opts: ReportOptions, plot_dir: str
+) -> Dict[str, List[str]]:
     """Generate PNG plots for all measurements in headless mode.
 
     Returns dict mapping measurement_name -> list of image paths.
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -91,13 +94,15 @@ def _generate_plots(measurements: Dict[str, LoadedMeasurement], opts: ReportOpti
 
         if m.scan_type == "passive":
             meas_images.extend(
-                _generate_passive_plots(m, opts, meas_dir,
-                                        plot_2d_passive_data, plot_passive_3d_component, plt)
+                _generate_passive_plots(
+                    m, opts, meas_dir, plot_2d_passive_data, plot_passive_3d_component, plt
+                )
             )
         elif m.scan_type == "active":
             meas_images.extend(
-                _generate_active_plots(m, opts, meas_dir,
-                                       plot_active_2d_data, plot_active_3d_data, plt)
+                _generate_active_plots(
+                    m, opts, meas_dir, plot_active_2d_data, plot_active_3d_data, plt
+                )
             )
 
         images[name] = meas_images
@@ -105,8 +110,9 @@ def _generate_plots(measurements: Dict[str, LoadedMeasurement], opts: ReportOpti
     return images
 
 
-def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
-                            meas_dir: str, plot_2d_fn, plot_3d_fn, plt) -> List[str]:
+def _generate_passive_plots(
+    m: LoadedMeasurement, opts: ReportOptions, meas_dir: str, plot_2d_fn, plot_3d_fn, plt
+) -> List[str]:
     """Generate passive measurement plots. Returns list of image paths."""
     paths: List[str] = []
     data = m.data
@@ -121,8 +127,9 @@ def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
 
     freqs = _filter_frequencies(m.frequencies, opts)
     band_info = _detect_rf_band(freqs)
-    plot_freqs = _select_representative_frequencies(freqs, opts.max_plot_frequencies,
-                                                    band_info=band_info)
+    plot_freqs = _select_representative_frequencies(
+        freqs, opts.max_plot_frequencies, band_info=band_info
+    )
 
     # 2D plots: summary plots once (at first freq), azimuth cuts at representative freqs
     if opts.include_2d_plots:
@@ -131,8 +138,13 @@ def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
         for freq in plot_freqs:
             try:
                 plot_2d_fn(
-                    theta, phi, v_gain, h_gain, total_gain,
-                    m.frequencies, freq,
+                    theta,
+                    phi,
+                    v_gain,
+                    h_gain,
+                    total_gain,
+                    m.frequencies,
+                    freq,
                     datasheet_plots=False,
                     save_path=save_dir_2d,
                 )
@@ -156,8 +168,13 @@ def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
                 continue
             try:
                 plot_3d_fn(
-                    theta, phi, h_gain, v_gain, total_gain,
-                    m.frequencies, center_freq,
+                    theta,
+                    phi,
+                    h_gain,
+                    v_gain,
+                    total_gain,
+                    m.frequencies,
+                    center_freq,
                     gain_type=gain_type,
                     save_path=save_dir_3d,
                 )
@@ -172,8 +189,9 @@ def _generate_passive_plots(m: LoadedMeasurement, opts: ReportOptions,
     return paths
 
 
-def _generate_active_plots(m: LoadedMeasurement, opts: ReportOptions,
-                           meas_dir: str, plot_2d_fn, plot_3d_fn, plt) -> List[str]:
+def _generate_active_plots(
+    m: LoadedMeasurement, opts: ReportOptions, meas_dir: str, plot_2d_fn, plot_3d_fn, plt
+) -> List[str]:
     """Generate active measurement plots. Returns list of image paths."""
     paths: List[str] = []
     data = m.data
@@ -192,13 +210,20 @@ def _generate_active_plots(m: LoadedMeasurement, opts: ReportOptions,
 
     freq = m.frequencies[0] if m.frequencies else 0
 
-    if opts.include_2d_plots and all(v is not None for v in
-                                     [data_points, theta_rad, phi_rad_plot, total_power_2d_plot]):
+    if opts.include_2d_plots and all(
+        v is not None for v in [data_points, theta_rad, phi_rad_plot, total_power_2d_plot]
+    ):
         save_dir_2d = os.path.join(meas_dir, "2d")
         os.makedirs(save_dir_2d, exist_ok=True)
         try:
-            plot_2d_fn(data_points, theta_rad, phi_rad_plot,
-                       total_power_2d_plot, freq, save_path=save_dir_2d)
+            plot_2d_fn(
+                data_points,
+                theta_rad,
+                phi_rad_plot,
+                total_power_2d_plot,
+                freq,
+                save_path=save_dir_2d,
+            )
             plt.close("all")
             for f in sorted(os.listdir(save_dir_2d)):
                 full = os.path.join(save_dir_2d, f)
@@ -207,15 +232,22 @@ def _generate_active_plots(m: LoadedMeasurement, opts: ReportOptions,
         except Exception:
             plt.close("all")
 
-    if opts.include_3d_plots and all(v is not None for v in
-                                     [theta_deg, phi_deg, total_power_2d,
-                                      phi_deg_plot, total_power_2d_plot]):
+    if opts.include_3d_plots and all(
+        v is not None
+        for v in [theta_deg, phi_deg, total_power_2d, phi_deg_plot, total_power_2d_plot]
+    ):
         save_dir_3d = os.path.join(meas_dir, "3d")
         os.makedirs(save_dir_3d, exist_ok=True)
         try:
-            plot_3d_fn(theta_deg, phi_deg, total_power_2d,
-                       phi_deg_plot, total_power_2d_plot, freq,
-                       save_path=save_dir_3d)
+            plot_3d_fn(
+                theta_deg,
+                phi_deg,
+                total_power_2d,
+                phi_deg_plot,
+                total_power_2d_plot,
+                freq,
+                save_path=save_dir_3d,
+            )
             plt.close("all")
             for f in sorted(os.listdir(save_dir_3d)):
                 full = os.path.join(save_dir_3d, f)
@@ -246,8 +278,11 @@ _RF_BANDS = [
         "range": (2400, 2483.5),
         "key_frequencies": [2402, 2426, 2440, 2454, 2480],
         "channels": {
-            "CH37 (adv)": 2402, "CH38 (adv)": 2426, "CH18 (center)": 2440,
-            "CH25": 2454, "CH39 (adv)": 2480,
+            "CH37 (adv)": 2402,
+            "CH38 (adv)": 2426,
+            "CH18 (center)": 2440,
+            "CH25": 2454,
+            "CH39 (adv)": 2480,
         },
     },
     {
@@ -312,8 +347,11 @@ _RF_BANDS = [
         "range": (3100, 10600),
         "key_frequencies": [3494.4, 3993.6, 4492.8, 6489.6, 7987.2],
         "channels": {
-            "CH1": 3494.4, "CH2": 3993.6, "CH3": 4492.8,
-            "CH5": 6489.6, "CH9": 7987.2,
+            "CH1": 3494.4,
+            "CH2": 3993.6,
+            "CH3": 4492.8,
+            "CH5": 6489.6,
+            "CH9": 7987.2,
         },
     },
 ]
@@ -353,8 +391,9 @@ def _detect_rf_band(frequencies: List[float]) -> Optional[Dict]:
     }
 
 
-def _snap_to_nearest(target: float, available: List[float],
-                     tolerance_mhz: float = 5.0) -> Optional[float]:
+def _snap_to_nearest(
+    target: float, available: List[float], tolerance_mhz: float = 5.0
+) -> Optional[float]:
     """Find the closest frequency in available list to target, within tolerance."""
     if not available:
         return None
@@ -374,8 +413,9 @@ def _channel_label(freq: float, band_info: Optional[Dict]) -> Optional[str]:
     return None
 
 
-def _select_representative_frequencies(freqs: List[float], max_count: int,
-                                       band_info: Optional[Dict] = None) -> List[float]:
+def _select_representative_frequencies(
+    freqs: List[float], max_count: int, band_info: Optional[Dict] = None
+) -> List[float]:
     """Select representative frequencies, preferring key band channels.
 
     If band_info is provided, starts with key channel frequencies that exist
@@ -410,7 +450,7 @@ def _select_representative_frequencies(freqs: List[float], max_count: int,
             # Keep first, last, and as many key freqs as fit
             edges = {freqs[0], freqs[-1]}
             key_only = [f for f in selected if f not in edges]
-            selected = [freqs[0]] + key_only[:max_count - 2] + [freqs[-1]]
+            selected = [freqs[0]] + key_only[: max_count - 2] + [freqs[-1]]
 
         # Fill remaining slots with evenly-spaced picks
         if len(selected) < max_count:
@@ -457,6 +497,7 @@ def _pretty_caption(filename: str) -> str:
     'efficiency_db_2300-2600MHz.png' -> 'Efficiency (dB) 2300-2600 MHz'
     """
     import re
+
     name = filename.rsplit(".", 1)[0]  # strip extension
 
     # 3D plot views
@@ -526,6 +567,7 @@ def _sort_images_by_frequency(img_paths: List[str]) -> List[str]:
 # AI Text Generation
 # ---------------------------------------------------------------------------
 
+
 def _fmt(val, fmt=".2f", suffix=""):
     """Format a value for table display, handling None gracefully."""
     if val is None:
@@ -539,6 +581,7 @@ def _fmt(val, fmt=".2f", suffix=""):
 # ---------------------------------------------------------------------------
 # Classification Helpers
 # ---------------------------------------------------------------------------
+
 
 def _classify_gain_quality(peak_gain_dBi, freq_mhz=None):
     """Classify antenna gain quality against engineering benchmarks.
@@ -580,6 +623,7 @@ def _classify_efficiency(efficiency_pct):
 def _get_test_configuration(m: LoadedMeasurement) -> Dict:
     """Extract test configuration details from a measurement."""
     import numpy as np
+
     config_info = {
         "scan_type": m.scan_type,
         "num_frequencies": len(m.frequencies),
@@ -593,13 +637,13 @@ def _get_test_configuration(m: LoadedMeasurement) -> Dict:
     data = m.data
     theta = data.get("theta")
     phi = data.get("phi")
-    if theta is not None and hasattr(theta, '__len__'):
+    if theta is not None and hasattr(theta, "__len__"):
         unique_theta = np.unique(theta)
         config_info["theta_range"] = f"{float(np.min(theta)):.0f} - {float(np.max(theta)):.0f} deg"
         config_info["theta_points"] = len(unique_theta)
         if len(unique_theta) > 1:
             config_info["theta_step"] = f"{float(unique_theta[1] - unique_theta[0]):.1f} deg"
-    if phi is not None and hasattr(phi, '__len__'):
+    if phi is not None and hasattr(phi, "__len__"):
         unique_phi = np.unique(phi)
         config_info["phi_range"] = f"{float(np.min(phi)):.0f} - {float(np.max(phi)):.0f} deg"
         config_info["phi_points"] = len(unique_phi)
@@ -619,20 +663,26 @@ def _get_test_configuration(m: LoadedMeasurement) -> Dict:
 # Data-Driven Text Generators
 # ---------------------------------------------------------------------------
 
-def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
-                              opts: ReportOptions,
-                              band_info_map: Optional[Dict[str, Optional[Dict]]] = None
-                              ) -> List[str]:
+
+def _build_executive_summary(
+    measurements: Dict[str, LoadedMeasurement],
+    opts: ReportOptions,
+    band_info_map: Optional[Dict[str, Optional[Dict]]] = None,
+) -> List[str]:
     """Build a data-driven executive summary (3 paragraphs, no AI needed)."""
     paragraphs = []
 
     # Classify measurements
-    passive_names = [n for n, m in measurements.items()
-                     if m.scan_type == "passive"
-                     and (opts.measurements is None or n in opts.measurements)]
-    active_names = [n for n, m in measurements.items()
-                    if m.scan_type == "active"
-                    and (opts.measurements is None or n in opts.measurements)]
+    passive_names = [
+        n
+        for n, m in measurements.items()
+        if m.scan_type == "passive" and (opts.measurements is None or n in opts.measurements)
+    ]
+    active_names = [
+        n
+        for n, m in measurements.items()
+        if m.scan_type == "active" and (opts.measurements is None or n in opts.measurements)
+    ]
 
     all_freqs = []
     for n in passive_names + active_names:
@@ -730,15 +780,15 @@ def _build_executive_summary(measurements: Dict[str, LoadedMeasurement],
             observations.append(f"{name} exhibits sub-isotropic peak gain ({_fmt(peak)} dBi)")
         if variation is not None and variation > 6:
             observations.append(
-                f"{name} shows high gain variation ({_fmt(variation)} dB) across the band")
+                f"{name} shows high gain variation ({_fmt(variation)} dB) across the band"
+            )
     if observations:
         paragraphs.append("Observations: " + ". ".join(observations) + ".")
 
     return paragraphs
 
 
-def _build_pattern_prose(analyzer, freq, measurement_name,
-                         band_info: Optional[Dict] = None) -> str:
+def _build_pattern_prose(analyzer, freq, measurement_name, band_info: Optional[Dict] = None) -> str:
     """Build a prose paragraph describing pattern characteristics at a frequency."""
     pattern = analyzer.analyze_pattern(frequency=freq)
     stats = analyzer.get_gain_statistics(frequency=freq)
@@ -760,8 +810,10 @@ def _build_pattern_prose(analyzer, freq, measurement_name,
     if ch_label:
         freq_label += f" ({ch_label})"
 
-    parts = [f"At {freq_label}, {measurement_name} exhibits "
-             f"a {pattern_type} radiation pattern with peak gain of {_fmt(peak)} dBi"]
+    parts = [
+        f"At {freq_label}, {measurement_name} exhibits "
+        f"a {pattern_type} radiation pattern with peak gain of {_fmt(peak)} dBi"
+    ]
 
     rating, desc = _classify_gain_quality(peak)
     parts[0] += f" ({desc})."
@@ -779,12 +831,14 @@ def _build_pattern_prose(analyzer, freq, measurement_name,
     if beam_theta is not None and beam_phi is not None:
         parts.append(
             f"Main beam direction: \u03b8={_fmt(beam_theta, '.0f')}\u00b0, "
-            f"\u03c6={_fmt(beam_phi, '.0f')}\u00b0.")
+            f"\u03c6={_fmt(beam_phi, '.0f')}\u00b0."
+        )
 
     if eff is not None:
         parts.append(
             f"Estimated radiation efficiency: {_fmt(eff, '.0f')}% "
-            f"({_classify_efficiency(eff)}).")
+            f"({_classify_efficiency(eff)})."
+        )
 
     num_nulls = pattern.get("num_nulls", 0)
     if num_nulls > 0:
@@ -797,19 +851,24 @@ def _build_pattern_prose(analyzer, freq, measurement_name,
     return " ".join(parts)
 
 
-def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
-                                    opts: ReportOptions,
-                                    band_info_map: Optional[Dict[str, Optional[Dict]]] = None
-                                    ) -> List[str]:
+def _build_data_driven_conclusions(
+    measurements: Dict[str, LoadedMeasurement],
+    opts: ReportOptions,
+    band_info_map: Optional[Dict[str, Optional[Dict]]] = None,
+) -> List[str]:
     """Build data-driven conclusion bullets referencing actual values."""
     bullets = []
 
-    passive_names = [n for n, m in measurements.items()
-                     if m.scan_type == "passive"
-                     and (opts.measurements is None or n in opts.measurements)]
-    active_names = [n for n, m in measurements.items()
-                    if m.scan_type == "active"
-                    and (opts.measurements is None or n in opts.measurements)]
+    passive_names = [
+        n
+        for n, m in measurements.items()
+        if m.scan_type == "passive" and (opts.measurements is None or n in opts.measurements)
+    ]
+    active_names = [
+        n
+        for n, m in measurements.items()
+        if m.scan_type == "active" and (opts.measurements is None or n in opts.measurements)
+    ]
 
     for name in passive_names:
         analyzer, _, err = _get_analyzer_for_measurement(name)
@@ -826,23 +885,30 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
             rating, desc = _classify_gain_quality(peak)
             bullets.append(
                 f"{name}: Peak gain of {_fmt(peak)} dBi at {_fmt(res_freq, '.0f')} MHz "
-                f"places this antenna in the {desc} category")
+                f"places this antenna in the {desc} category"
+            )
 
         # Bandwidth + band coverage
         if bw is not None:
-            bw_text = (f"{name}: 3 dB bandwidth of {_fmt(bw, '.0f')} MHz "
-                       f"({_fmt(res_freq, '.0f')} MHz center)")
+            bw_text = (
+                f"{name}: 3 dB bandwidth of {_fmt(bw, '.0f')} MHz "
+                f"({_fmt(res_freq, '.0f')} MHz center)"
+            )
             meas_band = (band_info_map or {}).get(name)
             if meas_band is not None:
                 band_lo, band_hi = meas_band["full_range"]
                 band_width = band_hi - band_lo
                 if bw is not None and float(bw) >= band_width:
-                    bw_text += (f" covers the full {meas_band['name']} band "
-                                f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)")
+                    bw_text += (
+                        f" covers the full {meas_band['name']} band "
+                        f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)"
+                    )
                 else:
                     coverage_pct = min(100, float(bw) / band_width * 100) if band_width > 0 else 0
-                    bw_text += (f" covers {coverage_pct:.0f}% of the {meas_band['name']} band "
-                                f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)")
+                    bw_text += (
+                        f" covers {coverage_pct:.0f}% of the {meas_band['name']} band "
+                        f"({band_lo:.0f}\u2013{band_hi:.0f} MHz)"
+                    )
             bullets.append(bw_text)
 
         # Gain stability
@@ -850,11 +916,13 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
             if variation > 6:
                 bullets.append(
                     f"{name}: Gain variation of {_fmt(variation)} dB across band is "
-                    f"significant; design optimization may improve flatness")
+                    f"significant; design optimization may improve flatness"
+                )
             elif variation > 3:
                 bullets.append(
                     f"{name}: Gain variation of {_fmt(variation)} dB across band is "
-                    f"moderate; acceptable for most applications")
+                    f"moderate; acceptable for most applications"
+                )
 
         # Efficiency at resonance
         if res_freq is not None:
@@ -865,11 +933,13 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
                 if eff < 50:
                     bullets.append(
                         f"{name}: Estimated efficiency of {_fmt(eff, '.0f')}% ({eff_class}) "
-                        f"suggests significant ohmic or mismatch losses")
+                        f"suggests significant ohmic or mismatch losses"
+                    )
                 elif eff < 70:
                     bullets.append(
                         f"{name}: Estimated efficiency of {_fmt(eff, '.0f')}% ({eff_class}); "
-                        f"impedance matching improvements may yield gains")
+                        f"impedance matching improvements may yield gains"
+                    )
 
         # Polarization balance
         if analyzer.frequencies:
@@ -881,7 +951,8 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
                 bullets.append(
                     f"{name}: Polarization imbalance of {_fmt(abs(balance), '.1f')} dB "
                     f"({dominant}-pol dominant); consider design adjustments for "
-                    f"balanced polarization if required")
+                    f"balanced polarization if required"
+                )
 
     for name in active_names:
         m = measurements[name]
@@ -891,14 +962,14 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
         v_trp = data.get("v_TRP_dBm")
 
         if trp is not None:
-            bullets.append(
-                f"{name}: Total Radiated Power of {_fmt(trp)} dBm")
+            bullets.append(f"{name}: Total Radiated Power of {_fmt(trp)} dBm")
         if h_trp is not None and v_trp is not None:
             balance = abs(float(h_trp) - float(v_trp))
             if balance > 3:
                 bullets.append(
                     f"{name}: H/V TRP imbalance of {_fmt(balance, '.1f')} dB "
-                    f"indicates polarization skew in the radiated power")
+                    f"indicates polarization skew in the radiated power"
+                )
 
     if not bullets:
         bullets.append("Insufficient data to draw specific conclusions")
@@ -910,6 +981,7 @@ def _build_data_driven_conclusions(measurements: Dict[str, LoadedMeasurement],
 # Consolidated Table Builders
 # ---------------------------------------------------------------------------
 
+
 def _style_header_row(table, brand_dark):
     """Apply branded styling to the header row of a table."""
     for cell in table.rows[0].cells:
@@ -919,8 +991,7 @@ def _style_header_row(table, brand_dark):
                 run.font.color.rgb = brand_dark
 
 
-def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs,
-                                           brand_dark, scan_type):
+def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs, brand_dark, scan_type):
     """Build ONE consolidated performance table per measurement.
 
     Passive: Freq | Peak Gain | Avg Gain | Eff% | HPBW-E | HPBW-H | F/B | Pattern
@@ -929,8 +1000,16 @@ def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs,
     from docx.shared import Pt
 
     if scan_type == "passive":
-        headers = ["Freq (MHz)", "Peak (dBi)", "Avg (dBi)", "Eff (%)",
-                    "HPBW-E (\u00b0)", "HPBW-H (\u00b0)", "F/B (dB)", "Pattern"]
+        headers = [
+            "Freq (MHz)",
+            "Peak (dBi)",
+            "Avg (dBi)",
+            "Eff (%)",
+            "HPBW-E (\u00b0)",
+            "HPBW-H (\u00b0)",
+            "F/B (dB)",
+            "Pattern",
+        ]
         table = doc.add_table(rows=1 + len(rep_freqs), cols=len(headers))
         table.style = "Light Shading Accent 1"
 
@@ -952,8 +1031,14 @@ def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs,
             row.cells[7].text = str(pattern.get("pattern_type", "N/A"))
 
     else:  # active
-        headers = ["Freq (MHz)", "Peak (dBm)", "Avg (dBm)", "TRP (dBm)",
-                    "H-TRP (dBm)", "V-TRP (dBm)"]
+        headers = [
+            "Freq (MHz)",
+            "Peak (dBm)",
+            "Avg (dBm)",
+            "TRP (dBm)",
+            "H-TRP (dBm)",
+            "V-TRP (dBm)",
+        ]
         table = doc.add_table(rows=1 + len(rep_freqs), cols=len(headers))
         table.style = "Light Shading Accent 1"
 
@@ -976,16 +1061,14 @@ def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs,
         overall = analyzer.analyze_all_frequencies()
         parts = []
         if overall.get("resonance_frequency_MHz"):
+            parts.append(f"Resonance: {_fmt(overall['resonance_frequency_MHz'], '.0f')} MHz")
             parts.append(
-                f"Resonance: {_fmt(overall['resonance_frequency_MHz'], '.0f')} MHz")
-            parts.append(
-                f"Peak at resonance: {_fmt(overall.get('peak_gain_at_resonance_dBi'))} dBi")
+                f"Peak at resonance: {_fmt(overall.get('peak_gain_at_resonance_dBi'))} dBi"
+            )
         if overall.get("gain_variation_dB") is not None:
-            parts.append(
-                f"Gain variation: {_fmt(overall['gain_variation_dB'])} dB")
+            parts.append(f"Gain variation: {_fmt(overall['gain_variation_dB'])} dB")
         if overall.get("bandwidth_3dB_MHz") is not None:
-            parts.append(
-                f"3 dB BW: {_fmt(overall['bandwidth_3dB_MHz'], '.0f')} MHz")
+            parts.append(f"3 dB BW: {_fmt(overall['bandwidth_3dB_MHz'], '.0f')} MHz")
         if parts:
             summary_para = doc.add_paragraph(" | ".join(parts))
             summary_para.paragraph_format.space_before = Pt(4)
@@ -1006,8 +1089,12 @@ def _build_comparison_table(doc, analyzer, rep_freqs, brand_dark, heading_fn):
     heading_fn(doc, "Multi-Frequency Comparison", level=2)
 
     headers = [
-        "Freq (MHz)", "Peak Gain (dBi)", "Pattern Type",
-        "HPBW-E (\u00b0)", "HPBW-H (\u00b0)", "F/B (dB)",
+        "Freq (MHz)",
+        "Peak Gain (dBi)",
+        "Pattern Type",
+        "HPBW-E (\u00b0)",
+        "HPBW-H (\u00b0)",
+        "F/B (dB)",
     ]
     table = doc.add_table(rows=1 + len(rep_freqs), cols=len(headers))
     table.style = "Light Shading Accent 1"
@@ -1034,8 +1121,7 @@ def _build_comparison_table(doc, analyzer, rep_freqs, brand_dark, heading_fn):
             f"Gain variation: {_fmt(overall.get('gain_variation_dB'))} dB",
         ]
         if overall.get("bandwidth_3dB_MHz") is not None:
-            parts.append(
-                f"3 dB BW: {_fmt(overall['bandwidth_3dB_MHz'], '.1f')} MHz")
+            parts.append(f"3 dB BW: {_fmt(overall['bandwidth_3dB_MHz'], '.1f')} MHz")
         summary_para = doc.add_paragraph(" | ".join(parts))
         summary_para.paragraph_format.space_before = Pt(6)
         for run in summary_para.runs:
@@ -1047,8 +1133,14 @@ def _build_comparison_table(doc, analyzer, rep_freqs, brand_dark, heading_fn):
 
 def _build_polarization_table(doc, analyzer, rep_freqs, brand_dark):
     """Build ONE consolidated polarization table."""
-    headers = ["Freq (MHz)", "HPOL Peak (dBi)", "VPOL Peak (dBi)",
-               "Avg XPD (dB)", "Dominant", "Balance (dB)"]
+    headers = [
+        "Freq (MHz)",
+        "HPOL Peak (dBi)",
+        "VPOL Peak (dBi)",
+        "Avg XPD (dB)",
+        "Dominant",
+        "Balance (dB)",
+    ]
     table = doc.add_table(rows=1 + len(rep_freqs), cols=len(headers))
     table.style = "Light Shading Accent 1"
 
@@ -1108,12 +1200,15 @@ def _build_trp_section(doc, m: LoadedMeasurement, brand_dark, heading_fn):
         if balance < 1:
             assessment += ". H/V polarization power is well-balanced."
         elif balance < 3:
-            assessment += f". H/V polarization shows moderate imbalance ({_fmt(balance, '.1f')} dB)."
+            assessment += (
+                f". H/V polarization shows moderate imbalance ({_fmt(balance, '.1f')} dB)."
+            )
         else:
             dominant = "H" if float(h_trp) > float(v_trp) else "V"
             assessment += (
                 f". Significant H/V polarization imbalance ({_fmt(balance, '.1f')} dB, "
-                f"{dominant}-pol dominant).")
+                f"{dominant}-pol dominant)."
+            )
     doc.add_paragraph(assessment)
     doc.add_paragraph()
 
@@ -1121,6 +1216,7 @@ def _build_trp_section(doc, m: LoadedMeasurement, brand_dark, heading_fn):
 # ---------------------------------------------------------------------------
 # Legacy Table Functions (kept for backward compatibility)
 # ---------------------------------------------------------------------------
+
 
 def _add_gain_stats_table(doc, stats: Dict, brand_dark):
     """Add a formatted gain statistics table to the document."""
@@ -1168,30 +1264,45 @@ def _add_gain_stats_table(doc, stats: Dict, brand_dark):
 
 def _add_freq_comparison_table(doc, antenna_analyzer, add_branded_heading, brand_dark):
     """Add a multi-frequency comparison table (legacy, delegates to new builder)."""
-    rep_freqs = _select_representative_frequencies(
-        antenna_analyzer.frequencies, 10)
-    _build_comparison_table(doc, antenna_analyzer, rep_freqs,
-                            brand_dark, add_branded_heading)
+    rep_freqs = _select_representative_frequencies(antenna_analyzer.frequencies, 10)
+    _build_comparison_table(doc, antenna_analyzer, rep_freqs, brand_dark, add_branded_heading)
 
 
 # ---------------------------------------------------------------------------
 # Main DOCX Builder
 # ---------------------------------------------------------------------------
 
-def _build_branded_docx(output_path: str, report_data: Dict,
-                        plot_images: Dict[str, List[str]],
-                        opts: ReportOptions, metadata: Optional[Dict],
-                        measurements: Dict[str, LoadedMeasurement]):
+
+def _build_branded_docx(
+    output_path: str,
+    report_data: Dict,
+    plot_images: Dict[str, List[str]],
+    opts: ReportOptions,
+    metadata: Optional[Dict],
+    measurements: Dict[str, LoadedMeasurement],
+    narrative: Optional[Dict] = None,
+):
     """Build a professional branded DOCX report with data-driven content.
 
     Produces engineering-quality sections: data-driven executive summary,
     consolidated performance tables, pattern prose, polarization analysis,
     TRP sections for active data, and data-driven conclusions.
+
+    ``narrative`` (optional) lets a driving MCP agent supply its own prose;
+    any key omitted falls back to the deterministic, data-driven text:
+      - executive_summary: str
+      - section_analysis: {measurement_name: str}  (appended to pattern prose)
+      - recommendations: str  (newline- or bullet-separated)
+      - captions: {plot_filename: str}
     """
     from docx import Document
     from docx.shared import Inches, Pt, RGBColor
     from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
     from plot_antenna import config
+
+    narrative = narrative or {}
+    nar_section = narrative.get("section_analysis") or {}
+    nar_captions = narrative.get("captions") or {}
 
     # Brand colors
     BRAND_PRIMARY = (
@@ -1247,8 +1358,11 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     logo_path = opts.logo_path
     if not logo_path and getattr(config, "LOGO_FILENAME", None):
         candidates = [
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                         "assets", config.LOGO_FILENAME),
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                "assets",
+                config.LOGO_FILENAME,
+            ),
         ]
         for p in candidates:
             if os.path.exists(p):
@@ -1262,8 +1376,7 @@ def _build_branded_docx(output_path: str, report_data: Dict,
         logo_width = getattr(config, "LOGO_WIDTH_INCHES", 2.0)
         header_run.add_picture(logo_path, width=Inches(logo_width))
         logo_align = getattr(config, "LOGO_ALIGNMENT", "LEFT")
-        align_map = {"CENTER": WD_PARAGRAPH_ALIGNMENT.CENTER,
-                     "RIGHT": WD_PARAGRAPH_ALIGNMENT.RIGHT}
+        align_map = {"CENTER": WD_PARAGRAPH_ALIGNMENT.CENTER, "RIGHT": WD_PARAGRAPH_ALIGNMENT.RIGHT}
         header_para.alignment = align_map.get(logo_align, WD_PARAGRAPH_ALIGNMENT.LEFT)
 
     # ------------------------------------------------------------------ #
@@ -1344,15 +1457,20 @@ def _build_branded_docx(output_path: str, report_data: Dict,
         doc.add_page_break()
 
     # ------------------------------------------------------------------ #
-    # SECTION 3: Executive Summary (data-driven, AI optional enhancement)
+    # SECTION 3: Executive Summary (agent-supplied or data-driven)
     # ------------------------------------------------------------------ #
     add_branded_heading(doc, "Executive Summary", level=1)
 
-    # Data-driven executive summary
-    summary_paragraphs = _build_executive_summary(measurements, opts,
-                                                   band_info_map=band_info_map)
-    for para in summary_paragraphs:
-        doc.add_paragraph(para)
+    if narrative.get("executive_summary"):
+        for para in str(narrative["executive_summary"]).split("\n"):
+            if para.strip():
+                doc.add_paragraph(para.strip())
+    else:
+        summary_paragraphs = _build_executive_summary(
+            measurements, opts, band_info_map=band_info_map
+        )
+        for para in summary_paragraphs:
+            doc.add_paragraph(para)
     doc.add_page_break()
 
     # ------------------------------------------------------------------ #
@@ -1380,12 +1498,14 @@ def _build_branded_docx(output_path: str, report_data: Dict,
             config_lines.append(
                 f"Theta: {test_config['theta_range']} "
                 f"({test_config.get('theta_points', '?')} points"
-                f"{', step ' + test_config['theta_step'] if 'theta_step' in test_config else ''})")
+                f"{', step ' + test_config['theta_step'] if 'theta_step' in test_config else ''})"
+            )
         if "phi_range" in test_config:
             config_lines.append(
                 f"Phi: {test_config['phi_range']} "
                 f"({test_config.get('phi_points', '?')} points"
-                f"{', step ' + test_config['phi_step'] if 'phi_step' in test_config else ''})")
+                f"{', step ' + test_config['phi_step'] if 'phi_step' in test_config else ''})"
+            )
         if "spatial_points" in test_config:
             config_lines.append(f"Total spatial points: {test_config['spatial_points']}")
 
@@ -1413,18 +1533,17 @@ def _build_branded_docx(output_path: str, report_data: Dict,
 
             freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                freqs, opts.max_frequencies_in_table,
-                band_info=band_info_map.get(meas_name))
+                freqs, opts.max_frequencies_in_table, band_info=band_info_map.get(meas_name)
+            )
 
             # ONE consolidated table per measurement
             _build_consolidated_performance_table(
-                doc, analyzer, meas_name, rep_freqs,
-                BRAND_DARK, m.scan_type)
+                doc, analyzer, meas_name, rep_freqs, BRAND_DARK, m.scan_type
+            )
 
             # Multi-frequency comparison (representative freqs only)
             if m.scan_type == "passive" and len(rep_freqs) >= 2:
-                _build_comparison_table(
-                    doc, analyzer, rep_freqs, BRAND_DARK, add_branded_heading)
+                _build_comparison_table(doc, analyzer, rep_freqs, BRAND_DARK, add_branded_heading)
 
         doc.add_page_break()
 
@@ -1432,7 +1551,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     # SECTION 6: TRP Analysis (active measurements only)
     # ------------------------------------------------------------------ #
     active_names = [
-        n for n in report_data["measurements"]
+        n
+        for n in report_data["measurements"]
         if n in measurements and measurements[n].scan_type == "active"
     ]
     if active_names:
@@ -1467,7 +1587,9 @@ def _build_branded_docx(output_path: str, report_data: Dict,
                 cap_run.font.color.rgb = BRAND_DARK
                 cap_run.font.size = Pt(11)
 
-                fname_run = caption.add_run(_pretty_caption(os.path.basename(img_path)))
+                _basename = os.path.basename(img_path)
+                caption_text = nar_captions.get(_basename) or _pretty_caption(_basename)
+                fname_run = caption.add_run(caption_text)
                 fname_run.font.color.rgb = BRAND_LIGHT
                 fname_run.font.size = Pt(11)
                 caption.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
@@ -1480,7 +1602,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     # SECTION 8: Pattern Analysis (prose, not raw dump)
     # ------------------------------------------------------------------ #
     passive_measurements = [
-        n for n in report_data["measurements"]
+        n
+        for n in report_data["measurements"]
         if n in measurements and measurements[n].scan_type == "passive"
     ]
     if passive_measurements:
@@ -1495,15 +1618,21 @@ def _build_branded_docx(output_path: str, report_data: Dict,
             meas_band = band_info_map.get(meas_name)
             meas_freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                meas_freqs, opts.max_plot_frequencies,
-                band_info=meas_band)
+                meas_freqs, opts.max_plot_frequencies, band_info=meas_band
+            )
 
             add_branded_heading(doc, f"Pattern Analysis - {meas_name}", level=2)
 
             for freq in rep_freqs:
-                prose = _build_pattern_prose(analyzer, freq, meas_name,
-                                            band_info=meas_band)
+                prose = _build_pattern_prose(analyzer, freq, meas_name, band_info=meas_band)
                 doc.add_paragraph(prose)
+
+            # Optional agent-authored commentary for this measurement
+            if nar_section.get(meas_name):
+                doc.add_paragraph()
+                for line in str(nar_section[meas_name]).split("\n"):
+                    if line.strip():
+                        doc.add_paragraph(line.strip())
 
     # ------------------------------------------------------------------ #
     # SECTION 9: Polarization Analysis (consolidated table + summary)
@@ -1519,8 +1648,8 @@ def _build_branded_docx(output_path: str, report_data: Dict,
 
             meas_freqs = _filter_frequencies(m.frequencies, opts)
             rep_freqs = _select_representative_frequencies(
-                meas_freqs, opts.max_plot_frequencies,
-                band_info=band_info_map.get(meas_name))
+                meas_freqs, opts.max_plot_frequencies, band_info=band_info_map.get(meas_name)
+            )
 
             add_branded_heading(doc, f"Polarization - {meas_name}", level=2)
             _build_polarization_table(doc, analyzer, rep_freqs, BRAND_DARK)
@@ -1534,18 +1663,26 @@ def _build_branded_docx(output_path: str, report_data: Dict,
                 dominant = pol.get("dominant_pol", "N/A")
                 summary_text = (
                     f"At {_fmt(mid_freq, '.0f')} MHz: {dominant}-pol dominant"
-                    f" with {_fmt(abs(balance) if balance else None, '.1f')} dB balance")
+                    f" with {_fmt(abs(balance) if balance else None, '.1f')} dB balance"
+                )
                 if note:
                     summary_text += f". {note}."
                 doc.add_paragraph(summary_text)
 
     # ------------------------------------------------------------------ #
-    # SECTION 10: Conclusions and Recommendations (data-driven)
+    # SECTION 10: Conclusions and Recommendations (agent-supplied or data-driven)
     # ------------------------------------------------------------------ #
     doc.add_page_break()
     add_branded_heading(doc, "Conclusions and Recommendations", level=1)
 
-    _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
+    if narrative.get("recommendations"):
+        doc.add_paragraph("Based on the measurement results presented in this report:")
+        for line in str(narrative["recommendations"]).split("\n"):
+            line = line.strip().lstrip("-").lstrip("*").strip()
+            if line:
+                doc.add_paragraph(line, style="List Bullet")
+    else:
+        _add_data_driven_conclusions(doc, measurements, opts, band_info_map)
 
     # Brand footer
     if brand_tagline or brand_website:
@@ -1568,11 +1705,9 @@ def _build_branded_docx(output_path: str, report_data: Dict,
     doc.save(output_path)
 
 
-def _add_data_driven_conclusions(doc, measurements, opts,
-                                 band_info_map=None):
+def _add_data_driven_conclusions(doc, measurements, opts, band_info_map=None):
     """Add data-driven conclusion bullets."""
-    bullets = _build_data_driven_conclusions(measurements, opts,
-                                             band_info_map=band_info_map)
+    bullets = _build_data_driven_conclusions(measurements, opts, band_info_map=band_info_map)
     doc.add_paragraph("Based on the measurement results presented in this report:")
     for bullet in bullets:
         doc.add_paragraph(bullet, style="List Bullet")
@@ -1599,8 +1734,8 @@ def _add_fallback_conclusions(doc):
 # Data Preparation
 # ---------------------------------------------------------------------------
 
-def _prepare_report_data(measurements: Dict[str, LoadedMeasurement],
-                         opts: ReportOptions) -> Dict:
+
+def _prepare_report_data(measurements: Dict[str, LoadedMeasurement], opts: ReportOptions) -> Dict:
     """Prepare data for report generation based on options."""
     data: Dict[str, Any] = {
         "measurements": [],
@@ -1622,6 +1757,7 @@ def _prepare_report_data(measurements: Dict[str, LoadedMeasurement],
 # ---------------------------------------------------------------------------
 # MCP Tool Registration
 # ---------------------------------------------------------------------------
+
 
 def register_report_tools(mcp):
     """Register report generation tools with the MCP server."""
@@ -1717,18 +1853,31 @@ EXAMPLE - Full Report:
         options: Optional[Dict[str, Any]] = None,
         title: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
+        narrative: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Generate a professional branded antenna test report (DOCX).
 
         Produces a DOCX with cover page, gain tables, embedded 2D/3D plots,
-        AI-generated summaries and conclusions, and branded formatting.
+        deterministic data-driven prose, and branded formatting. No LLM or API
+        key is used. RFlect computes the data; the driving MCP agent may author
+        the narrative and pass it via `narrative` (any omitted key falls back to
+        the deterministic text).
 
         Args:
             output_path: Path for the output DOCX file
             options: Report options (see get_report_options for details)
             title: Custom report title (default: "Antenna Radiation Pattern Test Report")
             metadata: Dict with project_name, antenna_type, frequency_range, author, date
+            narrative: Optional agent-authored prose to render verbatim:
+                - executive_summary (str): replaces the data-driven summary
+                - section_analysis ({measurement_name: str}): appended after the
+                  per-measurement pattern prose
+                - recommendations (str): newline-/bullet-separated; replaces the
+                  data-driven conclusions
+                - captions ({plot_filename: str}): per-figure caption overrides
+              Recommended flow: call the analysis tools, read the results, write
+              the prose yourself, then pass it here.
 
         Returns:
             Path to generated report and summary of contents.
@@ -1765,10 +1914,15 @@ EXAMPLE - Full Report:
             if opts.include_2d_plots or opts.include_3d_plots:
                 plot_images = _generate_plots(measurements, opts, temp_dir)
 
-            # 3. Build branded DOCX (deterministic content)
+            # 3. Build branded DOCX (deterministic content + optional agent narrative)
             _build_branded_docx(
-                output_path, report_data, plot_images,
-                opts, metadata, measurements,
+                output_path,
+                report_data,
+                plot_images,
+                opts,
+                metadata,
+                measurements,
+                narrative,
             )
 
             # 4. Summary
