@@ -4,7 +4,7 @@ import numpy as np
 from scipy.signal import windows
 
 
-def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi):
+def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi, method="rectangular"):
     """
     Calculate Total Radiated Power (TRP) using the CTIA/IEEE-149 discrete
     solid-angle integration.
@@ -26,6 +26,10 @@ def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi):
         theta_angles_rad: 1D array of theta angles in radians
         inc_theta: Theta increment in degrees
         inc_phi: Phi increment in degrees
+        method: "rectangular" (midpoint, default) or "trapezoidal". Trapezoidal
+            applies composite-rule half-weights to the theta endpoints (the
+            pole rows); since sin(0)=sin(π)=0 the difference is small (<~0.01 dB
+            at typical grids) but grows on coarse grids. (#35)
 
     Returns:
         TRP_dBm: Total radiated power in dBm
@@ -36,11 +40,20 @@ def calculate_trp(power_dBm_2d, theta_angles_rad, inc_theta, inc_phi):
     # sin(θ) weighting for spherical coordinate Jacobian
     theta_weight = np.sin(theta_angles_rad)
 
-    # IEEE-correct solid angle integration
-    # TRP = sum(P * sin(θ)) * dθ * dφ / (4π)
     dtheta = np.deg2rad(inc_theta)
     dphi = np.deg2rad(inc_phi)
-    TRP_mW = np.sum(power_mW * theta_weight[:, np.newaxis]) * dtheta * dphi / (4 * np.pi)
+
+    if method == "trapezoidal" and theta_weight.size >= 2:
+        # Composite trapezoidal in theta: half-weight the first/last theta rows.
+        # phi is periodic (0..360-Δφ) so it stays at full weight (rectangular).
+        w_theta = np.ones_like(theta_weight)
+        w_theta[0] = 0.5
+        w_theta[-1] = 0.5
+        weighted = power_mW * (theta_weight * w_theta)[:, np.newaxis]
+        TRP_mW = np.sum(weighted) * dtheta * dphi / (4 * np.pi)
+    else:
+        # Rectangular (midpoint) rule — TRP = sum(P*sinθ)*dθ*dφ / (4π).
+        TRP_mW = np.sum(power_mW * theta_weight[:, np.newaxis]) * dtheta * dphi / (4 * np.pi)
 
     TRP_dBm = 10 * np.log10(np.maximum(TRP_mW, 1e-12))  # Protect against log(0)
     return TRP_dBm
