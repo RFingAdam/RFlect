@@ -72,8 +72,8 @@ def cal_drift_report(
     current_run_id: str,
     output_path: str,
     format: str = "markdown",
-) -> str:
-    """Generate a drift report file and return its path.
+) -> Dict[str, Any]:
+    """Generate a drift report file.
 
     Args:
         baseline_run_id: run_id of the baseline.
@@ -82,19 +82,25 @@ def cal_drift_report(
         format: "markdown" | "pdf" | "png".
 
     Returns:
-        The absolute output path on success (raises ValueError on unknown format).
+        On success: {"output_path": str, "format": str}. On failure:
+        {"error": str}. Never raises — failures are returned, not thrown,
+        per the MCP tool contract.
     """
     fmt = format.lower().strip()
-    result = cal_drift.compute_drift(baseline_run_id, current_run_id)
-    if fmt == "markdown":
-        cal_drift.export_markdown(result, output_path)
-    elif fmt == "pdf":
-        cal_drift.export_pdf(result, output_path)
-    elif fmt == "png":
-        cal_drift.render_delta_plot(result, out_path=output_path)
-    else:
-        raise ValueError(f"Unknown report format {format!r}; use markdown|pdf|png")
-    return output_path
+    valid = ("markdown", "pdf", "png")
+    if fmt not in valid:
+        return {"error": f"unknown report format {format!r}; use {'|'.join(valid)}"}
+    try:
+        result = cal_drift.compute_drift(baseline_run_id, current_run_id)
+        if fmt == "markdown":
+            cal_drift.export_markdown(result, output_path)
+        elif fmt == "pdf":
+            cal_drift.export_pdf(result, output_path)
+        else:  # png
+            cal_drift.render_delta_plot(result, out_path=output_path)
+    except Exception as exc:  # noqa: BLE001 — MCP tools never raise to the client
+        return {"error": f"cal_drift_report failed: {exc}"}
+    return {"output_path": output_path, "format": fmt}
 
 
 def cal_drift_history_dir() -> str:

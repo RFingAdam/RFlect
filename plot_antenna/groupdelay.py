@@ -12,6 +12,79 @@ import re
 import numpy as np
 
 
+def compute_group_delay_dispersion(data_dict, min_freq=None, max_freq=None):
+    """Per-frequency group-delay dispersion across theta cuts.
+
+    For each frequency present in every cut, gather the group-delay value
+    (``S21(s)`` or ``S12(s)``) across all theta cuts and compute the spread,
+    variance, and standard deviation. This is the pure, testable core of the
+    metric the GUI plot in :func:`plot_group_delay_error` visualizes.
+
+    Args:
+        data_dict: {theta -> DataFrame} where each frame has a ``! Stimulus(Hz)``
+            column and a ``S21(s)`` or ``S12(s)`` group-delay column (seconds).
+        min_freq, max_freq: optional band limits in GHz; if both given, only
+            frequencies within [min_freq, max_freq]*1e9 are returned.
+
+    Returns:
+        dict with numpy arrays, all aligned by ``freq_hz``:
+            freq_hz, max_minus_min_s, variance_s2, std_s, distance_error_m.
+        Empty arrays if no usable data. Pure function — no plotting, no IO.
+    """
+    if not data_dict:
+        empty = np.array([])
+        return {
+            "freq_hz": empty,
+            "max_minus_min_s": empty,
+            "variance_s2": empty,
+            "std_s": empty,
+            "distance_error_m": empty,
+        }
+
+    C_M_PER_S = 299792458.0
+
+    def _gd_col(df):
+        if "S21(s)" in df.columns:
+            return "S21(s)"
+        if "S12(s)" in df.columns:
+            return "S12(s)"
+        return None
+
+    first = data_dict[next(iter(data_dict))]
+    freqs = np.asarray(first["! Stimulus(Hz)"], dtype=float)
+    if min_freq is not None and max_freq is not None:
+        sel = (freqs >= min_freq * 1e9) & (freqs <= max_freq * 1e9)
+        freqs = freqs[sel]
+
+    freq_hz, spread, variance, std, dist_err = [], [], [], [], []
+    for f in freqs:
+        gds = []
+        for df in data_dict.values():
+            col = _gd_col(df)
+            if col is None:
+                continue
+            match = df[df["! Stimulus(Hz)"] == f][col].values
+            if match.size:
+                gds.append(float(match[0]))
+        if len(gds) < 1:
+            continue
+        arr = np.asarray(gds, dtype=float)
+        s = float(arr.max() - arr.min())
+        freq_hz.append(float(f))
+        spread.append(s)
+        variance.append(float(np.var(arr)))
+        std.append(float(np.std(arr)))
+        dist_err.append(s * C_M_PER_S)
+
+    return {
+        "freq_hz": np.asarray(freq_hz),
+        "max_minus_min_s": np.asarray(spread),
+        "variance_s2": np.asarray(variance),
+        "std_s": np.asarray(std),
+        "distance_error_m": np.asarray(dist_err),
+    }
+
+
 # Process & Plot 2-Port S-Parameter Files for Group Delay and System Fidelity Factor
 def process_groupdelay_files(
     file_paths,
