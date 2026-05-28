@@ -12,7 +12,7 @@ RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server
 
 ## Tool count
 
-34 tools across 7 categories. See [Tools Reference](tools-reference.md) for the full list with signatures.
+35 tools across 8 categories. See [Tools Reference](tools-reference.md) for the full list with signatures.
 
 | Category          | Count |
 |-------------------|------:|

@@ -1,5 +1,29 @@
 # RFlect - Release Notes
 
+## Version 4.3.0 (05/28/2026)
+
+**Feature release — multi-angle throughput-validation MCP tool.**
+
+### New Features
+
+- **`analyze_iperf_angle_sweep` MCP tool**: compares two bench iperf sessions — an installed-antenna session and a matched reference-antenna session recorded at the same azimuth angles — to quantify how the installed antenna's real-environment throughput tracks a reference across the radiation pattern.
+  - Signature: `analyze_iperf_angle_sweep(session_dir, reference_session_dir, out_dir, mean_threshold_mbps=-5.0, worst_threshold_mbps=-10.0)`.
+  - For each `(channel, mode)` cell, computes per-angle deltas (installed − reference) and a roll-up: mean, median, worst-angle, best-angle, spread, and p10/p90.
+  - Emits `summary.csv`, `summary.json`, a polar PNG per cell, and a markdown `report.md` with a configurable adequacy verdict per cell.
+  - Reads only the documented bench `session.json` shape (`wifi_only` runs carrying `angle_deg` + `aggregate.overall_mbps`); no dependency on any specific bench harness.
+  - Never raises — every failure mode (missing manifest, malformed runs, no common channel/mode cells, no common angles, write errors) returns as a structured `warnings[]` entry.
+
+### Internals
+
+- **`register_iperf_angle_tools(mcp)`** added to `rflect-mcp/tools/iperf_angle_tools.py` and wired into `rflect-mcp/server.py`. MCP tool count: 34 → 35 (new "Validation" category).
+- All file IO in the new tool pins `encoding="utf-8"` so non-ASCII report glyphs (Δ, ≥, →, −) write correctly on Windows code pages.
+
+### Tests
+
+- 8 new tests in `tests/test_iperf_angle_sweep.py` covering per-angle delta computation, CSV/JSON shape, channel/mode cell intersection, angle-set intersection, verdict thresholds, missing manifest, malformed runs, and non-`wifi_only` runs ignored. Verified green across the full ubuntu/windows/macOS × py3.11/3.12 CI matrix.
+
+---
+
 ## Version 4.2.0 (05/12/2026)
 
 **Feature release — single-call folder orchestration for MCP clients.**
