@@ -1,18 +1,22 @@
 # MCP Overview
 
-RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so AI assistants (Claude Code, Cline, Continue, etc.) can drive RFlect programmatically — no GUI required.
+RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so an AI agent (Claude Code, Cline, Continue, etc.) can drive RFlect programmatically — no GUI required.
+
+!!! tip "RFlect has no LLM of its own"
+    As of v5.0.0 RFlect makes **no outbound LLM/API calls and needs no API key or subscription.** It is a deterministic RF analysis + rendering toolkit. The driving MCP agent *is* the LLM: it calls RFlect's tools for data, and — if you want narrative prose in a report — authors it itself and passes it to `generate_report` via the `narrative` parameter.
 
 ## What you can do over MCP
 
 - Import passive HPOL/VPOL pairs, active TRP files, S-parameter sweeps
-- Run analysis: HPBW, F/B ratio, gain stats, polarization, UWB SFF, impedance bandwidth
-- Generate DOCX reports with optional AI executive summaries
-- Track calibration drift across time
+- Run analysis: HPBW, F/B ratio, gain stats, polarization, UWB SFF, impedance bandwidth, S11/VSWR, group delay
+- Compare antennas head-to-head; estimate link budget / range; compute MIMO diversity
+- Generate branded DOCX reports (deterministic prose by default, or agent-authored)
+- Generate active chamber calibration files and track calibration drift across time
 - **Run a standard procedure on a folder with a single call** via [`process_folder`](recipes.md) — auto-detects intent, runs the right workflow, optionally generates a report
 
 ## Tool count
 
-35 tools across 8 categories. See [Tools Reference](tools-reference.md) for the full list with signatures.
+41 tools across 9 categories. See [Tools Reference](tools-reference.md) for the full list with signatures.
 
 | Category          | Count |
 |-------------------|------:|
@@ -23,6 +27,8 @@ RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server
 | UWB               | 3     |
 | Cal Drift         | 8     |
 | Orchestration     | 1     |
+| Validation        | 1     |
+| Analysis (RF)     | 6     |
 | Misc              | 3     |
 
 ## Why an orchestrator?

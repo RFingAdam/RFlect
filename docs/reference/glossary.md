@@ -8,7 +8,6 @@
 | **ECC** | Envelope Correlation Coefficient — how correlated two antenna patterns are; matters for MIMO diversity. |
 | **Efficiency (η)** | Radiated power / accepted power. Includes ohmic and mismatch losses. |
 | **F/B** | Front-to-Back ratio. Gain at the peak direction minus gain at 180° from the peak. |
-| **Fernet** | Symmetric AES-128 + HMAC-SHA256 encryption scheme used to encrypt API keys at rest. |
 | **Gain** | Power radiated in a given direction per unit solid angle, relative to isotropic. `Gain = Efficiency × Directivity`. dBi units. |
 | **HPBW** | Half-Power Beamwidth, aka -3 dB beamwidth. Angular width where gain drops to half-peak. |
 | **HPOL / VPOL** | H- and V-polarization. Ludwig-3: HPOL → $E_\phi$, VPOL → $E_\theta$. |
@@ -16,7 +15,9 @@
 | **LHCP / RHCP** | Left-/Right-Hand Circular Polarization. IEEE convention: looking in direction of propagation. |
 | **MCP** | [Model Context Protocol](https://modelcontextprotocol.io/) — open spec for AI assistants to call tools on external servers. |
 | **MEG** | Mean Effective Gain — mean of the antenna gain weighted by the angular power spectrum of the environment. |
-| **PBKDF2** | Password-Based Key Derivation Function. RFlect uses PBKDF2-HMAC-SHA256 with 600 K iterations to derive the Fernet key. |
+| **Diversity gain** | SNR improvement from combining decorrelated antennas (dB). Vaughan-Andersen: DG = 10·√(1 − ECC²). |
+| **Fade margin** | Extra link budget reserved to hold a target reliability under fading (Rayleigh / Rician). |
+| **Rician K** | Ratio of dominant (LOS) to scattered power in a Rician fading channel. |
 | **SFF** | System Fidelity Factor — normalized cross-correlation between transmitted and received UWB pulses. 1.0 = perfect; 0.95+ usually good. |
 | **setup_group** | A free-text tag on a cal-drift run identifying its methodology epoch (e.g. `pre-2024-cable-change`). Mismatch is flagged when comparing across groups. |
 | **TRP** | Total Radiated Power. Integral of radiated power over the sphere. IEEE solid-angle formula with $\sin\theta$ Jacobian. |

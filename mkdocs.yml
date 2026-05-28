@@ -1,5 +1,5 @@
 site_name: RFlect
-site_description: The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.
+site_description: The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.
 site_url: https://rfingadam.github.io/RFlect/
 repo_url: https://github.com/RFingAdam/RFlect
 repo_name: RFingAdam/RFlect
@@ -105,13 +105,8 @@ nav:
       - Tools Reference: mcp/tools-reference.md
       - Recipes: mcp/recipes.md
       - Troubleshooting: mcp/troubleshooting.md
-  - AI:
-      - Overview: ai/overview.md
-      - Status: ai/status.md
-      - Providers: ai/providers.md
-      - Chat: ai/chat.md
-      - Reports: ai/reports.md
   - Reference:
+      - Measurement Types: reference/measurement-types.md
       - CLI: reference/cli.md
       - API: reference/api.md
       - Glossary: reference/glossary.md

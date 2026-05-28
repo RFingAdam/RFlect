@@ -1,6 +1,6 @@
 ---
 title: RFlect — antenna measurement visualization & analysis
-description: The RF engineer's toolkit for antenna measurement visualization, analysis, and AI-assisted reporting.
+description: The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.
 hide:
   - toc
 ---
@@ -35,7 +35,7 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 
 <a class="rflect-card" href="mcp/overview/">
 <strong>MCP Server →</strong>
-<span>35 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
+<span>41 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
 </a>
 
 <a class="rflect-card" href="mcp/recipes/">
@@ -43,9 +43,9 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 <span>One call: <code>process_folder(...)</code>. Passive / active / cal-drift / UWB / auto.</span>
 </a>
 
-<a class="rflect-card" href="ai/overview/">
-<strong>AI Features →</strong>
-<span>OpenAI, Anthropic, Ollama. Chat over your data. AI-augmented DOCX reports.</span>
+<a class="rflect-card" href="reference/measurement-types/">
+<strong>Measurement Types →</strong>
+<span>Every scan type and analysis, its input format, and the MCP tool that drives it.</span>
 </a>
 
 <a class="rflect-card" href="hardware/file-formats/">
@@ -57,9 +57,10 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 
 ## Built for the way RF labs actually work
 
+- **No API key, no subscription, no LLM dependency** — RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.
+- **MCP server** — 41 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent *is* the LLM; RFlect provides the data and the rendering.
 - **GUI** — desktop app (Tk-based, dark theme) for interactive review
-- **MCP server** — 35 tools that let Claude Code, Cline, and other AI clients drive RFlect programmatically
-- **AI-assisted reports** — DOCX with embedded plots, gain tables, and optional LLM-generated executive summaries (OpenAI / Anthropic / Ollama)
+- **Agent-authored reports** — DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via [`generate_report`](mcp/tools-reference.md)'s `narrative` parameter
 - **Cal-drift tracker** — record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches
 
 ## Inputs at a glance
