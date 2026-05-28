@@ -66,6 +66,10 @@ plot_antenna/_archive/
 # Temp. files
 AI_CHAT_WORKFLOW.md
 
+# Local AI/MCP client + agent tooling state (developer-specific)
+.mcp.json
+.serena/
+
 # IDE config
 .vscode/
 *.code-workspace

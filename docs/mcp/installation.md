@@ -1,66 +1,122 @@
 # MCP Installation
 
-Add RFlect's MCP server to your MCP client. The server is at `rflect-mcp/server.py`.
+Add RFlect's MCP server to your MCP client. The server entry point is
+`rflect-mcp/server.py`. RFlect runs identically on **Linux, macOS, and Windows**
+— the only per-OS differences are the Python path and where your client keeps
+its config.
 
-## Prerequisites
+## 1. Install RFlect + MCP dependencies
 
-- RFlect installed (`pip install -e .` or pre-built binary)
-- `rflect-mcp` dependencies installed:
+=== "Linux / macOS"
 
-```bash
-cd rflect-mcp
-pip install -r requirements.txt
-```
+    ```bash
+    git clone https://github.com/RFingAdam/RFlect.git
+    cd RFlect
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install -e .
+    pip install -r rflect-mcp/requirements.txt
+    ```
 
-## Claude Code
+    Your Python interpreter is then `…/RFlect/.venv/bin/python`.
 
-Add to `~/.claude/settings.json` (or use a project-local `.mcp.json`):
+=== "Windows (PowerShell)"
 
-```json
-{
-  "mcpServers": {
-    "rflect": {
-      "command": "/absolute/path/to/RFlect/.venv/bin/python",
-      "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"]
+    ```powershell
+    git clone https://github.com/RFingAdam/RFlect.git
+    cd RFlect
+    py -m venv .venv
+    .venv\Scripts\Activate.ps1
+    pip install -e .
+    pip install -r rflect-mcp\requirements.txt
+    ```
+
+    Your Python interpreter is then `…\RFlect\.venv\Scripts\python.exe`.
+
+!!! note "No API key required"
+    RFlect makes no LLM/API calls and needs no key or subscription. The MCP
+    server runs fully offline.
+
+## 2. Register with your MCP client
+
+### Claude Code
+
+Config file location:
+
+| OS | Path |
+|----|------|
+| Linux / macOS | `~/.claude/settings.json` |
+| Windows | `%USERPROFILE%\.claude\settings.json` |
+
+(Or use a project-local `.mcp.json` in your repo root, which works the same on every OS.)
+
+=== "Linux / macOS"
+
+    ```json
+    {
+      "mcpServers": {
+        "rflect": {
+          "command": "/absolute/path/to/RFlect/.venv/bin/python",
+          "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"]
+        }
+      }
     }
-  }
-}
-```
+    ```
 
-On Windows use forward slashes or escaped backslashes:
+=== "Windows"
 
-```json
-{
-  "mcpServers": {
-    "rflect": {
-      "command": "C:/Users/you/RFlect/.venv/Scripts/python.exe",
-      "args": ["C:/Users/you/RFlect/rflect-mcp/server.py"]
+    Use forward slashes (or escaped `\\`) in JSON, and the `Scripts` venv path:
+
+    ```json
+    {
+      "mcpServers": {
+        "rflect": {
+          "command": "C:/Users/you/RFlect/.venv/Scripts/python.exe",
+          "args": ["C:/Users/you/RFlect/rflect-mcp/server.py"]
+        }
+      }
     }
-  }
-}
-```
+    ```
 
-Restart Claude Code; you should see 34 RFlect tools available.
+Restart Claude Code; you should see **41** RFlect tools available.
 
-## Cline
+### Cline (VS Code)
 
-`.cline/mcp_settings.json` in your project root:
+`.cline/mcp_settings.json` in your project root (same shape on every OS — just
+swap the Python path):
 
-```json
-{
-  "mcpServers": {
-    "rflect": {
-      "command": "python",
-      "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"],
-      "env": {}
+=== "Linux / macOS"
+
+    ```json
+    {
+      "mcpServers": {
+        "rflect": {
+          "command": "/absolute/path/to/RFlect/.venv/bin/python",
+          "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"],
+          "env": {}
+        }
+      }
     }
-  }
-}
-```
+    ```
 
-## Continue (VS Code)
+=== "Windows"
 
-Continue uses `~/.continue/config.json`. Add an MCP server entry:
+    ```json
+    {
+      "mcpServers": {
+        "rflect": {
+          "command": "C:/Users/you/RFlect/.venv/Scripts/python.exe",
+          "args": ["C:/Users/you/RFlect/rflect-mcp/server.py"],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+### Continue (VS Code)
+
+Continue uses `~/.continue/config.json` (Linux/macOS) or
+`%USERPROFILE%\.continue\config.json` (Windows):
 
 ```json
 {
@@ -69,7 +125,7 @@ Continue uses `~/.continue/config.json`. Add an MCP server entry:
       {
         "transport": {
           "type": "stdio",
-          "command": "python",
+          "command": "/absolute/path/to/RFlect/.venv/bin/python",
           "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"]
         }
       }
@@ -78,44 +134,39 @@ Continue uses `~/.continue/config.json`. Add an MCP server entry:
 }
 ```
 
-## Other MCP clients
+### Other MCP clients
 
-Any client supporting stdio MCP can host the server. The launch command is always:
+Any client supporting stdio MCP can host the server. The launch command is
+always your venv Python plus the server path — no special args:
 
 ```
-python /path/to/rflect-mcp/server.py
+<venv-python> /path/to/rflect-mcp/server.py
 ```
 
-No special args required.
+## 3. Verify
 
-## Verifying
+Ask the assistant *"What RFlect tools do you have?"* — it should list **41**.
+Or run the smoke test from a shell (works on every OS):
 
-After registration, ask the assistant: "What RFlect tools do you have?" — it should list 34. Or run the smoke test from a shell:
+=== "Linux / macOS"
 
-```bash
-python -c "
-import sys, os
-sys.path.insert(0, os.path.abspath('rflect-mcp'))
-from mcp.server.fastmcp import FastMCP
-from tools.import_tools import register_import_tools
-from tools.bulk_tools import register_bulk_tools
-from tools.uwb_tools import register_uwb_tools
-from tools.cal_drift_tools import register_cal_drift_tools
-from tools.report_tools import register_report_tools
-from tools.analysis_tools import register_analysis_tools
-from tools.orchestration import register_orchestration_tools
-m = FastMCP('t')
-for r in (register_import_tools, register_analysis_tools, register_report_tools,
-          register_bulk_tools, register_uwb_tools, register_cal_drift_tools,
-          register_orchestration_tools):
-    r(m)
-print(f'Tools registered: {len(m._tool_manager._tools)}')
-print(f'process_folder present: {\"process_folder\" in m._tool_manager._tools}')
-"
-```
+    ```bash
+    cd RFlect
+    .venv/bin/python -c "import sys, os; sys.path.insert(0, os.path.abspath('rflect-mcp')); import server; print('tools:', len(server.mcp._tool_manager._tools))"
+    ```
 
-Expected: `Tools registered: 34` and `process_folder present: True`.
+=== "Windows (PowerShell)"
+
+    ```powershell
+    cd RFlect
+    .venv\Scripts\python.exe -c "import sys, os; sys.path.insert(0, os.path.abspath('rflect-mcp')); import server; print('tools:', len(server.mcp._tool_manager._tools))"
+    ```
+
+Expected: `tools: 41`.
 
 ## Troubleshooting
 
-If the server fails to connect, see [Troubleshooting](troubleshooting.md).
+If the server fails to connect, see [Troubleshooting](troubleshooting.md). The
+most common cause is pointing `command` at a Python that doesn't have the
+`rflect-mcp/requirements.txt` dependencies installed — use the venv interpreter,
+not the system `python`.
