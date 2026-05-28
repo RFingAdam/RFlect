@@ -407,14 +407,8 @@ class RFAnalyzer:
         return conclusions
 
 
-def _fmt(val, fmt=".2f", suffix=""):
-    """Format a value for table display, handling None gracefully."""
-    if val is None:
-        return "N/A"
-    try:
-        return f"{float(val):{fmt}}{suffix}"
-    except (ValueError, TypeError):
-        return str(val)
+# Shared formatting helper (#36) — single source of truth in plot_antenna.docx_helpers.
+from .docx_helpers import fmt_value as _fmt
 
 
 def _add_gain_stats_table(doc, stats, add_branded_heading, brand_dark):

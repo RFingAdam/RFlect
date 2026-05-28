@@ -568,14 +568,8 @@ def _sort_images_by_frequency(img_paths: List[str]) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
-def _fmt(val, fmt=".2f", suffix=""):
-    """Format a value for table display, handling None gracefully."""
-    if val is None:
-        return "N/A"
-    try:
-        return f"{float(val):{fmt}}{suffix}"
-    except (ValueError, TypeError):
-        return str(val)
+# Shared formatting helper (#36) — single source of truth in plot_antenna.docx_helpers.
+from plot_antenna.docx_helpers import fmt_value as _fmt
 
 
 # ---------------------------------------------------------------------------
@@ -982,13 +976,8 @@ def _build_data_driven_conclusions(
 # ---------------------------------------------------------------------------
 
 
-def _style_header_row(table, brand_dark):
-    """Apply branded styling to the header row of a table."""
-    for cell in table.rows[0].cells:
-        for para in cell.paragraphs:
-            for run in para.runs:
-                run.bold = True
-                run.font.color.rgb = brand_dark
+# Shared header-styling helper (#36) — single source of truth in plot_antenna.docx_helpers.
+from plot_antenna.docx_helpers import style_header_row as _style_header_row
 
 
 def _build_consolidated_performance_table(doc, analyzer, name, rep_freqs, brand_dark, scan_type):
