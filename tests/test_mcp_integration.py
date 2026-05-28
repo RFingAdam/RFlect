@@ -39,7 +39,9 @@ from mcp.server.fastmcp import FastMCP
 # --------------------------------------------------------------------------- #
 # Constants - real test file paths
 # --------------------------------------------------------------------------- #
-TEST_FILES_DIR = "/home/swamp/Downloads/TestFiles/_Test Files/test_files"
+# Point RFLECT_TEST_DATA_DIR at a local folder of real chamber files to run
+# these integration tests; otherwise they skip (as in CI).
+TEST_FILES_DIR = os.environ.get("RFLECT_TEST_DATA_DIR", "")
 
 PASSIVE_BLE_HPOL = os.path.join(TEST_FILES_DIR, "PassiveTest_BLE AP_HPol.txt")
 PASSIVE_BLE_VPOL = os.path.join(TEST_FILES_DIR, "PassiveTest_BLE AP_VPol.txt")

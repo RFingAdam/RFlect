@@ -45,9 +45,8 @@ Ground-up overhaul from v3.x — new GUI, new analysis engine, new integrations,
 
 - **UWB analysis** — System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
 - **Modern dark GUI** — Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
-- **Multi-provider AI** — Unified LLM abstraction supporting OpenAI, Anthropic, and Ollama. AI chat assistant with function-calling tools, report generation, and vision-based plot analysis.
-- **Secure API key storage** — Fernet AES-128 encryption with PBKDF2 (600K iterations), machine-ID binding, and OS keyring integration.
-- **MCP server with 23 tools** — Programmatic antenna analysis for Claude Code and other AI assistants, including UWB characterization.
+- **Zero-dependency, deterministic** — No LLM, no API key, no subscription (the in-app AI was removed in v5.0.0). Every metric is computed and reproducible.
+- **MCP server with 41 tools** — Programmatic antenna analysis for Claude Code and other MCP clients, including comparison, S11/VSWR, group delay, link budget, MIMO diversity, active-cal, and UWB characterization. Cross-platform (Linux/macOS/Windows).
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
 

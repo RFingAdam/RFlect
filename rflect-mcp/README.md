@@ -1,28 +1,39 @@
 # RFlect MCP Server
 
-AI-powered antenna analysis and report generation via Model Context Protocol (MCP).
+Deterministic antenna-measurement analysis and report generation via the Model
+Context Protocol (MCP).
 
-Enables Claude Code, Cline, and other AI assistants to programmatically analyze antenna measurements and generate reports.
+Enables Claude Code, Cline, and other MCP clients to programmatically analyze
+antenna measurements and generate reports. **No LLM, no API key, no
+subscription** — RFlect computes the data and renders the output; the driving
+agent is the LLM and supplies any report narrative.
+
+Runs identically on **Linux, macOS, and Windows**. See the
+[docs site](https://rfingadam.github.io/RFlect/mcp/installation/) for full
+per-OS setup, and [MCP_STATUS.md](../MCP_STATUS.md) for the tool inventory.
 
 ## Quick Start
 
-Add to your Claude Code configuration file (`~/.claude/settings.json`):
+Add to your Claude Code configuration file (`~/.claude/settings.json`, or
+`%USERPROFILE%\.claude\settings.json` on Windows). Point `command` at your
+project's virtual-env Python:
 
 ```json
 {
   "mcpServers": {
     "rflect": {
-      "command": "python",
-      "args": ["f:/Personal/_Projects/_live/RFlect/RFlect/rflect-mcp/server.py"],
+      "command": "/absolute/path/to/RFlect/.venv/bin/python",
+      "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"],
       "env": {}
     }
   }
 }
 ```
 
-**Important**: Use the absolute path to `server.py` on your system.
+On Windows, use `…/.venv/Scripts/python.exe` and forward slashes in the JSON.
 
-Then restart Claude Code and you'll have access to 23 antenna analysis tools. See [Quick-Start Workflow](#quick-start-workflow) below.
+Restart Claude Code and you'll have access to **41** antenna-analysis tools.
+See [Quick-Start Workflow](#quick-start-workflow) below.
 
 ## Installation
 
@@ -62,8 +73,8 @@ For Cline users, add to `.cline/mcp_settings.json` in your project root:
 {
   "mcpServers": {
     "rflect": {
-      "command": "python",
-      "args": ["f:/Personal/_Projects/_live/RFlect/RFlect/rflect-mcp/server.py"],
+      "command": "/absolute/path/to/RFlect/.venv/bin/python",
+      "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"],
       "env": {}
     }
   }
@@ -76,7 +87,13 @@ Most MCP-compatible clients use similar JSON configuration. Consult your client'
 
 ## Available Tools
 
-The RFlect MCP server provides 23 tools across five categories:
+The RFlect MCP server provides **41 tools across nine categories**. The most
+commonly used groups are listed below; see the
+[full Tools Reference](https://rfingadam.github.io/RFlect/mcp/tools-reference/)
+for every tool, including `compare_antennas`, `analyze_s11`,
+`analyze_group_delay`, `estimate_link_budget`, `analyze_mimo_diversity`,
+`generate_active_cal`, `analyze_iperf_angle_sweep`, the cal-drift suite, and
+`process_folder`.
 
 ### Import Tools (6 tools)
 
@@ -107,7 +124,7 @@ The RFlect MCP server provides 23 tools across five categories:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `generate_report` | Generate formatted DOCX report with plots and AI analysis | `output_path` (str), `options` (dict) |
+| `generate_report` | Generate formatted DOCX report with plots, tables, and deterministic prose (or agent-supplied `narrative`) | `output_path` (str), `options` (dict), `narrative` (dict, optional) |
 | `preview_report` | Preview report contents without generating file | `options` (dict) |
 | `get_report_options` | Show all available filtering/customization options | None |
 
@@ -187,8 +204,6 @@ generate_report("wifi_antenna_report.docx", {
     "polarizations": ["total"],
     "include_2d_plots": True,
     "include_3d_plots": False,
-    "ai_executive_summary": True,
-    "ai_section_analysis": False
 })
 
 # Or generate a comprehensive report with all data
@@ -196,13 +211,12 @@ generate_report("full_report.docx", {
     "frequencies": None,  # All frequencies
     "polarizations": ["total", "hpol", "vpol"],
     "include_3d_plots": True,
-    "ai_executive_summary": True,
-    "ai_section_analysis": True,
-    "ai_recommendations": True
 })
 ```
 
-**Result**: Professional DOCX report with plots, tables, and AI-generated insights.
+**Result**: Professional DOCX report with plots, tables, and deterministic
+data-driven prose. To add your own narrative, pass a `narrative` dict (see
+"Report narrative" below).
 
 ## Report Filtering
 
@@ -216,8 +230,6 @@ generate_report("antenna_report.docx", {
     "polarizations": ["total"],      # Only total gain
     "include_2d_plots": True,
     "include_3d_plots": False,       # Skip large 3D plots
-    "ai_executive_summary": True,
-    "ai_section_analysis": False     # Skip per-section AI
 })
 ```
 
@@ -230,9 +242,6 @@ generate_report("full_report.docx", {
     "include_2d_plots": True,
     "include_3d_plots": True,
     "include_gain_tables": True,
-    "ai_executive_summary": True,
-    "ai_section_analysis": True,
-    "ai_recommendations": True
 })
 ```
 
@@ -254,11 +263,23 @@ generate_report("full_report.docx", {
 - `include_raw_data_tables`: Full data (default: false)
 - `max_frequencies_in_table`: Limit rows (default: 10)
 
-**AI Content:**
-- `ai_executive_summary`: AI-generated summary (default: true)
-- `ai_section_analysis`: AI commentary per section (default: true)
-- `ai_recommendations`: Design recommendations (default: true)
-- `ai_model`: OpenAI model (default: "gpt-4o-mini")
+### Report narrative (no LLM)
+
+Report prose is **deterministic and data-driven** by default. There is no
+`ai_*` option and no API key. To supply your own narrative, pass a `narrative`
+dict as the fourth argument — RFlect renders it verbatim and falls back to the
+data-driven text for any omitted key:
+
+```python
+generate_report("antenna_report.docx", {"frequencies": [2450]},
+    narrative={
+        "executive_summary": "Peak gain +1.8 dBi at 2450 MHz ...",
+        "recommendations":   "- Re-tune match toward band center",
+    })
+```
+
+Keys: `executive_summary` (str), `section_analysis` ({measurement: str}),
+`recommendations` (str), `captions` ({plot_filename: str}).
 
 ## Usage Examples
 
@@ -280,7 +301,7 @@ Report generated: wifi_antenna_report.docx
 Contents:
 - 3 frequencies included (2400, 2450, 2500 MHz)
 - 2D plots only (3D disabled)
-- AI executive summary included
+- Deterministic data-driven executive summary
 ```
 
 ### Batch Processing
@@ -305,13 +326,12 @@ Generated 5 reports:
 
 **Solution**: Run `import_antenna_file` or `import_antenna_folder` first. Verify with `list_loaded_data()`.
 
-### "AI Summary requires API key"
-**Cause**: AI features enabled but no AI provider API key configured.
+### Report prose looks generic
 
-**Solution**:
-- **Via RFlect GUI**: Launch RFlect GUI, go to Tools → Manage API Keys, and enter your API key for any supported provider (OpenAI, Anthropic, or Ollama)
-- **Via Environment Variable**: Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in your environment, or configure a local Ollama instance
-- **Alternative**: Disable AI features in report options: `"ai_executive_summary": false`
+RFlect generates report prose **deterministically** — there is no LLM and no API
+key (removed in v5.0.0). For richer narrative, author it in your agent and pass
+it via the `narrative` parameter to `generate_report` (see "Report narrative"
+above).
 
 ### Report too large / Out of memory
 **Cause**: Generating too many 3D plots or processing too many frequencies at once.

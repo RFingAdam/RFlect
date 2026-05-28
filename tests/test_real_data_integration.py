@@ -5,7 +5,8 @@ These tests exercise the full pipeline from file I/O through calculations
 to AI analysis, using actual measurement files rather than synthetic data.
 This targets the low-coverage modules: file_utils.py (5%), calculations.py (21%).
 
-Test data directory: /home/swamp/Downloads/TestFiles/_Test Files/test_files/
+Set RFLECT_TEST_DATA_DIR to a local folder of real chamber files to run these;
+otherwise they skip (as in CI).
 """
 
 import os
@@ -39,7 +40,7 @@ from plot_antenna.analysis_engine import AntennaAnalyzer
 # ---------------------------------------------------------------------------
 # Paths to real test data
 # ---------------------------------------------------------------------------
-TEST_DATA_DIR = "/home/swamp/Downloads/TestFiles/_Test Files/test_files"
+TEST_DATA_DIR = os.environ.get("RFLECT_TEST_DATA_DIR", "")
 
 PASSIVE_BLE_HPOL = os.path.join(TEST_DATA_DIR, "PassiveTest_BLE AP_HPol.txt")
 PASSIVE_BLE_VPOL = os.path.join(TEST_DATA_DIR, "PassiveTest_BLE AP_VPol.txt")

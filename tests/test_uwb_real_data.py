@@ -1,7 +1,8 @@
 """
 Integration tests for UWB analysis using real Group Delay measurement files.
 
-Test data directory: /home/swamp/Downloads/TestFiles/_Test Files/test_files/Group Delay/
+Set RFLECT_TEST_DATA_DIR to a local folder of real chamber files (with a
+"Group Delay" subfolder) to run these; otherwise they skip (as in CI).
 GroupDelay_*deg.csv files have S21(dB) + S21(s) (group delay) columns.
 S11S22S21_*deg.csv files have S21(dB) only (no group delay).
 """
@@ -24,7 +25,7 @@ from plot_antenna.uwb_analysis import (
 # ---------------------------------------------------------------------------
 # Paths to real test data
 # ---------------------------------------------------------------------------
-GROUP_DELAY_DIR = "/home/swamp/Downloads/TestFiles/_Test Files/test_files/Group Delay"
+GROUP_DELAY_DIR = os.path.join(os.environ.get("RFLECT_TEST_DATA_DIR", ""), "Group Delay")
 
 # Skip all tests if test data directory is missing
 pytestmark = pytest.mark.skipif(
