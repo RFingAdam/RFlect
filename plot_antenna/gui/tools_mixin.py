@@ -280,8 +280,34 @@ class ToolsMixin:
         ant_analyzer = self._build_report_analyzer()
 
         save_path = filedialog.askdirectory(title="Select Directory to Save Report")
-        if save_path:
-            generate_report(
+        if not save_path:
+            messagebox.showerror("Error", "No directory selected to save the report.")
+            return
+
+        # Report assembly (python-docx + file IO) is thread-safe, so run it off
+        # the Tk thread to keep the UI responsive (#24). A small modal shows an
+        # indeterminate progress bar until the worker marshals completion back.
+        from .background import run_background
+
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Generating Report...")
+        progress_window.geometry("320x100")
+        progress_window.configure(bg=DARK_BG_COLOR)
+        progress_window.transient(self.root)
+        tk.Label(
+            progress_window,
+            text="Building report document...",
+            bg=DARK_BG_COLOR,
+            fg=LIGHT_TEXT_COLOR,
+        ).pack(pady=10)
+        report_progress = ttk.Progressbar(progress_window, mode="indeterminate", length=260)
+        report_progress.pack(pady=10)
+        report_progress.start(15)
+        # Let the user dismiss the modal with Escape (#26 keyboard nav).
+        progress_window.bind("<Escape>", lambda e: progress_window.destroy())
+
+        def _do_generate():
+            return generate_report(
                 result["title"],
                 image_paths,
                 save_path,
@@ -290,9 +316,24 @@ class ToolsMixin:
                 include_summary=result["summary"],
                 antenna_analyzer=ant_analyzer,
             )
-            messagebox.showinfo("Success", f"Report '{result['title']}' generated successfully!")
-        else:
-            messagebox.showerror("Error", "No directory selected to save the report.")
+
+        def _on_report_done(report_result):
+            report_progress.stop()
+            progress_window.destroy()
+            title = (report_result or {}).get("title", result["title"])
+            messagebox.showinfo("Success", f"Report '{title}' generated successfully!")
+
+        def _on_report_error(exc):
+            report_progress.stop()
+            progress_window.destroy()
+            messagebox.showerror("Error", f"An error occurred while generating the report: {exc}")
+
+        run_background(
+            self.root,
+            _do_generate,
+            on_done=_on_report_done,
+            on_error=_on_report_error,
+        )
 
     def _collect_advanced_params(self):
         """Collect advanced analysis parameters into a dict for batch processing.
