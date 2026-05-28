@@ -65,3 +65,28 @@ class TestComputePartialTRP:
         # A theta window outside the data selects nothing.
         out = _compute_partial_trp(theta, phi, gain, theta_min=200.0, theta_max=300.0)
         assert out == float("-inf")
+
+
+class TestPlotStyleHelpers:
+    """#41 — shared plot style/save helpers."""
+
+    def test_colormap_registry(self):
+        from plot_antenna.plotting import colormap_for
+
+        assert colormap_for("gain") == "viridis"
+        assert colormap_for("power") == "turbo"
+        assert colormap_for("unknown_kind") == "viridis"  # default
+
+    def test_save_figure_writes_png(self, tmp_path):
+        import matplotlib.pyplot as plt
+        from plot_antenna.plotting import save_figure, PLOT_DPI
+
+        fig = plt.figure()
+        plt.plot([0, 1, 2], [0, 1, 4])
+        out = tmp_path / "fig.png"
+        save_figure(fig, str(out))
+        import os
+
+        assert os.path.getsize(out) > 0
+        plt.close("all")
+        assert PLOT_DPI == 300
