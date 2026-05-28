@@ -110,4 +110,5 @@ nav:
       - CLI: reference/cli.md
       - API: reference/api.md
       - Glossary: reference/glossary.md
+  - Changelog: changelog.md
   - Contributing: contributing.md

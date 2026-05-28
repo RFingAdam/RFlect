@@ -25,3 +25,7 @@
 | **VSWR** | Voltage Standing Wave Ratio. Derived from S11 magnitude. 1.0 = perfect match; 2.0 ≈ -9.5 dB return loss. |
 | **WTL** | Wireless Telecom Lab — the chamber-output format RFlect's parsers were built against (V5.02 / V5.03). |
 | **XPD** | Cross-Polarization Discrimination — co-pol field divided by cross-pol field, in dB. Uses 20 log, not 10 log. |
+| **EIRP** | Effective Isotropic Radiated Power — power radiated in a given direction relative to an isotropic source. RFlect's per-angle chamber input; TRP is its sphere average (the 1/4π in `calculate_trp`). |
+| **Sidelobe** | A radiation lobe other than the main beam; sidelobe level (SLL) is its peak relative to the main-lobe peak, in dB. |
+| **Group delay** | −dφ/dω, the negative derivative of transmission phase w.r.t. angular frequency (s); flatness across the band matters for wideband/UWB pulse fidelity. |
+| **Cal drift** | Change in a chamber's path-loss calibration factors over time; RFlect tracks runs across epochs and flags drift beyond a threshold. |
