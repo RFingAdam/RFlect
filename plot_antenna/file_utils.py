@@ -1104,6 +1104,7 @@ def batch_process_passive_scans(
     maritime_gain_threshold=-3.0,
     conducted_power_dBm=None,
     advanced_analysis_params=None,
+    progress_callback=None,
 ):
     """
     Batch process all HPOL/VPOL pairs in a directory.
@@ -1117,6 +1118,9 @@ def batch_process_passive_scans(
         save_base (str or None): Optional directory to write results; a subfolder per pair will be created.
         scale_settings (dict or None): Per-type 3D scale as
             {"total": (mode, min, max), "hpol": (...), "vpol": (...)}.
+        progress_callback (callable or None): Optional ``fn(done, total)`` invoked
+            after each (pair, frequency) job so a caller can drive a determinate
+            progress bar. ``total`` equals ``total_jobs``.
 
     This routine scans ``folder_path`` for files ending in ``AP_HPol.txt`` and
     ``AP_VPol.txt``. For each matching pair it computes passive gain data and
@@ -1172,6 +1176,9 @@ def batch_process_passive_scans(
         if not pairs:
             print(f"No HPOL/VPOL pairs found in {folder_path}.")
             return summary
+
+        _total_jobs = summary["total_jobs"]
+        _done = 0
 
         for h_path, v_path in pairs:
             pair_label = f"{os.path.basename(h_path)} | {os.path.basename(v_path)}"
@@ -1397,6 +1404,13 @@ def batch_process_passive_scans(
                         {"pair": pair_label, "frequency_mhz": sel_freq, "error": str(e)}
                     )
                     print(f"  X Error processing pair {pair_label} at {sel_freq} MHz: {e}")
+                finally:
+                    _done += 1
+                    if progress_callback is not None:
+                        try:
+                            progress_callback(_done, _total_jobs)
+                        except Exception:
+                            pass  # progress reporting must never break the batch
 
         return summary
     finally:
