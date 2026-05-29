@@ -7,27 +7,56 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Full, detailed per-release notes live in
 [RELEASE_NOTES.md](https://github.com/RFingAdam/RFlect/blob/main/RELEASE_NOTES.md); this file is the concise summary.
 
-## [Unreleased] — v5.1 (Correctness & quick wins)
+## [6.0.0] — 2026-05-28
 
-### Added
-- Golden-reference regression tests locking the TRP/gain integration core
-  (isotropic EIRP → itself; upper hemisphere → −3.01 dB).
-- `compute_group_delay_dispersion()` — per-frequency group-delay variance/std
-  across theta cuts (replaces the old dead TODO block).
-- Test coverage for previously-untested modules: `plotting.py`, `save.py`,
-  `groupdelay.py`, `plot_group_delay_cst.py`, `uwb_plotting.py`.
+Consolidated release bundling the **v5.1 (correctness & quick wins)**,
+**v5.2 (RF analysis expansion)** and **v6.0 (automation & platform)** milestones
+on top of v5.0.0 — 46 issues. MCP tool count grew to 61.
 
-### Changed
-- `cal_drift_report` MCP tool now returns `{output_path, format}` / `{error}`
-  and never raises to the client.
-- Slimmer install: `openai` moved to the `[ai]` extra; `keyring`/`cryptography`
-  dropped from core deps (unused since the v5.0.0 AI removal); `pyinstaller`
-  removed from the runtime requirements; numpy ceiling raised to `<3.0.0`.
-- GUI settings save/load and data-processing failures are now surfaced
-  (stderr / log) instead of being silently swallowed.
+### Added — new RF methods & analysis (v5.2 / v6.0)
+- Advanced RF methods in `plot_antenna/rf_methods.py`, exposed as MCP tools:
+  axial-ratio / CP sense, 3-antenna absolute-gain method (#48), uniform-linear
+  array factor with electronic steering / HPBW / SLL / grating-lobe flag (#46),
+  planar near-field→far-field via 2D FFT (#47), S-parameter time-gating +
+  port-extension de-embedding (#43), CTIA TIS + OTA test-plan templates (#42).
+- Optional trapezoidal TRP quadrature with pole/phi-wrap half-cells (#35).
+- Multiport Touchstone `.s3p`/`.s4p` + mixed-mode S-parameters (#31).
+- Measurement-uncertainty budgets / error bars on TRP & gain (#30); regulatory
+  spec-mask checks (FCC Part 15 / ETSI) (#29) with automated PASS/FAIL
+  limit-lines in reports (#28); statistical pattern averaging across repeat
+  measurements (#32); n-antenna Min/Max VSWR/Eff/Gain comparison tables (#7, #34).
+- Exact Rice/Marcum-Q fade-margin model (#23); main-lobe guard on sidelobe
+  detection (#22); `compute_group_delay_dispersion()` group-delay variance/std (#8).
+
+### Added — automation & platform (v6.0)
+- SCPI VNA control + chamber-positioner automation via a driver-Protocol +
+  in-memory mock backend (CI-testable) + optional pyVISA/pyserial backends (#44, #45).
+- Cal-drift: threshold alerts on new runs (#4), gain-standard recertification
+  reminders (#3), scheduled monitoring (#33), passive-calibration support (#6),
+  cable-loss `.s2p` history tracking (#5).
+- Off-the-Tk-thread rendering helper (`async_render`) and report generation
+  (#40, #24); determinate batch progress bars + dialog keyboard nav (#26).
+- `pip install rflect[mcp]` extra; `[instruments]` extra for live hardware (#39).
+
+### Changed — engineering & refactors (v5.1 / v6.0)
+- Decomposed the giant modules into cohesive submodules (zero API change via
+  re-export): `advanced_plots`, `extrapolation`, `advanced_analysis_config`,
+  `docx_helpers`; `plotting.py` shrank 3825→2986 lines (#36, #37, #38, #41).
+- Documented + test-locked the string return contract for the analysis/bulk MCP
+  tools; `cal_drift_report` returns a dict and never raises (#9, #10).
+- Slimmer install: `openai` → `[ai]` extra; dropped unused `keyring`/`cryptography`;
+  `pyinstaller` out of runtime reqs; numpy ceiling raised to `<3.0.0` (#16, #17, #18).
+- Cross-platform GUI fonts + themed dialogs (#25); GUI errors routed to
+  log/messagebox instead of `print()` / silent `except…pass` (#15, #19).
+
+### Fixed
+- Clarified TRP docstring (input is EIRP; the 1/4π factor is correct) and added a
+  golden-reference regression test locking the TRP/gain core (#11, #12).
 
 ### Docs
-- This changelog; expanded reference docs.
+- Keep-a-Changelog `CHANGELOG.md`; expanded glossary / measurement-types / MCP
+  overview (#20, #21); v6.0 RF-method example-figure gallery + reproducible
+  generator (#27); test coverage for previously-untested modules (#13, #14).
 
 ## [5.0.0] — 2026-05-28
 
