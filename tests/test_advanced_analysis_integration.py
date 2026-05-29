@@ -10,6 +10,7 @@ import pytest
 import plot_antenna.calculations as calculations
 import plot_antenna.file_utils as file_utils
 import plot_antenna.plotting as plotting
+import plot_antenna.advanced_plots as advanced_plots  # plot family moved here (#38)
 from plot_antenna.gui.callbacks_mixin import CallbacksMixin
 from plot_antenna.gui.dialogs_mixin import DialogsMixin
 
@@ -243,9 +244,11 @@ def test_plot_fading_analysis_uses_selected_runtime_model(
         calls["rician"].append(shape)
         return np.full(shape, 0.5, dtype=float)
 
-    monkeypatch.setattr(plotting, "apply_statistical_fading", _fake_apply)
-    monkeypatch.setattr(plotting, "rayleigh_cdf", _fake_rayleigh)
-    monkeypatch.setattr(plotting, "rician_cdf", _fake_rician)
+    # plot_fading_analysis lives in advanced_plots (#38) and resolves these
+    # helpers in that module's namespace, so patch them there.
+    monkeypatch.setattr(advanced_plots, "apply_statistical_fading", _fake_apply)
+    monkeypatch.setattr(advanced_plots, "rayleigh_cdf", _fake_rayleigh)
+    monkeypatch.setattr(advanced_plots, "rician_cdf", _fake_rician)
     monkeypatch.setattr(
         plotting.plt,
         "subplots",
@@ -514,7 +517,9 @@ def test_batch_passive_forwarding_injects_mimo_gain_data(monkeypatch, tmp_path):
     base_dir.mkdir()
     out_dir = tmp_path / "out"
 
-    monkeypatch.setattr(file_utils.os, "listdir", lambda _path: ["DemoAP_HPol.txt", "DemoAP_VPol.txt"])
+    monkeypatch.setattr(
+        file_utils.os, "listdir", lambda _path: ["DemoAP_HPol.txt", "DemoAP_VPol.txt"]
+    )
     monkeypatch.setattr(
         file_utils,
         "read_passive_file",
@@ -674,7 +679,9 @@ def test_batch_passive_summary_tracks_pair_read_failures(monkeypatch, tmp_path):
     base_dir = tmp_path / "in"
     base_dir.mkdir()
 
-    monkeypatch.setattr(file_utils.os, "listdir", lambda _path: ["DemoAP_HPol.txt", "DemoAP_VPol.txt"])
+    monkeypatch.setattr(
+        file_utils.os, "listdir", lambda _path: ["DemoAP_HPol.txt", "DemoAP_VPol.txt"]
+    )
     monkeypatch.setattr(
         file_utils,
         "read_passive_file",
