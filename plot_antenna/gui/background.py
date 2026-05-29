@@ -49,3 +49,27 @@ def run_background(
     thread = threading.Thread(target=_worker, name="rflect-bg", daemon=True)
     thread.start()
     return thread
+
+
+def make_progress_marshaller(root: Any, progressbar: Any) -> Callable[[int, int], None]:
+    """Build a thread-safe ``progress_callback(done, total)`` for a determinate
+    ``ttk.Progressbar`` (#26).
+
+    Worker threads call the returned callback with ``(done, total)``; it marshals
+    the widget update onto the Tk thread via ``root.after(0, ...)``. It configures
+    the bar's ``maximum`` to ``total`` (on the first non-zero total) and sets its
+    ``value`` to ``done`` — the percentage-complete display the indeterminate
+    spinner could not provide.
+    """
+    state = {"max_set": False}
+
+    def _callback(done: int, total: int) -> None:
+        def _apply():
+            if total and not state["max_set"]:
+                progressbar.config(maximum=total)
+                state["max_set"] = True
+            progressbar.config(value=done)
+
+        root.after(0, _apply)
+
+    return _callback

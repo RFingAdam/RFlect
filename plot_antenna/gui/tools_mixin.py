@@ -511,9 +511,12 @@ class ToolsMixin:
             bg=DARK_BG_COLOR,
             fg=LIGHT_TEXT_COLOR,
         ).pack(pady=10)
-        progress_bar = ttk.Progressbar(progress_window, mode="indeterminate", length=250)
+        # Determinate progress driven by per-job callbacks from the batch (#26).
+        progress_bar = ttk.Progressbar(progress_window, mode="determinate", length=250, maximum=100)
         progress_bar.pack(pady=10)
-        progress_bar.start()
+        from .background import make_progress_marshaller
+
+        _report_progress = make_progress_marshaller(self.root, progress_bar)
 
         def _process_worker():
             try:
@@ -525,6 +528,7 @@ class ToolsMixin:
                     datasheet_plots=datasheet_plots,
                     save_base=save_base,
                     scale_settings=scale_settings,
+                    progress_callback=_report_progress,
                     maritime_plots_enabled=getattr(self, "maritime_plots_enabled", False),
                     maritime_theta_min=(
                         self.horizon_theta_min.get() if hasattr(self, "horizon_theta_min") else 60.0

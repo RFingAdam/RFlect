@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import threading
 
-from plot_antenna.gui.background import run_background
+from plot_antenna.gui.background import make_progress_marshaller, run_background
 
 
 class _FakeRoot:
@@ -63,3 +63,38 @@ def test_no_callbacks_is_safe():
     t = run_background(root, lambda: 1)
     t.join(timeout=10)
     assert not t.is_alive()
+
+
+class _FakeBar:
+    def __init__(self):
+        self.kw = {}
+
+    def config(self, **kw):
+        self.kw.update(kw)
+
+
+def test_progress_marshaller_sets_maximum_once_and_updates_value():
+    root = _FakeRoot()
+    bar = _FakeBar()
+    cb = make_progress_marshaller(root, bar)
+
+    cb(1, 4)
+    assert bar.kw["maximum"] == 4
+    assert bar.kw["value"] == 1
+
+    cb(3, 4)
+    assert bar.kw["maximum"] == 4  # not re-set
+    assert bar.kw["value"] == 3
+
+    cb(4, 4)
+    assert bar.kw["value"] == 4
+    assert root.scheduled == [0, 0, 0]  # every update marshalled via after(0)
+
+
+def test_progress_marshaller_handles_zero_total_gracefully():
+    root = _FakeRoot()
+    bar = _FakeBar()
+    cb = make_progress_marshaller(root, bar)
+    cb(0, 0)  # nothing known yet
+    assert "maximum" not in bar.kw
+    assert bar.kw["value"] == 0
