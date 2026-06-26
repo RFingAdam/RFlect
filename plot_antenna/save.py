@@ -1263,9 +1263,9 @@ def save_to_results_folder(
         plot_active_3d_data(
             theta_angles_deg,
             phi_angles_deg,
-            total_power_dBm_2d,
+            h_power_dBm_2d,
             phi_angles_deg_plot,
-            total_power_dBm_2d_plot,
+            h_power_dBm_2d_plot,
             frequency,
             power_type="hpol",
             interpolate=True,
@@ -1279,9 +1279,9 @@ def save_to_results_folder(
         plot_active_3d_data(
             theta_angles_deg,
             phi_angles_deg,
-            total_power_dBm_2d,
+            v_power_dBm_2d,
             phi_angles_deg_plot,
-            total_power_dBm_2d_plot,
+            v_power_dBm_2d_plot,
             frequency,
             power_type="vpol",
             interpolate=True,
