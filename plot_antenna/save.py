@@ -544,7 +544,7 @@ def generate_report(
 ):
     """
     Generate a comprehensive Word document report with antenna measurement results.
-    Uses professional Ezurio branding and formatting.
+    Uses professional company branding and formatting.
 
     Parameters:
     - doc_title: Title of the report
