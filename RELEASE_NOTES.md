@@ -1,5 +1,30 @@
 # RFlect - Release Notes
 
+## Version 6.1.0 (07/30/2026)
+
+**3D-rendering correctness/robustness fixes, plus a packaging fix for AV/EDR (e.g. Cylance) false-positive blocks on the Windows installer.**
+
+### Fixed — 3D rendering
+- **Active 3D saves now use per-polarization data.** `save_to_results_folder` was passing the total-power arrays into both the H-pol and V-pol active 3D plot calls, so the saved `3D_TRP_hpol` / `3D_TRP_vpol` images rendered the total-power pattern under a polarization label. They now receive `h_power_dBm_2d` / `v_power_dBm_2d`, matching the already-correct GUI display path.
+- **Passive 3D rendering hardened against degenerate input.** A NaN-containing or constant-gain (`max == min`) interpolated pattern no longer NaN-poisons / divides-by-zero into a blank surface; NaN-robust min/max plus a zero-radius fallback now mirror the active route's guards.
+- **3D axis setup guards degenerate extents.** `_setup_3d_axes` no longer lets a flat (extent 0) or all-NaN pattern collapse the bounding box to `lim=0` / `lim=NaN`, which previously blanked the axes; it now falls back to a unit box.
+- The shared 3D scaling machinery (equal symmetric axis limits + `set_box_aspect([1,1,1])`) was verified to render true proportions — a sphere renders as a sphere in both the passive and active routes.
+
+### Changed
+- `process_data` (the 3D render helper) now returns only the interpolated grid and its axes; the dead Cartesian `X/Y/Z` + `db_to_linear` radius it used to also build (discarded by every caller) are gone.
+- Removed dead code in `plot_passive_3d_component`: the unused `gain_normalized` local and the vestigial `shadowing_enabled` / `shadow_direction` parameters (human-shadow fading is applied to the gain data upstream; these parameters had no effect inside the plot function — the shadow-cone overlay was never wired up).
+
+### Packaging — Windows AV/EDR false-positive fix
+RFlect's Windows executable was regularly getting blocked by endpoint-security tools (Cylance/BlackBerry Protect and similar) on install. Root cause: a textbook PyInstaller false-positive pattern — a UPX-compressed onefile build with no embedded PE version metadata and no code signing.
+
+- **Disabled UPX compression** (`upx=False` in `RFlect.spec`). UPX packing is one of the most common AV/EDR heuristic triggers, since malware also uses it to defeat static scanning.
+- **Added a PE VERSIONINFO resource** (`version_info.txt`), embedding CompanyName/ProductName/FileVersion/LegalCopyright metadata into the exe — previously entirely absent. Windows-only; verified as a documented no-op on the Linux build (PyInstaller clears it with a log warning when not on Windows).
+- Dropped a stale `anthropic` hidden-import left over from the AI/LLM stack removed in an earlier release.
+- **Not included in this release**: code signing (an Authenticode certificate so IT can allow-list RFlect by publisher/certificate instead of by per-build file hash, which is the more durable fix). Tracked as follow-up work.
+
+### Tests
+- `tests/test_3d_scaling_fixes.py`: regression coverage for the active per-pol save, passive NaN/constant-gain robustness, `_setup_3d_axes` degenerate extents, and the `process_data` return contract.
+
 ## Version 5.0.0 (05/28/2026)
 
 **Major release — zero-dependency, MCP-first relaunch.**
