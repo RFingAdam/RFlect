@@ -20,7 +20,12 @@ from typing import Optional, List, Any
 
 import matplotlib
 
-matplotlib.use("TkAgg")
+try:
+    matplotlib.use("TkAgg")
+except ImportError:
+    # No display available (e.g. headless CI test collection) — fall back
+    # to a non-interactive backend instead of crashing on import.
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from ..config import (

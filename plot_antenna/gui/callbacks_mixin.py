@@ -1708,8 +1708,6 @@ class CallbacksMixin:
             zmin=self.axis_min_total.get(),
             zmax=self.axis_max_total.get(),
             save_path=None,
-            shadowing_enabled=self.shadowing_enabled,
-            shadow_direction=self.shadow_direction,
         )
 
         # Plot H-pol in 3D
