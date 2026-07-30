@@ -4,7 +4,12 @@ from tkinter import messagebox, simpledialog
 
 import matplotlib
 
-matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+try:
+    matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+except ImportError:
+    # No display available (e.g. headless CI test collection) — fall back
+    # to a non-interactive backend instead of crashing on import.
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
