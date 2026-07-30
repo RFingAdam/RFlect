@@ -6,7 +6,9 @@ pytest-cov>=4.1.0,<5.0.0
 pytest-mock>=3.12.0,<4.0.0
 
 # MCP server (needed for MCP integration tests)
-mcp>=1.0.0
+# Pinned below 2.0.0: that release restructured the package and dropped
+# mcp.server.fastmcp, breaking test collection.
+mcp>=1.0.0,<2.0.0
 
 # Code quality
 black>=24.0.0,<25.0.0

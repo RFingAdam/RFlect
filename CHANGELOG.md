@@ -7,6 +7,53 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Full, detailed per-release notes live in
 [RELEASE_NOTES.md](https://github.com/RFingAdam/RFlect/blob/main/RELEASE_NOTES.md); this file is the concise summary.
 
+## [6.1.0] — 2026-07-30
+
+3D radiation-pattern rendering correctness & robustness. The shared scaling
+machinery (equal symmetric axis limits + `set_box_aspect([1,1,1])`) was verified
+to render true proportions — a sphere renders as a sphere in both the passive
+and active routes — and these changes fix an active-save data-selection bug and
+harden the degenerate-input paths.
+
+### Fixed
+- **Active 3D saves now use per-polarization data.** `save_to_results_folder`
+  passed the total-power arrays into the H-pol and V-pol active 3D plot calls,
+  so the saved `3D_TRP_hpol` / `3D_TRP_vpol` images rendered the total-power
+  pattern under a polarization label. They now receive `h_power_dBm_2d` /
+  `v_power_dBm_2d` (matching the already-correct GUI display path).
+- **Passive 3D rendering hardened against degenerate input.** A NaN-containing
+  or constant-gain (`max == min`) interpolated pattern no longer NaN-poisons /
+  divides-by-zero into a blank surface; NaN-robust min/max + a zero-radius
+  fallback now mirror the active route.
+- **3D axis setup guards degenerate extents.** `_setup_3d_axes` no longer lets a
+  flat (extent 0) or all-NaN pattern collapse the bounding box to `lim=0` /
+  `lim=NaN` (which blanked the axes); it falls back to a unit box.
+
+### Changed
+- `process_data` (3D render helper) now returns only the interpolated grid and
+  its axes `(data_interp, theta_interp, phi_interp)`; it previously also built
+  Cartesian `X/Y/Z` and a `db_to_linear` radius that every caller discarded.
+- Removed dead code in `plot_passive_3d_component`: the unused `gain_normalized`
+  local and the vestigial `shadowing_enabled` / `shadow_direction` parameters.
+  Human-shadow fading is applied to the gain data upstream; these parameters had
+  no effect inside the plot function (the shadow-cone overlay was never wired
+  up). Re-add them if/when that overlay is implemented.
+
+### Tests
+- `tests/test_3d_scaling_fixes.py`: regression coverage for the active per-pol
+  save, passive NaN/constant-gain robustness, `_setup_3d_axes` degenerate
+  extents, and the `process_data` return contract.
+
+### Packaging
+- **Windows executable hardened against AV/EDR false positives** (Cylance and
+  similar were blocking installs). `RFlect.spec`: disabled UPX compression
+  (`upx=False` — a well-known AV/EDR heuristic trigger) and added a PE
+  VERSIONINFO resource (`version_info.txt`) embedding Company/Product/File
+  version metadata, previously absent. Also dropped a stale `anthropic`
+  hidden-import left over from the removed AI/LLM stack. Code signing (so IT
+  can allow-list RFlect by publisher certificate instead of per-build file
+  hash) is scoped as follow-up work, not included here.
+
 ## [6.0.0] — 2026-05-28
 
 Consolidated release bundling the **v5.1 (correctness & quick wins)**,

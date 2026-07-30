@@ -4,7 +4,12 @@ from tkinter import messagebox, simpledialog
 
 import matplotlib
 
-matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+try:
+    matplotlib.use("TkAgg")  # noqa: E402 — must precede pyplot import
+except ImportError:
+    # No display available (e.g. headless CI test collection) — fall back
+    # to a non-interactive backend instead of crashing on import.
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 plt.ion()  # Non-blocking show() — avoids "main thread is not in main loop" with Tkinter GUI
@@ -408,12 +413,14 @@ def _setup_3d_axes(ax, X, Y, Z):
     X, Y, Z : ndarray
         Cartesian coordinate arrays of the plotted surface.
     """
-    # ---- Data extent ----
-    max_ext = max(
-        np.nanmax(np.abs(X)),
-        np.nanmax(np.abs(Y)),
-        np.nanmax(np.abs(Z)),
-    )
+    # ---- Data extent (finite values only) ----
+    _ext = np.abs(np.concatenate([np.ravel(X), np.ravel(Y), np.ravel(Z)]))
+    _ext = _ext[np.isfinite(_ext)]
+    max_ext = float(_ext.max()) if _ext.size else 0.0
+    # Guard degenerate extents (all-NaN or flat/zero pattern) so the bounding
+    # box never collapses to lim=0 / lim=NaN, which would blank the axes.
+    if not np.isfinite(max_ext) or max_ext <= 0:
+        max_ext = 1.0
 
     # ---- Symmetric limits — centres the pattern in the box ----
     lim = 1.02 * max_ext
@@ -539,14 +546,8 @@ def plot_active_3d_data(
         if np.isnan(power_flat).any():
             print("Warning: NaN values found in power_flat data.")
 
-        # Use the process_data function to interpolate the data
-        X, Y, Z, data_interp, R, theta_interp, phi_interp = process_data(
-            power_flat, phi_flat, theta_flat
-        )
-
-        if X is None:
-            print("Error in process_data. Exiting plot function.")
-            return
+        # Interpolate the data onto the render grid.
+        data_interp, theta_interp, phi_interp = process_data(power_flat, phi_flat, theta_flat)
 
         power_data = data_interp
 
@@ -1252,16 +1253,10 @@ def process_data(selected_data, selected_phi_angles_deg, selected_theta_angles_d
     # Interpolate data
     data_interp = f_interp(interp_points).reshape(len(phi_interp), len(theta_interp)).T
 
-    # Convert to spherical coordinates
-    PHI_interp_grid, THETA_interp_grid = np.meshgrid(phi_interp, theta_interp)
-    theta_rad = np.deg2rad(THETA_interp_grid)
-    phi_rad = np.deg2rad(PHI_interp_grid)
-    R = db_to_linear(data_interp)
-    X = R * np.sin(theta_rad) * np.cos(phi_rad)
-    Y = R * np.sin(theta_rad) * np.sin(phi_rad)
-    Z = R * np.cos(theta_rad)
-
-    return X, Y, Z, data_interp, R, theta_interp, phi_interp
+    # Callers map the interpolated dB field to a normalized render radius
+    # themselves (R = 0.75 * minmax(dB)), so process_data only needs to hand
+    # back the interpolated grid and its axes.
+    return data_interp, theta_interp, phi_interp
 
 
 def normalize_gain(gain_dB):
@@ -1286,8 +1281,6 @@ def plot_passive_3d_component(
     zmin: float = -15.0,
     zmax: float = 15.0,
     save_path=None,
-    shadowing_enabled=False,
-    shadow_direction="-X",
 ):
     """
     Plot a 3D representation of the passive component data.
@@ -1332,19 +1325,25 @@ def plot_passive_3d_component(
     selected_theta_angles_deg = theta_angles_deg[:, freq_idx]
     selected_phi_angles_deg = phi_angles_deg[:, freq_idx]
 
-    # Process gain data
-    X, Y, Z, gain_interp, R, theta_interp, phi_interp = process_data(
+    # Process gain data → interpolated dB grid + its interpolation axes.
+    gain_interp, theta_interp, phi_interp = process_data(
         selected_gain, selected_phi_angles_deg, selected_theta_angles_deg
     )
 
-    # Normalize the gain values
-    max_gain_value = np.max(gain_interp)
-    min_gain_value = np.min(gain_interp)
-    gain_normalized = (gain_interp - min_gain_value) / (max_gain_value - min_gain_value)
+    # Guard fully-invalid data (mirrors plot_active_3d_data).
+    if np.isnan(gain_interp).all():
+        print("Error: interpolated gain is all-NaN; skipping 3D plot.")
+        return
 
-    # 1) Always map gain→radius so the shape stays correct
-    amin, amax = gain_interp.min(), gain_interp.max()
-    R_unit = (gain_interp - amin) / (amax - amin)  # [0..1]
+    # Map gain → radius (normalized) so the shape stays correct. NaN-robust
+    # min/max + a zero-radius fallback for the degenerate constant-gain case
+    # (amax == amin), matching the active route's guards.
+    amin, amax = np.nanmin(gain_interp), np.nanmax(gain_interp)
+    denom = amax - amin
+    if denom == 0:
+        R_unit = np.zeros_like(gain_interp)
+    else:
+        R_unit = np.nan_to_num((gain_interp - amin) / denom)  # [0..1], NaN→0
     R = 0.75 * R_unit  # global scale factor
 
     # 2) Build Cartesian coords from R
@@ -1365,7 +1364,7 @@ def plot_passive_3d_component(
     if axis_mode == "manual":
         norm = Normalize(zmin, zmax)
     else:
-        norm = Normalize(gain_interp.min(), gain_interp.max())
+        norm = Normalize(float(np.nanmin(gain_interp)), float(np.nanmax(gain_interp)))
     surf = ax.plot_surface(
         X,
         Y,
@@ -1395,7 +1394,7 @@ def plot_passive_3d_component(
     cbar.ax.tick_params(labelsize=10)
 
     # Add Max Gain to top of colorbar
-    max_gain = selected_gain.max()
+    max_gain = float(np.nanmax(selected_gain))
     cbar.ax.set_title(f"{max_gain:.2f} dBi", fontsize=10, weight="bold", pad=4)
 
     # If Path provided, save otherwise show
