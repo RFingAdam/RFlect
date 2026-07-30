@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Full, detailed per-release notes live in
 [RELEASE_NOTES.md](https://github.com/RFingAdam/RFlect/blob/main/RELEASE_NOTES.md); this file is the concise summary.
 
-## [6.1.0] — Unreleased
+## [6.1.0] — 2026-07-30
 
 3D radiation-pattern rendering correctness & robustness. The shared scaling
 machinery (equal symmetric axis limits + `set_box_aspect([1,1,1])`) was verified
@@ -43,6 +43,16 @@ harden the degenerate-input paths.
 - `tests/test_3d_scaling_fixes.py`: regression coverage for the active per-pol
   save, passive NaN/constant-gain robustness, `_setup_3d_axes` degenerate
   extents, and the `process_data` return contract.
+
+### Packaging
+- **Windows executable hardened against AV/EDR false positives** (Cylance and
+  similar were blocking installs). `RFlect.spec`: disabled UPX compression
+  (`upx=False` — a well-known AV/EDR heuristic trigger) and added a PE
+  VERSIONINFO resource (`version_info.txt`) embedding Company/Product/File
+  version metadata, previously absent. Also dropped a stale `anthropic`
+  hidden-import left over from the removed AI/LLM stack. Code signing (so IT
+  can allow-list RFlect by publisher certificate instead of per-build file
+  hash) is scoped as follow-up work, not included here.
 
 ## [6.0.0] — 2026-05-28
 
