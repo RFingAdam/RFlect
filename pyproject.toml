@@ -70,7 +70,7 @@ instruments = [
 # server via `python rflect-mcp/server.py` (it imports plot_antenna from the
 # installed package). See docs/mcp/installation.md.
 mcp = [
-    "mcp>=1.0.0",
+    "mcp>=1.0.0,<2.0.0",
 ]
 
 [project.urls]
