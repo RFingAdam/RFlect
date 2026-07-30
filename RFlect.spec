@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_submodules
 
-hiddenimports = ['anthropic', 'PIL._tkinter_finder']
+hiddenimports = ['PIL._tkinter_finder']
 hiddenimports += collect_submodules('scipy')
 hiddenimports += collect_submodules('tkinter')
 
@@ -39,7 +39,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
@@ -49,4 +49,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['smith_logo.ico'],
+    version='version_info.txt',
 )
