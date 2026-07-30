@@ -547,9 +547,7 @@ def plot_active_3d_data(
             print("Warning: NaN values found in power_flat data.")
 
         # Interpolate the data onto the render grid.
-        data_interp, theta_interp, phi_interp = process_data(
-            power_flat, phi_flat, theta_flat
-        )
+        data_interp, theta_interp, phi_interp = process_data(power_flat, phi_flat, theta_flat)
 
         power_data = data_interp
 
