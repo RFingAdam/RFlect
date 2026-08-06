@@ -84,3 +84,6 @@ pyrightconfig.json
 .dmypy.json
 dmypy.json
 venv_build/
+.playwright-mcp/
+.tmp_review/
+.tmp_extract.jq
