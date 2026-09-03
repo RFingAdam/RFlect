@@ -2,12 +2,12 @@
 
 Pure-Python entry points you can import from `plot_antenna`.
 
-## `AntennaAnalyzer`: `plot_antenna.ai_analysis`
+## `AntennaAnalyzer`: `plot_antenna.analysis_engine`
 
-GUI-independent analysis engine. Same code path used by the AI chat assistant and the MCP analysis tools.
+GUI-independent analysis engine. Same code path used by the MCP analysis tools.
 
 ```python
-from plot_antenna.ai_analysis import AntennaAnalyzer
+from plot_antenna.analysis_engine import AntennaAnalyzer
 
 data = {
     "phi":         phi_angles,      # 1-D array

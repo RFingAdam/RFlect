@@ -29,13 +29,13 @@ Total Radiated Power workflow for an active (transmitting) DUT.
 | 3D radiation pattern      | turbo colormap, DUT orientation triad (X=green, Y=red, Z=blue) |
 | Maritime stats (if enabled) | Horizon-band gain, maritime power fraction          |
 
-## Math validation
+## Math
 
-RFlect's TRP uses IEEE-standard solid-angle integration with the $\sin\theta$ Jacobian:
+RFlect's TRP uses the CTIA / IEEE-149 discrete solid-angle form with the $\sin\theta$ Jacobian, on **EIRP-per-angle** chamber samples:
 
 $$\text{TRP} = \frac{1}{4\pi} \int_0^{2\pi}\!\int_0^{\pi} P(\theta,\phi)\,\sin\theta\,d\theta\,d\phi$$
 
-Verified to within 0.002 dB of the Howland 3100 chamber's own report on reference measurements.
+Golden-reference tests lock the isotropic oracle (constant EIRP integrates back to itself). That is a calculation check, not laboratory accreditation or a certified chamber report.
 
 ## Batch / MCP
 

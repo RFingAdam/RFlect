@@ -78,7 +78,7 @@ Config file location:
     }
     ```
 
-Restart Claude Code; you should see **41** RFlect tools available.
+Restart Claude Code; you should see **61** RFlect tools available.
 
 ### Cline (VS Code)
 
@@ -145,7 +145,7 @@ always your venv Python plus the server path. No special args:
 
 ## 3. Verify
 
-Ask the assistant *"What RFlect tools do you have?"*. It should list **41**.
+Ask the assistant *"What RFlect tools do you have?"*. It should list **61**.
 Or run the smoke test from a shell (works on every OS):
 
 === "Linux / macOS"
@@ -162,7 +162,7 @@ Or run the smoke test from a shell (works on every OS):
     .venv\Scripts\python.exe -c "import sys, os; sys.path.insert(0, os.path.abspath('rflect-mcp')); import server; print('tools:', len(server.mcp._tool_manager._tools))"
     ```
 
-Expected: `tools: 41`.
+Expected: `tools: 61`.
 
 ## Troubleshooting
 

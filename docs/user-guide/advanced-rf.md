@@ -47,7 +47,7 @@ Only valid when both HPBW values ≤ 180°. RFlect rejects results that produce 
 
 Tools menu → Advanced RF Analysis. Sub-dialogs are scrollable since the parameter set is large.
 
-There are currently no MCP wrappers for these modules. Open an issue if you need one. Most are pure-Python in `plot_antenna/advanced_*` and could be wrapped quickly.
+Over MCP, the closest tools are `estimate_link_budget` and `analyze_mimo_diversity`. Indoor ITU, fading CDF, and wearable/SAR screening remain GUI-only (`plot_antenna/advanced_*`). The v6.0 RF-method gallery below is a separate MCP surface (`synthesize_array`, `analyze_axial_ratio`, …).
 
 ## RF method gallery (v6.0)
 

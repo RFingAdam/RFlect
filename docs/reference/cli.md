@@ -53,15 +53,15 @@ iscc installer.iss
 Or override version inline:
 
 ```bat
-iscc /DRFLECT_VERSION=4.2.0 installer.iss
+iscc /DRFLECT_VERSION=6.1.0 installer.iss
 ```
 
 ## Version bumping
 
 ```bash
-bump2version patch     # 4.2.0 → 4.2.1
-bump2version minor     # 4.2.0 → 4.3.0
-bump2version major     # 4.2.0 → 5.0.0
+bump2version patch     # 6.1.0 → 6.1.1
+bump2version minor     # 6.1.0 → 6.2.0
+bump2version major     # 6.1.0 → 7.0.0
 ```
 
 Sources of truth for the version (`.bumpversion.cfg`):

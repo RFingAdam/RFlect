@@ -9,13 +9,13 @@ hide:
   <img src="assets/logo.svg" alt="RFlect logo">
   <div class="rflect-hero-text" markdown>
 # RFlect
-**The RF engineer's toolkit for antenna measurement visualization and analysis.**
+**Antenna measurement visualization and analysis.**
   </div>
 </div>
 
-RFlect turns raw antenna-chamber and VNA output into publication-ready 2D/3D radiation pattern plots, TRP calculations, polarization analysis, UWB characterization, and DOCX reports. All validated against IEEE-standard methods.
+RFlect turns antenna-chamber and VNA output into 2D/3D radiation-pattern plots, TRP and gain metrics, polarization analysis, UWB characterization, and DOCX reports.
 
-Whether you're characterizing a BLE chip antenna, qualifying a cellular array, or tracking calibration drift across multiple chamber sessions, RFlect handles the heavy lifting.
+It is analysis software, not a certified test laboratory. TRP uses the CTIA / IEEE-149 discrete solid-angle form; that is a calculation convention, not lab accreditation or product certification.
 
 ![Scan type selection](assets/screenshots/scan_type_selection.png){ .rflect-screenshot }
 
@@ -35,7 +35,7 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 
 <a class="rflect-card" href="mcp/overview/">
 <strong>MCP Server →</strong>
-<span>41 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
+<span>61 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
 </a>
 
 <a class="rflect-card" href="mcp/recipes/">
@@ -58,8 +58,8 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 ## Built for the way RF labs actually work
 
 - **No API key, no subscription, no LLM dependency**: RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.
-- **MCP server**: 41 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent *is* the LLM; RFlect provides the data and the rendering.
-- **GUI**: desktop app (Tk-based, dark theme) for interactive review
+- **MCP server**: 61 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent *is* the LLM; RFlect provides the data and the rendering.
+- **GUI**: desktop app (Tk-based, dark theme) for interactive review. Launch with `python run_rflect.py` or `rflect` after `pip install -e .`.
 - **Agent-authored reports**: DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via [`generate_report`](mcp/tools-reference.md)'s `narrative` parameter
 - **Cal-drift tracker**: record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches
 
@@ -74,6 +74,8 @@ Whether you're characterizing a BLE chip antenna, qualifying a cellular array, o
 | S2VNA `.csv` or Touchstone `.s2p` (UWB)              | SFF, transfer function, impulse response, impedance bandwidth          |
 | CST simulation export                                | ECC, fidelity factor, group delay                                      |
 | Folder of any of the above                           | One-call orchestration via the [`process_folder`](mcp/recipes.md) MCP tool |
+
+The public repository does **not** include customer chamber files. Screenshots below are representative GUI outputs. Tests use synthetic fixtures plus optional local files via `RFLECT_TEST_DATA_DIR`. See the [README](https://github.com/RFingAdam/RFlect#example-data-and-plot-outputs).
 
 ## Sample outputs
 
@@ -115,4 +117,4 @@ See [MCP Recipes](mcp/recipes.md) for the full set of standard procedures.
 
 ## License
 
-[GPL-3.0](https://github.com/RFingAdam/RFlect/blob/main/LICENSE)
+[AGPL-3.0-or-later](https://github.com/RFingAdam/RFlect/blob/main/LICENSE). There is no standing commercial-license offer. The project name and logo are not part of the licensed work.

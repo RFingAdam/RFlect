@@ -5,13 +5,10 @@ Thank you for your interest in contributing to RFlect! This document provides gu
 ## Before you contribute
 
 By submitting a pull request to this repository, you agree to the terms
-of [CLA.md](https://github.com/RFingAdam/RFlect/blob/main/CLA.md). A short contributor license agreement that lets the
-Maintainer offer this Project under both its default open license and a
-separate paid commercial license (see [COMMERCIAL.md](https://github.com/RFingAdam/RFlect/blob/main/COMMERCIAL.md)),
-without needing to track down every past contributor individually every
-time that offering changes. You keep your own copyright; you're just
-granting the Maintainer the same relicensing rights over your
-contribution that they already have over the rest of the codebase.
+of [CLA.md](https://github.com/RFingAdam/RFlect/blob/main/CLA.md). You keep
+your own copyright; you grant the Maintainer the same relicensing rights
+over your contribution that they already have over the rest of the
+codebase. There is no standing paid commercial-license offer.
 
 No signature or bot step is required today: opening the PR is the
 agreement. Read CLA.md before you submit if you want the full terms.
@@ -234,7 +231,7 @@ def sample_data():
 
 ### Test Coverage Goals
 
-- **Current**: 450 tests (302 passing, 148 skipped), 26% overall coverage
+- **Current**: pytest suite under `tests/` (synthetic fixtures in `tests/fixtures/`; optional real files via `RFLECT_TEST_DATA_DIR`)
 - **Target Overall**: ≥60% coverage
 - **Core modules** (calculations, file_utils): ≥80% coverage
 - **GUI modules**: Best effort (GUI testing is harder)
@@ -358,46 +355,32 @@ bump2version patch  # 4.0.0 → 4.0.1
 ```
 RFlect/
 ├── plot_antenna/           # Main package
-│   ├── main.py            # Entry point
+│   ├── main.py            # GUI entry point
 │   ├── calculations.py    # RF calculations
+│   ├── analysis_engine.py # Gain / pattern / polarization
+│   ├── rf_methods.py      # Array factor, NF2FF, TIS, …
 │   ├── file_utils.py      # File parsing
 │   ├── plotting.py        # Visualization
 │   ├── save.py            # Report generation
-│   ├── ai_analysis.py     # AI analysis logic
+│   ├── uwb_analysis.py    # UWB / SFF
+│   ├── cal_drift.py       # Cal history
 │   ├── config.py          # Configuration
 │   ├── gui/               # GUI components
 │   │   ├── main_window.py
 │   │   ├── dialogs_mixin.py
-│   │   ├── ai_chat_mixin.py
 │   │   ├── tools_mixin.py
 │   │   └── callbacks_mixin.py
 │   └── __init__.py
-├── rflect-mcp/            # MCP server for programmatic access
-│   ├── server.py          # FastMCP server entry point
+├── rflect-mcp/            # MCP server (61 tools)
+│   ├── server.py
 │   ├── tools/
-│   │   ├── import_tools.py    # File import tools
-│   │   ├── analysis_tools.py  # Analysis tools
-│   │   ├── report_tools.py    # Report generation tools
-│   │   └── bulk_tools.py      # Batch processing tools
 │   ├── templates/
-│   │   └── default.yaml       # Report template
 │   └── README.md
-├── tests/                  # Test suite (450 tests)
-│   ├── conftest.py        # Pytest fixtures
-│   ├── test_calculations.py
-│   ├── test_ai_analysis.py
-│   ├── test_file_utils.py
-│   ├── test_mcp_tools.py
-│   ├── test_mcp_integration.py  # 66 MCP integration tests (all 20 tools)
-│   ├── test_real_data_integration.py  # Real BLE/LoRa chamber data tests
-│   └── integration/       # Integration tests
-├── .github/
-│   └── workflows/         # CI/CD workflows
-├── assets/                # Images, logos
-├── requirements.txt       # Production dependencies
-├── requirements-dev.txt   # Development dependencies
-├── pyproject.toml         # Package configuration
-├── .bumpversion.cfg       # Version management
+├── tests/                 # pytest (synthetic fixtures; optional local real files)
+├── assets/                # Logo + example plot screenshots
+├── requirements.txt
+├── requirements-dev.txt
+├── pyproject.toml
 └── README.md
 ```
 
@@ -405,27 +388,14 @@ RFlect/
 
 ## Areas Needing Contribution
 
-### Completed (v4.0.0)
-- ~~HPBW and F/B ratio in pattern analysis~~ (implemented and verified with boundary wrapping fix)
-- ~~Test coverage expansion~~ (450 tests achieved, up from 82; 26% overall coverage)
+See open GitHub issues. The following older checklist items are **already in tree** and should not be re-filed as new work: SFF / UWB, MIMO diversity MCP tools, DOCX figure embedding, sidelobe reporting in `analyze_pattern`.
 
-### High Priority
-- 🔴 Increase test coverage toward 60% target (currently 26% with 450 tests)
-- 🔴 Sidelobe detection and reporting in pattern analysis
-- 🔴 Automated figure insertion in DOCX reports
-- 🔴 System Fidelity Factor calculation (#31)
+Useful ongoing work:
 
-### Medium Priority
-- 🟡 Add support for additional file formats
-- 🟡 Improve error messages and user feedback
-- 🟡 Add more antenna benchmarks to AI knowledge base
-- 🟡 Create tutorial documentation
-- 🟡 Multi-frequency comparison tables in reports
-
-### Future Features
-- 🟢 Vision API integration for plot analysis (v4.4+)
-- 🟢 MIMO antenna analysis
-- 🟢 macOS/Linux .app/.deb packaging
+- Coverage on parsers and GUI-adjacent paths
+- Additional chamber / VNA file-format fixtures (synthetic, redistributable)
+- macOS packaging
+- Tutorial walkthroughs on the docs site
 
 ---
 
@@ -433,10 +403,10 @@ RFlect/
 
 - **Issues**: https://github.com/RFingAdam/RFlect/issues
 - **Discussions**: https://github.com/RFingAdam/RFlect/discussions
-- **AI Features**: See [AI_STATUS.md](https://github.com/RFingAdam/RFlect/blob/main/AI_STATUS.md)
+- **MCP tools**: [MCP_STATUS.md](MCP_STATUS.md)
 
 ---
 
 ## License
 
-By contributing to RFlect, you agree that your contributions will be licensed under the GPL-3.0 License.
+By contributing to RFlect, you agree that your contributions will be licensed under AGPL-3.0-or-later. See [LICENSE](LICENSE) and [CLA.md](CLA.md).

@@ -1,7 +1,7 @@
 # RFlect MCP Server Dependencies
 
-# MCP SDK
-mcp>=1.0.0
+# MCP SDK (FastMCP). 2.x dropped mcp.server.fastmcp and breaks this server.
+mcp>=1.0.0,<2.0.0
 
 # RFlect core (install from parent directory)
 # pip install -e ..
@@ -9,8 +9,5 @@ mcp>=1.0.0
 # Report generation
 python-docx>=1.2.0
 
-# Template engine
+# Template engine (rflect-mcp/templates/default.yaml)
 pyyaml>=6.0
-
-# AI (optional - for AI summaries)
-openai>=1.38.0

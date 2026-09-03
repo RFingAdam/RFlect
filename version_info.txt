@@ -25,7 +25,7 @@ VSVersionInfo(
         StringStruct(u'FileDescription', u'RFlect Antenna Measurement Visualization Tool'),
         StringStruct(u'FileVersion', u'6.1.0.0'),
         StringStruct(u'InternalName', u'RFlect'),
-        StringStruct(u'LegalCopyright', u'Copyright (C) Adam Engelbrecht. Licensed under GPL-3.0.'),
+        StringStruct(u'LegalCopyright', u'Copyright (C) Adam Engelbrecht. Licensed under AGPL-3.0-or-later.'),
         StringStruct(u'OriginalFilename', u'RFlect.exe'),
         StringStruct(u'ProductName', u'RFlect'),
         StringStruct(u'ProductVersion', u'6.1.0.0')])
