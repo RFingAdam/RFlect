@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1292,6 +1311,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../recipes/" class="md-nav__link">
         
   
@@ -1575,6 +1622,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1666,72 +1740,24 @@
 
 
 <h1 id="mcp-overview">MCP Overview<a class="headerlink" href="#mcp-overview" title="Permanent link">&para;</a></h1>
-<p>RFlect ships a <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> server so an AI agent (Claude Code, Cline, Continue, etc.) can drive RFlect programmatically — no GUI required.</p>
+<p>RFlect ships a <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> server so an AI agent (Claude Code, Cline, Continue, etc.) can drive RFlect programmatically. No GUI required.</p>
 <div class="admonition tip">
 <p class="admonition-title">RFlect has no LLM of its own</p>
-<p>As of v5.0.0 RFlect makes <strong>no outbound LLM/API calls and needs no API key or subscription.</strong> It is a deterministic RF analysis + rendering toolkit. The driving MCP agent <em>is</em> the LLM: it calls RFlect's tools for data, and — if you want narrative prose in a report — authors it itself and passes it to <code>generate_report</code> via the <code>narrative</code> parameter.</p>
+<p>As of v5.0.0 RFlect makes <strong>no outbound LLM/API calls and needs no API key or subscription.</strong> It is a deterministic RF analysis + rendering toolkit. The driving MCP agent <em>is</em> the LLM: it calls RFlect's tools for data. If you want narrative prose in a report, the agent authors it and passes it to <code>generate_report</code> via the <code>narrative</code> parameter.</p>
 </div>
 <h2 id="what-you-can-do-over-mcp">What you can do over MCP<a class="headerlink" href="#what-you-can-do-over-mcp" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Import passive HPOL/VPOL pairs, active TRP files, S-parameter sweeps</li>
 <li>Run analysis: HPBW, F/B ratio, gain stats, polarization, UWB SFF, impedance bandwidth, S11/VSWR, group delay</li>
 <li>Compare antennas head-to-head; estimate link budget / range; compute MIMO diversity</li>
-<li>Generate branded DOCX reports (deterministic prose by default, or agent-authored)</li>
+<li>Generate DOCX reports (deterministic prose by default, or agent-authored)</li>
 <li>Generate active chamber calibration files and track calibration drift across time</li>
-<li><strong>Run a standard procedure on a folder with a single call</strong> via <a href="../recipes/"><code>process_folder</code></a> — auto-detects intent, runs the right workflow, optionally generates a report</li>
+<li><strong>Run a standard procedure on a folder with a single call</strong> via <a href="../recipes/"><code>process_folder</code></a>: auto-detects intent, runs the right workflow, optionally generates a report</li>
+<li>Optional instrument control (VNA / positioner) against an in-memory mock, or live hardware if the <code>instruments</code> extra is installed</li>
 </ul>
 <h2 id="tool-count">Tool count<a class="headerlink" href="#tool-count" title="Permanent link">&para;</a></h2>
-<p>41 tools across 9 categories. See <a href="../tools-reference/">Tools Reference</a> for the full list with signatures.</p>
-<table>
-<thead>
-<tr>
-<th>Category</th>
-<th style="text-align: right;">Count</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Import</td>
-<td style="text-align: right;">6</td>
-</tr>
-<tr>
-<td>Analysis</td>
-<td style="text-align: right;">5</td>
-</tr>
-<tr>
-<td>Reports</td>
-<td style="text-align: right;">3</td>
-</tr>
-<tr>
-<td>Bulk</td>
-<td style="text-align: right;">5</td>
-</tr>
-<tr>
-<td>UWB</td>
-<td style="text-align: right;">3</td>
-</tr>
-<tr>
-<td>Cal Drift</td>
-<td style="text-align: right;">8</td>
-</tr>
-<tr>
-<td>Orchestration</td>
-<td style="text-align: right;">1</td>
-</tr>
-<tr>
-<td>Validation</td>
-<td style="text-align: right;">1</td>
-</tr>
-<tr>
-<td>Analysis (RF)</td>
-<td style="text-align: right;">6</td>
-</tr>
-<tr>
-<td>Misc</td>
-<td style="text-align: right;">3</td>
-</tr>
-</tbody>
-</table>
+<p><strong>61 tools.</strong> See <a href="../tools-reference/">Tools Reference</a> for the list with signatures, and <a href="../../MCP_STATUS/">MCP_STATUS.md</a> for the category table.</p>
+<p>Smoke check after install: <code>tools: 61</code> from the snippet in <a href="../installation/#3-verify">Installation</a>.</p>
 <h2 id="why-an-orchestrator">Why an orchestrator?<a class="headerlink" href="#why-an-orchestrator" title="Permanent link">&para;</a></h2>
 <p>Before v4.2.0, an MCP client wanting to "process this folder and give me a report" had to:</p>
 <ol>
@@ -1742,15 +1768,15 @@
 <li><code>generate_report(path, options)</code></li>
 </ol>
 <p>That's a five-step chain that every agent had to script. <code>process_folder</code> collapses all of it into one call:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/captures&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/captures"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>See <a href="../recipes/">Recipes</a> for the full set of standard procedures.</p>
 <h2 id="where-to-next">Where to next<a class="headerlink" href="#where-to-next" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../installation/">Installation</a> — wire RFlect into Claude Code / Cline / generic clients</li>
-<li><a href="../tools-reference/">Tools Reference</a> — every tool, signature, return shape</li>
-<li><a href="../recipes/">Recipes</a> — standard procedures for common workflows</li>
-<li><a href="../troubleshooting/">Troubleshooting</a> — what to do when it doesn't connect</li>
+<li><a href="../installation/">Installation</a>: wire RFlect into Claude Code / Cline / generic clients</li>
+<li><a href="../tools-reference/">Tools Reference</a>. Every tool, signature, return shape</li>
+<li><a href="../recipes/">Recipes</a>: standard procedures for common workflows</li>
+<li><a href="../troubleshooting/">Troubleshooting</a>: what to do when it doesn't connect</li>
 </ul>
 
 

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1201,6 +1220,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../recipes/" class="md-nav__link">
         
   
@@ -1369,7 +1416,7 @@
   <a href="#cal-drift-import-is-idempotent-why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cal-drift import is idempotent — why?
+        Cal-drift import is idempotent: why?
       
     </span>
   </a>
@@ -1652,6 +1699,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1759,7 +1833,7 @@
   <a href="#cal-drift-import-is-idempotent-why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cal-drift import is idempotent — why?
+        Cal-drift import is idempotent: why?
       
     </span>
   </a>
@@ -1821,7 +1895,7 @@
 
 <h1 id="mcp-troubleshooting">MCP Troubleshooting<a class="headerlink" href="#mcp-troubleshooting" title="Permanent link">&para;</a></h1>
 <h2 id="server-fails-to-start">Server fails to start<a class="headerlink" href="#server-fails-to-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ModuleNotFoundError: No module named &#39;plot_antenna&#39;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ModuleNotFoundError: No module named 'plot_antenna'
 </code></pre></div>
 <p>The server adds the parent directory to <code>sys.path</code>, but only if it's launched from a Python that has access to the RFlect package. Check:</p>
 <ul>
@@ -1830,7 +1904,7 @@
 </ul>
 <h2 id="no-data-loaded">"No data loaded"<a class="headerlink" href="#no-data-loaded" title="Permanent link">&para;</a></h2>
 <p>You called an analysis or report tool before importing. Fix:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">import_passive_pair</span><span class="p">(</span><span class="s2">&quot;/path/to/X_HPol.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;/path/to/X_VPol.txt&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">import_passive_pair</span><span class="p">(</span><span class="s2">"/path/to/X_HPol.txt"</span><span class="p">,</span> <span class="s2">"/path/to/X_VPol.txt"</span><span class="p">)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">list_loaded_data</span><span class="p">()</span>  <span class="c1"># confirm</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">get_all_analysis</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
 </code></pre></div>
@@ -1839,19 +1913,19 @@
 <p>As of v5.0.0 RFlect has <strong>no LLM and needs no API key</strong>. <code>generate_report</code>
 produces deterministic, data-driven prose by default. To get richer narrative,
 have the driving agent author it and pass it via the <code>narrative</code> parameter:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span> <span class="n">narrative</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;executive_summary&quot;</span><span class="p">:</span> <span class="s2">&quot;…agent-written summary…&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span>   <span class="s2">&quot;- point one</span><span class="se">\n</span><span class="s2">- point two&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">"/tmp/report.docx"</span><span class="p">,</span> <span class="n">narrative</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">"executive_summary"</span><span class="p">:</span> <span class="s2">"…agent-written summary…"</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">"recommendations"</span><span class="p">:</span>   <span class="s2">"- point one</span><span class="se">\n</span><span class="s2">- point two"</span><span class="p">,</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">})</span>
 </code></pre></div>
 <p>See <a href="../recipes/">Recipes</a> for the full agent-authored-narrative flow.</p>
 <h2 id="report-too-large-oom">Report too large / OOM<a class="headerlink" href="#report-too-large-oom" title="Permanent link">&para;</a></h2>
 <p>Use filtering:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span> <span class="p">{</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">&quot;frequencies&quot;</span><span class="p">:</span>          <span class="p">[</span><span class="mi">2450</span><span class="p">],</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">&quot;polarizations&quot;</span><span class="p">:</span>        <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">&quot;include_3d_plots&quot;</span><span class="p">:</span>     <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">&quot;max_frequencies_in_table&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">generate_report</span><span class="p">(</span><span class="s2">"/tmp/report.docx"</span><span class="p">,</span> <span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">"frequencies"</span><span class="p">:</span>          <span class="p">[</span><span class="mi">2450</span><span class="p">],</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">"polarizations"</span><span class="p">:</span>        <span class="p">[</span><span class="s2">"total"</span><span class="p">],</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">"include_3d_plots"</span><span class="p">:</span>     <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">"max_frequencies_in_table"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">})</span>
 </code></pre></div>
 <h2 id="file-import-fails">File import fails<a class="headerlink" href="#file-import-fails" title="Permanent link">&para;</a></h2>
@@ -1887,29 +1961,18 @@ have the driving agent author it and pass it via the <code>narrative</code> para
 </table>
 <p>Run <code>list_measurement_files(folder)</code> to see what's in the folder.</p>
 <h2 id="mixed-intents-warning">Mixed-intents warning<a class="headerlink" href="#mixed-intents-warning" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&quot;warnings&quot;: [&quot;mixed_intents_detected: passive(2), active(1) — chose passive&quot;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>"warnings": ["mixed_intents_detected: passive(2), active(1): chose passive"]
 </code></pre></div>
-<p>Not an error — RFlect picked the highest-priority intent. If you want a different choice, pass <code>intent=</code> explicitly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>  <span class="c1"># ignore the passive pair</span>
+<p>Not an error: RFlect picked the highest-priority intent. If you want a different choice, pass <code>intent=</code> explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>  <span class="c1"># ignore the passive pair</span>
 </code></pre></div>
-<h2 id="cal-drift-import-is-idempotent-why">Cal-drift import is idempotent — why?<a class="headerlink" href="#cal-drift-import-is-idempotent-why" title="Permanent link">&para;</a></h2>
+<h2 id="cal-drift-import-is-idempotent-why">Cal-drift import is idempotent: why?<a class="headerlink" href="#cal-drift-import-is-idempotent-why" title="Permanent link">&para;</a></h2>
 <p>Each <code>TRP Cal *.txt</code> is content-hashed (SHA-256) on ingest. Re-running <code>cal_drift_ingest</code> on the same directory will report <code>skipped_duplicate</code> instead of double-recording.</p>
 <h2 id="tool-count-check">Tool count check<a class="headerlink" href="#tool-count-check" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s2">import sys, os</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s2">sys.path.insert(0, os.path.abspath(&#39;rflect-mcp&#39;))</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s2">from mcp.server.fastmcp import FastMCP</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s2">from tools.import_tools import register_import_tools</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s2"># ... import the rest ...</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s2">m = FastMCP(&#39;t&#39;)</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s2"># ... register them ...</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s2">print(len(m._tool_manager._tools))</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s2">&quot;</span>
-</code></pre></div>
-<p>Should print <code>34</code> on v4.2.0+.</p>
+<p>The easiest check is the same snippet as <a href="../installation/#3-verify">Installation → Verify</a>, which prints <code>tools: 61</code>.</p>
 <h2 id="logs">Logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h2>
 <p>Run the server directly to see errors:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python<span class="w"> </span>rflect-mcp/server.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>rflect-mcp/server.py
 </code></pre></div>
 <p>It will block waiting for MCP stdio traffic; Ctrl+C to exit. Any import errors print to stderr before that point.</p>
 <h2 id="still-stuck">Still stuck?<a class="headerlink" href="#still-stuck" title="Permanent link">&para;</a></h2>

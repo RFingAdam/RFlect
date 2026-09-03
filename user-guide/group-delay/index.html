@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1314,6 +1333,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1597,6 +1644,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1746,13 +1820,13 @@
 <p>VNA scan type → import a 2-port capture with <code>S21(s)</code>. The group-delay plot appears alongside S11/S21.</p>
 <h2 id="programmatic-mcp">Programmatic / MCP<a class="headerlink" href="#programmatic-mcp" title="Permanent link">&para;</a></h2>
 <p>Full UWB analysis (group delay + SFF + transfer function + impulse response):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">analyze_uwb_channel</span><span class="p">(</span><span class="s2">&quot;/path/to/cap.s2p&quot;</span><span class="p">,</span> <span class="n">distance_m</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">analyze_uwb_channel</span><span class="p">(</span><span class="s2">"/path/to/cap.s2p"</span><span class="p">,</span> <span class="n">distance_m</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
 </code></pre></div>
-<p>Just group delay is derived inside <code>analyze_uwb_channel</code> — there isn't a dedicated MCP tool for group delay alone because it's almost always wanted alongside the other UWB metrics. Use the full analysis and pluck <code>result["group_delay"]</code>.</p>
+<p>Just group delay is derived inside <code>analyze_uwb_channel</code>. There isn't a dedicated MCP tool for group delay alone because it's almost always wanted alongside the other UWB metrics. Use the full analysis and pluck <code>result["group_delay"]</code>.</p>
 <h2 id="common-gotchas">Common gotchas<a class="headerlink" href="#common-gotchas" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Phase unwrapping</strong> — <code>compute_group_delay_from_s21</code> handles this internally, but the sweep needs enough frequency density (≥ 200 points typical) to unwrap cleanly.</li>
-<li><strong>Antenna pair vs DUT</strong> — measured group delay includes BOTH antennas plus the air gap. Subtract a reference air-only measurement if you only want the DUT contribution.</li>
+<li><strong>Phase unwrapping</strong>: <code>compute_group_delay_from_s21</code> handles this internally, but the sweep needs enough frequency density (≥ 200 points typical) to unwrap cleanly.</li>
+<li><strong>Antenna pair vs DUT</strong>: measured group delay includes BOTH antennas plus the air gap. Subtract a reference air-only measurement if you only want the DUT contribution.</li>
 </ul>
 
 

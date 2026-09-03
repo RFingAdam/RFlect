@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -752,10 +771,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reference-chamber-howland-3100" class="md-nav__link">
+  <a href="#reference-chamber-howland-3100-wtl-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reference chamber: Howland 3100
+        Reference chamber: Howland 3100 / WTL files
       
     </span>
   </a>
@@ -1303,6 +1322,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1586,6 +1633,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1646,10 +1720,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reference-chamber-howland-3100" class="md-nav__link">
+  <a href="#reference-chamber-howland-3100-wtl-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reference chamber: Howland 3100
+        Reference chamber: Howland 3100 / WTL files
       
     </span>
   </a>
@@ -1688,7 +1762,7 @@
 
 
 <h1 id="chambers">Chambers<a class="headerlink" href="#chambers" title="Permanent link">&para;</a></h1>
-<p>RFlect is <strong>chamber-vendor-agnostic</strong> — it works with the file output, not the hardware. If your chamber exports a supported file format (<a href="../file-formats/">see File Formats</a>), RFlect can read it.</p>
+<p>RFlect is <strong>chamber-vendor-agnostic</strong>. It works with the file output, not the hardware. If your chamber exports a supported file format (<a href="../file-formats/">see File Formats</a>), RFlect can read it.</p>
 <h2 id="primary-supported-workflow">Primary supported workflow<a class="headerlink" href="#primary-supported-workflow" title="Permanent link">&para;</a></h2>
 <p>The reference workflow we test against is the <strong>WTL (Wireless Telecom Lab)</strong> chamber output produced by the Howland Company 3100 Antenna Chamber. WTL exports plain-text <code>.txt</code> files in V5.02 and V5.03 layouts which RFlect parses natively.</p>
 <h2 id="what-you-actually-need">What you actually need<a class="headerlink" href="#what-you-actually-need" title="Permanent link">&para;</a></h2>
@@ -1699,7 +1773,7 @@
 <li>Polarization split (HPOL vs VPOL) for passive scans</li>
 <li>A summary header with frequency, axis ranges, increments, and (for active) the conducted power level</li>
 </ul>
-<p>Most modern chambers can produce this format — either natively or via a post-processor.</p>
+<p>Most modern chambers can produce this format: either natively or via a post-processor.</p>
 <h2 id="filename-conventions-rflect-expects">Filename conventions RFlect expects<a class="headerlink" href="#filename-conventions-rflect-expects" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1711,15 +1785,15 @@
 <tbody>
 <tr>
 <td>Passive HPOL</td>
-<td><code>PassiveTest_BLE AP_HPol.txt</code> — must contain <code>_HPol</code></td>
+<td><code>PassiveTest_BLE AP_HPol.txt</code>: must contain <code>_HPol</code></td>
 </tr>
 <tr>
 <td>Passive VPOL</td>
-<td><code>PassiveTest_BLE AP_VPol.txt</code> — must contain <code>_VPol</code></td>
+<td><code>PassiveTest_BLE AP_VPol.txt</code>: must contain <code>_VPol</code></td>
 </tr>
 <tr>
 <td>Active TRP</td>
-<td><code>Active Test_BLE TRP.txt</code> — must contain <code>TRP</code> (any case)</td>
+<td><code>Active Test_BLE TRP.txt</code>: must contain <code>TRP</code> (any case)</td>
 </tr>
 <tr>
 <td>TRP Calibration</td>
@@ -1732,13 +1806,13 @@
 </tbody>
 </table>
 <p>Auto-detection in <a href="../../mcp/recipes/"><code>process_folder</code></a> relies on these patterns.</p>
-<h2 id="reference-chamber-howland-3100">Reference chamber: Howland 3100<a class="headerlink" href="#reference-chamber-howland-3100" title="Permanent link">&para;</a></h2>
-<p>The 3100 is the system RFlect is verified against. RFlect's TRP computation agrees with the chamber's own report to within 0.002 dB on reference measurements (see <a href="../../getting-started/concepts/#trp-total-radiated-power">TRP concept</a>).</p>
+<h2 id="reference-chamber-howland-3100-wtl-files">Reference chamber: Howland 3100 / WTL files<a class="headerlink" href="#reference-chamber-howland-3100-wtl-files" title="Permanent link">&para;</a></h2>
+<p>The Howland Company 3100 + WTL <code>.txt</code> export is the <strong>primary parser target</strong> (V5.02 / V5.03). TRP math is checked against analytic golden-reference oracles (see <a href="../../getting-started/concepts/#trp-total-radiated-power">TRP concept</a>), not as a certified-lab comparison.</p>
 <p>If you have a different chamber and it exports the WTL format directly (or you can convert), RFlect will work. Open a GitHub issue if you hit a parser edge case for a non-WTL export.</p>
 <h2 id="active-vs-passive-in-the-chamber">Active vs passive in the chamber<a class="headerlink" href="#active-vs-passive-in-the-chamber" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Active</strong> — DUT transmits at a known <code>conducted_power_dBm</code>. The chamber receiver records <code>H_Power_dBm</code> and <code>V_Power_dBm</code> per angle.</li>
-<li><strong>Passive</strong> — Chamber transmitter illuminates the DUT. Receiver measures co-pol and cross-pol gain. Two separate scans (HPOL and VPOL) — RFlect pairs them by filename.</li>
+<li><strong>Active</strong>: DUT transmits at a known <code>conducted_power_dBm</code>. The chamber receiver records <code>H_Power_dBm</code> and <code>V_Power_dBm</code> per angle.</li>
+<li><strong>Passive</strong>: Chamber transmitter illuminates the DUT. Receiver measures co-pol and cross-pol gain. Two separate scans (HPOL and VPOL): RFlect pairs them by filename.</li>
 </ul>
 <p>See <a href="../../user-guide/active-trp/">Active TRP</a> and <a href="../../user-guide/passive-gain/">Passive Gain</a> for the full workflow.</p>
 

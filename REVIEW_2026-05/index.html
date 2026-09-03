@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -23,7 +23,7 @@
     
     
       
-        <title>RFlect Multi-Perspective Review — 2026-05 (post-v5.0.0) - RFlect</title>
+        <title>RFlect Multi-Perspective Review: 2026-05 (post-v5.0.0) - RFlect</title>
       
     
     
@@ -109,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              RFlect Multi-Perspective Review — 2026-05 (post-v5.0.0)
+              RFlect Multi-Perspective Review: 2026-05 (post-v5.0.0)
             
           </span>
         </div>
@@ -367,6 +367,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1192,6 +1211,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../mcp/recipes/" class="md-nav__link">
         
   
@@ -1475,6 +1522,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1621,7 +1695,7 @@
   <a href="#rf-platform-roadmap-rf-newmethod-automation-aggressive-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RF-platform roadmap (rf-newmethod / automation — aggressive scope)
+        RF-platform roadmap (rf-newmethod / automation: aggressive scope)
       
     </span>
   </a>
@@ -1670,7 +1744,7 @@
   
 
 
-<h1 id="rflect-multi-perspective-review-2026-05-post-v500">RFlect Multi-Perspective Review — 2026-05 (post-v5.0.0)<a class="headerlink" href="#rflect-multi-perspective-review-2026-05-post-v500" title="Permanent link">&para;</a></h1>
+<h1 id="rflect-multi-perspective-review-2026-05-post-v500">RFlect Multi-Perspective Review: 2026-05 (post-v5.0.0)<a class="headerlink" href="#rflect-multi-perspective-review-2026-05-post-v500" title="Permanent link">&para;</a></h1>
 <p>A backend/architecture, RF-engineering, and frontend/UX/docs review of RFlect after the
 v5.0.0 zero-LLM relaunch. Findings are de-duplicated, severity-ranked, and each maps to a
 proposed GitHub issue under a version milestone (<strong>v5.1</strong> correctness &amp; quick wins, <strong>v5.2</strong>
@@ -1710,7 +1784,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R1</td>
-<td><strong>Group-delay variance &amp; std-dev are dead code</strong> — advertised dispersion metrics never computed; <code>variance_at_freq</code> references an undefined name.</td>
+<td><strong>Group-delay variance &amp; std-dev are dead code</strong>: advertised dispersion metrics never computed; <code>variance_at_freq</code> references an undefined name.</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1718,7 +1792,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R2</td>
-<td><strong>Sidelobe detector has no main-lobe guard</strong> — local maxima inside the main beam can be mis-reported as the first sidelobe (no ≥HPBW exclusion from boresight).</td>
+<td><strong>Sidelobe detector has no main-lobe guard</strong>: local maxima inside the main beam can be mis-reported as the first sidelobe (no ≥HPBW exclusion from boresight).</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.2</td>
@@ -1726,7 +1800,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R3</td>
-<td><strong>Rician fade margin uses a dB-Gaussian approximation</strong> — no mean shift; misstates deep-fade margin 1–3 dB at low/moderate K. Fine for estimation, not compliance.</td>
+<td><strong>Rician fade margin uses a dB-Gaussian approximation</strong>. No mean shift; misstates deep-fade margin 1–3 dB at low/moderate K. Fine for estimation, not compliance.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v5.2</td>
@@ -1742,7 +1816,7 @@ filing.</p>
 </tr>
 </tbody>
 </table>
-<p><em>(TRP 1/4π normalization, ECC, Vaughan-Andersen DG, Kraus directivity, HPBW walk, Friis/log-distance/ITU path loss — all audited and confirmed CORRECT.)</em></p>
+<p><em>(TRP 1/4π normalization, ECC, Vaughan-Andersen DG, Kraus directivity, HPBW walk, Friis/log-distance/ITU path loss. All audited and confirmed CORRECT.)</em></p>
 <h3 id="mcp-tool-contract-consistency-tech-debt">MCP tool-contract consistency (tech-debt)<a class="headerlink" href="#mcp-tool-contract-consistency-tech-debt" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1758,7 +1832,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R5</td>
-<td><strong><code>cal_drift_report</code> can raise to the client</strong> — <code>raise ValueError</code> on unknown format breaks the universal "never raise; return warnings" tool contract.</td>
+<td><strong><code>cal_drift_report</code> can raise to the client</strong>: <code>raise ValueError</code> on unknown format breaks the universal "never raise; return warnings" tool contract.</td>
 <td>🔴</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1766,7 +1840,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R6</td>
-<td><strong><code>bulk_tools</code> + <code>analysis_tools</code> return bare strings on error</strong>, not the <code>{...,"warnings":[]}</code> dict contract — agents can't programmatically detect failure.</td>
+<td><strong><code>bulk_tools</code> + <code>analysis_tools</code> return bare strings on error</strong>, not the <code>{...,"warnings":[]}</code> dict contract: agents can't programmatically detect failure.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v5.1</td>
@@ -1789,7 +1863,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R7</td>
-<td><strong>Clarify TRP docstring</strong> — input is EIRP (isotropic-referenced), not "radiated power density"; the 1/4π is the CTIA-EIRP form. Prevents future false-alarm "bugs."</td>
+<td><strong>Clarify TRP docstring</strong>: input is EIRP (isotropic-referenced), not "radiated power density"; the 1/4π is the CTIA-EIRP form. Prevents future false-alarm "bugs."</td>
 <td>🟢</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1797,7 +1871,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R8</td>
-<td><strong>Golden-reference regression test for TRP/gain</strong> — lock isotropic→0 dB + a known-pattern fixture with numeric tolerance in CI. Highest-leverage safeguard for the analysis core.</td>
+<td><strong>Golden-reference regression test for TRP/gain</strong>: lock isotropic→0 dB + a known-pattern fixture with numeric tolerance in CI. Highest-leverage safeguard for the analysis core.</td>
 <td>🔴</td>
 <td>M</td>
 <td>v5.1</td>
@@ -1820,7 +1894,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R9</td>
-<td><strong><code>plotting.py</code> (3710 lines, 26 plot fns) has zero tests</strong> — called from both GUI and MCP report path; a regression silently produces wrong plots. Start with pure-compute fns.</td>
+<td><strong><code>plotting.py</code> (3710 lines, 26 plot fns) has zero tests</strong>: called from both GUI and MCP report path; a regression silently produces wrong plots. Start with pure-compute fns.</td>
 <td>🟠</td>
 <td>L</td>
 <td>v5.1</td>
@@ -1828,7 +1902,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R10</td>
-<td><strong><code>save.py</code>, <code>groupdelay.py</code>, <code>plot_group_delay_cst.py</code>, <code>uwb_plotting.py</code> untested</strong> — extract I/O from compute and unit-test the pure functions.</td>
+<td><strong><code>save.py</code>, <code>groupdelay.py</code>, <code>plot_group_delay_cst.py</code>, <code>uwb_plotting.py</code> untested</strong>: extract I/O from compute and unit-test the pure functions.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v5.1</td>
@@ -1851,7 +1925,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R11</td>
-<td><strong>DOCX builder duplicated</strong> across GUI <code>save.py</code> and MCP <code>report_tools.py</code> (near-verbatim <code>_add_gain_stats_table</code>, <code>add_branded_heading</code>, brand init) — already drifting. Extract <code>plot_antenna/docx_helpers.py</code>.</td>
+<td><strong>DOCX builder duplicated</strong> across GUI <code>save.py</code> and MCP <code>report_tools.py</code> (near-verbatim <code>_add_gain_stats_table</code>, <code>add_branded_heading</code>, brand init): already drifting. Extract <code>plot_antenna/docx_helpers.py</code>.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v6.0</td>
@@ -1859,7 +1933,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R12</td>
-<td><strong><code>generate_advanced_analysis_plots</code> is a 27-parameter god-function</strong> spanning 5 analysis domains — use per-domain dataclass configs (mirror <code>ReportOptions</code>).</td>
+<td><strong><code>generate_advanced_analysis_plots</code> is a 27-parameter god-function</strong> spanning 5 analysis domains. Use per-domain dataclass configs (mirror <code>ReportOptions</code>).</td>
 <td>🟠</td>
 <td>L</td>
 <td>v6.0</td>
@@ -1867,7 +1941,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R13</td>
-<td><strong>Refactor the giant modules</strong> — <code>plotting.py</code> (3710), <code>report_tools.py</code> (2017), <code>calculations.py</code> (1949), <code>file_utils.py</code> (1665) into cohesive submodules.</td>
+<td><strong>Refactor the giant modules</strong>: <code>plotting.py</code> (3710), <code>report_tools.py</code> (2017), <code>calculations.py</code> (1949), <code>file_utils.py</code> (1665) into cohesive submodules.</td>
 <td>🟢</td>
 <td>L</td>
 <td>v6.0</td>
@@ -1898,7 +1972,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R15</td>
-<td><strong><code>openai</code>/<code>keyring</code>/<code>cryptography</code> still core deps after AI removal</strong> — imported nowhere (verified); ~50 MB of dead transitive deps. Drop or move <code>openai</code> to an <code>ai</code> extra.</td>
+<td><strong><code>openai</code>/<code>keyring</code>/<code>cryptography</code> still core deps after AI removal</strong>: imported nowhere (verified); ~50 MB of dead transitive deps. Drop or move <code>openai</code> to an <code>ai</code> extra.</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1906,7 +1980,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R16</td>
-<td><strong><code>pyinstaller</code> in runtime <code>requirements.txt</code></strong> — build-only tool installed for end users/CI; already in the <code>exe</code> extra. Remove from runtime.</td>
+<td><strong><code>pyinstaller</code> in runtime <code>requirements.txt</code></strong>: build-only tool installed for end users/CI; already in the <code>exe</code> extra. Remove from runtime.</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1922,7 +1996,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R18</td>
-<td><strong><code>rflect-mcp</code> not in the installable package</strong> — needs a separate manual install; document prominently or make it an <code>mcp</code> extra/workspace package.</td>
+<td><strong><code>rflect-mcp</code> not in the installable package</strong>: needs a separate manual install; document prominently or make it an <code>mcp</code> extra/workspace package.</td>
 <td>🟢</td>
 <td>M</td>
 <td>v6.0</td>
@@ -1945,7 +2019,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R19</td>
-<td><strong>Main plot generation blocks the Tk thread</strong> — 26 plots built synchronously via <code>after()</code>, progress bar can't animate, app appears frozen on big scans. Elegant fix: render with Agg off-thread, display saved PNGs.</td>
+<td><strong>Main plot generation blocks the Tk thread</strong>: 26 plots built synchronously via <code>after()</code>, progress bar can't animate, app appears frozen on big scans. Elegant fix: render with Agg off-thread, display saved PNGs.</td>
 <td>🔴</td>
 <td>L</td>
 <td>v6.0</td>
@@ -1961,7 +2035,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R21</td>
-<td><strong>Errors only <code>print()</code> to stdout / silent</strong> — invisible in a packaged GUI; route to <code>log_message</code>/<code>messagebox</code>.</td>
+<td><strong>Errors only <code>print()</code> to stdout / silent</strong>: invisible in a packaged GUI; route to <code>log_message</code>/<code>messagebox</code>.</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.1</td>
@@ -1969,7 +2043,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R22</td>
-<td><strong>Plot styling duplicated across 26 functions</strong> — <code>dpi=300</code> ×24, 5+ colormaps, mixed save formats; add <code>_apply_style()</code>/<code>_save_fig()</code> helpers.</td>
+<td><strong>Plot styling duplicated across 26 functions</strong>: <code>dpi=300</code> ×24, 5+ colormaps, mixed save formats; add <code>_apply_style()</code>/<code>_save_fig()</code> helpers.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v6.0</td>
@@ -1977,7 +2051,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R23</td>
-<td><strong>Hardcoded <code>Arial</code>/<code>Segoe UI</code> fonts + raw <code>tk.*</code> dialogs ignore dark theme</strong> — break layout/theming on Linux. Use font constants + ttk.</td>
+<td><strong>Hardcoded <code>Arial</code>/<code>Segoe UI</code> fonts + raw <code>tk.*</code> dialogs ignore dark theme</strong>: break layout/theming on Linux. Use font constants + ttk.</td>
 <td>🟢</td>
 <td>M</td>
 <td>v5.2</td>
@@ -1985,7 +2059,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R24</td>
-<td><strong>Determinate progress + dialog keyboard nav</strong> — bulk bar is indeterminate despite known job count; dialogs lack Return/Escape.</td>
+<td><strong>Determinate progress + dialog keyboard nav</strong>: bulk bar is indeterminate despite known job count; dialogs lack Return/Escape.</td>
 <td>🟢</td>
 <td>S</td>
 <td>v5.2</td>
@@ -2008,7 +2082,7 @@ filing.</p>
 <tbody>
 <tr>
 <td>R25</td>
-<td><strong>Thin reference docs</strong> — <code>glossary.md</code>/<code>measurement-types.md</code>/<code>mcp/overview.md</code> are stubs. (Glossary partly expanded in v5.0.0; finish coverage of every emitted metric.)</td>
+<td><strong>Thin reference docs</strong>: <code>glossary.md</code>/<code>measurement-types.md</code>/<code>mcp/overview.md</code> are stubs. (Glossary partly expanded in v5.0.0; finish coverage of every emitted metric.)</td>
 <td>🟢</td>
 <td>M</td>
 <td>v5.1</td>
@@ -2016,7 +2090,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R26</td>
-<td><strong>Low example-plot coverage</strong> — <code>polarization</code>, <code>uwb-sff</code>, <code>maritime-horizon</code>, <code>advanced-rf</code>, <code>cal-drift</code> user-guide pages have no output screenshots.</td>
+<td><strong>Low example-plot coverage</strong>: <code>polarization</code>, <code>uwb-sff</code>, <code>maritime-horizon</code>, <code>advanced-rf</code>, <code>cal-drift</code> user-guide pages have no output screenshots.</td>
 <td>🟢</td>
 <td>M</td>
 <td>v5.2</td>
@@ -2024,7 +2098,7 @@ filing.</p>
 </tr>
 <tr>
 <td>R27</td>
-<td><strong>No CHANGELOG</strong> — update-check logic exists but no changelog page; add Keep-a-Changelog (RELEASE_NOTES.md can seed it).</td>
+<td><strong>No CHANGELOG</strong>: update-check logic exists but no changelog page; add Keep-a-Changelog (RELEASE_NOTES.md can seed it).</td>
 <td>🟢</td>
 <td>S</td>
 <td>v5.1</td>
@@ -2033,7 +2107,7 @@ filing.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="rf-platform-roadmap-rf-newmethod-automation-aggressive-scope">RF-platform roadmap (rf-newmethod / automation — aggressive scope)<a class="headerlink" href="#rf-platform-roadmap-rf-newmethod-automation-aggressive-scope" title="Permanent link">&para;</a></h2>
+<h2 id="rf-platform-roadmap-rf-newmethod-automation-aggressive-scope">RF-platform roadmap (rf-newmethod / automation: aggressive scope)<a class="headerlink" href="#rf-platform-roadmap-rf-newmethod-automation-aggressive-scope" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -2056,7 +2130,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P2</td>
-<td><strong>Regulatory spec-mask checks</strong> — FCC Part 15 (§15.247/§15.407) + ETSI EN 300 328/301 893 EIRP &amp; spurious masks. Wire in the <code>emc-regulations</code> MCP.</td>
+<td><strong>Regulatory spec-mask checks</strong>: FCC Part 15 (§15.247/§15.407) + ETSI EN 300 328/301 893 EIRP &amp; spurious masks. Wire in the <code>emc-regulations</code> MCP.</td>
 <td>🔴</td>
 <td>M</td>
 <td>v5.2</td>
@@ -2064,7 +2138,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P3</td>
-<td><strong>Measurement-uncertainty budgets / error bars</strong> on TRP &amp; gain (mismatch, cable drift, positioner, ref-antenna) — CTIA-style expanded-uncertainty table.</td>
+<td><strong>Measurement-uncertainty budgets / error bars</strong> on TRP &amp; gain (mismatch, cable drift, positioner, ref-antenna): CTIA-style expanded-uncertainty table.</td>
 <td>🔴</td>
 <td>L</td>
 <td>v5.2</td>
@@ -2072,7 +2146,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P4</td>
-<td><strong>CTIA OTA TIS/TRP test-plan templates</strong> — TIS (Rx sensitivity) path is entirely missing; add CTIA grid/partial-sphere templates.</td>
+<td><strong>CTIA OTA TIS/TRP test-plan templates</strong>: TIS (Rx sensitivity) path is entirely missing; add CTIA grid/partial-sphere templates.</td>
 <td>🔴</td>
 <td>L</td>
 <td>v6.0</td>
@@ -2096,7 +2170,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P7</td>
-<td><strong>Statistical pattern averaging across repeat measurements</strong> — per-point mean/σ + repeatability (complements cal-drift).</td>
+<td><strong>Statistical pattern averaging across repeat measurements</strong>: per-point mean/σ + repeatability (complements cal-drift).</td>
 <td>🟠</td>
 <td>M</td>
 <td>v5.2</td>
@@ -2104,7 +2178,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P8</td>
-<td><strong>SCPI instrument control</strong> (pyvisa) — live VNA/signal-analyzer sweep setup + trace pull; closes the file-only loop.</td>
+<td><strong>SCPI instrument control</strong> (pyvisa): live VNA/signal-analyzer sweep setup + trace pull; closes the file-only loop.</td>
 <td>🔴</td>
 <td>L</td>
 <td>v6.0</td>
@@ -2120,7 +2194,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P10</td>
-<td><strong>Scheduled/automated cal-drift monitoring</strong> — cron-driven ingest + threshold alerts (extends the existing cal-drift framework + issues #3–#6).</td>
+<td><strong>Scheduled/automated cal-drift monitoring</strong>: cron-driven ingest + threshold alerts (extends the existing cal-drift framework + issues #3–#6).</td>
 <td>🟠</td>
 <td>S</td>
 <td>v5.2</td>
@@ -2128,7 +2202,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P11</td>
-<td><strong>n-antenna comparison tables</strong> (Min/Max VSWR/Eff/Gain) — finishes existing issue #7 on top of <code>compare_antennas</code>.</td>
+<td><strong>n-antenna comparison tables</strong> (Min/Max VSWR/Eff/Gain): finishes existing issue #7 on top of <code>compare_antennas</code>.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v5.2</td>
@@ -2144,7 +2218,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P13</td>
-<td><strong>Near-field-to-far-field transform</strong> (spherical/planar modal expansion) — extend beyond far-field ranges.</td>
+<td><strong>Near-field-to-far-field transform</strong> (spherical/planar modal expansion): extend beyond far-field ranges.</td>
 <td>🟢</td>
 <td>L</td>
 <td>v6.0</td>
@@ -2152,7 +2226,7 @@ filing.</p>
 </tr>
 <tr>
 <td>P14</td>
-<td><strong>Circular-polarization axial-ratio + 3-antenna gain-comparison method</strong> — expected on a full OTA bench.</td>
+<td><strong>Circular-polarization axial-ratio + 3-antenna gain-comparison method</strong>: expected on a full OTA bench.</td>
 <td>🟠</td>
 <td>M</td>
 <td>v6.0</td>
@@ -2172,28 +2246,28 @@ filing.</p>
 <tbody>
 <tr>
 <td>#1 "thin fallback exec summary"</td>
-<td><strong>Close</strong> — superseded by the v5.0.0 deterministic summary + agent-<code>narrative</code> parameter.</td>
+<td><strong>Close</strong>: superseded by the v5.0.0 deterministic summary + agent-<code>narrative</code> parameter.</td>
 </tr>
 <tr>
 <td>#2 "cross-file overlay comparison tool"</td>
-<td><strong>Close</strong> — delivered as <code>compare_antennas</code> in v5.0.0.</td>
+<td><strong>Close</strong>: delivered as <code>compare_antennas</code> in v5.0.0.</td>
 </tr>
 <tr>
 <td>#3/#4/#5/#6 cal-drift (recert reminder, threshold alerts, cable-loss .s2p history, passive cal)</td>
-<td><strong>Keep</strong> — fold under P10 / the <code>automation</code> theme; assign to v5.2.</td>
+<td><strong>Keep</strong>: fold under P10 / the <code>automation</code> theme; assign to v5.2.</td>
 </tr>
 <tr>
 <td>#7 "n-antenna VSWR/Eff/Gain tables"</td>
-<td><strong>Re-scope</strong> — partially met by <code>compare_antennas</code>; remaining tabular work tracked as P11 (v5.2).</td>
+<td><strong>Re-scope</strong>: partially met by <code>compare_antennas</code>; remaining tabular work tracked as P11 (v5.2).</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="milestone-roll-up">Milestone roll-up<a class="headerlink" href="#milestone-roll-up" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>v5.1 — Correctness &amp; quick wins:</strong> R1, R5, R6, R7, R8, R9, R10, R14, R15, R16, R17, R21, R25, R27 + close #1/#2.</li>
-<li><strong>v5.2 — RF analysis expansion:</strong> R2, R3, R20, R23, R24, R26, P1, P2, P3, P5, P7, P10, P11 + #3–#6.</li>
-<li><strong>v6.0 — Automation &amp; platform:</strong> R4, R11, R12, R13, R18, R19, R22, P4, P6, P8, P9, P12, P13, P14.</li>
+<li><strong>v5.1: Correctness &amp; quick wins:</strong> R1, R5, R6, R7, R8, R9, R10, R14, R15, R16, R17, R21, R25, R27 + close #1/#2.</li>
+<li><strong>v5.2: RF analysis expansion:</strong> R2, R3, R20, R23, R24, R26, P1, P2, P3, P5, P7, P10, P11 + #3–#6.</li>
+<li><strong>v6.0: Automation &amp; platform:</strong> R4, R11, R12, R13, R18, R19, R22, P4, P6, P8, P9, P12, P13, P14.</li>
 </ul>
 <p>No code behavior was changed by this review. Each row above becomes a GitHub issue with
 acceptance criteria and <code>path:line</code> links once approved.</p>

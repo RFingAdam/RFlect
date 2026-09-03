@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1325,6 +1344,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1608,6 +1655,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1739,7 +1813,7 @@
 - <strong>Semi-major axis</strong> $a$
 - <strong>Semi-minor axis</strong> $b$<br />
 - <strong>Tilt angle</strong> $\tau$ relative to a reference axis
-- <strong>Sense</strong> — RH (clockwise looking from source) or LH</p>
+- <strong>Sense</strong>: RH (clockwise looking from source) or LH</p>
 <h2 id="axial-ratio-ar">Axial Ratio (AR)<a class="headerlink" href="#axial-ratio-ar" title="Permanent link">&para;</a></h2>
 <p>$$\text{AR (dB)} = 20\log_{10}!\left(\frac{a}{b}\right)$$</p>
 <ul>
@@ -1747,10 +1821,10 @@
 <li>AR = ∞ dB → perfect linear polarization (b = 0)</li>
 <li>Typical CP antenna: AR ≤ 3 dB in the main beam</li>
 </ul>
-<p>RFlect uses the full polarization-ellipse derivation, including the $\cos(2\delta)$ discriminant. Phase $\delta$ is recovered correctly — RFlect does NOT use the magnitude-only approximation.</p>
+<p>RFlect uses the full polarization-ellipse derivation, including the $\cos(2\delta)$ discriminant. Phase $\delta$ is recovered correctly: RFlect does NOT use the magnitude-only approximation.</p>
 <h2 id="xpd-cross-polarization-discrimination">XPD (Cross-Polarization Discrimination)<a class="headerlink" href="#xpd-cross-polarization-discrimination" title="Permanent link">&para;</a></h2>
 <p>$$\text{XPD (dB)} = 20\log_{10}!\left(\frac{|E_{\text{co-pol}}|}{|E_{\text{cross-pol}}|}\right)$$</p>
-<p>Note the <strong>20 log</strong> — XPD is a field ratio. Common mistake: using 10·log. RFlect uses the correct formula.</p>
+<p>Note the <strong>20 log</strong>: XPD is a field ratio. Common mistake: using 10·log. RFlect uses the correct formula.</p>
 <h2 id="rhcp-lhcp-sense">RHCP / LHCP sense<a class="headerlink" href="#rhcp-lhcp-sense" title="Permanent link">&para;</a></h2>
 <p>Determined from the sign of the discriminant $\sin\delta$:</p>
 <ul>
@@ -1767,7 +1841,7 @@
 <h2 id="programmatic-mcp">Programmatic / MCP<a class="headerlink" href="#programmatic-mcp" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compare_polarizations</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mf">2450.0</span><span class="p">)</span>
 </code></pre></div>
-<p>Returns AR, tilt, XPD, and sense stats. See <code>AntennaAnalyzer.compare_polarizations</code> in <code>plot_antenna/ai_analysis.py</code>.</p>
+<p>Returns AR, tilt, XPD, and sense stats. See <code>AntennaAnalyzer.compare_polarizations</code> in <code>plot_antenna/analysis_engine.py</code>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../getting-started/concepts/#polarization">Concepts → Polarization</a></li>

@@ -68,7 +68,7 @@
     <!-- r = 0.3: center (r/(1+r), 0) = (0.231, 0), radius 1/(1+r) = 0.769 -->
     <circle cx="302.2" cy="256" r="153.8" fill="none"
       stroke="#3D5A73" stroke-width="1.6" opacity="0.45"/>
-    <!-- r = 1: center (0.5, 0), radius 0.5 — PRIMARY -->
+    <!-- r = 1: center (0.5, 0), radius 0.5: PRIMARY -->
     <circle cx="356" cy="256" r="100" fill="none"
       stroke="#5A8DB0" stroke-width="2.4" opacity="0.72"/>
     <!-- r = 2: center (0.667, 0), radius 0.333 -->
@@ -89,10 +89,10 @@
     <!-- x = -0.5 (lower): center (1, -2), radius 2 -->
     <path d="M 136 416 A 400 400 0 0 0 456 256"
       fill="none" stroke="#3D5A73" stroke-width="1.5" opacity="0.42"/>
-    <!-- x = +1 (upper): center (1, 1), radius 1 — PRIMARY -->
+    <!-- x = +1 (upper): center (1, 1), radius 1: PRIMARY -->
     <path d="M 256 56 A 200 200 0 0 1 456 256"
       fill="none" stroke="#5A8DB0" stroke-width="2.2" opacity="0.68"/>
-    <!-- x = -1 (lower): center (1, -1), radius 1 — PRIMARY -->
+    <!-- x = -1 (lower): center (1, -1), radius 1: PRIMARY -->
     <path d="M 256 456 A 200 200 0 0 0 456 256"
       fill="none" stroke="#5A8DB0" stroke-width="2.2" opacity="0.68"/>
     <!-- x = +2 (upper): center (1, 0.5), radius 0.5 -->
@@ -104,7 +104,7 @@
 
   </g>
 
-  <!-- Unit circle (outer boundary of Smith chart) — most prominent grid line -->
+  <!-- Unit circle (outer boundary of Smith chart). Most prominent grid line -->
   <circle cx="256" cy="256" r="200" fill="none"
     stroke="#6FA8C8" stroke-width="2.8" opacity="0.8"/>
 

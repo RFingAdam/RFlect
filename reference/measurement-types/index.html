@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1198,6 +1217,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1564,6 +1611,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1644,7 +1718,7 @@
 
 
 <h1 id="measurement-types-analyses">Measurement Types &amp; Analyses<a class="headerlink" href="#measurement-types-analyses" title="Permanent link">&para;</a></h1>
-<p>Every measurement type and analysis RFlect supports, the input it expects, what it computes, and the MCP tool that drives it. RFlect is fully deterministic — every value here is computed from your data, with no LLM or API key involved.</p>
+<p>Every measurement type and analysis RFlect supports, the input it expects, what it computes, and the MCP tool that drives it. RFlect is fully deterministic. Every value here is computed from your data, with no LLM or API key involved.</p>
 <h2 id="scan-types-primary-measurement-modes">Scan types (primary measurement modes)<a class="headerlink" href="#scan-types-primary-measurement-modes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1792,7 +1866,7 @@
 </tbody>
 </table>
 <h2 id="where-the-math-lives">Where the math lives<a class="headerlink" href="#where-the-math-lives" title="Permanent link">&para;</a></h2>
-<p>All analyses are pure, deterministic functions in <code>plot_antenna/</code> (<code>calculations.py</code>, <code>analysis_engine.py</code>, <code>uwb_analysis.py</code>, <code>cal_drift.py</code>, <code>file_utils.py</code>). The MCP tools in <code>rflect-mcp/tools/</code> are thin wrappers that validate inputs, call these functions, and return structured results — they never make network or LLM calls.</p>
+<p>All analyses are pure, deterministic functions in <code>plot_antenna/</code> (<code>calculations.py</code>, <code>analysis_engine.py</code>, <code>uwb_analysis.py</code>, <code>cal_drift.py</code>, <code>file_utils.py</code>). The MCP tools in <code>rflect-mcp/tools/</code> are thin wrappers that validate inputs, call these functions, and return structured results. They never make network or LLM calls.</p>
 <p>See the <a href="../../mcp/tools-reference/">Tools Reference</a> for signatures and return shapes, and the <a href="../../user-guide/active-trp/">User Guide</a> for the methodology behind each measurement type.</p>
 
 

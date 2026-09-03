@@ -1,10 +1,10 @@
-/* RFlect docs — brand polish */
+/* RFlect docs: brand polish */
 
 :root {
   --md-primary-fg-color:        #1e3a8a;   /* deep indigo */
   --md-primary-fg-color--light: #3b5bcb;
   --md-primary-fg-color--dark:  #14264a;
-  --md-accent-fg-color:         #06b6d4;   /* cyan — RF "signal" accent */
+  --md-accent-fg-color:         #06b6d4;   /* cyan: RF "signal" accent */
 }
 
 [data-md-color-scheme="slate"] {

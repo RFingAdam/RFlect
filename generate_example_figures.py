@@ -1,6 +1,6 @@
 """Generate example figures for the v6.0 RF-method docs (#27).
 
-Reproducible, headless (Agg) generator — run from the repo root:
+Reproducible, headless (Agg) generator. Run from the repo root:
 
     python docs/generate_example_figures.py
 
@@ -51,7 +51,7 @@ def fig_array_factor_steering():
         )
     ax.set_xlabel("Angle from broadside (°)")
     ax.set_ylabel("Normalized |AF| (dB)")
-    ax.set_title("Uniform Linear Array (8 elements, 0.5 λ) — Electronic Steering")
+    ax.set_title("Uniform Linear Array (8 elements, 0.5 λ): Electronic Steering")
     ax.set_ylim(-40, 2)
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8)

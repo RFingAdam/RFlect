@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1303,6 +1322,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1586,6 +1633,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1688,7 +1762,7 @@
 
 
 <h1 id="instruments">Instruments<a class="headerlink" href="#instruments" title="Permanent link">&para;</a></h1>
-<p>RFlect doesn't talk to instruments directly — it reads their saved output. Below is the verified hardware/software the test suite has touched, but the format definitions in <a href="../file-formats/">File Formats</a> are what really matters.</p>
+<p>RFlect doesn't talk to instruments directly. It reads their saved output. Below is the verified hardware/software the test suite has touched, but the format definitions in <a href="../file-formats/">File Formats</a> are what really matters.</p>
 <h2 id="chambers">Chambers<a class="headerlink" href="#chambers" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1706,7 +1780,7 @@
 </tr>
 <tr>
 <td>Any chamber producing WTL V5.02 / V5.03 <code>.txt</code></td>
-<td>—</td>
+<td>n/a</td>
 <td>yes (format-level)</td>
 </tr>
 </tbody>
@@ -1755,12 +1829,12 @@
 <td>CST Studio</td>
 <td>Far-field <code>.txt</code></td>
 <td>yes</td>
-<td>—</td>
+<td>n/a</td>
 </tr>
 <tr>
 <td>CST Studio</td>
 <td>Farfield Source <code>.ffs</code></td>
-<td>—</td>
+<td>n/a</td>
 <td>yes (via <code>convert_to_cst</code> MCP tool)</td>
 </tr>
 </tbody>
@@ -1771,13 +1845,13 @@
 <li>Howland BLPA (broadband log-periodic)</li>
 <li>Howland HORN</li>
 </ul>
-<p>The gain-standard's calibrated bands determine which TRP-cal frequencies route to "Missing Data" — e.g. the BLPA-19 has uncalibrated gaps at 960–1500 MHz, 1610–1710 MHz, and 2170–2300 MHz. See <code>tests/test_active_calibration.py</code>.</p>
+<p>The gain-standard's calibrated bands determine which TRP-cal frequencies route to "Missing Data": e.g. the BLPA-19 has uncalibrated gaps at 960–1500 MHz, 1610–1710 MHz, and 2170–2300 MHz. See <code>tests/test_active_calibration.py</code>.</p>
 <h2 id="what-you-do-not-need">What you do <strong>not</strong> need<a class="headerlink" href="#what-you-do-not-need" title="Permanent link">&para;</a></h2>
 <ul>
-<li>A specific OS — RFlect runs on Windows, Linux, and macOS (built from source)</li>
-<li>A specific instrument vendor — formats matter, brands don't</li>
+<li>A specific OS: RFlect runs on Windows, Linux, and macOS (built from source)</li>
+<li>A specific instrument vendor: formats matter, brands don't</li>
 <li>A specific Python version beyond 3.11+</li>
-<li>Network access — AI features are optional and gracefully disabled when unconfigured</li>
+<li>Network access: AI features are optional and gracefully disabled when unconfigured</li>
 </ul>
 
 

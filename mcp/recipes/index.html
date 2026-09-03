@@ -6,14 +6,14 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
         <link rel="canonical" href="https://rfingadam.github.io/RFlect/mcp/recipes/">
       
       
-        <link rel="prev" href="../tools-reference/">
+        <link rel="prev" href="../../MCP_STATUS/">
       
       
         <link rel="next" href="../troubleshooting/">
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1198,6 +1217,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1619,6 +1666,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1753,15 +1827,15 @@
   
 
 
-<h1 id="recipes-standard-procedures">Recipes — Standard Procedures<a class="headerlink" href="#recipes-standard-procedures" title="Permanent link">&para;</a></h1>
+<h1 id="recipes-standard-procedures">Recipes: Standard Procedures<a class="headerlink" href="#recipes-standard-procedures" title="Permanent link">&para;</a></h1>
 <p>Standard RFlect procedures you can hand to Claude (or invoke programmatically). All driven by <a href="../tools-reference/#orchestration-1"><code>process_folder</code></a>.</p>
 <h2 id="standard-passive-procedure">Standard Passive Procedure<a class="headerlink" href="#standard-passive-procedure" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>"Process every HPOL/VPOL pair in this folder and generate a report."</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s2">&quot;/path/to/wifi_antenna&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s2">"/path/to/wifi_antenna"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
 </code></pre></div>
@@ -1771,8 +1845,8 @@
 - Generates a DOCX report at <code>&lt;folder&gt;/process_folder_report.docx</code></p>
 <p>Restrict to specific frequencies:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">process_folder</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="s2">&quot;/path/to/wifi_antenna&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="s2">"/path/to/wifi_antenna"</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">freqs</span><span class="o">=</span><span class="p">[</span><span class="mi">2400</span><span class="p">,</span> <span class="mi">2450</span><span class="p">,</span> <span class="mi">2500</span><span class="p">],</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
@@ -1782,27 +1856,27 @@
 <p>"Process every TRP file in this folder."</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">process_folder</span><span class="p">(</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;/path/to/trp_runs&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">"/path/to/trp_runs"</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">intent</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
 </code></pre></div>
 <p>What it does:
 - Picks up every <code>*.txt</code> containing <code>TRP</code> (excluding <code>TRP Cal *.txt</code>)
-- Runs <code>batch_process_active_scans</code> — TRP, H/V power, 2D/3D patterns, maritime stats
+- Runs <code>batch_process_active_scans</code>: TRP, H/V power, 2D/3D patterns, maritime stats
 - Generates a DOCX report</p>
 <h2 id="cal-drift-sweep">Cal-Drift Sweep<a class="headerlink" href="#cal-drift-sweep" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>"Ingest this archive of historical calibrations."</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/historical_cal_archive&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;cal_drift&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/historical_cal_archive"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"cal_drift"</span><span class="p">)</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># returns: {ingested, skipped_duplicate, failed, run_ids: [...]}</span>
 </code></pre></div>
 <p>Then compare runs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">runs</span> <span class="o">=</span> <span class="n">cal_drift_list_runs</span><span class="p">(</span><span class="n">antenna</span><span class="o">=</span><span class="s2">&quot;BLPA&quot;</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="s2">&quot;690-2700&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">runs</span> <span class="o">=</span> <span class="n">cal_drift_list_runs</span><span class="p">(</span><span class="n">antenna</span><span class="o">=</span><span class="s2">"BLPA"</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="s2">"690-2700"</span><span class="p">)</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">cal_drift_compare</span><span class="p">(</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="n">runs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;run_id&quot;</span><span class="p">],</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="n">runs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;run_id&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="n">runs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"run_id"</span><span class="p">],</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="n">runs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"run_id"</span><span class="p">],</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span>
 </code></pre></div>
 <p>See <a href="../../user-guide/cal-drift/">Cal Drift</a>.</p>
@@ -1810,37 +1884,37 @@
 <blockquote>
 <p>"Run UWB channel analysis on every S-parameter sweep here."</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/uwb_sweep&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;uwb&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/uwb_sweep"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"uwb"</span><span class="p">)</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># extra.results = [{file, analysis}, ...] with SFF, group delay, transfer function, impulse response</span>
 </code></pre></div>
 <h2 id="auto-just-figure-it-out">Auto / "Just figure it out"<a class="headerlink" href="#auto-just-figure-it-out" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>"Process this folder for me."</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/captures&quot;</span><span class="p">)</span>  <span class="c1"># intent=&quot;auto&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/captures"</span><span class="p">)</span>  <span class="c1"># intent="auto"</span>
 </code></pre></div>
 <p>Auto-detect priority: <code>cal_drift &gt; passive &gt; active &gt; uwb</code>. Mixed folders proceed with the winner and add a <code>mixed_intents_detected: …</code> warning to the result.</p>
 <h2 id="sample-return-shape">Sample return shape<a class="headerlink" href="#sample-return-shape" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;intent_used&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;passive&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;files_scanned&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;files_processed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;frequencies_loaded&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">2400.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2450.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2500.0</span><span class="p">],</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">&quot;report_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/wifi_antenna/process_folder_report.docx&quot;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"intent_used"</span><span class="p">:</span><span class="w"> </span><span class="s2">"passive"</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">"files_scanned"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">"files_processed"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">"frequencies_loaded"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">2400.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2450.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2500.0</span><span class="p">],</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">"warnings"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">"report_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/path/to/wifi_antenna/process_folder_report.docx"</span>
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
 </code></pre></div>
-<p>When something goes sideways (no match, missing folder, partial pair, per-file UWB failure, report write error) the call <strong>does not raise</strong> — warnings list the problems:</p>
+<p>When something goes sideways (no match, missing folder, partial pair, per-file UWB failure, report write error) the call <strong>does not raise</strong>: warnings list the problems:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;intent_used&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;passive&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&quot;files_scanned&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&quot;files_processed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">&quot;frequencies_loaded&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">2400.0</span><span class="p">],</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="s2">&quot;unmatched_hpol: [&#39;PassiveTest_Z_HPol.txt&#39;]&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="s2">&quot;invalid_frequencies_dropped: [9999.0]&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">"intent_used"</span><span class="p">:</span><span class="w"> </span><span class="s2">"passive"</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">"files_scanned"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">"files_processed"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">"frequencies_loaded"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">2400.0</span><span class="p">],</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">"warnings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="s2">"unmatched_hpol: ['PassiveTest_Z_HPol.txt']"</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="s2">"invalid_frequencies_dropped: [9999.0]"</span>
 <a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span><span class="p">],</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="nt">&quot;report_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="nt">"report_path"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="prompt-patterns-for-ai-clients">Prompt patterns for AI clients<a class="headerlink" href="#prompt-patterns-for-ai-clients" title="Permanent link">&para;</a></h2>
@@ -1852,20 +1926,20 @@
 </ul>
 <p>The agent will translate these into <code>process_folder(...)</code> calls and follow up with the right secondary tools (e.g., <code>cal_drift_compare</code> for the drift case).</p>
 <h2 id="agent-authored-report-narrative">Agent-authored report narrative<a class="headerlink" href="#agent-authored-report-narrative" title="Permanent link">&para;</a></h2>
-<p>RFlect generates report prose <strong>deterministically</strong> by default — no LLM, no API key. Because the MCP client driving RFlect <em>is</em> an LLM, the higher-quality path is for the agent to read the computed analysis and author the narrative itself, then hand it to <code>generate_report</code>:</p>
+<p>RFlect generates report prose <strong>deterministically</strong> by default. No LLM, no API key. Because the MCP client driving RFlect <em>is</em> an LLM, the higher-quality path is for the agent to read the computed analysis and author the narrative itself, then hand it to <code>generate_report</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1. Compute the facts (deterministic).</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">get_gain_statistics</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">pol</span>   <span class="o">=</span> <span class="n">compare_polarizations</span><span class="p">(</span><span class="mf">2450.0</span><span class="p">)</span>
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># 2. The agent writes the prose from those facts, then:</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">generate_report</span><span class="p">(</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="s2">&quot;/tmp/report.docx&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;BLE Antenna Report&quot;</span><span class="p">,</span> <span class="s2">&quot;antenna_type&quot;</span><span class="p">:</span> <span class="s2">&quot;Chip&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="s2">"/tmp/report.docx"</span><span class="p">,</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"title"</span><span class="p">:</span> <span class="s2">"BLE Antenna Report"</span><span class="p">,</span> <span class="s2">"antenna_type"</span><span class="p">:</span> <span class="s2">"Chip"</span><span class="p">},</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">narrative</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="s2">&quot;executive_summary&quot;</span><span class="p">:</span> <span class="s2">&quot;Peak gain of +1.8 dBi at 2450 MHz with ...&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="s2">&quot;section_analysis&quot;</span><span class="p">:</span>  <span class="p">{</span><span class="s2">&quot;WiFi-Main&quot;</span><span class="p">:</span> <span class="s2">&quot;Pattern is near-omnidirectional ...&quot;</span><span class="p">},</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span>   <span class="s2">&quot;- Re-tune match toward band center</span><span class="se">\n</span><span class="s2">- Re-check 2480 MHz&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="s2">&quot;captions&quot;</span><span class="p">:</span>          <span class="p">{</span><span class="s2">&quot;3D_TRP_total_2450.0MHz.png&quot;</span><span class="p">:</span> <span class="s2">&quot;Total radiated power, 2450 MHz&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="s2">"executive_summary"</span><span class="p">:</span> <span class="s2">"Peak gain of +1.8 dBi at 2450 MHz with ..."</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="s2">"section_analysis"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"WiFi-Main"</span><span class="p">:</span> <span class="s2">"Pattern is near-omnidirectional ..."</span><span class="p">},</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="s2">"recommendations"</span><span class="p">:</span>   <span class="s2">"- Re-tune match toward band center</span><span class="se">\n</span><span class="s2">- Re-check 2480 MHz"</span><span class="p">,</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="s2">"captions"</span><span class="p">:</span>          <span class="p">{</span><span class="s2">"3D_TRP_total_2450.0MHz.png"</span><span class="p">:</span> <span class="s2">"Total radiated power, 2450 MHz"</span><span class="p">},</span>
 <a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="p">},</span>
 <a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="p">)</span>
 </code></pre></div>
@@ -1907,7 +1981,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../tools-reference/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Tools Reference">
+          <a href="../../MCP_STATUS/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Status">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1917,7 +1991,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Tools Reference
+                Status
               </div>
             </div>
           </a>

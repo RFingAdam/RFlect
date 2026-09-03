@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1364,6 +1383,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1647,6 +1694,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1815,10 +1889,10 @@
 <p>The primary format. Plain-text, header + tabular data. RFlect supports both V5.02 and V5.03 layouts.</p>
 <h3 id="passive-hpol-or-vpol">Passive (HPOL or VPOL)<a class="headerlink" href="#passive-hpol-or-vpol" title="Permanent link">&para;</a></h3>
 <p>Header contains:
-- <code>Frequency</code> (MHz) — one or more
+- <code>Frequency</code> (MHz). One or more
 - <code>Start Phi</code>, <code>Stop Phi</code>, <code>Inc Phi</code> (degrees)
 - <code>Start Theta</code>, <code>Stop Theta</code>, <code>Inc Theta</code>
-- <code>Polarization</code> — <code>Horizontal</code> or <code>Vertical</code></p>
+- <code>Polarization</code>: <code>Horizontal</code> or <code>Vertical</code></p>
 <p>Data block: gain (dBi) per ($\theta$, $\phi$) cell. RFlect's parser: <code>read_passive_file()</code>.</p>
 <h3 id="active-trp">Active TRP<a class="headerlink" href="#active-trp" title="Permanent link">&para;</a></h3>
 <p>Header contains:
@@ -1837,16 +1911,16 @@
 - Impedance bandwidth</p>
 <h2 id="s2vna-csv">S2VNA <code>.csv</code><a class="headerlink" href="#s2vna-csv" title="Permanent link">&para;</a></h2>
 <p>Copper Mountain S2VNA software exports CSV with a fixed column convention RFlect understands:
-- <code>! Stimulus(Hz)</code> — frequency
-- <code>S11(dB)</code>, <code>S21(dB)</code> — magnitudes
-- <code>S21(s)</code> — group delay (seconds)</p>
+- <code>! Stimulus(Hz)</code>: frequency
+- <code>S11(dB)</code>, <code>S21(dB)</code>: magnitudes
+- <code>S21(s)</code>: group delay (seconds)</p>
 <p>Parsed by <code>parse_2port_data()</code>. Auto-detected from <code>.csv</code> extension + columns.</p>
 <h2 id="generic-vna-csv">Generic VNA <code>.csv</code><a class="headerlink" href="#generic-vna-csv" title="Permanent link">&para;</a></h2>
 <p>Two-port S-parameter exports from arbitrary VNAs work as long as the column names match the S2VNA convention. Otherwise, convert to Touchstone <code>.s2p</code>.</p>
 <h2 id="cst-simulation-txt">CST simulation <code>.txt</code><a class="headerlink" href="#cst-simulation-txt" title="Permanent link">&para;</a></h2>
 <p>Far-field exports from CST Studio Suite. Read by <code>plot_antenna/plot_group_delay_cst.py</code> for ECC and fidelity factor analysis.</p>
 <h2 id="cst-ffs-output-only">CST <code>.ffs</code> (output only)<a class="headerlink" href="#cst-ffs-output-only" title="Permanent link">&para;</a></h2>
-<p>RFlect can <strong>export</strong> to CST Farfield Source format via the <code>convert_to_cst</code> MCP tool — useful for moving measured patterns into a simulation toolchain.</p>
+<p>RFlect can <strong>export</strong> to CST Farfield Source format via the <code>convert_to_cst</code> MCP tool: useful for moving measured patterns into a simulation toolchain.</p>
 <h2 id="auto-detection-in-process_folder">Auto-detection in <code>process_folder</code><a class="headerlink" href="#auto-detection-in-process_folder" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

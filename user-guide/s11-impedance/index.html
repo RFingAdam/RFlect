@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1314,6 +1333,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1597,6 +1644,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1756,19 +1830,19 @@
 </tbody>
 </table>
 <h2 id="programmatic-mcp">Programmatic / MCP<a class="headerlink" href="#programmatic-mcp" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_impedance_bandwidth</span><span class="p">(</span><span class="s2">&quot;/path/to/sweep.s2p&quot;</span><span class="p">,</span> <span class="n">threshold_dB</span><span class="o">=-</span><span class="mf">10.0</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_impedance_bandwidth</span><span class="p">(</span><span class="s2">"/path/to/sweep.s2p"</span><span class="p">,</span> <span class="n">threshold_dB</span><span class="o">=-</span><span class="mf">10.0</span><span class="p">)</span>
 </code></pre></div>
 <p>Returns the same metrics as JSON. See <a href="../../mcp/tools-reference/">tools reference</a>.</p>
 <h2 id="common-gotchas">Common gotchas<a class="headerlink" href="#common-gotchas" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Calibration matters</strong>. RFlect doesn't apply VNA calibration — bring already-calibrated data.</li>
+<li><strong>Calibration matters</strong>. RFlect doesn't apply VNA calibration: bring already-calibrated data.</li>
 <li><strong>Threshold convention</strong>. -10 dB ≈ 90% power match. Some specs use -6 dB or -3 dB; set explicitly.</li>
 <li><strong>Single-band assumption</strong>. The bandwidth metric reports the widest contiguous matched band; multi-band antennas will need per-band analysis.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../group-delay/">Group Delay</a> — derived from S21 phase</li>
-<li><a href="../uwb-sff/">UWB / SFF</a> — full UWB channel characterization</li>
+<li><a href="../group-delay/">Group Delay</a>: derived from S21 phase</li>
+<li><a href="../uwb-sff/">UWB / SFF</a>: full UWB channel characterization</li>
 </ul>
 
 

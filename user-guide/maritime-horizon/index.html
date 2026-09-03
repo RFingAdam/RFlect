@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1314,6 +1333,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1597,6 +1644,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1710,7 +1784,7 @@
 
 
 <h1 id="maritime-horizon-plots">Maritime / Horizon Plots<a class="headerlink" href="#maritime-horizon-plots" title="Permanent link">&para;</a></h1>
-<p>Specialized plots for on-water antenna analysis — where the link almost exclusively lives in a narrow band around the horizon.</p>
+<p>Specialized plots for on-water antenna analysis: where the link almost exclusively lives in a narrow band around the horizon.</p>
 <h2 id="what-horizon-band-means">What "horizon band" means<a class="headerlink" href="#what-horizon-band-means" title="Permanent link">&para;</a></h2>
 <p>A horizon band is defined by two $\theta$ angles around 90° (equator of the sphere): e.g., $\theta = 85°$ to $\theta = 95°$ for a 10°-wide horizon. Everything outside that band wastes power for maritime links.</p>
 <h2 id="five-plot-types">Five plot types<a class="headerlink" href="#five-plot-types" title="Permanent link">&para;</a></h2>
@@ -1779,11 +1853,11 @@
 <p>After loading a passive or active scan, the <strong>Maritime</strong> tab appears (if maritime plots are enabled in settings). Configure $\theta_{\text{start}}$ and $\theta_{\text{stop}}$ in degrees.</p>
 <h2 id="programmatic-mcp">Programmatic / MCP<a class="headerlink" href="#programmatic-mcp" title="Permanent link">&para;</a></h2>
 <p><code>bulk_process_passive</code> and <code>bulk_process_active</code> both return maritime metrics in their result rows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/lab/captures&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/lab/captures"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Each result row includes band_advantage_dB and maritime power fraction.</span>
 </code></pre></div>
 <h2 id="why-maritime-power-fraction-was-added-v418">Why "Maritime Power Fraction" was added (v4.1.8)<a class="headerlink" href="#why-maritime-power-fraction-was-added-v418" title="Permanent link">&para;</a></h2>
-<p>The earlier "Horizon Efficiency" metric was confusingly close to 50% even for an isotropic antenna (because half the sphere's solid-angle is in any 180°-symmetric band). The dB-form <code>band_advantage_dB</code> is the right metric — 0 dB means isotropic, positive means horizon-favored. Both are shown for traceability.</p>
+<p>The earlier "Horizon Efficiency" metric was confusingly close to 50% even for an isotropic antenna (because half the sphere's solid-angle is in any 180°-symmetric band). The dB-form <code>band_advantage_dB</code> is the right metric: 0 dB means isotropic, positive means horizon-favored. Both are shown for traceability.</p>
 
 
 

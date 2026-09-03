@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1198,6 +1217,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1597,6 +1644,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1721,7 +1795,7 @@
 <h2 id="launch-mcp-server">Launch MCP server<a class="headerlink" href="#launch-mcp-server" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>rflect-mcp/server.py
 </code></pre></div>
-<p>Blocks waiting for stdio MCP traffic. Usually launched by your MCP client, not by hand — see <a href="../../mcp/installation/">MCP installation</a>.</p>
+<p>Blocks waiting for stdio MCP traffic. Usually launched by your MCP client, not by hand. See <a href="../../mcp/installation/">MCP installation</a>.</p>
 <h2 id="test-suite">Test suite<a class="headerlink" href="#test-suite" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>.venv/bin/python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w">                 </span><span class="c1"># full suite</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>.venv/bin/python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/test_calculations.py<span class="w"> </span>-v
@@ -1737,20 +1811,20 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>iscc installer.iss
 </code></pre></div>
 <p>Or override version inline:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>iscc /DRFLECT_VERSION=4.2.0 installer.iss
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>iscc /DRFLECT_VERSION=6.1.0 installer.iss
 </code></pre></div>
 <h2 id="version-bumping">Version bumping<a class="headerlink" href="#version-bumping" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>bump2version<span class="w"> </span>patch<span class="w">     </span><span class="c1"># 4.2.0 → 4.2.1</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bump2version<span class="w"> </span>minor<span class="w">     </span><span class="c1"># 4.2.0 → 4.3.0</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>bump2version<span class="w"> </span>major<span class="w">     </span><span class="c1"># 4.2.0 → 5.0.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>bump2version<span class="w"> </span>patch<span class="w">     </span><span class="c1"># 6.1.0 → 6.1.1</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bump2version<span class="w"> </span>minor<span class="w">     </span><span class="c1"># 6.1.0 → 6.2.0</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>bump2version<span class="w"> </span>major<span class="w">     </span><span class="c1"># 6.1.0 → 7.0.0</span>
 </code></pre></div>
 <p>Sources of truth for the version (<code>.bumpversion.cfg</code>):</p>
 <ul>
-<li><code>pyproject.toml</code> — <code>version = "..."</code></li>
-<li><code>plot_antenna/__init__.py</code> — <code>__version__ = "..."</code></li>
-<li><code>README.md</code> — version badge</li>
-<li><code>installer.iss</code> — <code>RFLECT_VERSION</code></li>
-<li><code>settings.json</code> — <code>CURRENT_VERSION</code></li>
+<li><code>pyproject.toml</code>: <code>version = "..."</code></li>
+<li><code>plot_antenna/__init__.py</code>: <code>__version__ = "..."</code></li>
+<li><code>README.md</code>: version badge</li>
+<li><code>installer.iss</code>: <code>RFLECT_VERSION</code></li>
+<li><code>settings.json</code>: <code>CURRENT_VERSION</code></li>
 </ul>
 
 

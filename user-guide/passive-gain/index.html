@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1369,6 +1388,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1652,6 +1699,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1832,7 +1906,7 @@
 <ol>
 <li>Scan type: <strong>Passive</strong></li>
 <li>Set <code>Cable Loss (dB)</code> if applicable</li>
-<li><code>Ctrl+O</code> and pick the HPOL file — RFlect locates the matching VPOL automatically</li>
+<li><code>Ctrl+O</code> and pick the HPOL file: RFlect locates the matching VPOL automatically</li>
 <li>Plots render: 1D gain/efficiency vs frequency, 2D azimuth/elevation, 3D pattern, optional datasheet plots</li>
 </ol>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
@@ -1878,15 +1952,15 @@
 <p><img alt="Datasheet 1D plot" class="rflect-screenshot" src="../../assets/screenshots/datasheet_1d.png" /></p>
 <h2 id="math-conventions">Math conventions<a class="headerlink" href="#math-conventions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Ludwig-3 polarization</strong> — HPOL is $E_\phi$ (azimuthal), VPOL is $E_\theta$ (elevation). See <code>plot_antenna/calculations.py:637</code>.</li>
-<li><strong>dB averaging</strong> — convert to linear first: $10\log_{10}(\text{mean}(10^{dB/10}))$, then back. Never average dB directly.</li>
-<li><strong>Spherical average</strong> — sin-weighted to account for the smaller solid angle near the poles.</li>
+<li><strong>Ludwig-3 polarization</strong>: HPOL is $E_\phi$ (azimuthal), VPOL is $E_\theta$ (elevation). See <code>plot_antenna/calculations.py:637</code>.</li>
+<li><strong>dB averaging</strong>: convert to linear first: $10\log_{10}(\text{mean}(10^{dB/10}))$, then back. Never average dB directly.</li>
+<li><strong>Spherical average</strong>: sin-weighted to account for the smaller solid angle near the poles.</li>
 </ul>
 <h2 id="batch-mcp">Batch / MCP<a class="headerlink" href="#batch-mcp" title="Permanent link">&para;</a></h2>
 <p>Process every HPOL/VPOL pair in a folder:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/wifi_antenna&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/wifi_antenna"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or restrict to specific frequencies:</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/wifi_antenna&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/wifi_antenna"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>               <span class="n">freqs</span><span class="o">=</span><span class="p">[</span><span class="mi">2400</span><span class="p">,</span> <span class="mi">2450</span><span class="p">,</span> <span class="mi">2500</span><span class="p">],</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>See <a href="../../mcp/recipes/#standard-passive-procedure">Recipes</a>.</p>
@@ -1898,7 +1972,7 @@
 <ul>
 <li><strong>HPOL/VPOL filenames must match.</strong> RFlect pairs them by prefix and the <code>_HPol</code> / <code>_VPol</code> suffix. <code>validate_file_pair</code> checks angle/freq alignment.</li>
 <li><strong>Cable loss is the same for both files.</strong> If H and V used different cables, you'll need to pre-correct the files.</li>
-<li><strong>Efficiency vs gain</strong> — efficiency is the spherical-average; peak gain is much higher than average gain for directive antennas.</li>
+<li><strong>Efficiency vs gain</strong>: efficiency is the spherical-average; peak gain is much higher than average gain for directive antennas.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -897,10 +916,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#math-validation" class="md-nav__link">
+  <a href="#math" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Math validation
+        Math
       
     </span>
   </a>
@@ -1325,6 +1344,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1608,6 +1655,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1668,10 +1742,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#math-validation" class="md-nav__link">
+  <a href="#math" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Math validation
+        Math
       
     </span>
   </a>
@@ -1743,8 +1817,8 @@
 <h2 id="in-the-gui">In the GUI<a class="headerlink" href="#in-the-gui" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Scan type: <strong>Active</strong></li>
-<li>Set <code>Conducted Power (dBm)</code> — defaults to 4 dBm; this is the level at the DUT antenna input, not at the source</li>
-<li>Set <code>Cable Loss (dB)</code> if applicable — added back to measured power</li>
+<li>Set <code>Conducted Power (dBm)</code>: defaults to 4 dBm; this is the level at the DUT antenna input, not at the source</li>
+<li>Set <code>Cable Loss (dB)</code> if applicable: added back to measured power</li>
 <li><code>Ctrl+O</code> and pick the active-TRP file</li>
 <li>Plots render: 2D azimuth/elevation cuts, 3D pattern with turbo colormap, datasheet-style summary</li>
 </ol>
@@ -1783,26 +1857,26 @@
 </tr>
 </tbody>
 </table>
-<h2 id="math-validation">Math validation<a class="headerlink" href="#math-validation" title="Permanent link">&para;</a></h2>
-<p>RFlect's TRP uses IEEE-standard solid-angle integration with the $\sin\theta$ Jacobian:</p>
+<h2 id="math">Math<a class="headerlink" href="#math" title="Permanent link">&para;</a></h2>
+<p>RFlect's TRP uses the CTIA / IEEE-149 discrete solid-angle form with the $\sin\theta$ Jacobian, on <strong>EIRP-per-angle</strong> chamber samples:</p>
 <p>$$\text{TRP} = \frac{1}{4\pi} \int_0^{2\pi}!\int_0^{\pi} P(\theta,\phi)\,\sin\theta\,d\theta\,d\phi$$</p>
-<p>Verified to within 0.002 dB of the Howland 3100 chamber's own report on reference measurements.</p>
+<p>Golden-reference tests lock the isotropic oracle (constant EIRP integrates back to itself). That is a calculation check, not laboratory accreditation or a certified chamber report.</p>
 <h2 id="batch-mcp">Batch / MCP<a class="headerlink" href="#batch-mcp" title="Permanent link">&para;</a></h2>
 <p>Process every TRP file in a folder:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/trp_runs&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/trp_runs"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>This runs <code>batch_process_active_scans</code> over the folder and (optionally) generates a DOCX report. See <a href="../../mcp/recipes/#standard-active-trp-procedure">Recipes</a>.</p>
 <h2 id="common-gotchas">Common gotchas<a class="headerlink" href="#common-gotchas" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Conducted power matters</strong>. Efficiency is wrong if you enter the source-side power instead of the DUT-side power.</li>
-<li><strong>Cable loss is positive</strong>. Loss is what the signal loses between DUT and receiver — add it back to compensate.</li>
-<li><strong>TRP at a single frequency only</strong> — if you need TRP vs frequency, use multiple active scans.</li>
+<li><strong>Cable loss is positive</strong>. Loss is what the signal loses between DUT and receiver: add it back to compensate.</li>
+<li><strong>TRP at a single frequency only</strong>. If you need TRP vs frequency, use multiple active scans.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../getting-started/concepts/#trp-total-radiated-power">Concepts → TRP</a></li>
 <li><a href="../maritime-horizon/">Maritime / Horizon plots</a></li>
-<li><a href="../cal-drift/">Cal Drift</a> — track active-cal stability over time</li>
+<li><a href="../cal-drift/">Cal Drift</a>: track active-cal stability over time</li>
 </ul>
 
 

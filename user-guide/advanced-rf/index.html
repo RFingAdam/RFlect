@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1163,7 +1182,7 @@
   <a href="#uniform-linear-array-electronic-beam-steering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Uniform linear array — electronic beam steering
+        Uniform linear array: electronic beam steering
       
     </span>
   </a>
@@ -1366,6 +1385,34 @@
     
   
     Tools Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
   
 
     
@@ -1669,6 +1716,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1799,7 +1873,7 @@
   <a href="#uniform-linear-array-electronic-beam-steering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Uniform linear array — electronic beam steering
+        Uniform linear array: electronic beam steering
       
     </span>
   </a>
@@ -1865,33 +1939,33 @@
 <p>Rayleigh and Rician CDF curves plus Monte-Carlo simulation. Useful for estimating margin in cluttered environments.</p>
 <h2 id="enhanced-mimo">Enhanced MIMO<a class="headerlink" href="#enhanced-mimo" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Capacity curves</strong> — Shannon capacity vs SNR with correlation effects</li>
-<li><strong>Combining gain</strong> — selection, equal-gain, maximal-ratio (verified math; see <a href="#math-fixes-v400">Math fixes</a>)</li>
-<li><strong>MEG</strong> — Mean Effective Gain with XPR (cross-polarization power ratio)</li>
+<li><strong>Capacity curves</strong>: Shannon capacity vs SNR with correlation effects</li>
+<li><strong>Combining gain</strong>: selection, equal-gain, maximal-ratio (verified math; see <a href="#math-fixes-v400">Math fixes</a>)</li>
+<li><strong>MEG</strong>: Mean Effective Gain with XPR (cross-polarization power ratio)</li>
 </ul>
 <h2 id="wearable-medical">Wearable / Medical<a class="headerlink" href="#wearable-medical" title="Permanent link">&para;</a></h2>
 <p>Body-worn pattern adjustments. Dense-device SINR. SAR screening estimator.</p>
 <h2 id="math-fixes-v400">Math fixes (v4.0.0)<a class="headerlink" href="#math-fixes-v400" title="Permanent link">&para;</a></h2>
 <p>The original combining-gain formula was wrong. v4.0.0 verified:</p>
 <ul>
-<li><strong>Diversity gain</strong> uses the Vaughan-Andersen formula $DG = 10\sqrt{1-\text{ECC}^2}$ — NOT a log-based formula.</li>
-<li><strong>Combining gain</strong> validated against simulated MIMO-EVK data; agrees to within float precision (one pre-existing test still rounds <code>4.999…</code> vs <code>5.0</code> — unrelated to physics).</li>
+<li><strong>Diversity gain</strong> uses the Vaughan-Andersen formula $DG = 10\sqrt{1-\text{ECC}^2}$. NOT a log-based formula.</li>
+<li><strong>Combining gain</strong> validated against simulated MIMO-EVK data; agrees to within float precision (one pre-existing test still rounds <code>4.999…</code> vs <code>5.0</code>: unrelated to physics).</li>
 </ul>
 <h2 id="kraus-efficiency-caveat">Kraus efficiency caveat<a class="headerlink" href="#kraus-efficiency-caveat" title="Permanent link">&para;</a></h2>
 <p>Kraus formula:</p>
 <p>$$\eta_{\text{Kraus}} = \frac{32400}{\text{HPBW}_E \cdot \text{HPBW}_H}$$</p>
-<p>Only valid when both HPBW values ≤ 180°. RFlect rejects results that produce $\eta &gt; 100\%$ — the assumption breaks for omnidirectional or low-directivity antennas.</p>
+<p>Only valid when both HPBW values ≤ 180°. RFlect rejects results that produce $\eta &gt; 100\%$. The assumption breaks for omnidirectional or low-directivity antennas.</p>
 <h2 id="accessing-these-modules">Accessing these modules<a class="headerlink" href="#accessing-these-modules" title="Permanent link">&para;</a></h2>
 <p>Tools menu → Advanced RF Analysis. Sub-dialogs are scrollable since the parameter set is large.</p>
-<p>There are currently no MCP wrappers for these modules. Open an issue if you need one — most are pure-Python in <code>plot_antenna/advanced_*</code> and could be wrapped quickly.</p>
+<p>Over MCP, the closest tools are <code>estimate_link_budget</code> and <code>analyze_mimo_diversity</code>. Indoor ITU, fading CDF, and wearable/SAR screening remain GUI-only (<code>plot_antenna/advanced_*</code>). The v6.0 RF-method gallery below is a separate MCP surface (<code>synthesize_array</code>, <code>analyze_axial_ratio</code>, …).</p>
 <h2 id="rf-method-gallery-v60">RF method gallery (v6.0)<a class="headerlink" href="#rf-method-gallery-v60" title="Permanent link">&para;</a></h2>
 <p>The figures below are authentic outputs of the new v6.0 RF methods
 (<code>plot_antenna/rf_methods.py</code>, exposed as MCP tools). Regenerate them with
 <code>python docs/generate_example_figures.py</code>.</p>
-<h3 id="uniform-linear-array-electronic-beam-steering">Uniform linear array — electronic beam steering<a class="headerlink" href="#uniform-linear-array-electronic-beam-steering" title="Permanent link">&para;</a></h3>
+<h3 id="uniform-linear-array-electronic-beam-steering">Uniform linear array: electronic beam steering<a class="headerlink" href="#uniform-linear-array-electronic-beam-steering" title="Permanent link">&para;</a></h3>
 <p><img alt="Array factor steering" src="../../assets/screenshots/example_array_factor.png" /></p>
 <p>An 8-element, 0.5 λ array steered to 0°, 20°, and 45°. Note the main beam
-broadening (scan loss) as it steers off broadside — the reported HPBW grows from
+broadening (scan loss) as it steers off broadside. The reported HPBW grows from
 ~13° to ~18°.</p>
 <h3 id="aperture-taper-trade-off">Aperture taper trade-off<a class="headerlink" href="#aperture-taper-trade-off" title="Permanent link">&para;</a></h3>
 <p><img alt="Array taper comparison" src="../../assets/screenshots/example_array_taper.png" /></p>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>RFlect — antenna measurement visualization & analysis - RFlect</title>
+        <title>RFlect</title>
       
     
     
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              RFlect — antenna measurement visualization & analysis
+              Home
             
           </span>
         </div>
@@ -377,6 +377,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -387,8 +406,6 @@
         <div class="md-main__inner md-grid">
           
             
-              
-                
               
               <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
@@ -1307,6 +1324,34 @@
   
   
     <li class="md-nav__item">
+      <a href="MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="mcp/recipes/" class="md-nav__link">
         
   
@@ -1590,6 +1635,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1598,9 +1670,7 @@
             
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -1696,8 +1766,6 @@
               <article class="md-content__inner md-typeset">
                 
                   
-  
-
 
 
   
@@ -1706,16 +1774,22 @@
 
   <h1>Home</h1>
 
+<hr />
+<p>title: RFlect: antenna measurement visualization &amp; analysis
+description: The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.
+hide:
+  - toc</p>
+<hr />
 <div class="rflect-hero" markdown>
   <img src="assets/logo.svg" alt="RFlect logo">
   <div class="rflect-hero-text" markdown>
 # RFlect
-**The RF engineer's toolkit for antenna measurement visualization and analysis.**
+**Antenna measurement visualization and analysis.**
   </div>
 </div>
 
-<p>RFlect turns raw antenna-chamber and VNA output into publication-ready 2D/3D radiation pattern plots, TRP calculations, polarization analysis, UWB characterization, and DOCX reports — all validated against IEEE-standard methods.</p>
-<p>Whether you're characterizing a BLE chip antenna, qualifying a cellular array, or tracking calibration drift across multiple chamber sessions, RFlect handles the heavy lifting.</p>
+<p>RFlect turns antenna-chamber and VNA output into 2D/3D radiation-pattern plots, TRP and gain metrics, polarization analysis, UWB characterization, and DOCX reports.</p>
+<p>It is analysis software, not a certified test laboratory. TRP uses the CTIA / IEEE-149 discrete solid-angle form; that is a calculation convention, not lab accreditation or product certification.</p>
 <p><img alt="Scan type selection" class="rflect-screenshot" src="assets/screenshots/scan_type_selection.png" /></p>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <div class="rflect-card-grid" markdown>
@@ -1727,12 +1801,12 @@
 
 <a class="rflect-card" href="user-guide/passive-gain/">
 <strong>User Guide →</strong>
-<span>Active TRP, passive gain, S11, group delay, UWB, polarization, maritime — all the math.</span>
+<span>Active TRP, passive gain, S11, group delay, UWB, polarization, maritime. All the math.</span>
 </a>
 
 <a class="rflect-card" href="mcp/overview/">
 <strong>MCP Server →</strong>
-<span>41 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
+<span>61 tools that let Claude Code &amp; Cline drive RFlect programmatically.</span>
 </a>
 
 <a class="rflect-card" href="mcp/recipes/">
@@ -1747,18 +1821,18 @@
 
 <a class="rflect-card" href="hardware/file-formats/">
 <strong>Hardware &amp; Formats →</strong>
-<span>WTL chambers, Touchstone .s2p, S2VNA CSV, CST — the full input/output matrix.</span>
+<span>WTL chambers, Touchstone .s2p, S2VNA CSV, CST. The full input/output matrix.</span>
 </a>
 
 </div>
 
 <h2 id="built-for-the-way-rf-labs-actually-work">Built for the way RF labs actually work<a class="headerlink" href="#built-for-the-way-rf-labs-actually-work" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>No API key, no subscription, no LLM dependency</strong> — RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.</li>
-<li><strong>MCP server</strong> — 41 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent <em>is</em> the LLM; RFlect provides the data and the rendering.</li>
-<li><strong>GUI</strong> — desktop app (Tk-based, dark theme) for interactive review</li>
-<li><strong>Agent-authored reports</strong> — DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via <a href="mcp/tools-reference/"><code>generate_report</code></a>'s <code>narrative</code> parameter</li>
-<li><strong>Cal-drift tracker</strong> — record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches</li>
+<li><strong>No API key, no subscription, no LLM dependency</strong>: RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.</li>
+<li><strong>MCP server</strong>: 61 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent <em>is</em> the LLM; RFlect provides the data and the rendering.</li>
+<li><strong>GUI</strong>: desktop app (Tk-based, dark theme) for interactive review. Launch with <code>python run_rflect.py</code> or <code>rflect</code> after <code>pip install -e .</code>.</li>
+<li><strong>Agent-authored reports</strong>: DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via <a href="mcp/tools-reference/"><code>generate_report</code></a>'s <code>narrative</code> parameter</li>
+<li><strong>Cal-drift tracker</strong>: record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches</li>
 </ul>
 <h2 id="inputs-at-a-glance">Inputs at a glance<a class="headerlink" href="#inputs-at-a-glance" title="Permanent link">&para;</a></h2>
 <table>
@@ -1799,6 +1873,7 @@
 </tr>
 </tbody>
 </table>
+<p>The public repository does <strong>not</strong> include customer chamber files. Screenshots below are representative GUI outputs. Tests use synthetic fixtures plus optional local files via <code>RFLECT_TEST_DATA_DIR</code>. See the <a href="https://github.com/RFingAdam/RFlect#example-data-and-plot-outputs">README</a>.</p>
 <h2 id="sample-outputs">Sample outputs<a class="headerlink" href="#sample-outputs" title="Permanent link">&para;</a></h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:6"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Passive 3D pattern</label><label for="__tabbed_1_2">Passive 2D cuts</label><label for="__tabbed_1_3">Datasheet view</label><label for="__tabbed_1_4">Active 2D</label><label for="__tabbed_1_5">VNA / S-parameters</label><label for="__tabbed_1_6">Group delay</label></div>
 <div class="tabbed-content">
@@ -1823,15 +1898,15 @@
 </div>
 </div>
 <h2 id="drive-it-from-claude">Drive it from Claude<a class="headerlink" href="#drive-it-from-claude" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/lab/captures&quot;</span><span class="p">)</span>                     <span class="c1"># auto-detect</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/wifi_antenna&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;passive&quot;</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/trp_runs&quot;</span><span class="p">,</span>     <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>  <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/cal_archive&quot;</span><span class="p">,</span>  <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;cal_drift&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/uwb_sweep&quot;</span><span class="p">,</span>    <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;uwb&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/lab/captures"</span><span class="p">)</span>                     <span class="c1"># auto-detect</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/wifi_antenna"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"passive"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/trp_runs"</span><span class="p">,</span>     <span class="n">intent</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>  <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/cal_archive"</span><span class="p">,</span>  <span class="n">intent</span><span class="o">=</span><span class="s2">"cal_drift"</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/uwb_sweep"</span><span class="p">,</span>    <span class="n">intent</span><span class="o">=</span><span class="s2">"uwb"</span><span class="p">)</span>
 </code></pre></div>
 <p>See <a href="mcp/recipes/">MCP Recipes</a> for the full set of standard procedures.</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/RFingAdam/RFlect/blob/main/LICENSE">GPL-3.0</a></p>
+<p><a href="https://github.com/RFingAdam/RFlect/blob/main/LICENSE">AGPL-3.0-or-later</a>. There is no standing commercial-license offer. The project name and logo are not part of the licensed work.</p>
 
 
 
@@ -1839,13 +1914,8 @@
 
 
 
-  
-  
 
 
-
-
-  
 
 
 
@@ -1870,8 +1940,6 @@
         <footer class="md-footer">
   
     
-      
-        
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -373,6 +373,25 @@
     
   
   Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
 
       </a>
     </li>
@@ -1336,6 +1355,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1619,6 +1666,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1759,19 +1833,19 @@
 <p>Chamber calibrations drift. Cables age. Connectors loosen. Without a history, you can't tell whether the 5 dB difference you're seeing between today and 2024 is a real chamber drift or just a different methodology epoch.</p>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Ingest</strong> — point at a directory of archived <code>TRP Cal *.txt</code> files (and optional <code>TRP Cal Summary *.txt</code> siblings). Each is recorded with a unique <code>run_id</code>, a content SHA-256, and metadata pulled from the file header + filename.</li>
-<li><strong>Compare</strong> — pick any two runs as <code>baseline</code> and <code>current</code>. RFlect computes per-frequency ΔdB (H and V), a consistency-diff (did the gain standard change? same cable? same fixture?), and a missing-frequency audit.</li>
-<li><strong>Report</strong> — export markdown, PDF, or PNG drift reports for review or filing.</li>
+<li><strong>Ingest</strong>: point at a directory of archived <code>TRP Cal *.txt</code> files (and optional <code>TRP Cal Summary *.txt</code> siblings). Each is recorded with a unique <code>run_id</code>, a content SHA-256, and metadata pulled from the file header + filename.</li>
+<li><strong>Compare</strong>: pick any two runs as <code>baseline</code> and <code>current</code>. RFlect computes per-frequency ΔdB (H and V), a consistency-diff (did the gain standard change? same cable? same fixture?), and a missing-frequency audit.</li>
+<li><strong>Report</strong>: export markdown, PDF, or PNG drift reports for review or filing.</li>
 </ol>
 <h2 id="setup-groups-methodology-epochs">Setup groups (methodology epochs)<a class="headerlink" href="#setup-groups-methodology-epochs" title="Permanent link">&para;</a></h2>
-<p>A <code>setup_group</code> is a free-text tag like <code>pre-2024-cable-change</code> or <code>2026-v2-mount</code>. When you compare two runs in different groups, the consistency tab loudly flags the mismatch — that comparison may not be apples-to-apples.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">cal_drift_set_setup_group</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;pre-2024-cable-change&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">cal_drift_set_setup_group</span><span class="p">(</span><span class="n">run_id_2026</span><span class="p">,</span> <span class="s2">&quot;2026-v2-mount&quot;</span><span class="p">)</span>
+<p>A <code>setup_group</code> is a free-text tag like <code>pre-2024-cable-change</code> or <code>2026-v2-mount</code>. When you compare two runs in different groups, the consistency tab loudly flags the mismatch. That comparison may not be apples-to-apples.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">cal_drift_set_setup_group</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="s2">"pre-2024-cable-change"</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">cal_drift_set_setup_group</span><span class="p">(</span><span class="n">run_id_2026</span><span class="p">,</span> <span class="s2">"2026-v2-mount"</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Comparing the two will surface a setup_group mismatch warning</span>
 </code></pre></div>
 <h2 id="history-storage">History storage<a class="headerlink" href="#history-storage" title="Permanent link">&para;</a></h2>
 <p>By default, RFlect writes history under your user profile (<code>~/.local/share/RFlect/cal_drift/</code> on Linux, equivalent on macOS/Windows). Override via:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cal_drift_set_history_dir</span><span class="p">(</span><span class="s2">&quot;/srv/shared/rflect_cal_history&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cal_drift_set_history_dir</span><span class="p">(</span><span class="s2">"/srv/shared/rflect_cal_history"</span><span class="p">)</span>
 </code></pre></div>
 <p>Or set the env var <code>RFLECT_CAL_DRIFT_DIR</code> (used by the test suite).</p>
 <h2 id="auto-capture">Auto-capture<a class="headerlink" href="#auto-capture" title="Permanent link">&para;</a></h2>
@@ -1821,29 +1895,29 @@
 </table>
 <h2 id="recipe">Recipe<a class="headerlink" href="#recipe" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># 1. Ingest the archived calibration directory once</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">&quot;/path/to/historical_cal_archive&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">&quot;cal_drift&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">process_folder</span><span class="p">(</span><span class="s2">"/path/to/historical_cal_archive"</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="s2">"cal_drift"</span><span class="p">)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># 2. List what&#39;s now recorded</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">cal_drift_list_runs</span><span class="p">(</span><span class="n">antenna</span><span class="o">=</span><span class="s2">&quot;BLPA&quot;</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="s2">&quot;690-2700&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># 2. List what's now recorded</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">cal_drift_list_runs</span><span class="p">(</span><span class="n">antenna</span><span class="o">=</span><span class="s2">"BLPA"</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="s2">"690-2700"</span><span class="p">)</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># 3. Compare two specific runs</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">cal_drift_compare</span><span class="p">(</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="s2">&quot;&lt;early_id&gt;&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="s2">&quot;&lt;recent_id&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="s2">"&lt;early_id&gt;"</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="s2">"&lt;recent_id&gt;"</span><span class="p">,</span>
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">)</span>
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># 4. Export a PDF report</span>
 <a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">cal_drift_report</span><span class="p">(</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="s2">&quot;&lt;early&gt;&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="s2">&quot;&lt;recent&gt;&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;/tmp/drift.pdf&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">baseline_run_id</span><span class="o">=</span><span class="s2">"&lt;early&gt;"</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">current_run_id</span><span class="o">=</span><span class="s2">"&lt;recent&gt;"</span><span class="p">,</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">output_path</span><span class="o">=</span><span class="s2">"/tmp/drift.pdf"</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">"pdf"</span><span class="p">,</span>
 <a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="p">)</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>plot_antenna/cal_drift.py</code> — implementation</li>
-<li><code>tests/test_cal_drift.py</code> — 18 tests covering ingest, compare, consistency flags, idempotency, exports</li>
+<li><code>plot_antenna/cal_drift.py</code>: implementation</li>
+<li><code>tests/test_cal_drift.py</code>: 18 tests covering ingest, compare, consistency flags, idempotency, exports</li>
 </ul>
 
 

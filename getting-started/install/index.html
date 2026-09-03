@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis — MCP-driven, no API key required.">
+        <meta name="description" content="The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.">
       
       
       
@@ -379,6 +379,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CLA/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLA
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -611,6 +630,17 @@
     <span class="md-ellipsis">
       
         MCP server (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example data
       
     </span>
   </a>
@@ -1303,6 +1333,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../MCP_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mcp/recipes/" class="md-nav__link">
         
   
@@ -1586,6 +1644,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1657,6 +1742,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#example-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sanity-check" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1688,15 +1784,15 @@
 
 
 <h1 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h1>
-<p>RFlect runs on Windows, Linux, and macOS. Python 3.11 or newer.</p>
+<p>RFlect runs on Windows, Linux, and macOS. Python 3.11 or newer. The GUI needs Tk/tkinter (usually bundled with the official Windows/macOS Python installers; on Debian/Ubuntu install <code>python3-tk</code>).</p>
 <h2 id="pre-built-binaries-recommended">Pre-built binaries (recommended)<a class="headerlink" href="#pre-built-binaries-recommended" title="Permanent link">&para;</a></h2>
 <p>Grab the latest release from <a href="https://github.com/RFingAdam/RFlect/releases">GitHub Releases</a>.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">Linux</label><label for="__tabbed_1_3">macOS</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ul>
-<li><code>RFlect_Installer_vX.X.X.exe</code> — Inno Setup installer (registers app, creates shortcuts)</li>
-<li><code>RFlect_vX.X.X.exe</code> — standalone portable binary</li>
+<li><code>RFlect_Installer_vX.X.X.exe</code>: Inno Setup installer (registers app, creates shortcuts)</li>
+<li><code>RFlect_vX.X.X.exe</code>: standalone portable binary</li>
 </ul>
 </div>
 <div class="tabbed-block">
@@ -1705,7 +1801,7 @@
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>Build from source — pre-built macOS binaries are not yet published.</p>
+<p>Build from source: pre-built macOS binaries are not yet published.</p>
 </div>
 </div>
 </div>
@@ -1718,20 +1814,27 @@
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>python<span class="w"> </span>run_rflect.py
 </code></pre></div>
+<p>After <code>pip install -e .</code> the same GUI is also the <code>rflect</code> console script.</p>
 <h2 id="developer-install">Developer install<a class="headerlink" href="#developer-install" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-dev.txt
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w">            </span><span class="c1"># 450+ tests</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pyinstaller<span class="w"> </span>RFlect.spec<span class="w">            </span><span class="c1"># build exe</span>
 </code></pre></div>
-<p>The repo also ships an editable install entry point through <code>pyproject.toml</code>:</p>
+<p><code>requirements-dev.txt</code> already includes the MCP SDK (<code>mcp&gt;=1.0.0,&lt;2.0.0</code>) so MCP integration tests can collect.</p>
+<p>The repo also ships an editable install through <code>pyproject.toml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[mcp]"</span><span class="w">            </span><span class="c1"># MCP extra</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[instruments]"</span><span class="w">    </span><span class="c1"># optional pyvisa / pyserial</span>
 </code></pre></div>
 <h2 id="mcp-server-optional">MCP server (optional)<a class="headerlink" href="#mcp-server-optional" title="Permanent link">&para;</a></h2>
-<p>If you want Claude Code or Cline to drive RFlect, install the MCP layer too:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd</span><span class="w"> </span>rflect-mcp
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<p>If you want Claude Code or Cline to drive RFlect:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[mcp]"</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>rflect-mcp/requirements.txt
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>python<span class="w"> </span>rflect-mcp/server.py
 </code></pre></div>
-<p>Configuration lives in your MCP client — see <a href="../../mcp/installation/">MCP installation</a>.</p>
+<p>Configuration lives in your MCP client. See <a href="../../mcp/installation/">MCP installation</a>.</p>
+<h2 id="example-data">Example data<a class="headerlink" href="#example-data" title="Permanent link">&para;</a></h2>
+<p>This repo does not ship customer measurements. Synthetic cal-drift files live in <code>tests/fixtures/cal_drift/</code>. Point optional real-file tests at a local folder with <code>RFLECT_TEST_DATA_DIR</code>. Example plot screenshots are in <code>assets/</code> at the repo root.</p>
 <h2 id="sanity-check">Sanity check<a class="headerlink" href="#sanity-check" title="Permanent link">&para;</a></h2>
 <p>After install, launch the GUI:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>run_rflect.py
