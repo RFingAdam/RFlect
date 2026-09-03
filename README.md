@@ -5,180 +5,221 @@
 <h1 align="center">RFlect</h1>
 
 <p align="center">
-  <strong>The RF engineer's toolkit for antenna measurement visualization and analysis.</strong>
+  <strong>Antenna measurement visualization and analysis for RF engineers.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-6.1.0-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-orange" alt="License"></a>
-  <img src="https://img.shields.io/badge/tests-450-brightgreen" alt="Tests">
   <a href="https://rfingadam.github.io/RFlect/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs"></a>
 </p>
 
 <p align="center">
   <a href="https://rfingadam.github.io/RFlect/">Documentation</a> &middot;
   <a href="https://rfingadam.github.io/RFlect/getting-started/quickstart/">Quickstart</a> &middot;
-  <a href="https://rfingadam.github.io/RFlect/mcp/recipes/">MCP Recipes</a>
+  <a href="https://rfingadam.github.io/RFlect/mcp/overview/">MCP</a>
 </p>
 
 ---
 
-RFlect takes raw antenna measurement data and turns it into publication-ready 2D/3D radiation pattern plots, TRP calculations, polarization analysis, and efficiency metrics. All validated against IEEE-standard methods. Whether you're characterizing a BLE chip antenna or qualifying a cellular array, RFlect handles the heavy lifting so you can focus on the engineering.
+RFlect turns antenna-chamber and VNA files into 2D/3D radiation-pattern plots, TRP and gain metrics, polarization analysis, UWB characterization, and DOCX reports. Use the desktop GUI for interactive review, or drive the same math over MCP from Claude Code, Cline, or any stdio MCP client.
+
+It is analysis software, not a certified test laboratory. TRP uses the CTIA / IEEE-149 discrete solid-angle form; that is a calculation convention, not lab accreditation or product certification.
 
 <p align="center">
-  <img src="./assets/scan_type_selection.png" alt="RFlect Main Window" width="680">
+  <img src="./assets/scan_type_selection.png" alt="RFlect scan-type selector" width="680">
 </p>
 
-## New in v4.1
+## Entrypoints
 
-- **Advanced RF analysis suite**: 5 new analysis modules: Link Budget/Range Estimation (Friis with protocol presets), Indoor Propagation (ITU-R P.1238/P.2040), Multipath Fading (Rayleigh/Rician CDF + Monte-Carlo), Enhanced MIMO (capacity curves, combining gain, MEG), and Wearable/Medical (body-worn patterns, dense device SINR, SAR screening).
-- **Professional 3D antenna plots**: DUT orientation triad (X=green, Y=red, Z=blue) matching the physical chamber marker, equal aspect ratio, box-edge labels that are never occluded, and consistent layout across all four 3D routines.
-- **Maritime/horizon antenna plots**: 5 plot types for on-water antenna analysis: Mercator heatmap, conical cuts, gain-over-azimuth, horizon statistics table, and 3D pattern with horizon band highlighting.
-- **Smart presets**: Protocol presets (BLE, WiFi, LoRa, Zigbee, LTE, NB-IoT) and environment presets (Office, Hospital, Industrial, etc.) auto-populate analysis parameters.
-- **Non-blocking update checker**: Startup update check runs in a background thread instead of blocking the GUI.
-- **448 tests**: Up from 346 in v4.0, with 55+ new tests for advanced analysis, maritime plots, and batch processing.
+| How you work | Command |
+|--------------|---------|
+| **GUI** | `python run_rflect.py` (or `rflect` after `pip install -e .`) |
+| **MCP server** | `python rflect-mcp/server.py` (stdio; usually launched by your MCP client) |
+| **Tests** | `python -m pytest tests/` |
 
-## New in v4.0
+There is no separate analysis CLI. Batch work goes through the GUI Tools menu or MCP (`process_folder`, `bulk_process_passive`, `bulk_process_active`). See [CLI reference](https://rfingadam.github.io/RFlect/reference/cli/).
 
-Ground-up overhaul from v3.x: new GUI, new analysis engine, new integrations, and corrected RF math throughout.
+## Install
 
-- **UWB analysis**: System Fidelity Factor via cross-correlation, phase reconstruction from group delay, Touchstone .s2p support, transfer function extraction, and impulse response characterization.
-- **Modern dark GUI**: Complete visual redesign with dark ttk theme, color-coded log output, keyboard shortcuts (`Ctrl+R`/`F5`), and WCAG AA contrast compliance.
-- **Zero-dependency, deterministic**. No LLM, no API key, no subscription (the in-app AI was removed in v5.0.0). Every metric is computed and reproducible.
-- **MCP server with 41 tools**: Programmatic antenna analysis for Claude Code and other MCP clients, including comparison, S11/VSWR, group delay, link budget, MIMO diversity, active-cal, and UWB characterization. Cross-platform (Linux/macOS/Windows).
+**Windows:** `RFlect_Installer_vX.X.X.exe` or portable `RFlect_vX.X.X.exe` from [Releases](https://github.com/RFingAdam/RFlect/releases).
 
-See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog.
+**Linux:** `RFlect_vX.X.X_linux` from the same page; `chmod +x` and run. Pre-built macOS binaries are not published; build from source.
 
-## Quick Start
+**From source** (Python 3.11+; Tk/tkinter required for the GUI):
 
-**Windows:** Grab `RFlect_Installer_vX.X.X.exe` or the standalone `RFlect_vX.X.X.exe` from the [latest release](https://github.com/RFingAdam/RFlect/releases).
-
-**Linux:** Download `RFlect_vX.X.X_linux` from the [latest release](https://github.com/RFingAdam/RFlect/releases), then `chmod +x` and run.
-
-**From source:**
 ```bash
 git clone https://github.com/RFingAdam/RFlect.git
 cd RFlect
-python -m venv .venv && source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python run_rflect.py
 ```
 
-## What It Handles
+Optional extras from `pyproject.toml`:
 
-| Scan Type | Input Format | What You Get |
-|-----------|-------------|----------|
-| **Active TRP** | WTL `.txt` (V5.02/V5.03) | TRP, H/V power, 2D/3D radiation patterns |
-| **Passive Gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
-| **S-Parameters** | Copper Mountain `.csv` | S11, VSWR, return loss with limit lines |
-| **Group Delay** | 2-port VNA `.csv`, Touchstone `.s2p` | Group delay vs frequency, peak-to-peak, distance error |
-| **UWB Analysis** | S2VNA `.csv`, Touchstone `.s2p` | SFF, transfer function, impulse response, impedance BW |
-| **CST Far-Field** | `.txt` simulation files | ECC, fidelity factor, group delay |
+```bash
+pip install -e ".[mcp]"          # MCP server (mcp SDK)
+pip install -e ".[instruments]"  # live VNA/positioner (pyvisa, pyserial)
+pip install -r requirements-dev.txt
+```
 
-## Usage
+MCP also needs PyYAML (`pip install -r rflect-mcp/requirements.txt` if you are not using the `mcp` extra). Details: [MCP installation](https://rfingadam.github.io/RFlect/mcp/installation/).
 
-1. **Select scan type**: Active, Passive, or VNA
-2. **Adjust settings**: cable loss, limit lines, frequency range, 3D scale
-3. **Import your files** via the Import button or `Ctrl+O`
-4. **View results**: plots render automatically; hit `Ctrl+R` to reprocess
+## Example data and plot outputs
 
-<p align="center">
-  <img src="./assets/passive_settings.png" alt="Passive Settings Dialog" width="500">
-</p>
+This public repo does **not** ship customer chamber captures.
+
+| What | Where | What it is |
+|------|--------|------------|
+| GUI / plot screenshots | [`assets/`](assets/) | Representative outputs (scan selector, 1D/2D/3D patterns, VNA, group delay). Not a measurement dataset. |
+| Synthetic cal-drift fixtures | [`tests/fixtures/cal_drift/`](tests/fixtures/cal_drift/) | Small hand-written TRP-cal files for tests. |
+| Optional local measurements | `RFLECT_TEST_DATA_DIR` | Point integration tests at *your* WTL/VNA files. Skipped in CI if unset. |
+
+Most unit tests use in-memory synthetic grids (`tests/conftest.py`). Golden-reference tests lock TRP math against analytic oracles (isotropic EIRP integrates back to itself), not against a certified lab report.
 
 <details>
-<summary><strong>Example Results (click to expand)</strong></summary>
+<summary><strong>Example plot outputs (click to expand)</strong></summary>
 
-### Passive Measurements
+### Passive
 
-**G&D Comparison**: Efficiency, gain, and directivity across multiple scans:
+**G&amp;D comparison** — efficiency, gain, and directivity across scans:
 ![G&D Results](./assets/python_1d_results_g&d.png)
 
-**HPOL/VPOL 1D**: Efficiency and total gain vs frequency:
+**HPOL/VPOL 1D** — efficiency and total gain vs frequency:
 ![Passive 1D](./assets/python_1d_results.png)
 
-**2D Azimuth Cuts**: Gain pattern across theta angles:
+**2D azimuth cuts**:
 ![Passive 2D](./assets/python_passive_2d_results_azimuth.png)
 
-**Datasheet Plots**: Peak gain per polarization, polar cuts at key planes:
+**Datasheet-style plots**:
 ![Datasheet 1D](./assets/python_1d_results_datasheet.png)
 ![Datasheet 2D](./assets/python_2d_results_datasheet.png)
 
-**3D Radiation Patterns**: Total gain with turbo colormap:
+**3D radiation pattern** (turbo colormap):
 ![Passive 3D](./assets/python_passive_3d_results.png)
 
-### Active TRP Measurements
+### Active TRP
 
 ![Active 2D](./assets/python_active_2d_results_azimuth.png)
 ![Active Datasheet](./assets/python_active_2d_results_datasheet.png)
 
-### VNA / S-Parameters
+### VNA / S-parameters and group delay
 
 ![VNA Results](./assets/python_vna_results.png)
-
-**Group Delay Analysis:**
 ![Group Delay](./assets/python_groupdelay_results.png)
 
 </details>
 
-## Key Features
+## What it handles
 
-- **Polarization Analysis**: Axial ratio, tilt angle, XPD, and polarization sense (LHCP/RHCP) from HPOL/VPOL data with interactive and batch export modes
-- **Batch Processing**: Process an entire folder of HPOL/VPOL pairs or TRP files automatically, with organized per-pair output
-- **Report Generation**: Export DOCX reports with embedded plots, measurement summaries, and deterministic data-driven prose (or narrative authored by the driving MCP agent)
-- **3D Visualization**: Perceptually uniform turbo colormap, transparent panes, coordinate axes, and manual or auto Z-axis scaling
+| Scan type | Input | Output |
+|-----------|--------|--------|
+| **Active TRP** | WTL `.txt` (V5.02 / V5.03) | TRP, H/V power, 2D/3D patterns |
+| **Passive gain** | WTL HPOL + VPOL `.txt` pairs | Total/H/V gain, efficiency, directivity |
+| **S-parameters** | Copper Mountain / generic VNA `.csv`, Touchstone `.s2p` | S11, VSWR, return loss, impedance bandwidth |
+| **Group delay** | 2-port VNA `.csv`, `.s2p` | Group delay vs frequency, peak-to-peak, distance error |
+| **UWB** | S2VNA `.csv`, `.s2p` | SFF, transfer function, impulse response |
+| **CST far-field** | CST `.txt` exports | ECC, fidelity factor, group delay |
+| **Folder of the above** | Directory | One-call MCP `process_folder` (passive / active / cal-drift / UWB) |
 
-## Zero-dependency, MCP-driven (v5.0.0)
+Formats: [file-formats](https://rfingadam.github.io/RFlect/hardware/file-formats/). Measurement matrix: [measurement types](https://rfingadam.github.io/RFlect/reference/measurement-types/).
 
-RFlect makes **no outbound LLM/API calls and needs no API key or subscription.** It is a deterministic RF analysis + rendering toolkit. When driven over MCP, the AI agent *is* the LLM: it calls RFlect's tools for data and. If a report needs narrative prose: authors it itself and passes it to `generate_report`. Everything RFlect computes is reproducible, not generated.
+## GUI usage
 
-See [MCP_STATUS.md](MCP_STATUS.md) for the full tool inventory.
+1. **Select scan type**: Active, Passive, or VNA (VSWR / S-parameters).
+2. **Adjust settings**: cable loss, limit lines, frequency range, 3D scale.
+3. **Import files** (`Ctrl+O` or Import). For passive, pick the HPOL file; RFlect matches VPOL by filename suffix.
+4. **View results**: plots render automatically; `Ctrl+R` / `F5` reprocess.
 
-## MCP Server
+<p align="center">
+  <img src="./assets/passive_settings.png" alt="Passive settings dialog" width="500">
+</p>
 
-RFlect ships with an [MCP](https://modelcontextprotocol.io/) server: 41 tools that let an AI agent like Claude Code import your measurements, run analysis, compare antennas, estimate link budgets, generate reports, and perform UWB/MIMO characterization programmatically. No GUI required.
+Also in the GUI: polarization (AR / tilt / XPD / LHCP-RHCP), batch folder processing, maritime/horizon plots, advanced RF dialogs (link budget, indoor, fading, MIMO, wearable), cal-drift, and DOCX export.
 
-See [rflect-mcp/README.md](rflect-mcp/README.md) for setup and the full tool reference.
+## MCP (61 tools)
 
-## Project Structure
+RFlect makes **no outbound LLM calls** and needs no API key. The MCP agent *is* the LLM: it calls RFlect for numbers and plots, and may pass narrative into `generate_report`.
+
+```json
+{
+  "mcpServers": {
+    "rflect": {
+      "command": "/absolute/path/to/RFlect/.venv/bin/python",
+      "args": ["/absolute/path/to/RFlect/rflect-mcp/server.py"]
+    }
+  }
+}
+```
+
+On Windows use `.venv/Scripts/python.exe` and forward slashes. Then, for example:
+
+```
+Process every passive pair in /path/to/wifi_antenna and generate a report.
+```
+
+| Area | Examples |
+|------|----------|
+| Import & bulk | `import_passive_pair`, `import_active_processed`, `process_folder` |
+| Pattern analysis | `analyze_pattern`, `get_gain_statistics`, `compare_polarizations` |
+| Reports | `generate_report`, `preview_report` |
+| UWB | `analyze_uwb_channel`, `calculate_sff_from_files` |
+| Cal drift | `cal_drift_ingest`, `cal_drift_compare` |
+| RF methods | `synthesize_array`, `near_field_to_far_field`, `calculate_tis` |
+| VNA / S-params | `analyze_s11`, `analyze_group_delay` |
+| Link / MIMO | `estimate_link_budget`, `analyze_mimo_diversity` |
+| Compliance | `check_spec_compliance`, `compute_uncertainty_budget` |
+| Instruments | `vna_read_trace`, `positioner_scan_grid` (in-memory mock unless hardware extras are installed) |
+
+Full inventory: [MCP_STATUS.md](MCP_STATUS.md) and [tools reference](https://rfingadam.github.io/RFlect/mcp/tools-reference/). Setup: [rflect-mcp/README.md](rflect-mcp/README.md).
+
+## Current release (v6.1.0)
+
+v6.1.0 is a 3D-rendering and Windows-packaging fix on top of the v6.0 analysis/MCP expansion (61 tools). Highlights of the current tree:
+
+- Desktop GUI (dark ttk theme) plus MCP for headless/agent workflows
+- 3D patterns with equal aspect ratio and a DUT orientation triad
+- Maritime/horizon plots, cal-drift tracking, UWB SFF
+- Optional SCPI VNA / positioner tools (mock without hardware)
+
+Full notes: [CHANGELOG.md](CHANGELOG.md), [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
+## Project structure
 
 ```
 RFlect/
-  plot_antenna/           # Core application
-    gui/                  #   GUI mixins (callbacks, tools, dialogs, AI chat)
-    ai_analysis.py        #   RF analysis engine (gain stats, pattern, polarization)
-    calculations.py       #   TRP, passive gain, efficiency computations
-    file_utils.py         #   WTL/VNA file parsers
-    plotting.py           #   2D/3D matplotlib rendering
-    uwb_analysis.py       #   UWB analysis (SFF, transfer function, Touchstone)
-    uwb_plotting.py       #   UWB-specific plot functions
-    llm_provider.py       #   Multi-provider LLM abstraction
-    api_keys.py           #   Secure key storage (keyring + Fernet)
-    save.py               #   DOCX report generation
-  rflect-mcp/             # MCP server for programmatic access
-  tests/                  # 450 tests (pytest)
+  plot_antenna/              # Core library + GUI
+    gui/                     # Tk window, dialogs, tools, callbacks
+    analysis_engine.py       # Gain stats, pattern, polarization
+    calculations.py          # TRP, passive gain, efficiency
+    rf_methods.py            # Array factor, NF2FF, TIS, time-gating, …
+    file_utils.py            # WTL / VNA / Touchstone parsers
+    plotting.py              # 2D/3D matplotlib
+    uwb_analysis.py          # SFF, transfer function, impulse response
+    cal_drift.py             # Calibration-history tracker
+    save.py                  # DOCX reports
+  rflect-mcp/                # MCP server (61 tools)
+  tests/                     # pytest (synthetic fixtures; optional local real files)
+  assets/                    # Logo + example plot screenshots
+  run_rflect.py              # GUI launcher
 ```
 
 ## Development
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/                    # run tests
-pyinstaller RFlect.spec                    # build exe
+python -m pytest tests/
+pyinstaller RFlect.spec
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, architecture details, and how to get involved.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-[AGPL-3.0-or-later](LICENSE)
+[AGPL-3.0-or-later](LICENSE). There is no standing commercial-license offer.
 
-Relicensed from GPL-3.0 to AGPL-3.0-or-later to match the rest of the RF/EMC engineering toolkit's licensing policy. See [eng-mcp-suite's licensing summary](https://github.com/RFingAdam/eng-mcp-suite/blob/main/LICENSE_SUMMARY.md) for the rationale.
+The project name and logo files are **not** part of the licensed work. The licence grants no permission to use them except as needed to describe the origin of the work.
 
-## Brand assets
-
-The project name and the logo files in this repository are not part of the licensed
-work. The licence above grants no permission to use them, except as needed to describe
-the origin of the work.
-
+Vendor names (WTL, Copper Mountain, CST, CTIA, and similar) identify file formats and methods RFlect talks to. That is nominative use, not affiliation or endorsement.

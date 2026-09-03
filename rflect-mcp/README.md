@@ -32,17 +32,15 @@ project's virtual-env Python:
 
 On Windows, use `…/.venv/Scripts/python.exe` and forward slashes in the JSON.
 
-Restart Claude Code and you'll have access to **41** antenna-analysis tools.
+Restart Claude Code and you'll have access to **61** antenna-analysis tools.
 See [Quick-Start Workflow](#quick-start-workflow) below.
 
 ## Installation
 
 ```bash
-# From the rflect-mcp directory
-pip install -r requirements.txt
-
-# Also install RFlect from parent directory
-pip install -e ..
+# From the RFlect repo root
+pip install -e ".[mcp]"
+pip install -r rflect-mcp/requirements.txt   # mcp SDK + PyYAML + python-docx
 ```
 
 ## Configuration
@@ -87,15 +85,12 @@ Most MCP-compatible clients use similar JSON configuration. Consult your client'
 
 ## Available Tools
 
-The RFlect MCP server provides **41 tools across nine categories**. The most
-commonly used groups are listed below; see the
+The RFlect MCP server provides **61 tools**. The most commonly used groups are
+listed below; see [MCP_STATUS.md](../MCP_STATUS.md) and the
 [full Tools Reference](https://rfingadam.github.io/RFlect/mcp/tools-reference/)
-for every tool, including `compare_antennas`, `analyze_s11`,
-`analyze_group_delay`, `estimate_link_budget`, `analyze_mimo_diversity`,
-`generate_active_cal`, `analyze_iperf_angle_sweep`, the cal-drift suite, and
-`process_folder`.
+for the rest (RF methods, compliance, uncertainty, instruments, cal-drift, UWB).
 
-### Import Tools (6 tools)
+### Import Tools (7 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -105,10 +100,11 @@ for every tool, including `compare_antennas`, `analyze_s11`,
 | `import_active_processed` | Import and process active TRP file with power calculations | `file_path` (str), `name` (optional str) |
 | `list_loaded_data` | List all currently loaded measurements with frequencies | None |
 | `clear_data` | Clear all loaded data from memory | None |
+| `get_measurement_details` | Inspect one loaded measurement | `measurement_name` (str) |
 
 **Typical usage**: Import data before analysis or report generation. For passive HPOL/VPOL data, `import_passive_pair` is recommended as it runs the full calculation pipeline during import.
 
-### Analysis Tools (5 tools)
+### Analysis Tools (7 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -117,6 +113,8 @@ for every tool, including `compare_antennas`, `analyze_s11`,
 | `get_gain_statistics` | Calculate min/max/average gain statistics | `frequency` (float) |
 | `compare_polarizations` | Compare HPOL vs VPOL at a frequency | `frequency` (float) |
 | `get_all_analysis` | Run complete analysis suite for a frequency | `frequency` (float) |
+| `extrapolate_to_frequency` | Estimate metrics at an unmeasured frequency | `hpol_file`, `vpol_file`, `target_frequency` (MHz) |
+| `get_horizon_statistics` | Horizon-plane / maritime-band stats | `frequency` (float) |
 
 **Typical usage**: Analyze patterns to understand antenna performance before generating reports.
 
@@ -130,7 +128,7 @@ for every tool, including `compare_antennas`, `analyze_s11`,
 
 **Typical usage**: Generate professional reports after importing and analyzing data.
 
-### Bulk Processing Tools (6 tools)
+### Bulk Processing Tools (5 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -139,7 +137,6 @@ for every tool, including `compare_antennas`, `analyze_s11`,
 | `bulk_process_active` | Batch process TRP active measurement files | `folder_path` (str) |
 | `validate_file_pair` | Validate that HPOL and VPOL files match | `hpol_path` (str), `vpol_path` (str) |
 | `convert_to_cst` | Convert measurement data to CST .ffs format | `hpol_path` (str), `vpol_path` (str), `vswr_path` (optional), `frequency` (float) |
-| `batch_analyze_frequencies` | Analyze all frequencies in loaded data | None |
 
 **Typical usage**: Process multiple antennas or frequencies in one operation.
 
@@ -355,7 +352,7 @@ above).
 **Cause**: Unsupported file format or corrupted measurement file.
 
 **Solution**:
-- Ensure files are in supported format (RFlect native, SATIMO, Orbit FR, etc.)
+- Ensure files are in a supported format (WTL chamber `.txt`, Touchstone `.s2p`, S2VNA / generic VNA `.csv`, CST far-field `.txt`)
 - Use `list_measurement_files` to validate folder contents before import
 - Check file encoding (should be UTF-8 or ASCII)
 

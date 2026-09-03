@@ -22,10 +22,8 @@ This license explicitly includes the right for the Maintainer to
 **relicense** your Contribution: alone or as part of the Project: under
 license terms different from the Project's current outbound license,
 including a proprietary or commercial license, at the Maintainer's sole
-discretion. This is the specific right that lets the Maintainer offer
-paid commercial licenses to third parties who don't want the Project's
-default copyleft obligations, while keeping the Project itself free and
-open under its stated license for everyone else.
+discretion. That keeps relicensing possible if the outbound license ever
+changes. There is no standing public commercial-license offer.
 
 ## 2. Patent license
 
@@ -79,5 +77,4 @@ Maintainer may introduce a signature-tracking step (e.g. a CLA-assistant
 bot) later without changing these terms retroactively for Contributions
 already accepted.
 
-Questions about this Agreement: open an issue, or see the contact in
-`COMMERCIAL.md`.
+Questions about this Agreement: open an issue on the repository.

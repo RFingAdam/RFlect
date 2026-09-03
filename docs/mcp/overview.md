@@ -3,33 +3,23 @@
 RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so an AI agent (Claude Code, Cline, Continue, etc.) can drive RFlect programmatically. No GUI required.
 
 !!! tip "RFlect has no LLM of its own"
-    As of v5.0.0 RFlect makes **no outbound LLM/API calls and needs no API key or subscription.** It is a deterministic RF analysis + rendering toolkit. The driving MCP agent *is* the LLM: it calls RFlect's tools for data, and. If you want narrative prose in a report: authors it itself and passes it to `generate_report` via the `narrative` parameter.
+    As of v5.0.0 RFlect makes **no outbound LLM/API calls and needs no API key or subscription.** It is a deterministic RF analysis + rendering toolkit. The driving MCP agent *is* the LLM: it calls RFlect's tools for data. If you want narrative prose in a report, the agent authors it and passes it to `generate_report` via the `narrative` parameter.
 
 ## What you can do over MCP
 
 - Import passive HPOL/VPOL pairs, active TRP files, S-parameter sweeps
 - Run analysis: HPBW, F/B ratio, gain stats, polarization, UWB SFF, impedance bandwidth, S11/VSWR, group delay
 - Compare antennas head-to-head; estimate link budget / range; compute MIMO diversity
-- Generate branded DOCX reports (deterministic prose by default, or agent-authored)
+- Generate DOCX reports (deterministic prose by default, or agent-authored)
 - Generate active chamber calibration files and track calibration drift across time
 - **Run a standard procedure on a folder with a single call** via [`process_folder`](recipes.md): auto-detects intent, runs the right workflow, optionally generates a report
+- Optional instrument control (VNA / positioner) against an in-memory mock, or live hardware if the `instruments` extra is installed
 
 ## Tool count
 
-41 tools across 9 categories. See [Tools Reference](tools-reference.md) for the full list with signatures.
+**61 tools.** See [Tools Reference](tools-reference.md) for the list with signatures, and [MCP_STATUS.md](https://github.com/RFingAdam/RFlect/blob/main/MCP_STATUS.md) for the category table.
 
-| Category          | Count |
-|-------------------|------:|
-| Import            | 6     |
-| Analysis          | 5     |
-| Reports           | 3     |
-| Bulk              | 5     |
-| UWB               | 3     |
-| Cal Drift         | 8     |
-| Orchestration     | 1     |
-| Validation        | 1     |
-| Analysis (RF)     | 6     |
-| Misc              | 3     |
+Smoke check after install: `tools: 61` from the snippet in [Installation](installation.md#3-verify).
 
 ## Why an orchestrator?
 

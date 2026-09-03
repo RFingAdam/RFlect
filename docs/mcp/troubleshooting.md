@@ -95,20 +95,7 @@ Each `TRP Cal *.txt` is content-hashed (SHA-256) on ingest. Re-running `cal_drif
 
 ## Tool count check
 
-```bash
-python -c "
-import sys, os
-sys.path.insert(0, os.path.abspath('rflect-mcp'))
-from mcp.server.fastmcp import FastMCP
-from tools.import_tools import register_import_tools
-# ... import the rest ...
-m = FastMCP('t')
-# ... register them ...
-print(len(m._tool_manager._tools))
-"
-```
-
-Should print `34` on v4.2.0+.
+The easiest check is the same snippet as [Installation → Verify](installation.md#3-verify), which prints `tools: 61`.
 
 ## Logs
 

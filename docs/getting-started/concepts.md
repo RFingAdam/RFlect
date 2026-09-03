@@ -35,11 +35,11 @@ Derived metrics:
 
 ## TRP: Total Radiated Power
 
-IEEE-standard solid-angle integration with $\sin\theta$ Jacobian:
+IEEE-149 / CTIA discrete solid-angle integration with $\sin\theta$ Jacobian:
 
 $$\text{TRP} = \frac{1}{4\pi} \int_0^{2\pi}\!\int_0^{\pi} P(\theta,\phi)\,\sin\theta\,d\theta\,d\phi$$
 
-RFlect's TRP is verified to within 0.002 dB of the chamber's own report on reference measurements.
+RFlect implements that convention on **EIRP-per-angle** chamber data. Golden-reference tests lock the isotropic oracle (constant EIRP integrates back to itself). That is a math check, not laboratory accreditation or a certified measurement report.
 
 ## Efficiency vs directivity
 

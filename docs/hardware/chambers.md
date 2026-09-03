@@ -29,9 +29,9 @@ Most modern chambers can produce this format: either natively or via a post-proc
 
 Auto-detection in [`process_folder`](../mcp/recipes.md) relies on these patterns.
 
-## Reference chamber: Howland 3100
+## Reference chamber: Howland 3100 / WTL files
 
-The 3100 is the system RFlect is verified against. RFlect's TRP computation agrees with the chamber's own report to within 0.002 dB on reference measurements (see [TRP concept](../getting-started/concepts.md#trp-total-radiated-power)).
+The Howland Company 3100 + WTL `.txt` export is the **primary parser target** (V5.02 / V5.03). TRP math is checked against analytic golden-reference oracles (see [TRP concept](../getting-started/concepts.md#trp-total-radiated-power)), not as a certified-lab comparison.
 
 If you have a different chamber and it exports the WTL format directly (or you can convert), RFlect will work. Open a GitHub issue if you hit a parser edge case for a non-WTL export.
 

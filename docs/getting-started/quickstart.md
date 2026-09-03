@@ -34,7 +34,7 @@ Plots render automatically. `Ctrl+R` (or `F5`) reprocesses with current settings
 ## 5. Save / export
 
 - **File → Save Plots**: PNG export of every visible figure (300 DPI)
-- **File → Generate Report (DOCX)**: embeds plots, gain tables, and optional AI executive summary
+- **File → Generate Report (DOCX)**: embeds plots, gain tables, and deterministic (or agent-supplied) prose
 
 ## Driving RFlect from Claude (MCP)
 

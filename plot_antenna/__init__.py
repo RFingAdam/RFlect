@@ -11,14 +11,14 @@ Features:
 - 2D and 3D radiation pattern visualization
 - TRP (Total Radiated Power) calculations
 - Polarization analysis (Axial Ratio, Tilt Angle, XPD)
-- AI-powered analysis with OpenAI integration
 - Batch processing capabilities
 - Professional report generation
+- MCP server for programmatic analysis
 """
 
 __version__ = "6.1.0"
 __author__ = "Adam"
-__license__ = "GPL-3.0"
+__license__ = "AGPL-3.0-or-later"
 
 from .main import main
 

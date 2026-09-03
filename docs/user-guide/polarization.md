@@ -51,7 +51,7 @@ After a passive scan loads, the **Polarization** tab shows:
 compare_polarizations(frequency=2450.0)
 ```
 
-Returns AR, tilt, XPD, and sense stats. See `AntennaAnalyzer.compare_polarizations` in `plot_antenna/ai_analysis.py`.
+Returns AR, tilt, XPD, and sense stats. See `AntennaAnalyzer.compare_polarizations` in `plot_antenna/analysis_engine.py`.
 
 ## See also
 
