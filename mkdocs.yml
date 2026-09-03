@@ -1,5 +1,5 @@
 site_name: RFlect
-site_description: The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required.
+site_description: "The RF engineer's deterministic toolkit for antenna-chamber measurement visualization and analysis: MCP-driven, no API key required."
 site_url: https://rfingadam.github.io/RFlect/
 repo_url: https://github.com/RFingAdam/RFlect
 repo_name: RFingAdam/RFlect
