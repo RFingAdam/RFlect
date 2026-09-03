@@ -103,6 +103,7 @@ nav:
       - Overview: mcp/overview.md
       - Installation: mcp/installation.md
       - Tools Reference: mcp/tools-reference.md
+      - Status: MCP_STATUS.md
       - Recipes: mcp/recipes.md
       - Troubleshooting: mcp/troubleshooting.md
   - Reference:
@@ -112,3 +113,4 @@ nav:
       - Glossary: reference/glossary.md
   - Changelog: changelog.md
   - Contributing: contributing.md
+  - CLA: CLA.md
