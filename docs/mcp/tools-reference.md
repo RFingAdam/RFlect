@@ -166,4 +166,4 @@ Install live hardware backends with `pip install -e ".[instruments]"`.
 
 ## Source of truth
 
-Every `register_*_tools` call in `rflect-mcp/server.py`. Inventory summary: [MCP_STATUS.md](../../MCP_STATUS.md).
+Every `register_*_tools` call in `rflect-mcp/server.py`. Inventory summary: [MCP_STATUS.md](../MCP_STATUS.md).
