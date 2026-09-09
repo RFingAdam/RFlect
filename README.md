@@ -84,10 +84,10 @@ Most unit tests use in-memory synthetic grids (`tests/conftest.py`). Golden-refe
 
 ### Passive
 
-**G&amp;D comparison** — efficiency, gain, and directivity across scans:
+**G&amp;D comparison** - efficiency, gain, and directivity across scans:
 ![G&D Results](./assets/python_1d_results_g&d.png)
 
-**HPOL/VPOL 1D** — efficiency and total gain vs frequency:
+**HPOL/VPOL 1D** - efficiency and total gain vs frequency:
 ![Passive 1D](./assets/python_1d_results.png)
 
 **2D azimuth cuts**:
@@ -139,7 +139,7 @@ Formats: [file-formats](https://rfingadam.github.io/RFlect/hardware/file-formats
 
 Also in the GUI: polarization (AR / tilt / XPD / LHCP-RHCP), batch folder processing, maritime/horizon plots, advanced RF dialogs (link budget, indoor, fading, MIMO, wearable), cal-drift, and DOCX export.
 
-## MCP (61 tools)
+## MCP (62 tools)
 
 RFlect makes **no outbound LLM calls** and needs no API key. The MCP agent *is* the LLM: it calls RFlect for numbers and plots, and may pass narrative into `generate_report`.
 
@@ -200,7 +200,7 @@ RFlect/
     uwb_analysis.py          # SFF, transfer function, impulse response
     cal_drift.py             # Calibration-history tracker
     save.py                  # DOCX reports
-  rflect-mcp/                # MCP server (61 tools)
+  rflect-mcp/                # MCP server (62 tools)
   tests/                     # pytest (synthetic fixtures; optional local real files)
   assets/                    # Logo + example plot screenshots
   run_rflect.py              # GUI launcher

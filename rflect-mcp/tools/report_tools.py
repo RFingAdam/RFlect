@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .import_tools import get_loaded_measurements, LoadedMeasurement
+from .summary_stats import active_summary
 from .analysis_tools import (
     _get_analyzer_for_measurement,
     get_gain_statistics,
@@ -31,6 +32,7 @@ class ReportOptions:
     frequencies: Optional[List[float]] = None  # None = all frequencies
     polarizations: List[str] = field(default_factory=lambda: ["total"])  # total, hpol, vpol
     measurements: Optional[List[str]] = None  # None = all loaded measurements
+    measurement_groups: Optional[Dict[str, str]] = None  # Loaded name to explicit DUT group
 
     # Plot filtering (key for managing complexity)
     include_2d_plots: bool = True
@@ -571,7 +573,6 @@ def _sort_images_by_frequency(img_paths: List[str]) -> List[str]:
 # Shared formatting helper (#36): single source of truth in plot_antenna.docx_helpers.
 from plot_antenna.docx_helpers import fmt_value as _fmt
 
-
 # ---------------------------------------------------------------------------
 # Classification Helpers
 # ---------------------------------------------------------------------------
@@ -744,19 +745,17 @@ def _build_executive_summary(
 
         highlights.append(line)
 
-    for name in active_names:
-        m = measurements[name]
-        data = m.data
-        trp = data.get("TRP_dBm")
-        h_trp = data.get("h_TRP_dBm")
-        v_trp = data.get("v_TRP_dBm")
-        freq = m.frequencies[0] if m.frequencies else 0
-
-        line = f"{name}: TRP = {_fmt(trp)} dBm at {_fmt(freq, '.0f')} MHz"
-        if h_trp is not None and v_trp is not None:
-            balance = abs(float(h_trp) - float(v_trp))
-            line += f" (H/V balance: {_fmt(balance, '.1f')} dB)"
-        highlights.append(line)
+    highlights.extend(
+        active_summary(
+            [measurements[name] for name in active_names],
+            opts.frequencies,
+            (
+                [opts.measurement_groups.get(name) for name in active_names]
+                if opts.measurement_groups is not None
+                else None
+            ),
+        )
+    )
 
     if highlights:
         paragraphs.append("Performance highlights: " + "; ".join(highlights) + ".")
