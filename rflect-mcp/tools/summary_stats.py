@@ -5,8 +5,17 @@ from collections import defaultdict
 
 
 def active_summary(measurements, frequencies=None, dut_ids=None):
+    if dut_ids is not None and len(dut_ids) != len(measurements):
+        raise ValueError("Provide one DUT group for each measurement")
+
+    raw_dut_ids = [
+        dut_ids[index] if dut_ids is not None else measurement.data.get("dut_id")
+        for index, measurement in enumerate(measurements)
+    ]
+    sorted_dut_ids = sorted({str(dut) for dut in raw_dut_ids if dut is not None})
+    dut_labels = {dut: f"DUT {index + 1}" for index, dut in enumerate(sorted_dut_ids)}
+
     groups = defaultdict(list)
-    dut_labels = {}
     missing = 0
     for index, measurement in enumerate(measurements):
         if len(measurement.frequencies) != 1:
@@ -22,12 +31,11 @@ def active_summary(measurements, frequencies=None, dut_ids=None):
         if not isinstance(value, (int, float)) or not math.isfinite(value):
             missing += 1
             continue
-        dut = dut_ids[index] if dut_ids is not None else measurement.data.get("dut_id")
+        dut = raw_dut_ids[index]
         if dut is None:
             label = "Unassigned DUT"
         else:
-            key = str(dut)
-            label = dut_labels.setdefault(key, f"DUT {len(dut_labels) + 1}")
+            label = dut_labels[str(dut)]
         groups[(label, frequency)].append(float(value))
     paragraphs = []
     for (label, frequency), values in sorted(groups.items()):

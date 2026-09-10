@@ -114,6 +114,22 @@ def test_summary_groups_twenty_files_without_leaking_names():
     assert "pass" not in summary.lower()
 
 
+def test_summary_dut_labels_are_independent_of_measurement_order():
+    measurements = [
+        LoadedMeasurement("", "active", [2450], {"TRP_dBm": value, "dut_id": dut})
+        for dut, value in [("z-device", 2.0), ("a-device", 1.0)]
+    ]
+    forward = active_summary(measurements)
+    reverse = active_summary(list(reversed(measurements)))
+    assert forward == reverse
+    assert "DUT 1 at 2450 MHz: 1 measurement(s), TRP 1.00 to 1.00 dBm" in " ".join(forward)
+
+
+def test_summary_rejects_incomplete_explicit_groups(measurements):
+    with pytest.raises(ValueError, match="one DUT group"):
+        active_summary(list(measurements.values()), dut_ids=["only-one"])
+
+
 def test_summary_excludes_nonfinite_trp_and_filters_frequency():
     measurements = [
         LoadedMeasurement("", "active", [freq], {"TRP_dBm": value})

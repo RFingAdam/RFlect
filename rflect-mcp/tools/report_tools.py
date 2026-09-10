@@ -1774,6 +1774,10 @@ CONTENT FILTERING:
 
 - measurements: Specific measurement files to include, or null for all
 
+- measurement_groups: Map loaded measurement names to explicit DUT groups
+  Example: {"capture_a": "device_a", "capture_b": "device_a"}
+  Reports display generic DUT numbers and do not expose these group identifiers.
+
 PLOT FILTERING (manages complexity):
 - include_2d_plots: true/false (default: true)
   Includes 2D azimuth/elevation pattern cuts
@@ -1855,6 +1859,8 @@ EXAMPLE - Full Report:
         Args:
             output_path: Path for the output DOCX file
             options: Report options (see get_report_options for details)
+                Use measurement_groups to map loaded names to explicit DUT groups
+                for grouped active TRP statistics.
             title: Custom report title (default: "Antenna Radiation Pattern Test Report")
             metadata: Dict with project_name, antenna_type, frequency_range, author, date
             narrative: Optional agent-authored prose to render verbatim:
