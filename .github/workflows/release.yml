@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -97,7 +101,7 @@ jobs:
         retention-days: 90
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, haven]
     steps:
     - uses: actions/checkout@v5
 
@@ -159,7 +163,7 @@ jobs:
 
   create-release:
     needs: [build-windows, build-linux]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, haven]
     steps:
     - uses: actions/checkout@v5
 

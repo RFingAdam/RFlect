@@ -1,3 +1,7 @@
+# The macOS and Windows lanes were dropped when CI moved to the homelab
+# runners: the pool is Linux x64 only. Whatever those lanes covered is
+# uncovered now -- said here rather than left silent. Restoring it needs a
+# Windows or macOS runner in the pool, not a change to this file.
 name: Tests
 
 # Opt into Node 24 for JS actions (silences the Node 20 deprecation).
@@ -10,13 +14,16 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    [self-hosted, Linux, X64, haven]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.11', '3.12']
 
     steps:
