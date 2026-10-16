@@ -20,7 +20,8 @@ concurrency:
 
 jobs:
   test:
-    [self-hosted, Linux, X64, haven]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Linux, X64, haven]
     strategy:
       fail-fast: false
       matrix:
@@ -53,16 +54,16 @@ jobs:
         pytest --cov=plot_antenna --cov-report=xml --cov-report=term -v
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.python-version == '3.11'
       uses: codecov/codecov-action@v5
       with:
         files: ./coverage.xml
         flags: unittests
-        name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+        name: codecov-linux-py${{ matrix.python-version }}
         fail_ci_if_error: false
 
     - name: Run linting (flake8)
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.python-version == '3.11'
       run: |
         # Stop the build if there are Python syntax errors or undefined names
         flake8 plot_antenna --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -70,6 +71,6 @@ jobs:
         flake8 plot_antenna --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
 
     - name: Check code formatting (black)
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.python-version == '3.11'
       run: |
         black --check --diff plot_antenna
