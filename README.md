@@ -65,6 +65,8 @@ pip install -e ".[instruments]"  # live VNA/positioner (pyvisa, pyserial)
 pip install -r requirements-dev.txt
 ```
 
+`rflect` is not published on PyPI; install it from GitHub.
+
 MCP also needs PyYAML (`pip install -r rflect-mcp/requirements.txt` if you are not using the `mcp` extra). Details: [MCP installation](https://rfingadam.github.io/RFlect/mcp/installation/).
 
 ## Example data and plot outputs

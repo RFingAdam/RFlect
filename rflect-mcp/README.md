@@ -376,7 +376,7 @@ The MCP server uses `threading.Lock` to protect the `_loaded_measurements` dicti
 python server.py
 
 # Test with MCP inspector
-npx @anthropic/mcp-inspector python server.py
+npx @modelcontextprotocol/inspector python server.py
 ```
 
 ## License
