@@ -66,9 +66,9 @@ instruments = [
     "pyvisa>=1.14.0",
     "pyserial>=3.5",
 ]
-# MCP server runtime. Install with `pip install rflect[mcp]`, then run the
-# server via `python rflect-mcp/server.py` (it imports plot_antenna from the
-# installed package). See docs/mcp/installation.md.
+# MCP server runtime. Install from a clone with `pip install -e ".[mcp]"`, then
+# run the server via `python rflect-mcp/server.py` (it imports plot_antenna from
+# the installed package). See docs/mcp/installation.md.
 mcp = [
     "mcp>=1.0.0,<2.0.0",
     "pyyaml>=6.0",
