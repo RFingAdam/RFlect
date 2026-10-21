@@ -1,7 +1,3 @@
-# The macOS and Windows lanes were dropped when CI moved to the homelab
-# runners: the pool is Linux x64 only. Whatever those lanes covered is
-# uncovered now -- said here rather than left silent. Restoring it needs a
-# Windows or macOS runner in the pool, not a change to this file.
 name: Tests
 
 # Opt into Node 24 for JS actions (silences the Node 20 deprecation).
@@ -14,17 +10,13 @@ on:
   pull_request:
     branches: [ main, dev ]
 
-concurrency:
-  group: tests-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, Linux, X64, haven]
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.11', '3.12']
 
     steps:
@@ -54,16 +46,16 @@ jobs:
         pytest --cov=plot_antenna --cov-report=xml --cov-report=term -v
 
     - name: Upload coverage to Codecov
-      if: matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: codecov/codecov-action@v5
       with:
         files: ./coverage.xml
         flags: unittests
-        name: codecov-linux-py${{ matrix.python-version }}
+        name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
         fail_ci_if_error: false
 
     - name: Run linting (flake8)
-      if: matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         # Stop the build if there are Python syntax errors or undefined names
         flake8 plot_antenna --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -71,6 +63,6 @@ jobs:
         flake8 plot_antenna --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
 
     - name: Check code formatting (black)
-      if: matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         black --check --diff plot_antenna
