@@ -95,7 +95,7 @@ Each `TRP Cal *.txt` is content-hashed (SHA-256) on ingest. Re-running `cal_drif
 
 ## Tool count check
 
-The easiest check is the same snippet as [Installation → Verify](installation.md#3-verify), which prints `tools: 61`.
+The easiest check is the same snippet as [Installation → Verify](installation.md#3-verify), which prints `tools: 62`.
 
 ## Logs
 

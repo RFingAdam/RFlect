@@ -17,9 +17,9 @@ RFlect ships a [Model Context Protocol](https://modelcontextprotocol.io/) server
 
 ## Tool count
 
-**61 tools.** See [Tools Reference](tools-reference.md) for the list with signatures, and [MCP_STATUS.md](../MCP_STATUS.md) for the category table.
+**62 tools.** See [Tools Reference](tools-reference.md) for the list with signatures, and [MCP_STATUS.md](../MCP_STATUS.md) for the category table.
 
-Smoke check after install: `tools: 61` from the snippet in [Installation](installation.md#3-verify).
+Smoke check after install: `tools: 62` from the snippet in [Installation](installation.md#3-verify).
 
 ## Why an orchestrator?
 

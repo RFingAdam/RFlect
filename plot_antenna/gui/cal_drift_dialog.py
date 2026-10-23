@@ -111,7 +111,7 @@ class CalDriftDialog:
         frame = ttk.Frame(parent)
         parent.add(frame, weight=1)
 
-        self.sel_var = tk.StringVar(value="Baseline::   Current: —")
+        self.sel_var = tk.StringVar(value="Baseline::   Current: -")
         ttk.Label(frame, textvariable=self.sel_var).pack(anchor="w", padx=4, pady=4)
 
         self.notebook = ttk.Notebook(frame)
@@ -238,8 +238,8 @@ class CalDriftDialog:
             self.baseline_run_id = run_id
         else:
             self.current_run_id = run_id
-        b_short = (self.baseline_run_id or "—")[:12]
-        c_short = (self.current_run_id or "—")[:12]
+        b_short = (self.baseline_run_id or "-")[:12]
+        c_short = (self.current_run_id or "-")[:12]
         self.sel_var.set(f"Baseline: {b_short}   Current: {c_short}")
         self._refresh_runs()
         # Keep selections on screen

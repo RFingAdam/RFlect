@@ -91,6 +91,7 @@ nav:
       - Instruments: hardware/instruments.md
   - User Guide:
       - Active TRP: user-guide/active-trp.md
+      - Active Comparison: user-guide/active-comparison.md
       - Passive Gain: user-guide/passive-gain.md
       - S11 / Impedance: user-guide/s11-impedance.md
       - Group Delay: user-guide/group-delay.md

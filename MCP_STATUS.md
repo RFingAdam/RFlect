@@ -6,13 +6,13 @@
 
 ---
 
-## Zero-dependency by design
+## No LLM dependency
 
 As of **v5.0.0**, RFlect makes **no outbound LLM/API calls and requires no API key or paid subscription.** It is a deterministic RF analysis + rendering toolkit. The in-app AI chat assistant, AI report generation, LLM provider abstraction, and encrypted API-key store were all removed.
 
 When RFlect is driven over MCP, the AI agent (Claude Code, Cline, Continue, …) *is* the LLM. RFlect supplies computed data and rendering; the agent supplies any natural-language narrative. Report prose is data-driven by default, or authored by the agent and passed to `generate_report` via the `narrative` parameter.
 
-## MCP server (61 tools)
+## MCP server (62 tools)
 
 `rflect-mcp/server.py` registers the groups below. Counts are from `@mcp.tool()` / `mcp.tool()` registrations. See `docs/mcp/tools-reference.md` for signatures.
 
@@ -26,7 +26,7 @@ When RFlect is driven over MCP, the AI agent (Claude Code, Cline, Continue, …)
 | Calibration drift | 12 | `cal_drift_ingest`, `cal_drift_compare`, `cal_drift_alert`, `cal_drift_recert_check` |
 | Orchestration | 1 | `process_folder` |
 | Validation | 1 | `analyze_iperf_angle_sweep` |
-| Comparison | 2 | `compare_antennas`, `summarize_antennas` |
+| Comparison | 3 | `compare_antennas`, `summarize_antennas`, `compare_active_overlay` |
 | VNA | 2 | `analyze_s11`, `analyze_group_delay` |
 | Propagation | 1 | `estimate_link_budget` |
 | MIMO | 1 | `analyze_mimo_diversity` |
@@ -48,7 +48,7 @@ Smoke check (from the repo root, with the `mcp` extra installed):
 .venv/bin/python -c "import sys, os; sys.path.insert(0, os.path.abspath('rflect-mcp')); import server; print('tools:', len(server.mcp._tool_manager._tools))"
 ```
 
-Expected: `tools: 61`.
+Expected: `tools: 62`.
 
 ## Report narrative
 
