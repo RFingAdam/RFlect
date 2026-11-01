@@ -81,11 +81,12 @@ jobs:
       - name: Install a virtual display
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
+      # uv would otherwise take the runner's system Python for 3.12, which has no tkinter.
       - name: Install the wheel
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          uv venv --python "$PYTHON_VERSION" wheel-env
+          uv venv --managed-python --python "$PYTHON_VERSION" wheel-env
           uv pip install --python wheel-env/bin/python dist/*.whl
 
       - name: Open the GUI from the installed wheel
