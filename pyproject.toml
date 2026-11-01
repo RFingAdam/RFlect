@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rflect"
-version = "6.1.0"
+version = "6.1.1"
 description = "Antenna measurement visualization and analysis tool"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,7 +36,7 @@ dependencies = [
     "python-dotenv>=1.0.0,<2.0.0",
     "tqdm>=4.65.0,<5.0.0",
     "requests>=2.31.0,<3.0.0",
-    "Pillow>=10.0.0,<11.0.0",
+    "Pillow>=13.0.0,<14.0.0",
 ]
 
 [project.optional-dependencies]

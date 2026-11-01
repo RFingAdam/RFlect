@@ -1,5 +1,15 @@
 # RFlect - Release Notes
 
+## Version 6.1.1 (11/01/2026)
+
+**First release to PyPI: `pip install rflect`.**
+
+### Changed
+- `Pillow` now requires `>=13.0.0,<14.0.0`. The old `<11` cap could not install on Python 3.14 and kept releases with known advisories.
+
+### Fixed
+- `settings.json` and `installer.iss` still reported v6.0.0, so the GUI showed the wrong version.
+
 ## Version 6.1.0 (07/30/2026)
 
 **3D-rendering correctness/robustness fixes, plus a packaging fix for AV/EDR (e.g. Cylance) false-positive blocks on the Windows installer.**
