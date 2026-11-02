@@ -16,7 +16,7 @@ Features:
 - MCP server for programmatic analysis
 """
 
-__version__ = "6.1.0"
+__version__ = "6.1.1"
 __author__ = "Adam"
 __license__ = "AGPL-3.0-or-later"
 

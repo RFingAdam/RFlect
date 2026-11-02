@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/rflect_logo.svg" alt="RFlect Logo" width="160">
+  <img src="https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/rflect_logo.svg" alt="RFlect Logo" width="160">
 </p>
 
 <h1 align="center">RFlect</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-6.1.0-blue" alt="Version"></a>
+  <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-6.1.1-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-orange" alt="License"></a>
   <a href="https://rfingadam.github.io/RFlect/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs"></a>
@@ -28,7 +28,7 @@ RFlect turns antenna-chamber and VNA files into 2D/3D radiation-pattern plots, T
 It is analysis software, not a certified test laboratory. TRP uses the CTIA / IEEE-149 discrete solid-angle form; that is a calculation convention, not lab accreditation or product certification.
 
 <p align="center">
-  <img src="./assets/scan_type_selection.png" alt="RFlect scan-type selector" width="680">
+  <img src="https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/scan_type_selection.png" alt="RFlect scan-type selector" width="680">
 </p>
 
 ## Entrypoints
@@ -75,8 +75,8 @@ This public repo does **not** ship customer chamber captures.
 
 | What | Where | What it is |
 |------|--------|------------|
-| GUI / plot screenshots | [`assets/`](assets/) | Representative outputs (scan selector, 1D/2D/3D patterns, VNA, group delay). Not a measurement dataset. |
-| Synthetic cal-drift fixtures | [`tests/fixtures/cal_drift/`](tests/fixtures/cal_drift/) | Small hand-written TRP-cal files for tests. |
+| GUI / plot screenshots | [`assets/`](https://github.com/RFingAdam/RFlect/blob/main/assets/) | Representative outputs (scan selector, 1D/2D/3D patterns, VNA, group delay). Not a measurement dataset. |
+| Synthetic cal-drift fixtures | [`tests/fixtures/cal_drift/`](https://github.com/RFingAdam/RFlect/blob/main/tests/fixtures/cal_drift/) | Small hand-written TRP-cal files for tests. |
 | Optional local measurements | `RFLECT_TEST_DATA_DIR` | Point integration tests at *your* WTL/VNA files. Skipped in CI if unset. |
 
 Most unit tests use in-memory synthetic grids (`tests/conftest.py`). Golden-reference tests lock TRP math against analytic oracles (isotropic EIRP integrates back to itself), not against a certified lab report.
@@ -87,30 +87,30 @@ Most unit tests use in-memory synthetic grids (`tests/conftest.py`). Golden-refe
 ### Passive
 
 **G&amp;D comparison** — efficiency, gain, and directivity across scans:
-![G&D Results](./assets/python_1d_results_g&d.png)
+![G&D Results](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_1d_results_g&d.png)
 
 **HPOL/VPOL 1D** — efficiency and total gain vs frequency:
-![Passive 1D](./assets/python_1d_results.png)
+![Passive 1D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_1d_results.png)
 
 **2D azimuth cuts**:
-![Passive 2D](./assets/python_passive_2d_results_azimuth.png)
+![Passive 2D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_passive_2d_results_azimuth.png)
 
 **Datasheet-style plots**:
-![Datasheet 1D](./assets/python_1d_results_datasheet.png)
-![Datasheet 2D](./assets/python_2d_results_datasheet.png)
+![Datasheet 1D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_1d_results_datasheet.png)
+![Datasheet 2D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_2d_results_datasheet.png)
 
 **3D radiation pattern** (turbo colormap):
-![Passive 3D](./assets/python_passive_3d_results.png)
+![Passive 3D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_passive_3d_results.png)
 
 ### Active TRP
 
-![Active 2D](./assets/python_active_2d_results_azimuth.png)
-![Active Datasheet](./assets/python_active_2d_results_datasheet.png)
+![Active 2D](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_active_2d_results_azimuth.png)
+![Active Datasheet](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_active_2d_results_datasheet.png)
 
 ### VNA / S-parameters and group delay
 
-![VNA Results](./assets/python_vna_results.png)
-![Group Delay](./assets/python_groupdelay_results.png)
+![VNA Results](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_vna_results.png)
+![Group Delay](https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/python_groupdelay_results.png)
 
 </details>
 
@@ -136,7 +136,7 @@ Formats: [file-formats](https://rfingadam.github.io/RFlect/hardware/file-formats
 4. **View results**: plots render automatically; `Ctrl+R` / `F5` reprocess.
 
 <p align="center">
-  <img src="./assets/passive_settings.png" alt="Passive settings dialog" width="500">
+  <img src="https://raw.githubusercontent.com/RFingAdam/RFlect/main/assets/passive_settings.png" alt="Passive settings dialog" width="500">
 </p>
 
 Also in the GUI: polarization (AR / tilt / XPD / LHCP-RHCP), batch folder processing, maritime/horizon plots, advanced RF dialogs (link budget, indoor, fading, MIMO, wearable), cal-drift, and DOCX export.
@@ -175,7 +175,7 @@ Process every passive pair in /path/to/wifi_antenna and generate a report.
 | Compliance | `check_spec_compliance`, `compute_uncertainty_budget` |
 | Instruments | `vna_read_trace`, `positioner_scan_grid` (in-memory mock unless hardware extras are installed) |
 
-Full inventory: [MCP_STATUS.md](MCP_STATUS.md) and [tools reference](https://rfingadam.github.io/RFlect/mcp/tools-reference/). Setup: [rflect-mcp/README.md](rflect-mcp/README.md).
+Full inventory: [MCP_STATUS.md](https://github.com/RFingAdam/RFlect/blob/main/MCP_STATUS.md) and [tools reference](https://rfingadam.github.io/RFlect/mcp/tools-reference/). Setup: [rflect-mcp/README.md](https://github.com/RFingAdam/RFlect/blob/main/rflect-mcp/README.md).
 
 ## Current release (v6.1.0)
 
@@ -186,7 +186,7 @@ v6.1.0 is a 3D-rendering and Windows-packaging fix on top of the v6.0 analysis/M
 - Maritime/horizon plots, cal-drift tracking, UWB SFF
 - Optional SCPI VNA / positioner tools (mock without hardware)
 
-Full notes: [CHANGELOG.md](CHANGELOG.md), [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Full notes: [CHANGELOG.md](https://github.com/RFingAdam/RFlect/blob/main/CHANGELOG.md), [RELEASE_NOTES.md](https://github.com/RFingAdam/RFlect/blob/main/RELEASE_NOTES.md).
 
 ## Project structure
 
@@ -216,11 +216,11 @@ python -m pytest tests/
 pyinstaller RFlect.spec
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/RFingAdam/RFlect/blob/main/CONTRIBUTING.md).
 
 ## License
 
-[AGPL-3.0-or-later](LICENSE). There is no standing commercial-license offer.
+[AGPL-3.0-or-later](https://github.com/RFingAdam/RFlect/blob/main/LICENSE). There is no standing commercial-license offer.
 
 The project name and logo files are **not** part of the licensed work. The licence grants no permission to use them except as needed to describe the origin of the work.
 
