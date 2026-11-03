@@ -38,9 +38,9 @@ See [Quick-Start Workflow](#quick-start-workflow) below.
 ## Installation
 
 ```bash
-# From the RFlect repo root
+# From a clone of the RFlect repo. `pip install rflect[mcp]` installs the
+# MCP SDK extras only; rflect-mcp/ is not in the PyPI wheel.
 pip install -e ".[mcp]"
-pip install -r rflect-mcp/requirements.txt   # mcp SDK + PyYAML + python-docx
 ```
 
 ## Configuration

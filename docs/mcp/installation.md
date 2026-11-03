@@ -5,7 +5,15 @@ Add RFlect's MCP server to your MCP client. The server entry point is
 The only per-OS differences are the Python path and where your client keeps
 its config.
 
+`pip install rflect` installs the analysis package. `pip install rflect[mcp]`
+adds the MCP SDK (`mcp`) and PyYAML. Neither command installs the MCP server:
+`rflect-mcp/` is not in the PyPI wheel, so you still need a source checkout
+until the server ships in the package.
+
 ## 1. Install RFlect + MCP dependencies
+
+Clone the repository. An editable install from that checkout is what makes
+`rflect-mcp/server.py` importable.
 
 === "Linux / macOS"
 
@@ -14,8 +22,7 @@ its config.
     cd RFlect
     python3 -m venv .venv
     source .venv/bin/activate
-    pip install -e .
-    pip install -r rflect-mcp/requirements.txt
+    pip install -e ".[mcp]"
     ```
 
     Your Python interpreter is then `…/RFlect/.venv/bin/python`.
@@ -27,8 +34,7 @@ its config.
     cd RFlect
     py -m venv .venv
     .venv\Scripts\Activate.ps1
-    pip install -e .
-    pip install -r rflect-mcp\requirements.txt
+    pip install -e ".[mcp]"
     ```
 
     Your Python interpreter is then `…\RFlect\.venv\Scripts\python.exe`.

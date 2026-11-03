@@ -59,7 +59,7 @@ It is analysis software, not a certified test laboratory. TRP uses the CTIA / IE
 
 - **No API key, no subscription, no LLM dependency**: RFlect is a deterministic RF analysis + rendering toolkit. Every metric is computed, not generated.
 - **MCP server**: 61 tools that let Claude Code, Cline, and other MCP clients drive RFlect programmatically. The agent *is* the LLM; RFlect provides the data and the rendering.
-- **GUI**: desktop app (Tk-based, dark theme) for interactive review. Launch with `python run_rflect.py` or `rflect` after `pip install -e .`.
+- **GUI**: desktop app (Tk-based, dark theme) for interactive review. Launch with `rflect` after `pip install rflect`, or `python run_rflect.py` from a checkout.
 - **Agent-authored reports**: DOCX with embedded plots and gain tables; prose is data-driven by default, or supplied by the driving agent via [`generate_report`](mcp/tools-reference.md)'s `narrative` parameter
 - **Cal-drift tracker**: record TRP-Cal runs over time, compare across epochs, flag setup-group mismatches
 

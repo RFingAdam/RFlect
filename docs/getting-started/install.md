@@ -2,7 +2,25 @@
 
 RFlect runs on Windows, Linux, and macOS. Python 3.11 or newer. The GUI needs Tk/tkinter (usually bundled with the official Windows/macOS Python installers; on Debian/Ubuntu install `python3-tk`).
 
-## Pre-built binaries (recommended)
+## From PyPI
+
+```bash
+pip install rflect
+rflect
+```
+
+The published package name is [`rflect`](https://pypi.org/project/rflect/). The `rflect` console script launches the GUI.
+
+Optional extras:
+
+```bash
+pip install "rflect[mcp]"           # MCP SDK (`mcp`) and PyYAML
+pip install "rflect[instruments]"   # live VNA/positioner (pyvisa, pyserial)
+```
+
+`rflect[mcp]` installs the SDK extras only. It does **not** install the MCP server: `rflect-mcp/` is not in the wheel. Clone this repository until the server ships in the package, then run `python rflect-mcp/server.py`. See [MCP installation](../mcp/installation.md).
+
+## Pre-built binaries
 
 Grab the latest release from [GitHub Releases](https://github.com/RFingAdam/RFlect/releases).
 
@@ -20,7 +38,7 @@ Grab the latest release from [GitHub Releases](https://github.com/RFingAdam/RFle
 
 === "macOS"
 
-    Build from source: pre-built macOS binaries are not yet published.
+    Use `pip install rflect`, or build from source: pre-built macOS binaries are not yet published.
 
 ## From source
 
@@ -30,11 +48,11 @@ cd RFlect
 python -m venv .venv
 source .venv/bin/activate          # Linux/macOS
 # or:  .venv\Scripts\activate      # Windows
-pip install -r requirements.txt
+pip install -e .
 python run_rflect.py
 ```
 
-After `pip install -e .` the same GUI is also the `rflect` console script.
+After `pip install rflect` or `pip install -e .` the same GUI is also the `rflect` console script.
 
 ## Developer install
 
@@ -50,13 +68,13 @@ The repo also ships an editable install through `pyproject.toml`:
 
 ```bash
 pip install -e .
-pip install -e ".[mcp]"            # MCP extra
+pip install -e ".[mcp]"            # MCP extra (SDK + PyYAML; server still needs this clone)
 pip install -e ".[instruments]"    # optional pyvisa / pyserial
 ```
 
 ## MCP server (optional)
 
-If you want Claude Code or Cline to drive RFlect:
+The MCP server is not published in the `rflect` wheel. If you want Claude Code or Cline to drive RFlect, clone the repo:
 
 ```bash
 pip install -e ".[mcp]"
@@ -75,13 +93,22 @@ This repo does not ship customer measurements. Synthetic cal-drift files live in
 After install, launch the GUI:
 
 ```bash
+rflect
+# or, from a source checkout:
 python run_rflect.py
 ```
 
-You should see the scan-type selector. If you only need the MCP server (no GUI), run:
+You should see the scan-type selector. If you only need the MCP server (no GUI), run it from a clone:
 
 ```bash
 python rflect-mcp/server.py
 ```
 
 It will sit waiting for stdio MCP traffic; close it with `Ctrl+C`.
+
+## Releasing
+
+Pushing a version tag `vX.Y.Z` that is on `main` and matches the package version triggers:
+
+- [`.github/workflows/pypi.yml`](https://github.com/RFingAdam/RFlect/blob/main/.github/workflows/pypi.yml): trusted publishing of `rflect` to PyPI (OIDC, `pypi` environment, no API token)
+- [`.github/workflows/release.yml`](https://github.com/RFingAdam/RFlect/blob/main/.github/workflows/release.yml): Windows and Linux installer artifacts

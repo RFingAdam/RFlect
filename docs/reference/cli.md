@@ -8,7 +8,7 @@ RFlect is primarily GUI- and MCP-driven, but there are a handful of useful comma
 python run_rflect.py
 ```
 
-Or, after `pip install -e .`:
+Or, after `pip install rflect` (or `pip install -e .` from a checkout):
 
 ```bash
 rflect

@@ -342,11 +342,13 @@ bump2version patch  # 4.0.0 → 4.0.1
 
 1. **Update RELEASE_NOTES.md** with changes
 2. **Run full test suite**: `pytest --cov=plot_antenna`
-3. **Bump version**: `bump2version minor`
-4. **Push with tags**: `git push && git push --tags`
-5. **GitHub Actions** builds .exe automatically
-6. **Verify release** on GitHub with correct artifacts
-7. **Announce release** in discussions/README
+3. **Bump version** on `main` (must match the intended tag)
+4. **Push the version tag** `vX.Y.Z` on that `main` commit
+5. **PyPI**: `.github/workflows/pypi.yml` publishes `rflect` via trusted publishing (OIDC, `pypi` environment, no API token)
+6. **Installers**: `.github/workflows/release.yml` builds the Windows and Linux artifacts
+7. **Verify** the [PyPI project](https://pypi.org/project/rflect/) and the GitHub Release assets
+
+The tag must be an ancestor of `main` and match the package version. Do not reuse a version that already exists on PyPI.
 
 ---
 
