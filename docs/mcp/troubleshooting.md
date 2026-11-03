@@ -8,7 +8,7 @@ ModuleNotFoundError: No module named 'plot_antenna'
 
 The server adds the parent directory to `sys.path`, but only if it's launched from a Python that has access to the RFlect package. Check:
 
-- Your MCP config's `command` points at the **right Python** (the venv where you ran `pip install -e .`)
+- Your MCP config's `command` points at the **right Python** (the venv where you installed `rflect` / ran `pip install -e ".[mcp]"`)
 - Or the server is launched from a Python that can `import plot_antenna` (try `python -c "import plot_antenna; print(plot_antenna.__version__)"`)
 
 ## "No data loaded"

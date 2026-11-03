@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/rflect/"><img src="https://img.shields.io/pypi/v/rflect" alt="PyPI"></a>
   <a href="https://github.com/RFingAdam/RFlect/releases"><img src="https://img.shields.io/badge/version-6.1.1-blue" alt="Version"></a>
   <img src="https://img.shields.io/badge/python-3.11+-green" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-orange" alt="License"></a>
@@ -35,7 +36,7 @@ It is analysis software, not a certified test laboratory. TRP uses the CTIA / IE
 
 | How you work | Command |
 |--------------|---------|
-| **GUI** | `python run_rflect.py` (or `rflect` after `pip install -e .`) |
+| **GUI** | `rflect` after `pip install rflect` (or `python run_rflect.py` from a checkout) |
 | **MCP server** | `python rflect-mcp/server.py` (stdio; usually launched by your MCP client) |
 | **Tests** | `python -m pytest tests/` |
 
@@ -43,31 +44,36 @@ There is no separate analysis CLI. Batch work goes through the GUI Tools menu or
 
 ## Install
 
+**From PyPI** (Python 3.11+; Tk/tkinter required for the GUI):
+
+```bash
+pip install rflect
+rflect
+```
+
+Optional extras:
+
+```bash
+pip install "rflect[mcp]"          # MCP SDK (`mcp`) and PyYAML
+pip install "rflect[instruments]"  # live VNA/positioner (pyvisa, pyserial)
+```
+
+`rflect[mcp]` installs the SDK extras only. It does **not** install the MCP server: `rflect-mcp/` is not in the wheel, so you still need a clone to run `python rflect-mcp/server.py`. Details: [MCP installation](https://rfingadam.github.io/RFlect/mcp/installation/).
+
 **Windows:** `RFlect_Installer_vX.X.X.exe` or portable `RFlect_vX.X.X.exe` from [Releases](https://github.com/RFingAdam/RFlect/releases).
 
 **Linux:** `RFlect_vX.X.X_linux` from the same page; `chmod +x` and run. Pre-built macOS binaries are not published; build from source.
 
-**From source** (Python 3.11+; Tk/tkinter required for the GUI):
+**From source** (development checkout):
 
 ```bash
 git clone https://github.com/RFingAdam/RFlect.git
 cd RFlect
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -e ".[mcp]"
+pip install -r requirements-dev.txt
 python run_rflect.py
 ```
-
-Optional extras from `pyproject.toml`:
-
-```bash
-pip install -e ".[mcp]"          # MCP server (mcp SDK)
-pip install -e ".[instruments]"  # live VNA/positioner (pyvisa, pyserial)
-pip install -r requirements-dev.txt
-```
-
-`rflect` is not published on PyPI; install it from GitHub.
-
-MCP also needs PyYAML (`pip install -r rflect-mcp/requirements.txt` if you are not using the `mcp` extra). Details: [MCP installation](https://rfingadam.github.io/RFlect/mcp/installation/).
 
 ## Example data and plot outputs
 
