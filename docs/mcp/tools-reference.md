@@ -1,6 +1,6 @@
 # Tools Reference
 
-**61** registered MCP tools. Registration is the source of truth:
+**62** registered MCP tools. Registration is the source of truth:
 `rflect-mcp/server.py` plus `register_*_tools` in `rflect-mcp/tools/`.
 `rflect://status` and `rflect://help` are resources, not tools.
 
@@ -167,3 +167,7 @@ Install live hardware backends with `pip install -e ".[instruments]"`.
 ## Source of truth
 
 Every `register_*_tools` call in `rflect-mcp/server.py`. Inventory summary: [MCP_STATUS.md](../MCP_STATUS.md).
+
+## Active power overlays
+
+`compare_active_overlay(measurement_names, output_path, polarization, plane, cut_angle_deg, max_envelope, labels)` exports sampled active cuts on a shared absolute power scale. See [Active Comparison](../user-guide/active-comparison.md) for constraints and examples.
