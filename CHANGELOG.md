@@ -7,6 +7,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Full, detailed per-release notes live in
 [RELEASE_NOTES.md](https://github.com/RFingAdam/RFlect/blob/main/RELEASE_NOTES.md); this file is the concise summary.
 
+## [6.1.1]: 2026-11-01
+
+First release to PyPI, so `pip install rflect` works.
+
+### Changed
+- `Pillow` now requires `>=13.0.0,<14.0.0`. The old `<11` cap could not install
+  on Python 3.14 and kept releases with known advisories.
+
+### Fixed
+- `settings.json` and `installer.iss` still reported v6.0.0, so the GUI showed
+  the wrong version.
+
 ## [6.1.0]: 2026-07-30
 
 3D radiation-pattern rendering correctness & robustness. The shared scaling
