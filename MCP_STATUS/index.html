@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/logo.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -848,6 +848,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../user-guide/active-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Active Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../user-guide/passive-gain/" class="md-nav__link">
         
   
@@ -1280,10 +1308,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#zero-dependency-by-design" class="md-nav__link">
+  <a href="#no-llm-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Zero-dependency by design
+        No LLM dependency
       
     </span>
   </a>
@@ -1291,10 +1319,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mcp-server-61-tools" class="md-nav__link">
+  <a href="#mcp-server-62-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP server (61 tools)
+        MCP server (62 tools)
       
     </span>
   </a>
@@ -1687,10 +1715,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#zero-dependency-by-design" class="md-nav__link">
+  <a href="#no-llm-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Zero-dependency by design
+        No LLM dependency
       
     </span>
   </a>
@@ -1698,10 +1726,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mcp-server-61-tools" class="md-nav__link">
+  <a href="#mcp-server-62-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP server (61 tools)
+        MCP server (62 tools)
       
     </span>
   </a>
@@ -1766,10 +1794,10 @@
 <strong>Current Version</strong>: v6.1.0
 <strong>Status</strong>: Stable</p>
 <hr />
-<h2 id="zero-dependency-by-design">Zero-dependency by design<a class="headerlink" href="#zero-dependency-by-design" title="Permanent link">&para;</a></h2>
+<h2 id="no-llm-dependency">No LLM dependency<a class="headerlink" href="#no-llm-dependency" title="Permanent link">&para;</a></h2>
 <p>As of <strong>v5.0.0</strong>, RFlect makes <strong>no outbound LLM/API calls and requires no API key or paid subscription.</strong> It is a deterministic RF analysis + rendering toolkit. The in-app AI chat assistant, AI report generation, LLM provider abstraction, and encrypted API-key store were all removed.</p>
 <p>When RFlect is driven over MCP, the AI agent (Claude Code, Cline, Continue, …) <em>is</em> the LLM. RFlect supplies computed data and rendering; the agent supplies any natural-language narrative. Report prose is data-driven by default, or authored by the agent and passed to <code>generate_report</code> via the <code>narrative</code> parameter.</p>
-<h2 id="mcp-server-61-tools">MCP server (61 tools)<a class="headerlink" href="#mcp-server-61-tools" title="Permanent link">&para;</a></h2>
+<h2 id="mcp-server-62-tools">MCP server (62 tools)<a class="headerlink" href="#mcp-server-62-tools" title="Permanent link">&para;</a></h2>
 <p><code>rflect-mcp/server.py</code> registers the groups below. Counts are from <code>@mcp.tool()</code> / <code>mcp.tool()</code> registrations. See <code>docs/mcp/tools-reference.md</code> for signatures.</p>
 <table>
 <thead>
@@ -1822,8 +1850,8 @@
 </tr>
 <tr>
 <td>Comparison</td>
-<td style="text-align: right;">2</td>
-<td><code>compare_antennas</code>, <code>summarize_antennas</code></td>
+<td style="text-align: right;">3</td>
+<td><code>compare_antennas</code>, <code>summarize_antennas</code>, <code>compare_active_overlay</code></td>
 </tr>
 <tr>
 <td>VNA</td>
@@ -1882,7 +1910,7 @@
 <p>Smoke check (from the repo root, with the <code>mcp</code> extra installed):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>.venv/bin/python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import sys, os; sys.path.insert(0, os.path.abspath('rflect-mcp')); import server; print('tools:', len(server.mcp._tool_manager._tools))"</span>
 </code></pre></div>
-<p>Expected: <code>tools: 61</code>.</p>
+<p>Expected: <code>tools: 62</code>.</p>
 <h2 id="report-narrative">Report narrative<a class="headerlink" href="#report-narrative" title="Permanent link">&para;</a></h2>
 <p><code>generate_report</code> produces deterministic, data-driven prose from the measurement
 data with no LLM involved. A driving agent may override any of the following via
@@ -2020,10 +2048,10 @@ unless optional <code>pyvisa</code> / <code>pyserial</code> backends are install
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "navigation.footer", "navigation.instant", "navigation.instant.progress", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "navigation.footer", "navigation.instant", "navigation.instant.progress", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

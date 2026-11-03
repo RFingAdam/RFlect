@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/logo.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -848,6 +848,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user-guide/active-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Active Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user-guide/passive-gain/" class="md-nav__link">
         
   
@@ -1416,6 +1444,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#active-power-overlays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Active power overlays
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1961,6 +2000,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#active-power-overlays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Active power overlays
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1982,7 +2032,7 @@
 
 
 <h1 id="tools-reference">Tools Reference<a class="headerlink" href="#tools-reference" title="Permanent link">&para;</a></h1>
-<p><strong>61</strong> registered MCP tools. Registration is the source of truth:
+<p><strong>62</strong> registered MCP tools. Registration is the source of truth:
 <code>rflect-mcp/server.py</code> plus <code>register_*_tools</code> in <code>rflect-mcp/tools/</code>.
 <code>rflect://status</code> and <code>rflect://help</code> are resources, not tools.</p>
 <p><code>batch_analyze_frequencies</code> appears in older docs; it is <strong>not</strong> registered.</p>
@@ -2404,6 +2454,8 @@
 <p>Install live hardware backends with <code>pip install -e ".[instruments]"</code>.</p>
 <h2 id="source-of-truth">Source of truth<a class="headerlink" href="#source-of-truth" title="Permanent link">&para;</a></h2>
 <p>Every <code>register_*_tools</code> call in <code>rflect-mcp/server.py</code>. Inventory summary: <a href="../../MCP_STATUS/">MCP_STATUS.md</a>.</p>
+<h2 id="active-power-overlays">Active power overlays<a class="headerlink" href="#active-power-overlays" title="Permanent link">&para;</a></h2>
+<p><code>compare_active_overlay(measurement_names, output_path, polarization, plane, cut_angle_deg, max_envelope, labels)</code> exports sampled active cuts on a shared absolute power scale. See <a href="../../user-guide/active-comparison/">Active Comparison</a> for constraints and examples.</p>
 
 
 
@@ -2515,10 +2567,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "navigation.footer", "navigation.instant", "navigation.instant.progress", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "navigation.footer", "navigation.instant", "navigation.instant.progress", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
