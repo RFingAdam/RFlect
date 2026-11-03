@@ -2776,12 +2776,13 @@ agreement. Read CLA.md before you submit if you want the full terms.</p>
 <ol>
 <li><strong>Update RELEASE_NOTES.md</strong> with changes</li>
 <li><strong>Run full test suite</strong>: <code>pytest --cov=plot_antenna</code></li>
-<li><strong>Bump version</strong>: <code>bump2version minor</code></li>
-<li><strong>Push with tags</strong>: <code>git push &amp;&amp; git push --tags</code></li>
-<li><strong>GitHub Actions</strong> builds .exe automatically</li>
-<li><strong>Verify release</strong> on GitHub with correct artifacts</li>
-<li><strong>Announce release</strong> in discussions/README</li>
+<li><strong>Bump version</strong> on <code>main</code> (must match the intended tag)</li>
+<li><strong>Push the version tag</strong> <code>vX.Y.Z</code> on that <code>main</code> commit</li>
+<li><strong>PyPI</strong>: <code>.github/workflows/pypi.yml</code> publishes <code>rflect</code> via trusted publishing (OIDC, <code>pypi</code> environment, no API token)</li>
+<li><strong>Installers</strong>: <code>.github/workflows/release.yml</code> builds the Windows and Linux artifacts</li>
+<li><strong>Verify</strong> the <a href="https://pypi.org/project/rflect/">PyPI project</a> and the GitHub Release assets</li>
 </ol>
+<p>The tag must be an ancestor of <code>main</code> and match the package version. Do not reuse a version that already exists on PyPI.</p>
 <hr />
 <h2 id="project-structure">Project Structure<a class="headerlink" href="#project-structure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>RFlect/

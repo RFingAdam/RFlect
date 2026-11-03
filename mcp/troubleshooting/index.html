@@ -1927,7 +1927,7 @@
 </code></pre></div>
 <p>The server adds the parent directory to <code>sys.path</code>, but only if it's launched from a Python that has access to the RFlect package. Check:</p>
 <ul>
-<li>Your MCP config's <code>command</code> points at the <strong>right Python</strong> (the venv where you ran <code>pip install -e .</code>)</li>
+<li>Your MCP config's <code>command</code> points at the <strong>right Python</strong> (the venv where you installed <code>rflect</code> / ran <code>pip install -e ".[mcp]"</code>)</li>
 <li>Or the server is launched from a Python that can <code>import plot_antenna</code> (try <code>python -c "import plot_antenna; print(plot_antenna.__version__)"</code>)</li>
 </ul>
 <h2 id="no-data-loaded">"No data loaded"<a class="headerlink" href="#no-data-loaded" title="Permanent link">&para;</a></h2>
